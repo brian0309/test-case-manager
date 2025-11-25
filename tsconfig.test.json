@@ -1,0 +1,11 @@
+{
+  "extends": "./backend/tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "types": ["jest", "node"]
+  },
+  "include": ["backend/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

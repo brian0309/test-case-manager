@@ -1,0 +1,5 @@
+{
+  "name": "Crystal Test Manager",
+  "description": "A macOS-inspired, elegant Test Case Management tool featuring AI-powered test step generation, clean aesthetics, and fluid interactions.",
+  "requestFramePermissions": []
+}
