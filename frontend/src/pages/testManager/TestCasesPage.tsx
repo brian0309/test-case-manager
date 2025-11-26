@@ -1,18 +1,32 @@
 import React, { useState } from 'react';
 import TestCaseTable from '../../components/testManager/TestCaseTable';
 import TestCaseModal from '../../components/testManager/TestCaseModal';
+import TestCaseViewModal from '../../components/testManager/TestCaseViewModal';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { TestCase, Status } from '../../types/testManager';
 
 const TestCasesPage: React.FC = () => {
     const { testCases, activeSuite, updateTestCase, addTestCase } = useTestManagerStore();
     const [selectedCase, setSelectedCase] = useState<TestCase | null>(null);
+    const [viewCase, setViewCase] = useState<TestCase | null>(null);
     const [isListEditMode, setIsListEditMode] = useState(false);
 
     const uniqueAreas = Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort();
 
     const handleRowClick = (item: TestCase) => {
         if (isListEditMode) return;
+        // Row click opens view-only modal
+        setViewCase(item);
+    };
+
+    const handleViewClick = (item: TestCase) => {
+        // View button opens edit modal
+        setSelectedCase(item);
+    };
+
+    const handleEditFromView = (item: TestCase) => {
+        // Close view modal and open edit modal
+        setViewCase(null);
         setSelectedCase(item);
     };
 
@@ -29,7 +43,7 @@ const TestCasesPage: React.FC = () => {
             updateTestCase({
                 ...updatedCase,
                 status: status,
-                lastRun: new Date().toISOString()
+                lastModified: new Date().toISOString()
             });
         }
     };
@@ -54,10 +68,22 @@ const TestCasesPage: React.FC = () => {
             <TestCaseTable
                 data={displayedCases}
                 onRowClick={handleRowClick}
+                onViewClick={handleViewClick}
                 isEditMode={isListEditMode}
                 onUpdate={handleInlineUpdate}
                 onStatusChange={handleStatusChange}
             />
+            {viewCase && (
+                <TestCaseViewModal
+                    testCase={viewCase}
+                    onClose={() => setViewCase(null)}
+                    onEdit={handleEditFromView}
+                    onUpdate={(updatedCase) => {
+                        updateTestCase(updatedCase);
+                        setViewCase(updatedCase); // Update local state to reflect changes
+                    }}
+                />
+            )}
             {selectedCase && (
                 <TestCaseModal
                     testCase={selectedCase}

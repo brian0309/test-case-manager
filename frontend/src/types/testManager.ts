@@ -53,7 +53,7 @@ export interface TestCase {
     title: string;
     priority: Priority;
     status: Status; // Unified status
-    lastRun: string;
+    lastModified: string;
     assignedTester: Tester;
     steps: TestStep[];
     stepsContent?: string;

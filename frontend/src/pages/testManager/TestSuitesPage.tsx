@@ -22,7 +22,7 @@ const TestSuitesPage: React.FC = () => {
             title: 'First Case in ' + name,
             priority: Priority.Medium,
             status: Status.Draft,
-            lastRun: new Date().toISOString(),
+            lastModified: new Date().toISOString(),
             assignedTester: {
                 id: 'u-me',
                 name: 'You',

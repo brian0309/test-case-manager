@@ -2,11 +2,13 @@
 import React from 'react';
 import { TestCase, Priority, Status } from '../../types/testManager';
 import StatusBadge from './StatusBadge';
+import { Edit } from 'lucide-react';
 
 interface TestCaseTableProps {
     data: TestCase[];
     onRowClick: (item: TestCase) => void;
     onStatusChange?: (caseId: string, status: Status) => void;
+    onViewClick?: (item: TestCase) => void;
     isEditMode?: boolean;
     onUpdate?: (id: string, field: keyof TestCase, value: any) => void;
 }
@@ -15,6 +17,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
     data,
     onRowClick,
     onStatusChange,
+    onViewClick,
     isEditMode = false,
     onUpdate
 }) => {
@@ -38,10 +41,11 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                     <tr>
                         <th className="py-3 pl-6 pr-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-24">ID</th>
                         <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-1/3">Title</th>
-                        <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-24 text-center">Steps</th>
                         <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32">Priority</th>
                         <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40">Status</th>
+                        <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40">Last Modified</th>
                         <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32 text-right pr-6">Assignee</th>
+                        <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-24"></th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -76,11 +80,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                     )}
                                 </td>
 
-                                <td className="py-4 px-4 text-sm text-gray-500 text-center">
-                                    <span className="inline-block bg-gray-100 px-2 py-0.5 rounded text-xs font-medium text-gray-600">
-                                        {item.steps.length}
-                                    </span>
-                                </td>
+
 
                                 {/* Priority: Editable or Badge */}
                                 <td className="py-4 px-4">
@@ -103,7 +103,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
 
                                 {/* Unified Status Dropdown */}
                                 <td className="py-4 px-4">
-                                    <div className="flex flex-col items-start gap-1" onClick={e => e.stopPropagation()}>
+                                    <div onClick={e => e.stopPropagation()}>
                                         <select
                                             value={item.status}
                                             onChange={(e) => onStatusChange?.(item.id, e.target.value as Status)}
@@ -116,12 +116,24 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                             <option value={Status.Retest}>Retest</option>
                                             <option value={Status.Skipped}>Skipped</option>
                                         </select>
-                                        {/* Show Last Run Date only if it's an execution status */}
-                                        {item.status !== Status.Draft && (
-                                            <span className="text-[10px] text-gray-400 pl-1">
-                                                {new Date(item.lastRun).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                            </span>
-                                        )}
+                                    </div>
+                                </td>
+
+                                {/* Last Modified */}
+                                <td className="py-4 px-4">
+                                    <div className="text-sm text-gray-600">
+                                        {new Date(item.lastModified).toLocaleDateString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            year: 'numeric'
+                                        })}
+                                    </div>
+                                    <div className="text-xs text-gray-400 mt-0.5">
+                                        {new Date(item.lastModified).toLocaleTimeString('en-US', {
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                            hour12: true
+                                        })}
                                     </div>
                                 </td>
 
@@ -134,6 +146,21 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                             className="h-6 w-6 rounded-full border border-gray-200"
                                         />
                                     </div>
+                                </td>
+
+                                {/* Actions Column */}
+                                <td className="py-4 px-4 text-center">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onViewClick?.(item);
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                                        title="Edit Test Case"
+                                    >
+                                        <Edit className="h-3.5 w-3.5" />
+                                        Edit
+                                    </button>
                                 </td>
                             </tr>
                         );

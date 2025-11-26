@@ -57,7 +57,7 @@ const TestManagerPage: React.FC = () => {
             title: 'First Case in ' + name,
             priority: Priority.Medium,
             status: Status.Draft,
-            lastRun: new Date().toISOString(),
+            lastModified: new Date().toISOString(),
             assignedTester: {
                 id: 'u-me',
                 name: 'You',
@@ -92,7 +92,7 @@ const TestManagerPage: React.FC = () => {
             title: 'New Test Case',
             priority: Priority.Medium,
             status: Status.Draft,
-            lastRun: new Date().toISOString(),
+            lastModified: new Date().toISOString(),
             assignedTester: {
                 id: 'u-current',
                 name: 'You',
@@ -139,7 +139,7 @@ const TestManagerPage: React.FC = () => {
             tc.id === caseId ? {
                 ...tc,
                 status: status,
-                lastRun: new Date().toISOString()
+                lastModified: new Date().toISOString()
             } : tc
         ));
     };
