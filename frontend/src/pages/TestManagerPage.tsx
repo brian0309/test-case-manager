@@ -174,36 +174,32 @@ const TestManagerPage: React.FC = () => {
         createNewTestCase();
     };
 
-    const handleSaveCase = async (updatedCase: TestCase) => {
+    const handleSaveCase = async (updatedCase: TestCase): Promise<TestCase | void> => {
         if (!activeSuiteId) return;
 
-        try {
-            if (updatedCase.id.startsWith('new-')) {
-                // Create new test case
-                await createTestCase(activeSuiteId, {
-                    title: updatedCase.title,
-                    priority: updatedCase.priority,
-                    status: updatedCase.status,
-                    area: updatedCase.area,
-                    expectedResult: updatedCase.expectedResult,
-                    stepsContent: updatedCase.stepsContent,
-                    comments: updatedCase.comments,
-                });
-            } else {
-                // Update existing test case
-                await updateTestCase(updatedCase.id, {
-                    title: updatedCase.title,
-                    priority: updatedCase.priority,
-                    status: updatedCase.status,
-                    area: updatedCase.area,
-                    expectedResult: updatedCase.expectedResult,
-                    stepsContent: updatedCase.stepsContent,
-                    comments: updatedCase.comments,
-                });
-            }
-            setSelectedCase(null);
-        } catch (err) {
-            // Error is handled in store
+        if (updatedCase.id.startsWith('new-')) {
+            // Create new test case and return it so modal can update with real ID
+            const createdCase = await createTestCase(activeSuiteId, {
+                title: updatedCase.title,
+                priority: updatedCase.priority,
+                status: updatedCase.status,
+                area: updatedCase.area,
+                expectedResult: updatedCase.expectedResult,
+                stepsContent: updatedCase.stepsContent,
+                comments: updatedCase.comments,
+            });
+            return createdCase;
+        } else {
+            // Update existing test case - don't close modal (auto-save)
+            await updateTestCase(updatedCase.id, {
+                title: updatedCase.title,
+                priority: updatedCase.priority,
+                status: updatedCase.status,
+                area: updatedCase.area,
+                expectedResult: updatedCase.expectedResult,
+                stepsContent: updatedCase.stepsContent,
+                comments: updatedCase.comments,
+            });
         }
     };
 

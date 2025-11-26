@@ -81,6 +81,7 @@ export const getTestCasesBySuite = async (
     suiteId: new Types.ObjectId(suiteId),
   })
     .populate("assignedTester", "name email")
+    .populate("suiteId", "name")
     .populate("history.userId", "name email")
     .sort({ lastModified: -1 })
     .lean();

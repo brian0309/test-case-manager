@@ -8,11 +8,12 @@ import { Bold, Italic, List, ListOrdered, Strikethrough, Heading1, Heading2, Quo
 interface RichTextEditorProps {
     content: string;
     onChange: (html: string) => void;
+    onBlur?: () => void;
     placeholder?: string;
     editable?: boolean;
 }
 
-const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, placeholder = 'Write something...', editable = true }) => {
+const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBlur, placeholder = 'Write something...', editable = true }) => {
     const editor = useEditor({
         extensions: [
             StarterKit,
@@ -24,6 +25,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, plac
         editable: editable,
         onUpdate: ({ editor }) => {
             onChange(editor.getHTML());
+        },
+        onBlur: () => {
+            onBlur?.();
         },
         editorProps: {
             attributes: {

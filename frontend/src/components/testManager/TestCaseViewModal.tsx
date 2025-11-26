@@ -5,13 +5,17 @@ import { X, Edit2, ChevronDown } from 'lucide-react';
 
 interface TestCaseViewModalProps {
     testCase: TestCase;
+    testCases: TestCase[];
     onClose: () => void;
     onEdit: (testCase: TestCase) => void;
     onUpdate?: (updatedCase: TestCase) => void;
+    onNavigate?: (index: number) => void;
 }
 
-const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, onClose, onEdit, onUpdate }) => {
+
+const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCases, onClose, onEdit, onUpdate, onNavigate }) => {
     const [localCase, setLocalCase] = useState<TestCase>(testCase);
+    const currentIndex = testCases.findIndex(tc => tc.id === testCase.id);
 
     // Update local state when testCase prop changes
     useEffect(() => {
@@ -215,13 +219,25 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, onClose
                 </div>
 
                 {/* Modal Footer */}
-                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-200 transition-colors"
-                    >
-                        Close
-                    </button>
+                <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                    <div>
+                        <button
+                            onClick={() => onNavigate && onNavigate(currentIndex - 1)}
+                            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50"
+                            disabled={currentIndex <= 0}
+                        >
+                            Previous
+                        </button>
+                    </div>
+                    <div>
+                        <button
+                            onClick={() => onNavigate && onNavigate(currentIndex + 1)}
+                            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50"
+                            disabled={currentIndex === -1 || currentIndex >= testCases.length - 1}
+                        >
+                            Next
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

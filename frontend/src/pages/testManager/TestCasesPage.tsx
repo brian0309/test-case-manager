@@ -110,10 +110,10 @@ const TestCasesPage: React.FC = () => {
         updateTestCase(caseId, { status: status, lastModified: new Date().toISOString() } as any);
     };
 
-    const handleSaveCase = async (updatedCase: TestCase) => {
+    const handleSaveCase = async (updatedCase: TestCase): Promise<TestCase | void> => {
         const exists = testCases.find(c => c.id === updatedCase.id);
         if (exists) {
-            updateTestCase(updatedCase.id, {
+            await updateTestCase(updatedCase.id, {
                 title: updatedCase.title,
                 priority: updatedCase.priority,
                 status: updatedCase.status,
@@ -122,34 +122,29 @@ const TestCasesPage: React.FC = () => {
                 stepsContent: (updatedCase as any).stepsContent,
                 comments: updatedCase.comments,
             } as any);
-            setSelectedCase(null);
+            // Don't close modal - auto-save should keep it open
             return;
         }
 
         // New case: attempt to create via API if we can resolve a suite id
-        try {
-            // Find a suite matching the selected suite name within the selected project
-            const suite = testSuites.find(s => s.name === updatedCase.suite && s.projectId === updatedCase.projectId);
-            if (!suite) {
-                alert('Please select a Test Suite for the new case before saving.');
-                return;
-            }
-
-            await createTestCase(suite.id, {
-                title: updatedCase.title,
-                priority: updatedCase.priority,
-                status: updatedCase.status,
-                area: updatedCase.area,
-                expectedResult: updatedCase.expectedResult,
-                stepsContent: (updatedCase as any).stepsContent,
-                comments: updatedCase.comments,
-            } as any);
-
-            // closing modal (store will update list)
-            setSelectedCase(null);
-        } catch (err) {
-            // error handled by store
+        // Find a suite matching the selected suite name within the selected project
+        const suite = testSuites.find(s => s.name === updatedCase.suite && s.projectId === updatedCase.projectId);
+        if (!suite) {
+            throw new Error('Please select a Test Suite for the new case before saving.');
         }
+
+        const createdCase = await createTestCase(suite.id, {
+            title: updatedCase.title,
+            priority: updatedCase.priority,
+            status: updatedCase.status,
+            area: updatedCase.area,
+            expectedResult: updatedCase.expectedResult,
+            stepsContent: (updatedCase as any).stepsContent,
+            comments: updatedCase.comments,
+        } as any);
+
+        // Return the created case so the modal can update its state with the real ID
+        return createdCase;
     };
 
     if (!activeProject && !selectedCase) {
@@ -183,6 +178,7 @@ const TestCasesPage: React.FC = () => {
             {viewCase && (
                 <TestCaseViewModal
                     testCase={viewCase}
+                    testCases={displayedCases}
                     onClose={() => setViewCase(null)}
                     onEdit={handleEditFromView}
                     onUpdate={(updatedCase) => {
@@ -197,6 +193,7 @@ const TestCasesPage: React.FC = () => {
                         } as any);
                         setViewCase(prev => prev ? { ...prev, ...updatedCase } : updatedCase); // Update local state to reflect changes
                     }}
+                    onNavigate={idx => setViewCase(displayedCases[idx])}
                 />
             )}
             {selectedCase && (

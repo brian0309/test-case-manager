@@ -7,20 +7,32 @@ import TestSuiteCreateModal from '../../components/testManager/TestSuiteCreateMo
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 
 const TestSuitesPage: React.FC = () => {
-    const { activeProject, testCases, testSuites, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchProjects } = useTestManagerStore();
+    const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchTestCasesByProject, fetchProjects } = useTestManagerStore();
     const navigate = useNavigate();
+    const [isSuitesLoading, setIsSuitesLoading] = useState(true);
 
-    // Ensure projects are loaded when this page is visited directly
+    // Ensure projects are loaded when this page is visited directly (only if not already loaded)
     useEffect(() => {
-        fetchProjects();
-    }, [fetchProjects]);
+        if (projects.length === 0) {
+            fetchProjects();
+        }
+    }, [projects.length, fetchProjects]);
 
-    // Fetch test suites when project is active (including on page reload with persisted state)
+    // Fetch test suites and test cases when project is active
+    // Prioritize loading suites first for faster initial display
     useEffect(() => {
         if (activeProject) {
-            fetchTestSuites(activeProject);
+            setIsSuitesLoading(true);
+            // Fetch suites first (faster), then cases in background for stats
+            fetchTestSuites(activeProject).finally(() => {
+                setIsSuitesLoading(false);
+            });
+            // Fetch test cases in parallel but don't block UI on it
+            fetchTestCasesByProject(activeProject);
+        } else {
+            setIsSuitesLoading(false);
         }
-    }, [activeProject, fetchTestSuites]);
+    }, [activeProject, fetchTestSuites, fetchTestCasesByProject]);
 
     // Filter test cases by active project
     const projectTestCases = activeProject
@@ -65,6 +77,18 @@ const TestSuitesPage: React.FC = () => {
                 title="No Project Selected"
                 description="Please select a project to view and manage test suites"
             />
+        );
+    }
+
+    // Show loading spinner only while suites are loading (not waiting for cases)
+    if (isSuitesLoading) {
+        return (
+            <div className="flex flex-col h-full">
+                <ContextBreadcrumb showSuiteSelector={false} />
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                </div>
+            </div>
         );
     }
 
