@@ -10,7 +10,7 @@ const TestCasesPage: React.FC = () => {
     const { testCases, activeSuite, activeProject, updateTestCase, addTestCase } = useTestManagerStore();
     const [selectedCase, setSelectedCase] = useState<TestCase | null>(null);
     const [viewCase, setViewCase] = useState<TestCase | null>(null);
-    const [isListEditMode, setIsListEditMode] = useState(false);
+    const [isListEditMode] = useState(false);
 
     const uniqueAreas = Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort();
 
@@ -32,27 +32,25 @@ const TestCasesPage: React.FC = () => {
     };
 
     const handleInlineUpdate = (caseId: string, field: keyof TestCase, value: any) => {
-        const updatedCase = testCases.find(tc => tc.id === caseId);
-        if (updatedCase) {
-            updateTestCase({ ...updatedCase, [field]: value });
-        }
+        updateTestCase(caseId, { [field]: value } as any);
     };
 
     const handleStatusChange = (caseId: string, status: Status) => {
-        const updatedCase = testCases.find(tc => tc.id === caseId);
-        if (updatedCase) {
-            updateTestCase({
-                ...updatedCase,
-                status: status,
-                lastModified: new Date().toISOString()
-            });
-        }
+        updateTestCase(caseId, { status: status, lastModified: new Date().toISOString() } as any);
     };
 
     const handleSaveCase = (updatedCase: TestCase) => {
         const exists = testCases.find(c => c.id === updatedCase.id);
         if (exists) {
-            updateTestCase(updatedCase);
+            updateTestCase(updatedCase.id, {
+                title: updatedCase.title,
+                priority: updatedCase.priority,
+                status: updatedCase.status,
+                area: updatedCase.area,
+                expectedResult: updatedCase.expectedResult,
+                stepsContent: (updatedCase as any).stepsContent,
+                comments: updatedCase.comments,
+            } as any);
         } else {
             addTestCase(updatedCase);
         }
@@ -94,8 +92,16 @@ const TestCasesPage: React.FC = () => {
                     onClose={() => setViewCase(null)}
                     onEdit={handleEditFromView}
                     onUpdate={(updatedCase) => {
-                        updateTestCase(updatedCase);
-                        setViewCase(updatedCase); // Update local state to reflect changes
+                        updateTestCase(updatedCase.id, {
+                            title: updatedCase.title,
+                            priority: updatedCase.priority,
+                            status: updatedCase.status,
+                            area: updatedCase.area,
+                            expectedResult: updatedCase.expectedResult,
+                            stepsContent: (updatedCase as any).stepsContent,
+                            comments: updatedCase.comments,
+                        } as any);
+                        setViewCase(prev => prev ? { ...prev, ...updatedCase } : updatedCase); // Update local state to reflect changes
                     }}
                 />
             )}

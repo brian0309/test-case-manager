@@ -1,16 +1,20 @@
 
 import React from 'react';
-import { TestCase, Status } from '../../types/testManager';
+import { TestCase, TestSuite, Status } from '../../types/testManager';
 import { Folder, MoreHorizontal, PieChart, AlertCircle, Plus } from 'lucide-react';
 
 interface TestSuiteListProps {
     testCases: TestCase[];
-    onSuiteClick: (suite: string) => void;
+    testSuites: TestSuite[];
+    onSuiteClick: (suiteName: string, suiteId?: string) => void;
     onCreate: () => void;
 }
 
-const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, onSuiteClick, onCreate }) => {
-    const suites: string[] = Array.from(new Set(testCases.map(tc => tc.suite))).sort();
+const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, onSuiteClick, onCreate }) => {
+    // Use testSuites from API if available, otherwise derive from testCases for backwards compatibility
+    const suites = testSuites.length > 0
+        ? testSuites.map(s => ({ id: s.id, name: s.name }))
+        : Array.from(new Set(testCases.map(tc => tc.suite))).sort().map(name => ({ id: undefined, name }));
 
     const getSuiteStats = (suiteName: string) => {
         const cases = testCases.filter(c => c.suite === suiteName);
@@ -47,12 +51,12 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, onSuiteClick, 
                 </div>
 
                 {suites.map(suite => {
-                    const stats = getSuiteStats(suite);
+                    const stats = getSuiteStats(suite.name);
 
                     return (
                         <div
-                            key={suite}
-                            onClick={() => onSuiteClick(suite)}
+                            key={suite.id || suite.name}
+                            onClick={() => onSuiteClick(suite.name, suite.id)}
                             className="group bg-white rounded-2xl border border-gray-100 p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between"
                         >
                             <div>
@@ -62,7 +66,7 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, onSuiteClick, 
                                             <Folder className="h-5 w-5 fill-blue-100" strokeWidth={2} />
                                         </div>
                                         <div>
-                                            <h3 className="font-semibold text-gray-900 text-lg tracking-tight">{suite}</h3>
+                                            <h3 className="font-semibold text-gray-900 text-lg tracking-tight">{suite.name}</h3>
                                             <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">{stats.total} Cases</span>
                                         </div>
                                     </div>

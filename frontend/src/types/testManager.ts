@@ -40,6 +40,15 @@ export interface Project {
     updatedAt: string;
 }
 
+export interface TestSuite {
+    id: string;
+    name: string;
+    description?: string;
+    projectId: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
 export interface HistoryEntry {
     id: string;
     timestamp: string;

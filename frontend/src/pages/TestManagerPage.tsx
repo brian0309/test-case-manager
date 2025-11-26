@@ -5,21 +5,60 @@ import TestCaseTable from '../components/testManager/TestCaseTable';
 import TestCaseModal from '../components/testManager/TestCaseModal';
 import TestSuiteList from '../components/testManager/TestSuiteList';
 import ProjectList from '../components/testManager/ProjectList';
-import { mockTestCases, mockProjects } from '../utils/mockData';
-import { TestCase, Priority, Status, Project } from '../types/testManager';
+import { TestCase, Priority, Status } from '../types/testManager';
 import { useTestManagerStore } from '../store/testManagerStore';
+import { Loader } from 'lucide-react';
 
 const TestManagerPage: React.FC = () => {
-    // Use global store for navigation state
-    const { viewMode, setViewMode, activeSuite, setActiveSuite } = useTestManagerStore();
-
-    const [testCases, setTestCases] = useState<TestCase[]>(mockTestCases);
-    const [projects, setProjects] = useState<Project[]>(mockProjects);
+    // Use global store for all state
+    const {
+        viewMode,
+        setViewMode,
+        activeSuite,
+        setActiveSuite,
+        activeSuiteId,
+        setActiveSuiteId,
+        activeProject,
+        setActiveProject,
+        testCases,
+        projects,
+        testSuites,
+        isLoading,
+        error,
+        clearError,
+        fetchProjects,
+        createProject,
+        fetchTestSuites,
+        createTestSuite,
+        fetchTestCases,
+        createTestCase,
+        updateTestCase,
+        updateTestCaseLocal,
+    } = useTestManagerStore();
 
     const [selectedCase, setSelectedCase] = useState<TestCase | null>(null);
 
     // Edit Mode State
     const [isListEditMode, setIsListEditMode] = useState(false);
+
+    // Fetch projects on mount
+    useEffect(() => {
+        fetchProjects();
+    }, [fetchProjects]);
+
+    // Fetch test suites when project is selected
+    useEffect(() => {
+        if (activeProject && viewMode === 'suites') {
+            fetchTestSuites(activeProject);
+        }
+    }, [activeProject, viewMode, fetchTestSuites]);
+
+    // Fetch test cases when suite is selected
+    useEffect(() => {
+        if (activeSuiteId && viewMode === 'cases') {
+            fetchTestCases(activeSuiteId);
+        }
+    }, [activeSuiteId, viewMode, fetchTestCases]);
 
     // Derived state for available areas
     const uniqueAreas = Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort();
@@ -29,6 +68,14 @@ const TestManagerPage: React.FC = () => {
         setIsListEditMode(false);
     }, [viewMode]);
 
+    // Clear error after 5 seconds
+    useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => clearError(), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [error, clearError]);
+
     const handleRowClick = (item: TestCase) => {
         if (isListEditMode) return;
         setSelectedCase(item);
@@ -36,59 +83,69 @@ const TestManagerPage: React.FC = () => {
 
     const handleViewChange = (mode: any) => {
         setViewMode(mode);
-        setActiveSuite(null);
+        if (mode === 'projects') {
+            setActiveSuite(null);
+            setActiveSuiteId(null);
+            setActiveProject(null);
+        }
     };
 
-    const handleSuiteClick = (suite: string) => {
-        setActiveSuite(suite);
+    const handleSuiteClick = (suiteName: string, suiteId?: string) => {
+        setActiveSuite(suiteName);
+        if (suiteId) {
+            setActiveSuiteId(suiteId);
+        }
         setViewMode('cases');
     };
 
-    const handleProjectClick = (_projectId: string) => {
+    const handleProjectClick = (projectId: string) => {
+        setActiveProject(projectId);
         setViewMode('suites');
     };
 
-    const handleCreateSuite = () => {
+    const handleCreateSuite = async () => {
+        if (!activeProject) {
+            alert("Please select a project first");
+            return;
+        }
+
         const name = prompt("Enter a name for the new Test Suite:");
         if (!name) return;
 
-        const newCase: TestCase = {
-            id: `TC-${100 + testCases.length + 1}`,
-            title: 'First Case in ' + name,
-            priority: Priority.Medium,
-            status: Status.Draft,
-            lastModified: new Date().toISOString(),
-            assignedTester: {
-                id: 'u-me',
-                name: 'You',
-                avatar: 'https://ui-avatars.com/api/?name=You&background=0D8ABC&color=fff'
-            },
-            suite: name,
-            steps: []
-        };
-        setTestCases([newCase, ...testCases]);
-        setActiveSuite(name);
-        setViewMode('cases');
+        try {
+            const suite = await createTestSuite(activeProject, { name });
+            setActiveSuite(suite.name);
+            setActiveSuiteId(suite.id);
+            setViewMode('cases');
+        } catch (err) {
+            // Error is handled in store
+        }
     };
 
-    const handleCreateProject = () => {
+    const handleCreateProject = async () => {
         const name = prompt("Enter Project Name:");
         if (!name) return;
 
-        const newProject: Project = {
-            id: `p-${Date.now()}`,
-            name: name,
-            description: 'New project workspace',
-            color: 'bg-gray-500',
-            stats: { suites: 0, cases: 0, members: 1 },
-            updatedAt: new Date().toISOString()
-        };
-        setProjects([newProject, ...projects]);
+        try {
+            await createProject({
+                name,
+                description: 'New project workspace',
+                color: 'bg-blue-500',
+            });
+        } catch (err) {
+            // Error is handled in store
+        }
     };
 
     const createNewTestCase = () => {
+        if (!activeSuiteId) {
+            alert("Please select a test suite first");
+            return;
+        }
+
+        // Create a temporary local test case for the modal
         const newCase: TestCase = {
-            id: `TC-${100 + testCases.length + 1}`,
+            id: `new-${Date.now()}`,
             title: 'New Test Case',
             priority: Priority.Medium,
             status: Status.Draft,
@@ -99,7 +156,8 @@ const TestManagerPage: React.FC = () => {
                 avatar: 'https://ui-avatars.com/api/?name=You&background=0D8ABC&color=fff'
             },
             suite: activeSuite || 'Unassigned',
-            steps: []
+            steps: [],
+            projectId: activeProject || '',
         };
         setSelectedCase(newCase);
     };
@@ -116,44 +174,81 @@ const TestManagerPage: React.FC = () => {
         createNewTestCase();
     };
 
-    const handleSaveCase = (updatedCase: TestCase) => {
-        setTestCases(prev => {
-            const exists = prev.find(c => c.id === updatedCase.id);
-            if (exists) {
-                return prev.map(c => c.id === updatedCase.id ? updatedCase : c);
+    const handleSaveCase = async (updatedCase: TestCase) => {
+        if (!activeSuiteId) return;
+
+        try {
+            if (updatedCase.id.startsWith('new-')) {
+                // Create new test case
+                await createTestCase(activeSuiteId, {
+                    title: updatedCase.title,
+                    priority: updatedCase.priority,
+                    status: updatedCase.status,
+                    area: updatedCase.area,
+                    expectedResult: updatedCase.expectedResult,
+                    stepsContent: updatedCase.stepsContent,
+                    comments: updatedCase.comments,
+                });
+            } else {
+                // Update existing test case
+                await updateTestCase(updatedCase.id, {
+                    title: updatedCase.title,
+                    priority: updatedCase.priority,
+                    status: updatedCase.status,
+                    area: updatedCase.area,
+                    expectedResult: updatedCase.expectedResult,
+                    stepsContent: updatedCase.stepsContent,
+                    comments: updatedCase.comments,
+                });
             }
-            return [updatedCase, ...prev];
-        });
-        setSelectedCase(null);
+            setSelectedCase(null);
+        } catch (err) {
+            // Error is handled in store
+        }
     };
 
     // Inline update handler for the Table Edit Mode
-    const handleInlineUpdate = (caseId: string, field: keyof TestCase, value: any) => {
-        setTestCases(prev => prev.map(tc =>
-            tc.id === caseId ? { ...tc, [field]: value } : tc
-        ));
+    const handleInlineUpdate = async (caseId: string, field: keyof TestCase, value: any) => {
+        // Optimistic update
+        const testCase = testCases.find(tc => tc.id === caseId);
+        if (testCase) {
+            updateTestCaseLocal({ ...testCase, [field]: value });
+        }
+
+        // API update
+        try {
+            await updateTestCase(caseId, { [field]: value });
+        } catch (err) {
+            // Revert on error - refetch
+            if (activeSuiteId) {
+                fetchTestCases(activeSuiteId);
+            }
+        }
     };
 
-    const handleStatusChange = (caseId: string, status: Status) => {
-        setTestCases(prev => prev.map(tc =>
-            tc.id === caseId ? {
-                ...tc,
-                status: status,
-                lastModified: new Date().toISOString()
-            } : tc
-        ));
+    const handleStatusChange = async (caseId: string, status: Status) => {
+        await handleInlineUpdate(caseId, 'status', status);
     };
 
-    // Filter logic
-    let displayedCases = testCases;
-
-    if (activeSuite) {
-        displayedCases = testCases.filter(c => c.suite === activeSuite);
-    }
+    // Filter logic - now handled by API based on suite
+    const displayedCases = testCases;
 
     return (
         <div className="flex flex-col h-full font-sans text-gray-900">
-            {/* Removed internal Sidebar */}
+            {/* Error Banner */}
+            {error && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 m-4 mb-0">
+                    <div className="flex items-center">
+                        <span className="text-red-700">{error}</span>
+                        <button
+                            onClick={clearError}
+                            className="ml-auto text-red-500 hover:text-red-700"
+                        >
+                            ×
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <main className="mac-card flex-1 flex flex-col min-w-0 overflow-hidden relative m-4 mt-2">
                 <Toolbar
@@ -168,6 +263,12 @@ const TestManagerPage: React.FC = () => {
                 />
 
                 <div className="flex-1 overflow-auto relative">
+                    {isLoading && (
+                        <div className="absolute inset-0 bg-white/50 flex items-center justify-center z-10">
+                            <Loader className="w-8 h-8 animate-spin text-blue-500" />
+                        </div>
+                    )}
+
                     {viewMode === 'projects' && (
                         <ProjectList
                             projects={projects}
@@ -189,6 +290,7 @@ const TestManagerPage: React.FC = () => {
                     {viewMode === 'suites' && (
                         <TestSuiteList
                             testCases={testCases}
+                            testSuites={testSuites}
                             onSuiteClick={handleSuiteClick}
                             onCreate={handleCreateSuite}
                         />

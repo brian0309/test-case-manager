@@ -5,7 +5,7 @@ import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import TestSuiteList from '../../components/testManager/TestSuiteList';
 
 const TestSuitesPage: React.FC = () => {
-    const { activeProject, testCases } = useTestManagerStore();
+    const { activeProject, testCases, testSuites } = useTestManagerStore();
     const navigate = useNavigate();
 
     // Filter test cases by active project
@@ -37,6 +37,7 @@ const TestSuitesPage: React.FC = () => {
     return (
         <TestSuiteList
             testCases={projectTestCases}
+            testSuites={testSuites}
             onSuiteClick={handleSuiteClick}
             onCreate={handleCreateSuite}
         />
