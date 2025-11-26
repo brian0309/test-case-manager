@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import TestCaseTable from '../../components/testManager/TestCaseTable';
 import TestCaseModal from '../../components/testManager/TestCaseModal';
 import TestCaseViewModal from '../../components/testManager/TestCaseViewModal';
+import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { TestCase, Status } from '../../types/testManager';
 
 const TestCasesPage: React.FC = () => {
-    const { testCases, activeSuite, updateTestCase, addTestCase } = useTestManagerStore();
+    const { testCases, activeSuite, activeProject, updateTestCase, addTestCase } = useTestManagerStore();
     const [selectedCase, setSelectedCase] = useState<TestCase | null>(null);
     const [viewCase, setViewCase] = useState<TestCase | null>(null);
     const [isListEditMode, setIsListEditMode] = useState(false);
@@ -63,10 +64,25 @@ const TestCasesPage: React.FC = () => {
         ? testCases.filter(c => c.suite === activeSuite)
         : testCases;
 
+    // Further filter by project if active
+    const filteredCases = activeProject
+        ? displayedCases.filter(c => c.projectId === activeProject)
+        : displayedCases;
+
+    // Show empty state if no project is selected
+    if (!activeProject) {
+        return (
+            <EmptyProjectState
+                title="No Project Selected"
+                description="Please select a project to view and manage test cases"
+            />
+        );
+    }
+
     return (
         <>
             <TestCaseTable
-                data={displayedCases}
+                data={filteredCases}
                 onRowClick={handleRowClick}
                 onViewClick={handleViewClick}
                 isEditMode={isListEditMode}

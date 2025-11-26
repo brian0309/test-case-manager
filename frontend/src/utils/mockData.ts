@@ -63,6 +63,7 @@ export const mockTestCases: TestCase[] = [
         suite: 'Authentication',
         area: 'Login Page',
         expectedResult: 'User successfully logs in and is redirected to the dashboard homepage.',
+        projectId: 'p1',
         steps: [
             { id: 's1', action: 'Navigate to login page', expectedResult: 'Login page loads' },
             { id: 's2', action: 'Enter valid username and password', expectedResult: 'Fields populated' },
@@ -108,6 +109,7 @@ export const mockTestCases: TestCase[] = [
         suite: 'Authentication',
         area: 'Forgot Password',
         expectedResult: 'Reset link is emailed to user and allows password change.',
+        projectId: 'p1',
         steps: [],
         stepsContent: ''
     },
@@ -121,6 +123,7 @@ export const mockTestCases: TestCase[] = [
         suite: 'Checkout',
         area: 'Cart',
         expectedResult: 'Coupon discount is applied correctly to the total amount.',
+        projectId: 'p1',
         steps: [],
         stepsContent: ''
     },
@@ -134,6 +137,7 @@ export const mockTestCases: TestCase[] = [
         suite: 'Search',
         area: 'Global Header',
         expectedResult: 'Relevant results appear in the dropdown as user types.',
+        projectId: 'p2',
         steps: [],
         stepsContent: ''
     },
@@ -146,6 +150,7 @@ export const mockTestCases: TestCase[] = [
         assignedTester: testers[1],
         suite: 'Profile',
         area: 'User Settings',
+        projectId: 'p2',
         steps: [],
         stepsContent: ''
     },
@@ -158,6 +163,7 @@ export const mockTestCases: TestCase[] = [
         assignedTester: testers[2],
         suite: 'Backend',
         area: 'API Gateway',
+        projectId: 'p3',
         steps: [],
         stepsContent: ''
     },
@@ -170,6 +176,7 @@ export const mockTestCases: TestCase[] = [
         assignedTester: testers[0],
         suite: 'UI/UX',
         area: 'Settings',
+        projectId: 'p4',
         steps: [],
         stepsContent: ''
     }

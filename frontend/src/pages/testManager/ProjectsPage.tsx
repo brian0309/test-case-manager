@@ -1,16 +1,18 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import ProjectList from '../../components/testManager/ProjectList';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { Project } from '../../types/testManager';
 
 const ProjectsPage: React.FC = () => {
-    const { projects, setProjects } = useTestManagerStore();
+    const { projects, setProjects, setActiveProject, activeProject } = useTestManagerStore();
+    const navigate = useNavigate();
 
     const handleProjectClick = (projectId: string) => {
-        // Navigate to suites or cases for this project
-        // For now, just switch view mode, but ideally filter by project
-        console.log('Project clicked:', projectId);
-        // setViewMode('suites'); 
+        // Set the active project
+        setActiveProject(projectId);
+        // Navigate to cases for this project
+        navigate('/test-manager/cases');
     };
 
     const handleCreateProject = () => {

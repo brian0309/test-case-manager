@@ -5,7 +5,7 @@ import { useTestManagerStore } from '../../store/testManagerStore';
 import { ViewMode } from '../../types/testManager';
 
 const TestManagerLayout: React.FC = () => {
-    const { viewMode, setViewMode, activeSuite, setActiveSuite } = useTestManagerStore();
+    const { viewMode, setViewMode, activeSuite, setActiveSuite, activeProject, setActiveProject, projects } = useTestManagerStore();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -44,6 +44,9 @@ const TestManagerLayout: React.FC = () => {
                     onNew={handleNew}
                     onNewCase={handleNewCase}
                     activeSuite={activeSuite}
+                    activeProject={activeProject}
+                    setActiveProject={setActiveProject}
+                    projects={projects}
                     showEditToggle={viewMode === 'cases'}
                 />
                 <div className="flex-1 overflow-auto relative">

@@ -1,7 +1,7 @@
 
-import React from 'react';
-import { Plus, Filter, Download, FilePlus, PenLine, Check } from 'lucide-react';
-import { ViewMode } from '../../types/testManager';
+import React, { useState, useRef, useEffect } from 'react';
+import { Plus, Filter, Download, FilePlus, PenLine, Check, ChevronDown, X, Folder } from 'lucide-react';
+import { ViewMode, Project } from '../../types/testManager';
 
 interface ToolbarProps {
     viewMode: ViewMode;
@@ -9,21 +9,46 @@ interface ToolbarProps {
     onNew: () => void;
     onNewCase: () => void;
     activeSuite?: string | null;
+    activeProject?: string | null;
+    setActiveProject?: (projectId: string | null) => void;
+    projects?: Project[];
     isEditMode?: boolean;
     onToggleEditMode?: () => void;
     showEditToggle?: boolean;
 }
 
-const Toolbar: React.FC<ToolbarProps> = ({
-    viewMode,
-    setViewMode,
-    onNew,
-    onNewCase,
-    activeSuite,
-    isEditMode,
-    onToggleEditMode,
-    showEditToggle
-}) => {
+const Toolbar: React.FC<ToolbarProps> = (props) => {
+    const {
+        viewMode,
+        setViewMode,
+        onNew,
+        onNewCase,
+        activeSuite,
+        activeProject,
+        setActiveProject,
+        projects,
+        isEditMode,
+        onToggleEditMode,
+        showEditToggle
+    } = props;
+
+    const [isProjectMenuOpen, setIsProjectMenuOpen] = useState(false);
+    const projectMenuRef = useRef<HTMLDivElement>(null);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (projectMenuRef.current && !projectMenuRef.current.contains(event.target as Node)) {
+                setIsProjectMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     const getTitle = () => {
         if (activeSuite) return activeSuite;
         switch (viewMode) {
@@ -41,10 +66,67 @@ const Toolbar: React.FC<ToolbarProps> = ({
         return 'Case';
     };
 
+    const currentProject = projects?.find((p: Project) => p.id === activeProject);
+
     return (
         <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200 bg-white/80 backdrop-blur-md sticky top-0 z-20">
             <div className="flex items-center gap-4">
-                <h1 className="text-xl font-semibold text-gray-900 tracking-tight">{getTitle()}</h1>
+                <div>
+                    <h1 className="text-xl font-semibold text-gray-900 tracking-tight">{getTitle()}</h1>
+
+                    {/* Project Selector Badge */}
+                    {activeProject && viewMode !== 'projects' && (
+                        <div className="relative mt-0.5" ref={projectMenuRef}>
+                            <button
+                                onClick={() => setIsProjectMenuOpen(!isProjectMenuOpen)}
+                                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 hover:bg-gray-100 px-1.5 py-0.5 -ml-1.5 rounded transition-colors"
+                            >
+                                <span className="max-w-[150px] truncate font-medium">
+                                    {currentProject?.name || 'Project'}
+                                </span>
+                                <ChevronDown size={12} />
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {isProjectMenuOpen && (
+                                <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                                    <div className="px-3 py-2 border-b border-gray-50">
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Switch Project</p>
+                                    </div>
+                                    <div className="max-h-64 overflow-y-auto">
+                                        {projects?.map(project => (
+                                            <button
+                                                key={project.id}
+                                                onClick={() => {
+                                                    setActiveProject?.(project.id);
+                                                    setIsProjectMenuOpen(false);
+                                                }}
+                                                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 transition-colors ${activeProject === project.id ? 'text-blue-600 bg-blue-50/50' : 'text-gray-700'
+                                                    }`}
+                                            >
+                                                <Folder size={14} className={activeProject === project.id ? 'text-blue-500' : 'text-gray-400'} />
+                                                <span className="truncate">{project.name}</span>
+                                                {activeProject === project.id && <Check size={14} className="ml-auto" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="border-t border-gray-50 mt-1 pt-1">
+                                        <button
+                                            onClick={() => {
+                                                setActiveProject?.(null);
+                                                setIsProjectMenuOpen(false);
+                                            }}
+                                            className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                                        >
+                                            <X size={14} />
+                                            Clear Selection
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
 
                 {/* iOS Style Segmented Control */}
                 <div className="bg-gray-100 p-0.5 rounded-lg flex items-center h-8 ml-4">

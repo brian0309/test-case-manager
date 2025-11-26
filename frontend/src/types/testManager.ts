@@ -62,6 +62,7 @@ export interface TestCase {
     expectedResult?: string;
     comments?: string;
     history?: HistoryEntry[];
+    projectId: string;
 }
 
 export interface TestRun {

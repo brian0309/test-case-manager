@@ -5,11 +5,13 @@ import { mockTestCases, mockProjects } from '../utils/mockData';
 interface TestManagerStore {
     viewMode: ViewMode;
     activeSuite: string | null;
+    activeProject: string | null;
     testCases: TestCase[];
     projects: Project[];
 
     setViewMode: (mode: ViewMode) => void;
     setActiveSuite: (suite: string | null) => void;
+    setActiveProject: (projectId: string | null) => void;
 
     // Data Actions
     setTestCases: (cases: TestCase[]) => void;
@@ -24,11 +26,13 @@ interface TestManagerStore {
 export const useTestManagerStore = create<TestManagerStore>((set) => ({
     viewMode: 'projects',
     activeSuite: null,
+    activeProject: null,
     testCases: mockTestCases,
     projects: mockProjects,
 
     setViewMode: (mode) => set({ viewMode: mode }),
     setActiveSuite: (suite) => set({ activeSuite: suite }),
+    setActiveProject: (projectId) => set({ activeProject: projectId }),
 
     setTestCases: (cases) => set({ testCases: cases }),
     addTestCase: (testCase) => set((state) => ({ testCases: [testCase, ...state.testCases] })),

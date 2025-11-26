@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useTestManagerStore } from '../store/testManagerStore';
 import {
   LayoutDashboard,
   Settings,
@@ -34,6 +35,7 @@ interface SubMenuItem {
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
   const { logout } = useAuthStore();
+  const { activeProject } = useTestManagerStore();
   const navigate = useNavigate();
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
 
@@ -147,12 +149,28 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
               ) : (
                 <NavLink
                   to={item.to}
-                  className={({ isActive }) =>
-                    `flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? 'bg-black/5 text-gray-900 font-medium shadow-sm ring-1 ring-black/5' : 'text-gray-600 hover:bg-black/5 hover:text-gray-900'}`
-                  }
+                  className={({ isActive }) => {
+                    // Check if this item requires a project
+                    const requiresProject = ['/test-manager/cases', '/test-manager/suites', '/test-manager/plans'].includes(item.to);
+                    const isDisabled = requiresProject && !activeProject;
+
+                    return `flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 ${isActive
+                        ? 'bg-black/5 text-gray-900 font-medium shadow-sm ring-1 ring-black/5'
+                        : isDisabled
+                          ? 'text-gray-400 hover:bg-black/5 hover:text-gray-500 opacity-60'
+                          : 'text-gray-600 hover:bg-black/5 hover:text-gray-900'
+                      }`;
+                  }}
                 >
                   <span className="flex-shrink-0">{item.icon}</span>
-                  {!isCollapsed && <span className="text-sm">{item.label}</span>}
+                  {!isCollapsed && (
+                    <div className="flex-1">
+                      <span className="text-sm">{item.label}</span>
+                      {['/test-manager/cases', '/test-manager/suites', '/test-manager/plans'].includes(item.to) && !activeProject && (
+                        <span className="block text-xs text-gray-400 mt-0.5">Select project first</span>
+                      )}
+                    </div>
+                  )}
                 </NavLink>
               )}
             </li>
