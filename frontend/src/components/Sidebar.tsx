@@ -62,15 +62,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
       subItems: []
     },
     {
-      icon: <List size={20} />,
-      label: 'All Cases',
-      to: '/test-manager/cases',
-      subItems: []
-    },
-    {
       icon: <Layers size={20} />,
       label: 'Test Suites',
       to: '/test-manager/suites',
+      subItems: []
+    },
+    {
+      icon: <List size={20} />,
+      label: 'All Cases',
+      to: '/test-manager/cases',
       subItems: []
     },
     {
@@ -155,10 +155,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
                     const isDisabled = requiresProject && !activeProject;
 
                     return `flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 ${isActive
-                        ? 'bg-black/5 text-gray-900 font-medium shadow-sm ring-1 ring-black/5'
-                        : isDisabled
-                          ? 'text-gray-400 hover:bg-black/5 hover:text-gray-500 opacity-60'
-                          : 'text-gray-600 hover:bg-black/5 hover:text-gray-900'
+                      ? 'bg-black/5 text-gray-900 font-medium shadow-sm ring-1 ring-black/5'
+                      : isDisabled
+                        ? 'text-gray-400 hover:bg-black/5 hover:text-gray-500 opacity-60'
+                        : 'text-gray-600 hover:bg-black/5 hover:text-gray-900'
                       }`;
                   }}
                 >

@@ -5,7 +5,6 @@ import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 const TestPlansPage: React.FC = () => {
     const { activeProject } = useTestManagerStore();
 
-    // Show empty state if no project is selected
     if (!activeProject) {
         return (
             <EmptyProjectState

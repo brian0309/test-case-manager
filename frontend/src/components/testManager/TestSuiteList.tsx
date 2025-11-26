@@ -16,14 +16,19 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, onSuiteClick, 
         const cases = testCases.filter(c => c.suite === suiteName);
         const total = cases.length;
 
-        // Execution Status - Check unified status field
+        // Count all statuses
         const passed = cases.filter(c => [Status.Passed, Status.PassFixed].includes(c.status)).length;
-        const failed = cases.filter(c => [Status.Failed].includes(c.status)).length;
+        const failed = cases.filter(c => c.status === Status.Failed).length;
+        const retest = cases.filter(c => c.status === Status.Retest).length;
+        const skipped = cases.filter(c => c.status === Status.Skipped).length;
+        const draft = cases.filter(c => c.status === Status.Draft).length;
 
-        // Progress % (Count passed against total for simplicity)
+        // Progress calculation: passed tests as percentage of total
+        // This represents actual success/completion, not just execution
+        const executed = passed + failed + retest;
         const progress = total === 0 ? 0 : Math.round((passed / total) * 100);
 
-        return { total, passed, failed, progress };
+        return { total, passed, failed, retest, skipped, draft, executed, progress };
     };
 
     return (
@@ -76,30 +81,80 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, onSuiteClick, 
                                     </div>
 
                                     <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden flex">
-                                        <div
-                                            className="bg-green-500 h-full transition-all duration-500"
-                                            style={{ width: `${stats.progress}%` }}
-                                        />
+                                        {/* Passed - Green */}
+                                        {stats.passed > 0 && (
+                                            <div
+                                                className="bg-green-500 h-full transition-all duration-500"
+                                                style={{ width: `${(stats.passed / stats.total) * 100}%` }}
+                                            />
+                                        )}
+                                        {/* Failed - Red */}
                                         {stats.failed > 0 && (
                                             <div
-                                                className="bg-red-500 h-full transition-all duration-500 border-l border-white"
+                                                className="bg-red-500 h-full transition-all duration-500"
                                                 style={{ width: `${(stats.failed / stats.total) * 100}%` }}
+                                            />
+                                        )}
+                                        {/* Retest - Orange */}
+                                        {stats.retest > 0 && (
+                                            <div
+                                                className="bg-orange-500 h-full transition-all duration-500"
+                                                style={{ width: `${(stats.retest / stats.total) * 100}%` }}
+                                            />
+                                        )}
+                                        {/* Draft - Gray */}
+                                        {stats.draft > 0 && (
+                                            <div
+                                                className="bg-gray-400 h-full transition-all duration-500"
+                                                style={{ width: `${(stats.draft / stats.total) * 100}%` }}
+                                            />
+                                        )}
+                                        {/* Skipped - Blue */}
+                                        {stats.skipped > 0 && (
+                                            <div
+                                                className="bg-blue-500 h-full transition-all duration-500"
+                                                style={{ width: `${(stats.skipped / stats.total) * 100}%` }}
                                             />
                                         )}
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex gap-3 pt-4 border-t border-gray-50 mt-4">
-                                {stats.failed > 0 ? (
+                            <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-50 mt-4">
+                                {stats.passed > 0 && (
+                                    <div className="flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-50 px-2.5 py-1.5 rounded-full">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                                        {stats.passed} Passed
+                                    </div>
+                                )}
+                                {stats.failed > 0 && (
                                     <div className="flex items-center gap-1.5 text-xs font-medium text-red-600 bg-red-50 px-2.5 py-1.5 rounded-full">
                                         <AlertCircle className="h-3.5 w-3.5" />
                                         {stats.failed} Failed
                                     </div>
-                                ) : (
+                                )}
+                                {stats.retest > 0 && (
+                                    <div className="flex items-center gap-1.5 text-xs font-medium text-orange-600 bg-orange-50 px-2.5 py-1.5 rounded-full">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
+                                        {stats.retest} Retest
+                                    </div>
+                                )}
+                                {stats.draft > 0 && (
+                                    <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1.5 rounded-full">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                                        {stats.draft} Draft
+                                    </div>
+                                )}
+                                {stats.skipped > 0 && (
+                                    <div className="flex items-center gap-1.5 text-xs font-medium text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-full">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                                        {stats.skipped} Skipped
+                                    </div>
+                                )}
+                                {stats.total === 0 && (
                                     <div className="flex items-center gap-1.5 text-xs font-medium text-gray-400 px-2 py-1.5">
                                         <PieChart className="h-3.5 w-3.5" />
-                                        No failures
+                                        No test cases
                                     </div>
                                 )}
                             </div>

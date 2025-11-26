@@ -5,14 +5,14 @@ import { useTestManagerStore } from '../../store/testManagerStore';
 import { Project } from '../../types/testManager';
 
 const ProjectsPage: React.FC = () => {
-    const { projects, setProjects, setActiveProject, activeProject } = useTestManagerStore();
+    const { projects, setProjects, setActiveProject } = useTestManagerStore();
     const navigate = useNavigate();
 
     const handleProjectClick = (projectId: string) => {
         // Set the active project
         setActiveProject(projectId);
-        // Navigate to cases for this project
-        navigate('/test-manager/cases');
+        // Navigate to suites for this project
+        navigate('/test-manager/suites');
     };
 
     const handleCreateProject = () => {

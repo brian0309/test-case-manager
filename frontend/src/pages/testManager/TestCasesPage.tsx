@@ -69,7 +69,6 @@ const TestCasesPage: React.FC = () => {
         ? displayedCases.filter(c => c.projectId === activeProject)
         : displayedCases;
 
-    // Show empty state if no project is selected
     if (!activeProject) {
         return (
             <EmptyProjectState
