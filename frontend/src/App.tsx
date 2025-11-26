@@ -12,12 +12,16 @@ import AppLayout from "./components/AppLayout";
 import LoadingSpinner from "./components/LoadingSpinner";
 
 // Import the new page components
-import UsersPage from "./pages/users";
-import PostsPage from "./pages/posts";
-import MessagesPage from "./pages/messages";
+
 import CalendarPage from "./pages/calendar";
 import AnalyticsPage from "./pages/analytics";
-import ExamplePage from "./pages/ExamplePage";
+
+// Test Manager Pages
+import TestManagerLayout from "./pages/testManager/TestManagerLayout";
+import ProjectsPage from "./pages/testManager/ProjectsPage";
+import TestCasesPage from "./pages/testManager/TestCasesPage";
+import TestSuitesPage from "./pages/testManager/TestSuitesPage";
+import TestPlansPage from "./pages/testManager/TestPlansPage";
 
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
@@ -84,7 +88,7 @@ function App() {
   return (
     <>
       <Toaster position='top-right' />
-      
+
       <Routes>
         <Route element={<PublicRoute />}>
           <Route
@@ -103,13 +107,13 @@ function App() {
               </RedirectAuthenticatedUser>
             }
           />
-          <Route 
-            path='/verify-email' 
+          <Route
+            path='/verify-email'
             element={
               <RedirectAuthenticatedUser>
                 <EmailVerificationPage />
               </RedirectAuthenticatedUser>
-            } 
+            }
           />
           <Route
             path="/oauth-redirect"
@@ -136,7 +140,7 @@ function App() {
             }
           />
         </Route>
-        
+
         <Route element={
           <ProtectedRoute>
             <AppLayout />
@@ -144,17 +148,22 @@ function App() {
         }>
           <Route index element={<DashboardPage />} />
           <Route path='dashboard' element={<DashboardPage />} />
-          <Route path='users' element={<UsersPage />}>
-            <Route path=':id' element={<UsersPage />} />
-          </Route>
-          <Route path='posts' element={<PostsPage />} />
-          <Route path='messages' element={<MessagesPage />} />
+
           <Route path='calendar' element={<CalendarPage />} />
           <Route path='analytics' element={<AnalyticsPage />} />
-          <Route path='example' element={<ExamplePage />} />
+
           <Route path='settings' element={<SettingsPage />} />
+
+          {/* Test Manager Routes */}
+          <Route path='test-manager' element={<TestManagerLayout />}>
+            <Route index element={<Navigate to="/test-manager/projects" replace />} />
+            <Route path='projects' element={<ProjectsPage />} />
+            <Route path='cases' element={<TestCasesPage />} />
+            <Route path='suites' element={<TestSuitesPage />} />
+            <Route path='plans' element={<TestPlansPage />} />
+          </Route>
         </Route>
-        
+
         <Route path='*' element={<Navigate to='/' replace />} />
       </Routes>
     </>

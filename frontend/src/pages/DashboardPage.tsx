@@ -53,9 +53,9 @@ const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="m-4 mt-2 space-y-4 md:space-y-6">
       {/* Welcome Header */}
-      <div className="bg-white rounded-lg shadow p-4 md:p-6">
+      <div className="mac-card p-4 md:p-6">
         <h1 className="text-xl md:text-2xl font-bold text-gray-900">Welcome back, {user?.name || 'User'}! 👋</h1>
         <p className="text-gray-500 mt-1 text-sm md:text-base">Here's what's happening with your dashboard today.</p>
       </div>
@@ -68,16 +68,15 @@ const DashboardPage: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="bg-white rounded-lg shadow p-4 md:p-6"
+            className="mac-card p-4 md:p-6"
           >
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <p className="text-xs md:text-sm font-medium text-gray-500">{stat.name}</p>
                 <p className="text-xl md:text-2xl font-semibold text-gray-900 mt-1">{stat.value}</p>
-                <div className={`flex items-center mt-2 text-xs md:text-sm ${
-                  stat.changeType === 'increase' ? 'text-green-600' : 
+                <div className={`flex items-center mt-2 text-xs md:text-sm ${stat.changeType === 'increase' ? 'text-green-600' :
                   stat.changeType === 'decrease' ? 'text-red-600' : 'text-gray-500'
-                }`}>
+                  }`}>
                   {stat.changeType === 'increase' ? (
                     <ArrowUp className="w-3 h-3 md:w-4 md:h-4 mr-1" />
                   ) : stat.changeType === 'decrease' ? (
@@ -98,11 +97,11 @@ const DashboardPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Chart */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="lg:col-span-2 bg-white rounded-lg shadow p-4 md:p-6"
+          className="lg:col-span-2 mac-card p-4 md:p-6"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 md:mb-6 gap-3 sm:gap-0">
             <h2 className="text-base md:text-lg font-semibold text-gray-900">Activity Overview</h2>
@@ -128,11 +127,11 @@ const DashboardPage: React.FC = () => {
         </motion.div>
 
         {/* Recent Activity */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-white rounded-lg shadow overflow-hidden"
+          className="mac-card overflow-hidden"
         >
           <div className="p-4 md:p-6 border-b border-gray-200">
             <h2 className="text-base md:text-lg font-semibold text-gray-900">Recent Activity</h2>

@@ -11,6 +11,10 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@google/genai": "^1.30.0",
+    "@tiptap/extension-placeholder": "^2.2.4",
+    "@tiptap/react": "^2.2.4",
+    "@tiptap/starter-kit": "^2.2.4",
     "auth-tutorial": "file:..",
     "axios": "^1.7.3",
     "framer-motion": "^11.3.21",

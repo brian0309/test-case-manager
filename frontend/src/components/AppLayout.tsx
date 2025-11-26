@@ -1,5 +1,4 @@
-import React from "react";
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
@@ -12,7 +11,7 @@ const AppLayout: React.FC = () => {
     const handleResize = () => {
       const isMobileView = window.innerWidth < 1024;
       setIsMobile(isMobileView);
-      
+
       // On mobile, close sidebar by default
       if (isMobileView) {
         setIsSidebarOpen(false);
@@ -57,7 +56,7 @@ const AppLayout: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen">
       {/* Sidebar */}
       {/* Desktop: keep sidebar in layout flow. Mobile: render as fixed overlay so content doesn't shift. */}
       {isMobile ? (
@@ -89,10 +88,10 @@ const AppLayout: React.FC = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <Header toggleSidebar={toggleSidebar} />
-        
+
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto bg-gray-50 p-4 md:p-6">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 overflow-y-auto">
+          <div className="h-full">
             <Outlet />
           </div>
         </main>

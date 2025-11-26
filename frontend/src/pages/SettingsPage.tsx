@@ -37,7 +37,7 @@ const SettingsPage: React.FC = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen m-4 mt-2">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Header */}
                 <div className="mb-8">
@@ -56,11 +56,10 @@ const SettingsPage: React.FC = () => {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`py-3 px-1 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                                    activeTab === tab.id
-                                        ? "border-blue-600 text-blue-600"
-                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                                }`}
+                                className={`py-3 px-1 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === tab.id
+                                    ? "border-blue-600 text-blue-600"
+                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                    }`}
                             >
                                 {tab.label}
                             </button>
@@ -92,7 +91,7 @@ const SettingsPage: React.FC = () => {
 // General Tab Component
 const GeneralTab: React.FC<GeneralTabProps> = ({ user }) => {
     return (
-        <div className="bg-white rounded-lg shadow-sm">
+        <div className="mac-card">
             <div className="p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-6">Basics</h2>
 
@@ -254,7 +253,7 @@ const SecurityTab = () => {
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="mac-card p-6">
             <div className="max-w-2xl">
                 <h2 className="text-lg font-semibold text-gray-900 mb-2">Change Password</h2>
                 <p className="text-sm text-gray-500 mb-6">Update your account password</p>
@@ -323,11 +322,10 @@ const SecurityTab = () => {
                             whileTap={{ scale: 0.99 }}
                             type="submit"
                             disabled={isLoading}
-                            className={`px-6 py-2.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-                                isLoading 
-                                    ? 'bg-blue-400' 
-                                    : 'bg-blue-600 hover:bg-blue-700'
-                            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+                            className={`px-6 py-2.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${isLoading
+                                ? 'bg-blue-400'
+                                : 'bg-blue-600 hover:bg-blue-700'
+                                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
                         >
                             {isLoading ? (
                                 <>
@@ -351,7 +349,7 @@ const SecurityTab = () => {
 // Placeholder Tab Component
 const PlaceholderTab: React.FC<PlaceholderTabProps> = ({ title }) => {
     return (
-        <div className="bg-white rounded-lg shadow-sm p-6">
+        <div className="mac-card p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-2">{title}</h2>
             <p className="text-sm text-gray-500">This section is coming soon...</p>
         </div>

@@ -1,20 +1,19 @@
-import React from "react";
+import React, { useState } from "react";
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { 
-  LayoutDashboard, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Settings,
   LogOut,
-  Users,
-  FileText,
   Calendar,
-  MessageSquare,
   PieChart,
   ChevronLeft,
   ChevronRight,
-  Lightbulb
+  Folder,
+  List,
+  Layers,
+  ClipboardList,
 } from 'lucide-react';
-import { useState } from 'react';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -48,98 +47,94 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
   };
 
   const menuItems: MenuItem[] = [
-    { 
-      icon: <LayoutDashboard size={20} />, 
-      label: 'Dashboard', 
+    {
+      icon: <LayoutDashboard size={20} />,
+      label: 'Dashboard',
       to: '/dashboard',
       subItems: []
     },
-    { 
-      icon: <Users size={20} />, 
-      label: 'Users', 
-      to: '#',
-      subItems: [
-        { label: 'All Users', to: '/users' },
-        { label: 'Add New', to: '/users/new' },
-        { label: 'Roles', to: '/users/roles' },
-      ]
-    },
-    { 
-      icon: <FileText size={20} />, 
-      label: 'Posts', 
-      to: '/posts',
+    {
+      icon: <Folder size={20} />,
+      label: 'Projects',
+      to: '/test-manager/projects',
       subItems: []
     },
-    { 
-      icon: <MessageSquare size={20} />, 
-      label: 'Messages', 
-      to: '/messages',
+    {
+      icon: <List size={20} />,
+      label: 'All Cases',
+      to: '/test-manager/cases',
       subItems: []
     },
-    { 
-      icon: <Calendar size={20} />, 
-      label: 'Calendar', 
+    {
+      icon: <Layers size={20} />,
+      label: 'Test Suites',
+      to: '/test-manager/suites',
+      subItems: []
+    },
+    {
+      icon: <ClipboardList size={20} />,
+      label: 'Plans',
+      to: '/test-manager/plans',
+      subItems: []
+    },
+    {
+      icon: <Calendar size={20} />,
+      label: 'Calendar',
       to: '/calendar',
       subItems: []
     },
-    { 
-      icon: <PieChart size={20} />, 
-      label: 'Analytics', 
+    {
+      icon: <PieChart size={20} />,
+      label: 'Analytics',
       to: '/analytics',
-      subItems: []
-    },
-    { 
-      icon: <Lightbulb size={20} />, 
-      label: 'Example', 
-      to: '/example',
       subItems: []
     },
   ];
 
   return (
-    <div className={`bg-white h-screen flex flex-col border-r border-gray-200 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
+    <div className={`glass-sidebar h-screen flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
       {/* Logo */}
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        {!isCollapsed && <h1 className="text-xl font-bold text-blue-600">Admin Panel</h1>}
-        <button 
+      <div className="p-4 flex items-center justify-between">
+        {!isCollapsed && <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Admin Panel</h1>}
+        <button
           onClick={toggleSidebar}
-          className="p-1 rounded-md hover:bg-gray-100"
+          className="p-1.5 rounded-md hover:bg-black/5 text-gray-500 transition-colors"
         >
           {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
         </button>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4">
-        <ul className="space-y-1 px-2">
+      <nav className="flex-1 overflow-y-auto py-2">
+        <ul className="space-y-0.5 px-3">
           {menuItems.map((item, index) => (
             <li key={index}>
               {item.subItems.length > 0 ? (
                 <>
                   <button
                     onClick={() => toggleSubMenu(item.label)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${activeSubMenu === item.label ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}
+                    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 ${activeSubMenu === item.label ? 'bg-black/5 text-gray-900 font-medium' : 'text-gray-600 hover:bg-black/5 hover:text-gray-900'}`}
                   >
                     <span className="flex-shrink-0">{item.icon}</span>
                     {!isCollapsed && (
                       <>
-                        <span className="flex-1 text-left">{item.label}</span>
+                        <span className="flex-1 text-left text-sm">{item.label}</span>
                         {activeSubMenu === item.label ? (
-                          <ChevronRight className="transform rotate-90" size={16} />
+                          <ChevronRight className="transform rotate-90 text-gray-400" size={14} />
                         ) : (
-                          <ChevronRight size={16} />
+                          <ChevronRight className="text-gray-400" size={14} />
                         )}
                       </>
                     )}
                   </button>
                   {!isCollapsed && activeSubMenu === item.label && (
-                    <ul className="ml-8 mt-1 space-y-1">
+                    <ul className="ml-4 mt-0.5 space-y-0.5 border-l border-gray-200 pl-2">
                       {item.subItems.map((subItem, subIndex) => (
                         <li key={subIndex}>
                           <NavLink
                             to={subItem.to}
                             className={({ isActive }) =>
-                              `block px-4 py-2 text-sm rounded-lg transition-colors ${isActive ? 'text-blue-600 bg-blue-50' : 'text-gray-600 hover:bg-gray-50'}`
+                              `block px-3 py-1.5 text-sm rounded-md transition-colors ${isActive ? 'text-gray-900 bg-black/5 font-medium' : 'text-gray-600 hover:text-gray-900 hover:bg-black/5'}`
                             }
                           >
                             {subItem.label}
@@ -153,11 +148,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
                 <NavLink
                   to={item.to}
                   className={({ isActive }) =>
-                    `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}`
+                    `flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? 'bg-black/5 text-gray-900 font-medium shadow-sm ring-1 ring-black/5' : 'text-gray-600 hover:bg-black/5 hover:text-gray-900'}`
                   }
                 >
                   <span className="flex-shrink-0">{item.icon}</span>
-                  {!isCollapsed && <span>{item.label}</span>}
+                  {!isCollapsed && <span className="text-sm">{item.label}</span>}
                 </NavLink>
               )}
             </li>
@@ -166,22 +161,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
       </nav>
 
       {/* User Profile & Settings */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-3 border-t border-gray-200/50">
         <NavLink
           to="/settings"
           className={({ isActive }) =>
-            `flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}`
+            `flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${isActive ? 'bg-black/5 text-gray-900' : 'text-gray-600 hover:bg-black/5 hover:text-gray-900'}`
           }
         >
           <Settings size={20} />
-          {!isCollapsed && <span>Settings</span>}
+          {!isCollapsed && <span className="text-sm">Settings</span>}
         </NavLink>
         <button
           onClick={handleLogout}
-          className="w-full flex items-center space-x-3 px-4 py-3 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+          className="w-full flex items-center space-x-3 px-3 py-2 text-red-600 rounded-lg hover:bg-red-50 transition-colors mt-1"
         >
           <LogOut size={20} />
-          {!isCollapsed && <span>Logout</span>}
+          {!isCollapsed && <span className="text-sm">Logout</span>}
         </button>
       </div>
     </div>
