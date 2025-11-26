@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useTestManagerStore } from '../../store/testManagerStore';
 import { TestCase, Priority, Status, HistoryEntry } from '../../types/testManager';
 import { X, Wand2, Plus, ChevronDown, History } from 'lucide-react';
 import { generateTestSteps } from '../../services/geminiService';
@@ -17,6 +18,9 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showHistory, setShowHistory] = useState(false);
+
+    // Store access for projects/suites selection
+    const { projects, testSuites, fetchTestSuites } = useTestManagerStore();
 
     // Combobox state
     const [isAreaDropdownOpen, setIsAreaDropdownOpen] = useState(false);
@@ -163,6 +167,40 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                 className="w-full text-2xl font-semibold text-gray-900 border-none p-0 focus:ring-0 placeholder:text-gray-300 bg-transparent"
                                 placeholder="Test Case Title"
                             />
+                        </div>
+                        {/* Project & Suite selectors */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Project</label>
+                                <select
+                                    value={localCase.projectId || ''}
+                                    onChange={(e) => {
+                                        const projectId = e.target.value;
+                                        setLocalCase(prev => prev ? ({ ...prev, projectId, suite: '' }) : null);
+                                        if (projectId) fetchTestSuites?.(projectId);
+                                    }}
+                                    className="w-full rounded-lg py-2 px-3 text-sm font-medium border bg-white"
+                                >
+                                    <option value="">Select project...</option>
+                                    {projects.map(p => (
+                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Test Suite</label>
+                                <select
+                                    value={localCase.suite || ''}
+                                    onChange={(e) => setLocalCase(prev => prev ? ({ ...prev, suite: e.target.value }) : null)}
+                                    className="w-full rounded-lg py-2 px-3 text-sm font-medium border bg-white"
+                                >
+                                    <option value="">Select suite...</option>
+                                    {testSuites.filter(s => s.projectId === localCase.projectId).map(s => (
+                                        <option key={s.id} value={s.name}>{s.name}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">

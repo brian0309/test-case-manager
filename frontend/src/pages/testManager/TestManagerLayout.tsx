@@ -5,7 +5,15 @@ import { useTestManagerStore } from '../../store/testManagerStore';
 import { ViewMode } from '../../types/testManager';
 
 const TestManagerLayout: React.FC = () => {
-    const { viewMode, setViewMode, activeSuite, setActiveSuite, activeProject, setActiveProject, projects } = useTestManagerStore();
+    const { 
+        viewMode, 
+        setViewMode, 
+        activeSuite, 
+        activeSuiteId,
+        setActiveSuite, 
+        setActiveSuiteId,
+        activeProject,
+    } = useTestManagerStore();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -20,19 +28,40 @@ const TestManagerLayout: React.FC = () => {
 
     const handleViewChange = (mode: ViewMode) => {
         setViewMode(mode);
-        setActiveSuite(null);
+        // Only clear suite when going to projects view
+        if (mode === 'projects') {
+            setActiveSuite(null);
+            setActiveSuiteId(null);
+        }
         navigate(`/test-manager/${mode}`);
     };
 
     const handleNew = () => {
-        // Handle new item creation based on view mode
-        // This logic might need to be moved or shared
-        console.log('New item clicked');
+        // Open the create modal for the current view.
+        if (viewMode === 'projects') {
+            navigate('/test-manager/projects', { state: { openNew: true } });
+            return;
+        }
+
+        if (viewMode === 'suites') {
+            navigate('/test-manager/suites', { state: { openNewSuite: true } });
+            return;
+        }
+
+        if (viewMode === 'cases') {
+            // Open the new test case modal on the cases page
+            navigate('/test-manager/cases', { state: { openNewCase: true } });
+            return;
+        }
+
+        // Default: go to projects and open projects modal
+        setViewMode('projects');
+        navigate('/test-manager/projects', { state: { openNew: true } });
     };
 
     const handleNewCase = () => {
-        // Open modal logic - might need to be lifted up or handled via store/events
-        console.log('New case clicked');
+        // Navigate to the cases view and request the page to open the "new case" modal
+        navigate('/test-manager/cases', { state: { openNewCase: true } });
     };
 
     return (
@@ -44,9 +73,8 @@ const TestManagerLayout: React.FC = () => {
                     onNew={handleNew}
                     onNewCase={handleNewCase}
                     activeSuite={activeSuite}
+                    activeSuiteId={activeSuiteId}
                     activeProject={activeProject}
-                    setActiveProject={setActiveProject}
-                    projects={projects}
                     showEditToggle={viewMode === 'cases'}
                 />
                 <div className="flex-1 overflow-auto relative">

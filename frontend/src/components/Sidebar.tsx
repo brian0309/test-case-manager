@@ -26,6 +26,7 @@ interface MenuItem {
   label: string;
   to: string;
   subItems: SubMenuItem[];
+  requiresProject?: boolean;
 }
 
 interface SubMenuItem {
@@ -35,9 +36,11 @@ interface SubMenuItem {
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
   const { logout } = useAuthStore();
-  const { activeProject } = useTestManagerStore();
+  const { activeProject, projects, setActiveSuite, setActiveSuiteId } = useTestManagerStore();
   const navigate = useNavigate();
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
+
+  const currentProject = projects.find(p => p.id === activeProject);
 
   const handleLogout = () => {
     logout();
@@ -46,6 +49,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
 
   const toggleSubMenu = (menu: string): void => {
     setActiveSubMenu(activeSubMenu === menu ? null : menu);
+  };
+
+  // Handle clicking on "All Cases" - clear suite selection to show all cases
+  const handleAllCasesClick = () => {
+    setActiveSuite(null);
+    setActiveSuiteId(null);
   };
 
   const menuItems: MenuItem[] = [
@@ -65,19 +74,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
       icon: <Layers size={20} />,
       label: 'Test Suites',
       to: '/test-manager/suites',
-      subItems: []
+      subItems: [],
+      requiresProject: true
     },
     {
       icon: <List size={20} />,
       label: 'All Cases',
       to: '/test-manager/cases',
-      subItems: []
+      subItems: [],
+      requiresProject: true
     },
     {
       icon: <ClipboardList size={20} />,
       label: 'Plans',
       to: '/test-manager/plans',
-      subItems: []
+      subItems: [],
+      requiresProject: true
     },
     {
       icon: <Calendar size={20} />,
@@ -108,6 +120,23 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-2">
+        {/* Active Project Indicator */}
+        {!isCollapsed && activeProject && currentProject && (
+          <div className="px-4 py-2 mb-2">
+            <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+              <div className="flex items-center gap-2">
+                <div className={`h-6 w-6 rounded ${currentProject.color || 'bg-blue-500'} flex items-center justify-center`}>
+                  <Folder size={12} className="text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-blue-600 font-medium">Active Project</p>
+                  <p className="text-sm font-semibold text-gray-900 truncate">{currentProject.name}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <ul className="space-y-0.5 px-3">
           {menuItems.map((item, index) => (
             <li key={index}>
@@ -149,10 +178,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
               ) : (
                 <NavLink
                   to={item.to}
+                  onClick={item.to === '/test-manager/cases' ? handleAllCasesClick : undefined}
                   className={({ isActive }) => {
                     // Check if this item requires a project
-                    const requiresProject = ['/test-manager/cases', '/test-manager/suites', '/test-manager/plans'].includes(item.to);
-                    const isDisabled = requiresProject && !activeProject;
+                    const isDisabled = item.requiresProject && !activeProject;
 
                     return `flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 ${isActive
                       ? 'bg-black/5 text-gray-900 font-medium shadow-sm ring-1 ring-black/5'
@@ -166,7 +195,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
                   {!isCollapsed && (
                     <div className="flex-1">
                       <span className="text-sm">{item.label}</span>
-                      {['/test-manager/cases', '/test-manager/suites', '/test-manager/plans'].includes(item.to) && !activeProject && (
+                      {item.requiresProject && !activeProject && (
                         <span className="block text-xs text-gray-400 mt-0.5">Select project first</span>
                       )}
                     </div>

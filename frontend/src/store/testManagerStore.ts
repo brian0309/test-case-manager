@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { ViewMode, TestCase, Project, TestSuite, Priority, Status, Tester, HistoryEntry } from '../types/testManager';
 import * as testManagerApi from '../services/testManagerApi';
 import {
@@ -72,6 +73,8 @@ interface TestManagerStore {
     setActiveSuite: (suite: string | null) => void;
     setActiveSuiteId: (suiteId: string | null) => void;
     setActiveProject: (projectId: string | null) => void;
+    setActiveSuiteWithId: (suiteId: string, suiteName: string) => void;
+    clearActiveContext: () => void;
     clearError: () => void;
 
     // Project actions
@@ -103,24 +106,28 @@ interface TestManagerStore {
     addProject: (project: Project) => void;
 }
 
-export const useTestManagerStore = create<TestManagerStore>((set) => ({
-    // Initial state
-    viewMode: 'projects',
-    activeSuite: null,
-    activeSuiteId: null,
-    activeProject: null,
-    testCases: [],
-    projects: [],
-    testSuites: [],
-    isLoading: false,
-    error: null,
+export const useTestManagerStore = create<TestManagerStore>()(
+    persist(
+        (set) => ({
+            // Initial state
+            viewMode: 'projects',
+            activeSuite: null,
+            activeSuiteId: null,
+            activeProject: null,
+            testCases: [],
+            projects: [],
+            testSuites: [],
+            isLoading: false,
+            error: null,
 
-    // View actions
-    setViewMode: (mode) => set({ viewMode: mode }),
-    setActiveSuite: (suite) => set({ activeSuite: suite }),
-    setActiveSuiteId: (suiteId) => set({ activeSuiteId: suiteId }),
-    setActiveProject: (projectId) => set({ activeProject: projectId }),
-    clearError: () => set({ error: null }),
+            // View actions
+            setViewMode: (mode) => set({ viewMode: mode }),
+            setActiveSuite: (suite) => set({ activeSuite: suite }),
+            setActiveSuiteId: (suiteId) => set({ activeSuiteId: suiteId }),
+            setActiveProject: (projectId) => set({ activeProject: projectId }),
+            setActiveSuiteWithId: (suiteId, suiteName) => set({ activeSuiteId: suiteId, activeSuite: suiteName }),
+            clearActiveContext: () => set({ activeSuite: null, activeSuiteId: null, activeProject: null }),
+            clearError: () => set({ error: null }),
 
     // =========================================================================
     // PROJECT ACTIONS
@@ -342,4 +349,16 @@ export const useTestManagerStore = create<TestManagerStore>((set) => ({
     })),
     setProjects: (projects) => set({ projects }),
     addProject: (project) => set((state) => ({ projects: [project, ...state.projects] })),
-}));
+        }),
+        {
+            name: 'test-manager-storage', // localStorage key
+            partialize: (state) => ({
+                // Only persist these specific fields - not the full data or loading states
+                activeProject: state.activeProject,
+                activeSuite: state.activeSuite,
+                activeSuiteId: state.activeSuiteId,
+                viewMode: state.viewMode,
+            }),
+        }
+    )
+);
