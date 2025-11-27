@@ -1,9 +1,12 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Bold, Italic, List, ListOrdered, Strikethrough, Heading1, Heading2, Quote } from 'lucide-react';
+import { Bold, Italic, List, ListOrdered, Strikethrough, Heading1, Heading2, Quote, ImagePlus, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { uploadImage, validateImageFile } from '../../utils/imageUpload';
 
 interface RichTextEditorProps {
     content: string;
@@ -14,9 +17,19 @@ interface RichTextEditorProps {
 }
 
 const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBlur, placeholder = 'Write something...', editable = true }) => {
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
     const editor = useEditor({
         extensions: [
             StarterKit,
+            Image.configure({
+                inline: true,
+                allowBase64: false,
+                HTMLAttributes: {
+                    class: 'rounded-lg max-w-full h-auto',
+                },
+            }),
             Placeholder.configure({
                 placeholder: placeholder,
             }),
@@ -33,6 +46,33 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
             attributes: {
                 class: 'prose prose-sm sm:prose-base focus:outline-none min-h-[200px] text-gray-700 leading-relaxed max-w-none',
             },
+            handleDrop: (_view: any, event: any, _slice: any, moved: any) => {
+                if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
+                    const file = event.dataTransfer.files[0];
+                    if (file.type.startsWith('image/')) {
+                        event.preventDefault();
+                        handleImageUpload(file);
+                        return true;
+                    }
+                }
+                return false;
+            },
+            handlePaste: (_view: any, event: any) => {
+                const items = event.clipboardData?.items;
+                if (items) {
+                    for (let i = 0; i < items.length; i++) {
+                        if (items[i].type.startsWith('image/')) {
+                            const file = items[i].getAsFile();
+                            if (file) {
+                                event.preventDefault();
+                                handleImageUpload(file);
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            },
         },
     });
 
@@ -42,6 +82,42 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
             editor.commands.setContent(content);
         }
     }, [content, editor]);
+
+    // Handle image upload
+    const handleImageUpload = async (file: File) => {
+        if (!editor) return;
+
+        // Validate file
+        const validationError = validateImageFile(file);
+        if (validationError) {
+            toast.error(validationError);
+            return;
+        }
+
+        setIsUploading(true);
+        try {
+            const url = await uploadImage(file);
+            editor.chain().focus().setImage({ src: url }).run();
+            toast.success('Image uploaded successfully');
+        } catch (error) {
+            console.error('Image upload failed:', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to upload image');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    // Handle file selection from input
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            handleImageUpload(file);
+        }
+        // Reset input value so the same file can be selected again
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
 
     if (!editor) return null;
 
@@ -57,8 +133,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
         <button
             onClick={onClick}
             className={`p-1.5 rounded-md transition-colors ${isActive
-                    ? 'bg-blue-100 text-blue-600'
-                    : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+                ? 'bg-blue-100 text-blue-600'
+                : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
                 }`}
         >
             <Icon className="h-4 w-4" strokeWidth={2.5} />
@@ -110,6 +186,29 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
                         onClick={() => editor.chain().focus().toggleBlockquote().run()}
                         isActive={editor.isActive('blockquote')}
                         icon={Quote}
+                    />
+                    <div className="w-px h-4 bg-gray-200 mx-1" />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className={`p-1.5 rounded-md transition-colors ${isUploading
+                            ? 'text-gray-300 cursor-not-allowed'
+                            : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+                            }`}
+                        title="Insert image"
+                    >
+                        {isUploading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2.5} />
+                        ) : (
+                            <ImagePlus className="h-4 w-4" strokeWidth={2.5} />
+                        )}
+                    </button>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
                     />
                 </div>
             )}

@@ -37,6 +37,17 @@ This repo is a full-stack MERN authentication example (TypeScript). The goal of 
   - If adding endpoints that will be called from the frontend, update frontend API URL handling (`frontend` uses `VITE_API_URL` / relative `/api/auth`) and ensure CORS/credentials are configured.
   - For deployment changes, remember the two deployment modes: monolithic (backend serves `frontend/dist`) vs separate Vercel projects. Keep `VERCEL` checks in `backend/index.ts` in mind when modifying server startup.
 
+- Frontend API patterns (CRITICAL: always follow this pattern)
+  - **ALWAYS** use the `API_URL` constant from `frontend/src/utils/api.ts` for all API calls
+  - **NEVER** use hardcoded URLs like `/api/...` or relative paths directly in API calls
+  - Example of CORRECT usage: `axios.post(\`${API_URL}/upload/presigned-url\`, ...)`
+  - Example of WRONG usage: `axios.post("/api/upload/presigned-url", ...)` ❌
+  - The `API_URL` automatically handles different environments:
+    - Development: uses `VITE_DEV_API_URL` (default: `/api`)
+    - Production: uses `VITE_API_URL` or falls back to `/api`
+  - All API calls must include `withCredentials: true` for cookie-based auth
+  - See `frontend/src/store/authStore.ts` or `frontend/src/services/testManagerApi.ts` for reference implementations
+
 - Quick places to look for examples
   - JWT + cookie pattern: `backend/utils/generateTokenAndSetCookie.ts` and `backend/middleware/verifyToken.ts`
   - Auth flows: `backend/controllers/auth.controller.ts` and `backend/routes/auth.route.ts`
