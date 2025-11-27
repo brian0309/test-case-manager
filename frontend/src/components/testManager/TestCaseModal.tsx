@@ -13,9 +13,11 @@ interface TestCaseModalProps {
     availableAreas: string[];
     onClose: () => void;
     onSave: (updatedCase: TestCase) => Promise<TestCase | void>;
+    // Called when user wants to go back to view mode (passes current edited case)
+    onBack?: (updatedCase: TestCase) => void;
 }
 
-const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas, onClose, onSave }) => {
+const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas, onClose, onSave, onBack }) => {
     const [localCase, setLocalCase] = useState<TestCase | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -527,10 +529,17 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                             Changes are saved automatically
                         </p>
                         <button
-                            onClick={onClose}
+                            onClick={() => {
+                                // If onBack provided, call it with current local case to return to view mode
+                                if (localCase && typeof onBack === 'function') {
+                                    onBack(localCase);
+                                } else {
+                                    onClose();
+                                }
+                            }}
                             className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
                         >
-                            Close
+                            Back
                         </button>
                     </div>
                 </div>

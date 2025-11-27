@@ -306,6 +306,7 @@ const TestManagerPage: React.FC = () => {
                     availableAreas={uniqueAreas}
                     onClose={() => setSelectedCase(null)}
                     onSave={handleSaveCase}
+                    onBack={() => setSelectedCase(null)}
                 />
             )}
         </div>

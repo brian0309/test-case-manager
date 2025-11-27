@@ -202,6 +202,11 @@ const TestCasesPage: React.FC = () => {
                     availableAreas={uniqueAreas}
                     onClose={() => setSelectedCase(null)}
                     onSave={handleSaveCase}
+                    onBack={(updatedCase) => {
+                        // Close editor and reopen view modal with updated values
+                        setSelectedCase(null);
+                        setViewCase(updatedCase);
+                    }}
                 />
             )}
         </div>

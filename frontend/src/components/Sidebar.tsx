@@ -109,7 +109,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
     <div className={`glass-sidebar h-screen flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
       {/* Logo */}
       <div className="p-4 flex items-center justify-between">
-        {!isCollapsed && <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Admin Panel</h1>}
+        {!isCollapsed && <h1 className="text-xl font-semibold text-gray-900 tracking-tight">Test Case Manager</h1>}
         <button
           onClick={toggleSidebar}
           className="p-1.5 rounded-md hover:bg-black/5 text-gray-500 transition-colors"
