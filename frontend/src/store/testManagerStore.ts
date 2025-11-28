@@ -62,6 +62,7 @@ interface TestManagerStore {
     activeSuite: string | null;
     activeSuiteId: string | null;
     activeProject: string | null;
+    activeArea: string | null;
     testCases: TestCase[];
     projects: Project[];
     testSuites: TestSuite[];
@@ -73,6 +74,7 @@ interface TestManagerStore {
     setActiveSuite: (suite: string | null) => void;
     setActiveSuiteId: (suiteId: string | null) => void;
     setActiveProject: (projectId: string | null) => void;
+    setActiveArea: (area: string | null) => void;
     setActiveSuiteWithId: (suiteId: string, suiteName: string) => void;
     clearActiveContext: () => void;
     clearError: () => void;
@@ -114,6 +116,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
             activeSuite: null,
             activeSuiteId: null,
             activeProject: null,
+            activeArea: null,
             testCases: [],
             projects: [],
             testSuites: [],
@@ -124,237 +127,239 @@ export const useTestManagerStore = create<TestManagerStore>()(
             setViewMode: (mode) => set({ viewMode: mode }),
             setActiveSuite: (suite) => set({ activeSuite: suite }),
             setActiveSuiteId: (suiteId) => set({ activeSuiteId: suiteId }),
-            setActiveProject: (projectId) => set({ activeProject: projectId, testSuites: [], testCases: [] }),
+            setActiveProject: (projectId) => set({ activeProject: projectId, testSuites: [], testCases: [], activeArea: null }),
+            setActiveArea: (area) => set({ activeArea: area }),
             setActiveSuiteWithId: (suiteId, suiteName) => set({ activeSuiteId: suiteId, activeSuite: suiteName }),
-            clearActiveContext: () => set({ activeSuite: null, activeSuiteId: null, activeProject: null }),
+            clearActiveContext: () => set({ activeSuite: null, activeSuiteId: null, activeProject: null, activeArea: null }),
             clearError: () => set({ error: null }),
 
-    // =========================================================================
-    // PROJECT ACTIONS
-    // =========================================================================
-    fetchProjects: async () => {
-        set({ error: null });
-        try {
-            const response = await testManagerApi.getProjects();
-            const projects = response.map(mapProjectResponse);
-            set({ projects });
-        } catch (error: any) {
-            set({ error: error.message });
-        }
-    },
+            // =========================================================================
+            // PROJECT ACTIONS
+            // =========================================================================
+            fetchProjects: async () => {
+                set({ error: null });
+                try {
+                    const response = await testManagerApi.getProjects();
+                    const projects = response.map(mapProjectResponse);
+                    set({ projects });
+                } catch (error: any) {
+                    set({ error: error.message });
+                }
+            },
 
-    createProject: async (data) => {
-        set({ isLoading: true, error: null });
-        try {
-            const response = await testManagerApi.createProject(data);
-            const project = mapProjectResponse(response);
-            set((state) => ({
-                projects: [project, ...state.projects],
-                isLoading: false,
-            }));
-            return project;
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
-            throw error;
-        }
-    },
+            createProject: async (data) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await testManagerApi.createProject(data);
+                    const project = mapProjectResponse(response);
+                    set((state) => ({
+                        projects: [project, ...state.projects],
+                        isLoading: false,
+                    }));
+                    return project;
+                } catch (error: any) {
+                    set({ error: error.message, isLoading: false });
+                    throw error;
+                }
+            },
 
-    updateProject: async (id, data) => {
-        set({ isLoading: true, error: null });
-        try {
-            const response = await testManagerApi.updateProject(id, data);
-            const project = mapProjectResponse(response);
-            set((state) => ({
-                projects: state.projects.map((p) => (p.id === id ? project : p)),
-                isLoading: false,
-            }));
-            return project;
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
-            throw error;
-        }
-    },
+            updateProject: async (id, data) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await testManagerApi.updateProject(id, data);
+                    const project = mapProjectResponse(response);
+                    set((state) => ({
+                        projects: state.projects.map((p) => (p.id === id ? project : p)),
+                        isLoading: false,
+                    }));
+                    return project;
+                } catch (error: any) {
+                    set({ error: error.message, isLoading: false });
+                    throw error;
+                }
+            },
 
-    deleteProject: async (id) => {
-        set({ isLoading: true, error: null });
-        try {
-            await testManagerApi.deleteProject(id);
-            set((state) => ({
-                projects: state.projects.filter((p) => p.id !== id),
-                isLoading: false,
-            }));
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
-            throw error;
-        }
-    },
+            deleteProject: async (id) => {
+                set({ isLoading: true, error: null });
+                try {
+                    await testManagerApi.deleteProject(id);
+                    set((state) => ({
+                        projects: state.projects.filter((p) => p.id !== id),
+                        isLoading: false,
+                    }));
+                } catch (error: any) {
+                    set({ error: error.message, isLoading: false });
+                    throw error;
+                }
+            },
 
-    // =========================================================================
-    // TEST SUITE ACTIONS
-    // =========================================================================
-    fetchTestSuites: async (projectId) => {
-        set({ error: null });
-        try {
-            const response = await testManagerApi.getTestSuites(projectId);
-            const testSuites = response.map(mapTestSuiteResponse);
-            set({ testSuites });
-        } catch (error: any) {
-            set({ error: error.message });
-        }
-    },
+            // =========================================================================
+            // TEST SUITE ACTIONS
+            // =========================================================================
+            fetchTestSuites: async (projectId) => {
+                set({ error: null });
+                try {
+                    const response = await testManagerApi.getTestSuites(projectId);
+                    const testSuites = response.map(mapTestSuiteResponse);
+                    set({ testSuites });
+                } catch (error: any) {
+                    set({ error: error.message });
+                }
+            },
 
-    createTestSuite: async (projectId, data) => {
-        set({ isLoading: true, error: null });
-        try {
-            const response = await testManagerApi.createTestSuite(projectId, data);
-            const suite = mapTestSuiteResponse(response);
-            set((state) => ({
-                testSuites: [suite, ...state.testSuites],
-                isLoading: false,
-            }));
-            return suite;
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
-            throw error;
-        }
-    },
+            createTestSuite: async (projectId, data) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await testManagerApi.createTestSuite(projectId, data);
+                    const suite = mapTestSuiteResponse(response);
+                    set((state) => ({
+                        testSuites: [suite, ...state.testSuites],
+                        isLoading: false,
+                    }));
+                    return suite;
+                } catch (error: any) {
+                    set({ error: error.message, isLoading: false });
+                    throw error;
+                }
+            },
 
-    updateTestSuite: async (id, data) => {
-        set({ isLoading: true, error: null });
-        try {
-            const response = await testManagerApi.updateTestSuite(id, data);
-            const suite = mapTestSuiteResponse(response);
-            set((state) => ({
-                testSuites: state.testSuites.map((s) => (s.id === id ? suite : s)),
-                isLoading: false,
-            }));
-            return suite;
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
-            throw error;
-        }
-    },
+            updateTestSuite: async (id, data) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await testManagerApi.updateTestSuite(id, data);
+                    const suite = mapTestSuiteResponse(response);
+                    set((state) => ({
+                        testSuites: state.testSuites.map((s) => (s.id === id ? suite : s)),
+                        isLoading: false,
+                    }));
+                    return suite;
+                } catch (error: any) {
+                    set({ error: error.message, isLoading: false });
+                    throw error;
+                }
+            },
 
-    deleteTestSuite: async (id) => {
-        set({ isLoading: true, error: null });
-        try {
-            await testManagerApi.deleteTestSuite(id);
-            set((state) => ({
-                testSuites: state.testSuites.filter((s) => s.id !== id),
-                isLoading: false,
-            }));
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
-            throw error;
-        }
-    },
+            deleteTestSuite: async (id) => {
+                set({ isLoading: true, error: null });
+                try {
+                    await testManagerApi.deleteTestSuite(id);
+                    set((state) => ({
+                        testSuites: state.testSuites.filter((s) => s.id !== id),
+                        isLoading: false,
+                    }));
+                } catch (error: any) {
+                    set({ error: error.message, isLoading: false });
+                    throw error;
+                }
+            },
 
-    // =========================================================================
-    // TEST CASE ACTIONS
-    // =========================================================================
-    fetchTestCases: async (suiteId) => {
-        set({ error: null });
-        try {
-            const response = await testManagerApi.getTestCases(suiteId);
-            const testCases = response.map(mapTestCaseResponse);
-            set({ testCases });
-        } catch (error: any) {
-            set({ error: error.message });
-        }
-    },
+            // =========================================================================
+            // TEST CASE ACTIONS
+            // =========================================================================
+            fetchTestCases: async (suiteId) => {
+                set({ error: null });
+                try {
+                    const response = await testManagerApi.getTestCases(suiteId);
+                    const testCases = response.map(mapTestCaseResponse);
+                    set({ testCases });
+                } catch (error: any) {
+                    set({ error: error.message });
+                }
+            },
 
-    fetchTestCasesByProject: async (projectId) => {
-        set({ error: null });
-        try {
-            const response = await testManagerApi.getTestCasesByProject(projectId);
-            const testCases = response.map(mapTestCaseResponse);
-            set({ testCases });
-        } catch (error: any) {
-            set({ error: error.message });
-        }
-    },
+            fetchTestCasesByProject: async (projectId) => {
+                set({ error: null });
+                try {
+                    const response = await testManagerApi.getTestCasesByProject(projectId);
+                    const testCases = response.map(mapTestCaseResponse);
+                    set({ testCases });
+                } catch (error: any) {
+                    set({ error: error.message });
+                }
+            },
 
-    createTestCase: async (suiteId, data) => {
-        set({ isLoading: true, error: null });
-        try {
-            const response = await testManagerApi.createTestCase(suiteId, data);
-            const testCase = mapTestCaseResponse(response);
-            set((state) => ({
-                testCases: [testCase, ...state.testCases],
-                isLoading: false,
-            }));
-            return testCase;
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
-            throw error;
-        }
-    },
+            createTestCase: async (suiteId, data) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await testManagerApi.createTestCase(suiteId, data);
+                    const testCase = mapTestCaseResponse(response);
+                    set((state) => ({
+                        testCases: [testCase, ...state.testCases],
+                        isLoading: false,
+                    }));
+                    return testCase;
+                } catch (error: any) {
+                    set({ error: error.message, isLoading: false });
+                    throw error;
+                }
+            },
 
-    updateTestCase: async (id, data) => {
-        set({ isLoading: true, error: null });
-        try {
-            const response = await testManagerApi.updateTestCase(id, data);
-            const testCase = mapTestCaseResponse(response);
-            set((state) => ({
-                testCases: state.testCases.map((tc) => (tc.id === id ? testCase : tc)),
-                isLoading: false,
-            }));
-            return testCase;
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
-            throw error;
-        }
-    },
+            updateTestCase: async (id, data) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await testManagerApi.updateTestCase(id, data);
+                    const testCase = mapTestCaseResponse(response);
+                    set((state) => ({
+                        testCases: state.testCases.map((tc) => (tc.id === id ? testCase : tc)),
+                        isLoading: false,
+                    }));
+                    return testCase;
+                } catch (error: any) {
+                    set({ error: error.message, isLoading: false });
+                    throw error;
+                }
+            },
 
-    deleteTestCase: async (id) => {
-        set({ isLoading: true, error: null });
-        try {
-            await testManagerApi.deleteTestCase(id);
-            set((state) => ({
-                testCases: state.testCases.filter((tc) => tc.id !== id),
-                isLoading: false,
-            }));
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
-            throw error;
-        }
-    },
+            deleteTestCase: async (id) => {
+                set({ isLoading: true, error: null });
+                try {
+                    await testManagerApi.deleteTestCase(id);
+                    set((state) => ({
+                        testCases: state.testCases.filter((tc) => tc.id !== id),
+                        isLoading: false,
+                    }));
+                } catch (error: any) {
+                    set({ error: error.message, isLoading: false });
+                    throw error;
+                }
+            },
 
-    bulkUpdateStatus: async (ids, status) => {
-        set({ isLoading: true, error: null });
-        try {
-            await testManagerApi.bulkUpdateStatus(ids, status);
-            set((state) => ({
-                testCases: state.testCases.map((tc) =>
-                    ids.includes(tc.id) ? { ...tc, status } : tc
-                ),
-                isLoading: false,
-            }));
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
-            throw error;
-        }
-    },
+            bulkUpdateStatus: async (ids, status) => {
+                set({ isLoading: true, error: null });
+                try {
+                    await testManagerApi.bulkUpdateStatus(ids, status);
+                    set((state) => ({
+                        testCases: state.testCases.map((tc) =>
+                            ids.includes(tc.id) ? { ...tc, status } : tc
+                        ),
+                        isLoading: false,
+                    }));
+                } catch (error: any) {
+                    set({ error: error.message, isLoading: false });
+                    throw error;
+                }
+            },
 
-    // =========================================================================
-    // LOCAL STATE ACTIONS (for optimistic updates and legacy support)
-    // =========================================================================
-    setTestCases: (cases) => set({ testCases: cases }),
-    addTestCase: (testCase) => set((state) => ({ testCases: [testCase, ...state.testCases] })),
-    updateTestCaseLocal: (updatedCase) => set((state) => ({
-        testCases: state.testCases.map((c) => c.id === updatedCase.id ? updatedCase : c)
-    })),
-    deleteTestCaseLocal: (id) => set((state) => ({
-        testCases: state.testCases.filter((c) => c.id !== id)
-    })),
-    setProjects: (projects) => set({ projects }),
-    addProject: (project) => set((state) => ({ projects: [project, ...state.projects] })),
+            // =========================================================================
+            // LOCAL STATE ACTIONS (for optimistic updates and legacy support)
+            // =========================================================================
+            setTestCases: (cases) => set({ testCases: cases }),
+            addTestCase: (testCase) => set((state) => ({ testCases: [testCase, ...state.testCases] })),
+            updateTestCaseLocal: (updatedCase) => set((state) => ({
+                testCases: state.testCases.map((c) => c.id === updatedCase.id ? updatedCase : c)
+            })),
+            deleteTestCaseLocal: (id) => set((state) => ({
+                testCases: state.testCases.filter((c) => c.id !== id)
+            })),
+            setProjects: (projects) => set({ projects }),
+            addProject: (project) => set((state) => ({ projects: [project, ...state.projects] })),
         }),
         {
             name: 'test-manager-storage', // localStorage key
             partialize: (state) => ({
                 // Only persist these specific fields - not the full data or loading states
                 activeProject: state.activeProject,
+                activeArea: state.activeArea,
                 activeSuite: state.activeSuite,
                 activeSuiteId: state.activeSuiteId,
                 viewMode: state.viewMode,

@@ -14,6 +14,7 @@ const TestCasesPage: React.FC = () => {
         activeSuite,
         activeSuiteId,
         activeProject,
+        activeArea,
         updateTestCase,
         createTestCase,
         fetchProjects,
@@ -71,6 +72,7 @@ const TestCasesPage: React.FC = () => {
                         avatar: 'https://ui-avatars.com/api/?name=You&background=0D8ABC&color=fff'
                     },
                     suite: activeSuite || '',
+                    area: activeArea || '',
                     steps: [],
                     projectId: activeProject || '',
                 };
@@ -83,7 +85,7 @@ const TestCasesPage: React.FC = () => {
         } catch (e) {
             // ignore
         }
-    }, [location, navigate, activeProject, activeSuite]);
+    }, [location, navigate, activeProject, activeSuite, activeArea]);
 
     const handleRowClick = (item: TestCase) => {
         if (isListEditMode) return;
@@ -157,13 +159,16 @@ const TestCasesPage: React.FC = () => {
     }
 
     // Display all cases from the store - filtering is now handled by the API calls
-    const displayedCases = testCases;
+    // Also filter by activeArea if selected
+    const displayedCases = activeArea
+        ? testCases.filter(tc => tc.area === activeArea)
+        : testCases;
 
     return (
         <div className="flex flex-col h-full">
             {/* Context Breadcrumb with Project & Suite selectors */}
             <ContextBreadcrumb showSuiteSelector={true} />
-            
+
             {/* Test Case Table */}
             <div className="flex-1 overflow-auto">
                 <TestCaseTable
