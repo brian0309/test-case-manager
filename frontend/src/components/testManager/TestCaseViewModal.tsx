@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { TestCase, Priority, Status } from '../../types/testManager';
 import { X, Edit2, ChevronDown } from 'lucide-react';
 
+import RichTextEditor from './RichTextEditor';
+
 interface TestCaseViewModalProps {
     testCase: TestCase;
     testCases: TestCase[];
@@ -155,9 +157,10 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                     <div className="mb-8">
                         <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Test Steps</label>
                         {testCase.stepsContent ? (
-                            <div
-                                className="prose prose-sm max-w-none bg-gray-50 rounded-lg p-4 border border-gray-200"
-                                dangerouslySetInnerHTML={{ __html: testCase.stepsContent }}
+                            <RichTextEditor
+                                content={testCase.stepsContent}
+                                onChange={() => { }}
+                                editable={false}
                             />
                         ) : testCase.steps.length > 0 ? (
                             <div className="space-y-3">
@@ -194,9 +197,10 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                     {testCase.comments && (
                         <div className="mb-2">
                             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Comments</label>
-                            <div
-                                className="prose prose-sm max-w-none bg-gray-50 rounded-lg p-4 border border-gray-200"
-                                dangerouslySetInnerHTML={{ __html: testCase.comments }}
+                            <RichTextEditor
+                                content={testCase.comments}
+                                onChange={() => { }}
+                                editable={false}
                             />
                         </div>
                     )}

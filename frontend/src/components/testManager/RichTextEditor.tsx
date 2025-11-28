@@ -3,7 +3,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Bold, Italic, List, ListOrdered, Strikethrough, Heading1, Heading2, Quote, ImagePlus, Loader2 } from 'lucide-react';
+import { Bold, Italic, List, ListOrdered, Strikethrough, Heading1, Heading2, Quote, ImagePlus, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { uploadImage, validateImageFile } from '../../utils/imageUpload';
 
@@ -17,6 +17,7 @@ interface RichTextEditorProps {
 
 const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBlur, placeholder = 'Write something...', editable = true }) => {
     const [isUploading, setIsUploading] = useState(false);
+    const [zoomedImage, setZoomedImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const editorRef = useRef<any>(null);
 
@@ -27,7 +28,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
                 inline: true,
                 allowBase64: false,
                 HTMLAttributes: {
-                    class: 'rounded-lg max-w-full h-auto',
+                    class: 'rounded-lg max-w-[400px] max-h-[400px] w-auto h-auto cursor-pointer hover:opacity-90 transition-opacity',
                 },
             }),
             Placeholder.configure({
@@ -249,9 +250,46 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
                     />
                 </div>
             )}
-            <div className="p-4 bg-white cursor-text" onClick={() => editor.chain().focus().run()}>
+            <div
+                className="p-4 bg-white cursor-text"
+                onClick={(e) => {
+                    // If not editable, check if an image was clicked to zoom
+                    if (!editable) {
+                        const target = e.target as HTMLElement;
+                        if (target.tagName === 'IMG' && target.getAttribute('src')) {
+                            setZoomedImage(target.getAttribute('src'));
+                            return;
+                        }
+                    }
+                    // Otherwise focus editor
+                    if (editable) {
+                        editor.chain().focus().run();
+                    }
+                }}
+            >
                 <EditorContent editor={editor} />
             </div>
+
+            {/* Image Lightbox */}
+            {zoomedImage && (
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+                    onClick={() => setZoomedImage(null)}
+                >
+                    <button
+                        onClick={() => setZoomedImage(null)}
+                        className="absolute top-4 right-4 p-2 text-white/70 hover:text-white bg-black/20 hover:bg-black/40 rounded-full transition-colors"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                    <img
+                        src={zoomedImage}
+                        alt="Zoomed content"
+                        className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
         </div>
     );
 };
