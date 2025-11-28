@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuthStore } from "../store/authStore";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Users, FileText, MessageSquare, Calendar, Clock, ArrowUp, ArrowDown, LucideIcon, Folder, Layers, CheckSquare } from 'lucide-react';
+import { Clock, ArrowUp, ArrowDown, LucideIcon, Folder, Layers, CheckSquare } from 'lucide-react';
 import { getDashboardStats, DashboardStats } from "../services/statisticsApi";
 
 interface Stat {
@@ -12,21 +12,6 @@ interface Stat {
   changeType: 'increase' | 'decrease' | 'neutral';
   icon: LucideIcon;
 }
-
-interface Activity {
-  id: number;
-  user: string;
-  action: string;
-  time: string;
-  avatar: string;
-}
-
-const recentActivity: Activity[] = [
-  { id: 1, user: 'John Doe', action: 'created a new post', time: '2 minutes ago', avatar: 'JD' },
-  { id: 2, user: 'Jane Smith', action: 'updated profile', time: '10 minutes ago', avatar: 'JS' },
-  { id: 3, user: 'Mike Johnson', action: 'commented on post', time: '25 minutes ago', avatar: 'MJ' },
-  { id: 4, user: 'Sarah Williams', action: 'joined the platform', time: '1 hour ago', avatar: 'SW' },
-];
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();

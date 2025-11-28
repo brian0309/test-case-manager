@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Plus, Filter, Download, FilePlus, PenLine, Check, Layers } from 'lucide-react';
+import { Plus, Filter, Download, PenLine, Check, Layers } from 'lucide-react';
 import { ViewMode } from '../../types/testManager';
 
 interface ToolbarProps {
@@ -21,9 +21,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
         viewMode,
         setViewMode,
         onNew,
-        onNewCase,
         activeSuite,
-        activeProject,
         isEditMode,
         onToggleEditMode,
         showEditToggle
@@ -34,22 +32,14 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
             case 'projects': return 'Projects';
             case 'suites': return 'Test Suites';
             case 'plans': return 'Test Plans';
-            case 'cases': 
+            case 'cases':
                 // Show suite name if selected, otherwise "All Test Cases"
                 return activeSuite || 'Test Cases';
             default: return 'Test Cases';
         }
     };
 
-    const getSubtitle = () => {
-        if (viewMode === 'cases' && activeSuite) {
-            return 'Test Suite';
-        }
-        if (viewMode === 'cases' && !activeSuite && activeProject) {
-            return 'All cases in project';
-        }
-        return null;
-    };
+
 
     // Helper to determine button text
     const getNewButtonText = () => {
