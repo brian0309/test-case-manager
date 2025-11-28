@@ -25,7 +25,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
     const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
     // Track selected field preview for each history entry
     const [selectedPreview, setSelectedPreview] = useState<{ entryId: string; field: string } | null>(null);
-    
+
     // Track if this is initial load vs user edit
     const isInitialLoad = useRef(true);
     const hasUnsavedChanges = useRef(false);
@@ -235,17 +235,17 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4">
             <div
                 className="absolute inset-0 bg-white/40 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
 
-            <div className="relative w-full h-full sm:h-auto sm:max-w-6xl bg-white sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col sm:flex-row max-h-[90vh] animate-[scaleIn_0.2s_ease-out]">
+            <div className="relative w-full h-full sm:h-auto sm:max-w-6xl bg-white sm:rounded-2xl shadow-2xl flex flex-col sm:flex-row sm:max-h-[90vh] animate-[scaleIn_0.2s_ease-out]">
                 {/* Main Content Wrapper */}
-                <div className="flex-1 flex flex-col min-w-0">
+                <div className="flex-1 flex flex-col min-w-0 min-h-0">
                     {/* Modal Header */}
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex-shrink-0">
                         <div className="flex items-center gap-3">
                             {localCase.id.startsWith('new-') ? (
                                 <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md">New Case</span>
@@ -524,7 +524,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                     </div>
 
                     {/* Modal Footer */}
-                    <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-gray-50/50">
+                    <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-gray-50/50 flex-shrink-0">
                         <p className="text-xs text-gray-400">
                             Changes are saved automatically
                         </p>
@@ -604,11 +604,10 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                                                             : { entryId: entry.id, field }
                                                                     );
                                                                 }}
-                                                                className={`inline-block px-2 py-0.5 text-xs rounded-md font-medium transition-colors cursor-pointer border ${
-                                                                    selectedPreview?.entryId === entry.id && selectedPreview?.field === field
-                                                                        ? 'bg-blue-100 text-blue-800 border-blue-300 ring-1 ring-blue-200'
-                                                                        : 'bg-blue-50 text-blue-700 border-transparent hover:bg-blue-100 hover:border-blue-200'
-                                                                }`}
+                                                                className={`inline-block px-2 py-0.5 text-xs rounded-md font-medium transition-colors cursor-pointer border ${selectedPreview?.entryId === entry.id && selectedPreview?.field === field
+                                                                    ? 'bg-blue-100 text-blue-800 border-blue-300 ring-1 ring-blue-200'
+                                                                    : 'bg-blue-50 text-blue-700 border-transparent hover:bg-blue-100 hover:border-blue-200'
+                                                                    }`}
                                                             >
                                                                 {field}
                                                             </button>
