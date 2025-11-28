@@ -170,6 +170,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
     }) => (
         <button
             onClick={onClick}
+            onMouseDown={(e) => e.preventDefault()}
             className={`p-1.5 rounded-md transition-colors ${isActive
                 ? 'bg-blue-100 text-blue-600'
                 : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
