@@ -7,7 +7,7 @@ const CalendarPage: React.FC = () => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="mac-card m-4 mt-2 p-6"
+      className="mac-card mx-2 my-2 p-4 sm:p-6"
     >
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Calendar</h1>
       <div className="border rounded-lg p-4">

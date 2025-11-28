@@ -58,11 +58,11 @@ const ProjectCreateModal: React.FC<Props> = ({ isOpen, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-2">
             <div className="absolute inset-0 bg-white/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
-            <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden animate-[scaleIn_0.12s_ease-out]">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50">
+            <div className="relative w-full h-full sm:h-auto sm:max-w-2xl bg-white sm:rounded-2xl shadow-2xl overflow-y-auto animate-[scaleIn_0.12s_ease-out]">
+                <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-gray-50">
                     <h3 className="text-lg font-semibold">Create New Project</h3>
                     <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100">
                         <X className="h-5 w-5 text-gray-600" />
@@ -112,7 +112,7 @@ const ProjectCreateModal: React.FC<Props> = ({ isOpen, onClose }) => {
                     </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50">
+                <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50">
                     <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100">Cancel</button>
                     <button
                         onClick={handleSave}

@@ -103,11 +103,11 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
     const uniqueAreas = Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort();
 
     return (
-        <div className="flex items-center gap-1 px-6 py-3 bg-gray-50/50 border-b border-gray-100">
+        <div className="h-16 flex items-center gap-3 px-6 bg-gray-50/50 border-b border-gray-100">
             {/* Home / Projects link */}
             <button
                 onClick={goToProjects}
-                className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 transition-colors"
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600 transition-colors"
             >
                 <Home size={14} />
                 <span className="hidden sm:inline">Projects</span>
@@ -158,7 +158,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                     <div className="relative" ref={suiteRef}>
                         <button
                             onClick={() => setIsSuiteOpen(!isSuiteOpen)}
-                            className={`flex items-center gap-1.5 px-2 py-1 text-sm font-medium rounded-md transition-all ${activeSuiteId
+                            className={`flex items-center gap-1 px-2 py-0.5 text-sm font-medium rounded-md transition-all ${activeSuiteId
                                 ? 'text-gray-700 hover:bg-white hover:shadow-sm'
                                 : 'text-gray-500 hover:text-gray-700 hover:bg-white hover:shadow-sm'
                                 }`}
@@ -229,7 +229,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                     <div className="relative" ref={areaRef}>
                         <button
                             onClick={() => setIsAreaOpen(!isAreaOpen)}
-                            className={`flex items-center gap-1.5 px-2 py-1 text-sm font-medium rounded-md transition-all ${activeArea
+                            className={`flex items-center gap-1 px-2 py-0.5 text-sm font-medium rounded-md transition-all ${activeArea
                                 ? 'text-gray-700 hover:bg-white hover:shadow-sm'
                                 : 'text-gray-500 hover:text-gray-700 hover:bg-white hover:shadow-sm'
                                 }`}

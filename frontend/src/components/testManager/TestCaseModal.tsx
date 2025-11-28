@@ -235,13 +235,13 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
             <div
                 className="absolute inset-0 bg-white/40 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
 
-            <div className="relative w-full max-w-6xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-row max-h-[90vh] animate-[scaleIn_0.2s_ease-out]">
+            <div className="relative w-full h-full sm:h-auto sm:max-w-6xl bg-white sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col sm:flex-row max-h-[90vh] animate-[scaleIn_0.2s_ease-out]">
                 {/* Main Content Wrapper */}
                 <div className="flex-1 flex flex-col min-w-0">
                     {/* Modal Header */}
@@ -300,7 +300,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                     </div>
 
                     {/* Modal Content */}
-                    <div className="flex-1 overflow-y-auto p-6 md:p-8">
+                    <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
                         <div className="mb-8">
                             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Title</label>
                             <input
@@ -547,7 +547,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
 
                 {/* History Panel */}
                 {showHistory && (
-                    <div className="w-80 border-l border-gray-200 bg-gray-50 flex flex-col overflow-hidden">
+                    <div className="hidden sm:flex w-80 border-l border-gray-200 bg-gray-50 flex-col overflow-hidden">
                         <div className="px-4 py-4 border-b border-gray-200 bg-white">
                             <h3 className="text-sm font-semibold text-gray-900">Edit History</h3>
                             <p className="text-xs text-gray-500 mt-0.5">View and restore previous versions</p>

@@ -84,7 +84,7 @@ const DashboardPage: React.FC = () => {
   return (
     <div className="mx-2 my-6 space-y-6">
       {/* Welcome Header */}
-      <div className="mac-card p-6 bg-gradient-to-br from-white to-gray-50/50">
+      <div className="mac-card p-4 sm:p-6 bg-gradient-to-br from-white to-gray-50/50">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Welcome back, {user?.name || 'User'}! 👋</h1>
         <p className="text-gray-500 mt-1">Here's what's happening with your dashboard today.</p>
       </div>
@@ -94,7 +94,7 @@ const DashboardPage: React.FC = () => {
         {loading ? (
           // Loading skeletons
           Array(3).fill(0).map((_, i) => (
-            <div key={i} className="mac-card p-6 h-32 animate-pulse bg-gray-100"></div>
+            <div key={i} className="mac-card p-4 sm:p-6 h-32 animate-pulse bg-gray-100"></div>
           ))
         ) : (
           stats.map((stat, index) => (
@@ -103,7 +103,7 @@ const DashboardPage: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="mac-card p-6 hover:translate-y-[-2px] transition-transform duration-300"
+              className="mac-card p-4 sm:p-6 hover:translate-y-[-2px] transition-transform duration-300"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
@@ -137,7 +137,7 @@ const DashboardPage: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="lg:col-span-2 mac-card p-6"
+          className="lg:col-span-2 mac-card p-4 sm:p-6"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
             <h2 className="text-lg font-semibold text-gray-900 tracking-tight">Activity Overview</h2>

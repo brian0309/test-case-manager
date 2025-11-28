@@ -60,15 +60,15 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
             <div
                 className="absolute inset-0 bg-white/40 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
 
-            <div className="relative w-full max-w-6xl bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-[scaleIn_0.2s_ease-out]">
+            <div className="relative w-full h-full sm:h-auto sm:max-w-6xl bg-white sm:rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-[scaleIn_0.2s_ease-out]">
                 {/* Modal Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-gray-50/50">
                     <div className="flex items-center gap-3">
                         <span className="font-mono text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-md">{testCase.id}</span>
                         <span className="text-xs text-gray-400">View Mode</span>
@@ -223,7 +223,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                 </div>
 
                 {/* Modal Footer */}
-                <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+                <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50/50">
                     <div>
                         <button
                             onClick={() => onNavigate && onNavigate(currentIndex - 1)}

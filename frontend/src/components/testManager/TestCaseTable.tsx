@@ -35,8 +35,10 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
     };
 
     return (
-        <div className="flex-1 overflow-auto bg-white">
-            <table className="w-full text-left border-collapse">
+        <div className="flex-1 bg-white">
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-auto">
+              <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                     <tr>
                         <th className="py-3 pl-6 pr-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-24">ID</th>
@@ -166,12 +168,51 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                         );
                     })}
                 </tbody>
-            </table>
-            {data.length === 0 && (
-                <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                    <p>No test cases found</p>
-                </div>
-            )}
+              </table>
+            </div>
+
+            {/* Mobile list */}
+            <div className="block sm:hidden p-2">
+                {data.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-40 text-gray-400">
+                        <p>No test cases found</p>
+                    </div>
+                ) : (
+                    <div className="space-y-3">
+                        {data.map(item => (
+                            <div
+                                key={item.id}
+                                onClick={() => onRowClick(item)}
+                                className="mac-card p-3 flex flex-col gap-2 cursor-pointer hover:bg-gray-50 transition-colors"
+                            >
+                                <div className="flex items-start justify-between">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-sm font-medium text-gray-900">{item.title}</div>
+                                        <div className="text-xs text-gray-400 mt-1 truncate">{item.suite}</div>
+                                    </div>
+                                    <div className="ml-3 flex-shrink-0">
+                                        <StatusBadge type="priority" value={item.priority} />
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between mt-2">
+                                    <div className="text-xs font-mono text-gray-500 break-words max-w-[40%]">{item.id}</div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm text-gray-600 truncate max-w-[120px]">{item.assignedTester.name}</span>
+                                        <img src={item.assignedTester.avatar} alt={item.assignedTester.name} className="h-6 w-6 rounded-full border border-gray-200" />
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); onViewClick?.(item); }}
+                                            className="ml-2 inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                                        >
+                                            View
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
