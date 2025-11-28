@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -19,6 +18,7 @@ interface RichTextEditorProps {
 const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBlur, placeholder = 'Write something...', editable = true }) => {
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const editorRef = useRef<any>(null);
 
     const editor = useEditor({
         extensions: [
@@ -44,7 +44,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
         },
         editorProps: {
             attributes: {
-                class: 'prose prose-sm sm:prose-base focus:outline-none min-h-[200px] text-gray-700 leading-relaxed max-w-none',
+                class: 'prose prose-sm sm:prose-base focus:outline-none min-h-[200px] text-gray-700 leading-relaxed max-w-none [&_img[src^="blob:"]]:opacity-50 [&_img[src^="blob:"]]:grayscale [&_img[src^="blob:"]]:blur-[1px] transition-all',
             },
             handleDrop: (_view: any, event: any, _slice: any, moved: any) => {
                 if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
@@ -76,6 +76,11 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
         },
     });
 
+    // Keep editor ref in sync
+    useEffect(() => {
+        editorRef.current = editor;
+    }, [editor]);
+
     // Update editor content if prop changes externally (e.g. from AI)
     useEffect(() => {
         if (editor && content !== editor.getHTML()) {
@@ -85,7 +90,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
 
     // Handle image upload
     const handleImageUpload = async (file: File) => {
-        if (!editor) return;
+        const currentEditor = editorRef.current;
+        if (!currentEditor) return;
 
         // Validate file
         const validationError = validateImageFile(file);
@@ -94,16 +100,47 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
             return;
         }
 
+        // Create blob URL for immediate preview
+        const blobUrl = URL.createObjectURL(file);
+
+        // Insert image immediately with loading state
+        currentEditor.chain().focus().setImage({ src: blobUrl }).run();
+
         setIsUploading(true);
         try {
             const url = await uploadImage(file);
-            editor.chain().focus().setImage({ src: url }).run();
+
+            // Find the image with the blobUrl and replace it with the real URL
+            currentEditor.view.state.doc.descendants((node: any, pos: number) => {
+                if (node.type.name === 'image' && node.attrs.src === blobUrl) {
+                    const transaction = currentEditor.state.tr.setNodeMarkup(pos, undefined, {
+                        ...node.attrs,
+                        src: url
+                    });
+                    currentEditor.view.dispatch(transaction);
+                    return false; // Stop traversal
+                }
+                return true;
+            });
+
             toast.success('Image uploaded successfully');
         } catch (error) {
             console.error('Image upload failed:', error);
             toast.error(error instanceof Error ? error.message : 'Failed to upload image');
+
+            // Remove the temporary image on failure
+            currentEditor.view.state.doc.descendants((node: any, pos: number) => {
+                if (node.type.name === 'image' && node.attrs.src === blobUrl) {
+                    const transaction = currentEditor.state.tr.delete(pos, pos + node.nodeSize);
+                    currentEditor.view.dispatch(transaction);
+                    return false;
+                }
+                return true;
+            });
         } finally {
             setIsUploading(false);
+            // Clean up blob URL
+            URL.revokeObjectURL(blobUrl);
         }
     };
 
