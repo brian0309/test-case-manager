@@ -60,9 +60,9 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
             <div
-                className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
+                className="absolute inset-0 bg-white/40 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
 

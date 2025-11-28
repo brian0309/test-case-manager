@@ -7,51 +7,82 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f5f7;
+  background-color: #ffffff;
   /* Apple system gray background */
   color: #1d1d1f;
 }
 
 /* Glassmorphism Utilities */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
 .glass-sidebar {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
   border-right: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 /* Card Styles */
 .mac-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.02);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mac-card:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
 }
 
 /* Button Styles */
 .mac-button {
-  border-radius: 9999px;
-  /* Pill shape */
+  border-radius: 8px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .mac-button:active {
   transform: scale(0.98);
 }
 
+.mac-button-primary {
+  background: #007AFF;
+  color: white;
+}
+
+.mac-button-primary:hover {
+  background: #0062CC;
+}
+
+/* Input Styles */
+.mac-input {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.mac-input:focus {
+  outline: none;
+  border-color: #007AFF;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+  background: white;
+}
+
 /* Custom scrollbar for Webkit to match macOS minimal style */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -59,15 +90,15 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.0);
-  /* Hidden by default */
-  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
   transition: background 0.3s ease;
 }
 
-:hover::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
-  /* Visible on hover */
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.25);
 }
 
 /* Tiptap Editor Styles */
@@ -109,10 +140,11 @@ body {
   border-radius: 0.5rem;
   margin: 0.5em 0;
   cursor: default;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .ProseMirror img.ProseMirror-selectednode {
-  outline: 3px solid #3b82f6;
+  outline: 3px solid #007AFF;
   outline-offset: 2px;
 }
 

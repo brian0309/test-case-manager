@@ -52,8 +52,8 @@ const TestSuiteCreateModal: React.FC<Props> = ({ isOpen, onClose, projectId }) =
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2">
+            <div className="absolute inset-0 bg-white/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
             <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50">

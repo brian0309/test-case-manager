@@ -46,6 +46,19 @@ export default {
           DEFAULT: '#0288d1',
           light: '#03a9f4',
           dark: '#01579b'
+        },
+        // macOS System Colors
+        system: {
+          blue: '#007AFF',
+          gray: '#8E8E93',
+          red: '#FF3B30',
+          green: '#34C759',
+          orange: '#FF9500',
+          yellow: '#FFCC00',
+          purple: '#AF52DE',
+          teal: '#5AC8FA',
+          indigo: '#5856D6',
+          pink: '#FF2D55',
         }
       },
       backgroundColor: theme => ({

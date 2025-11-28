@@ -246,7 +246,7 @@ const TestManagerPage: React.FC = () => {
                 </div>
             )}
 
-            <main className="mac-card flex-1 flex flex-col min-w-0 overflow-hidden relative m-4 mt-2">
+            <main className="mac-card flex-1 flex flex-col min-w-0 overflow-hidden relative mx-2 my-2">
                 <Toolbar
                     viewMode={viewMode}
                     setViewMode={handleViewChange}
