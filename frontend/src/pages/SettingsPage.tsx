@@ -29,29 +29,25 @@ const SettingsPage: React.FC = () => {
         { id: "general", label: "General" },
         { id: "security", label: "Security" },
         { id: "billing", label: "Billing" },
-        { id: "notifications", label: "Notifications" },
-        { id: "apps", label: "Apps" },
-        { id: "branding", label: "Branding" },
-        { id: "refer", label: "Refer a friend" },
-        { id: "sharing", label: "Sharing" },
     ];
 
     return (
-        <div className="min-h-screen m-4 mt-2">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-gray-900">
-                        {user?.name || "User"}
-                    </h1>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Manage your teams and preferences here.
-                    </p>
-                </div>
+        <div className="mx-2 my-6 space-y-6">
+            <div className="space-y-6">
+                <div className="px-6 lg:px-8">
+                    {/* Header */}
+                    <div className="mb-8">
+                        <h1 className="text-2xl font-bold text-gray-900">
+                            {user?.name || "User"}
+                        </h1>
+                        <p className="text-sm text-gray-500 mt-1">
+                            Manage your teams and preferences here.
+                        </p>
+                    </div>
 
-                {/* Tabs */}
-                <div className="mb-6 border-b border-gray-200">
-                    <div className="flex space-x-8 overflow-x-auto">
+                    {/* Tabs */}
+                    <div className="mb-6 border-b border-gray-200">
+                        <div className="flex space-x-8 overflow-x-auto">
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
@@ -66,6 +62,7 @@ const SettingsPage: React.FC = () => {
                         ))}
                     </div>
                 </div>
+                </div>
 
                 {/* Tab Content */}
                 <motion.div
@@ -77,11 +74,6 @@ const SettingsPage: React.FC = () => {
                     {activeTab === "general" && <GeneralTab user={user} />}
                     {activeTab === "security" && <SecurityTab />}
                     {activeTab === "billing" && <PlaceholderTab title="Billing" />}
-                    {activeTab === "notifications" && <PlaceholderTab title="Notifications" />}
-                    {activeTab === "apps" && <PlaceholderTab title="Apps" />}
-                    {activeTab === "branding" && <PlaceholderTab title="Branding" />}
-                    {activeTab === "refer" && <PlaceholderTab title="Refer a Friend" />}
-                    {activeTab === "sharing" && <PlaceholderTab title="Sharing" />}
                 </motion.div>
             </div>
         </div>
