@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { Plus, Filter, Download, PenLine, Check, Layers } from 'lucide-react';
 import { ViewMode } from '../../types/testManager';
+import { useTestManagerStore } from '../../store/testManagerStore';
 
 interface ToolbarProps {
     viewMode: ViewMode;
@@ -38,6 +38,9 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
             default: return 'Test Cases';
         }
     };
+
+    const { toggleFilterModal, filters } = useTestManagerStore();
+    const hasActiveFilters = filters.status.length > 0 || filters.priority.length > 0 || !!filters.dateRange.start || !!filters.dateRange.end;
 
 
 
@@ -99,7 +102,10 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
                     </button>
                 )}
 
-                <button className="p-1 text-gray-500 hover:bg-gray-100 rounded-md transition-colors">
+                <button
+                    onClick={() => toggleFilterModal(true)}
+                    className={`p-1 rounded-md transition-colors ${hasActiveFilters ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' : 'text-gray-500 hover:bg-gray-100'}`}
+                >
                     <Filter className="h-4 w-4" strokeWidth={1.5} />
                 </button>
                 <button className="p-1 text-gray-500 hover:bg-gray-100 rounded-md transition-colors">

@@ -14,6 +14,21 @@ import {
     UpdateTestCaseRequest,
 } from '../types/api/testManager.api';
 
+export interface TestCaseFilters {
+    status: Status[];
+    priority: Priority[];
+    dateRange: {
+        start: string | null;
+        end: string | null;
+    };
+}
+
+const initialFilters: TestCaseFilters = {
+    status: [],
+    priority: [],
+    dateRange: { start: null, end: null },
+};
+
 // Helper to convert API response to frontend types
 const mapProjectResponse = (p: ProjectResponse): Project => ({
     id: p.id,
@@ -69,6 +84,10 @@ interface TestManagerStore {
     isLoading: boolean;
     error: string | null;
 
+    // Filter State
+    isFilterModalOpen: boolean;
+    filters: TestCaseFilters;
+
     // View actions
     setViewMode: (mode: ViewMode) => void;
     setActiveSuite: (suite: string | null) => void;
@@ -78,6 +97,11 @@ interface TestManagerStore {
     setActiveSuiteWithId: (suiteId: string, suiteName: string) => void;
     clearActiveContext: () => void;
     clearError: () => void;
+
+    // Filter Actions
+    setFilters: (filters: Partial<TestCaseFilters>) => void;
+    toggleFilterModal: (isOpen?: boolean) => void;
+    clearFilters: () => void;
 
     // Project actions
     fetchProjects: () => Promise<void>;
@@ -123,6 +147,10 @@ export const useTestManagerStore = create<TestManagerStore>()(
             isLoading: false,
             error: null,
 
+            // Filter State
+            isFilterModalOpen: false,
+            filters: initialFilters,
+
             // View actions
             setViewMode: (mode) => set({ viewMode: mode }),
             setActiveSuite: (suite) => set({ activeSuite: suite }),
@@ -132,6 +160,15 @@ export const useTestManagerStore = create<TestManagerStore>()(
             setActiveSuiteWithId: (suiteId, suiteName) => set({ activeSuiteId: suiteId, activeSuite: suiteName }),
             clearActiveContext: () => set({ activeSuite: null, activeSuiteId: null, activeProject: null, activeArea: null }),
             clearError: () => set({ error: null }),
+
+            // Filter Actions
+            setFilters: (newFilters) => set((state) => ({
+                filters: { ...state.filters, ...newFilters }
+            })),
+            toggleFilterModal: (isOpen) => set((state) => ({
+                isFilterModalOpen: isOpen !== undefined ? isOpen : !state.isFilterModalOpen
+            })),
+            clearFilters: () => set({ filters: initialFilters }),
 
             // =========================================================================
             // PROJECT ACTIONS

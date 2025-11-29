@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import TestCaseTable from '../../components/testManager/TestCaseTable';
 import TestCaseModal from '../../components/testManager/TestCaseModal';
 import TestCaseViewModal from '../../components/testManager/TestCaseViewModal';
+import FilterModal from '../../components/testManager/FilterModal';
 import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import { useTestManagerStore } from '../../store/testManagerStore';
@@ -22,6 +23,8 @@ const TestCasesPage: React.FC = () => {
         fetchTestSuites,
         fetchTestCases,
         fetchTestCasesByProject,
+        filters,
+        isFilterModalOpen,
     } = useTestManagerStore();
     const [selectedCase, setSelectedCase] = useState<TestCase | null>(null);
     const [viewCase, setViewCase] = useState<TestCase | null>(null);
@@ -160,9 +163,30 @@ const TestCasesPage: React.FC = () => {
 
     // Display all cases from the store - filtering is now handled by the API calls
     // Also filter by activeArea if selected
-    const displayedCases = activeArea
+    let displayedCases = activeArea
         ? testCases.filter(tc => tc.area === activeArea)
         : testCases;
+
+    // Apply client-side filters
+    if (filters.status.length > 0) {
+        displayedCases = displayedCases.filter(tc => filters.status.includes(tc.status));
+    }
+
+    if (filters.priority.length > 0) {
+        displayedCases = displayedCases.filter(tc => filters.priority.includes(tc.priority));
+    }
+
+    if (filters.dateRange.start) {
+        const startDate = new Date(filters.dateRange.start);
+        startDate.setHours(0, 0, 0, 0);
+        displayedCases = displayedCases.filter(tc => new Date(tc.lastModified) >= startDate);
+    }
+
+    if (filters.dateRange.end) {
+        const endDate = new Date(filters.dateRange.end);
+        endDate.setHours(23, 59, 59, 999);
+        displayedCases = displayedCases.filter(tc => new Date(tc.lastModified) <= endDate);
+    }
 
     return (
         <div className="flex flex-col h-full">
@@ -214,6 +238,7 @@ const TestCasesPage: React.FC = () => {
                     }}
                 />
             )}
+            {isFilterModalOpen && <FilterModal />}
         </div>
     );
 };
