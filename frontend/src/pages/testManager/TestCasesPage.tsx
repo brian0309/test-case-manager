@@ -25,6 +25,8 @@ const TestCasesPage: React.FC = () => {
         fetchTestCasesByProject,
         filters,
         isFilterModalOpen,
+        searchQuery,
+        clearSearchQuery,
     } = useTestManagerStore();
     const [selectedCase, setSelectedCase] = useState<TestCase | null>(null);
     const [viewCase, setViewCase] = useState<TestCase | null>(null);
@@ -38,7 +40,9 @@ const TestCasesPage: React.FC = () => {
     // Ensure projects are loaded when this page is visited directly
     useEffect(() => {
         fetchProjects?.();
-    }, [fetchProjects]);
+        clearSearchQuery(); // Clear search when entering
+        return () => clearSearchQuery(); // Clear search when leaving
+    }, [fetchProjects, clearSearchQuery]);
 
     // Fetch test suites when project is active
     useEffect(() => {
@@ -186,6 +190,16 @@ const TestCasesPage: React.FC = () => {
         const endDate = new Date(filters.dateRange.end);
         endDate.setHours(23, 59, 59, 999);
         displayedCases = displayedCases.filter(tc => new Date(tc.lastModified) <= endDate);
+    }
+
+    // Apply search filter
+    if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        displayedCases = displayedCases.filter(tc =>
+            tc.title.toLowerCase().includes(query) ||
+            tc.id.toLowerCase().includes(query) ||
+            (tc.area && tc.area.toLowerCase().includes(query))
+        );
     }
 
     return (

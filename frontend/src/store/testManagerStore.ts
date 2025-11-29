@@ -103,6 +103,11 @@ interface TestManagerStore {
     toggleFilterModal: (isOpen?: boolean) => void;
     clearFilters: () => void;
 
+    // Search State
+    searchQuery: string;
+    setSearchQuery: (query: string) => void;
+    clearSearchQuery: () => void;
+
     // Project actions
     fetchProjects: () => Promise<void>;
     createProject: (data: CreateProjectRequest) => Promise<Project>;
@@ -169,6 +174,11 @@ export const useTestManagerStore = create<TestManagerStore>()(
                 isFilterModalOpen: isOpen !== undefined ? isOpen : !state.isFilterModalOpen
             })),
             clearFilters: () => set({ filters: initialFilters }),
+
+            // Search Actions
+            searchQuery: '',
+            setSearchQuery: (query) => set({ searchQuery: query }),
+            clearSearchQuery: () => set({ searchQuery: '' }),
 
             // =========================================================================
             // PROJECT ACTIONS

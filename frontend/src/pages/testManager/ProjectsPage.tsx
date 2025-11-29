@@ -5,14 +5,16 @@ import ProjectCreateModal from '../../components/testManager/ProjectCreateModal'
 import { useTestManagerStore } from '../../store/testManagerStore';
 
 const ProjectsPage: React.FC = () => {
-    const { projects, fetchProjects, setActiveProject } = useTestManagerStore();
+    const { projects, fetchProjects, setActiveProject, searchQuery, clearSearchQuery } = useTestManagerStore();
     const navigate = useNavigate();
     const location = useLocation();
 
     // Fetch projects when this page mounts so the list is populated after reload
     useEffect(() => {
         fetchProjects();
-    }, [fetchProjects]);
+        clearSearchQuery(); // Clear search when entering the page
+        return () => clearSearchQuery(); // Clear search when leaving
+    }, [fetchProjects, clearSearchQuery]);
 
     // Open the create modal if navigation state requested it (from toolbar)
     useEffect(() => {
@@ -41,14 +43,20 @@ const ProjectsPage: React.FC = () => {
         setIsCreateOpen(true);
     };
 
+    // Filter projects based on search query
+    const filteredProjects = projects.filter(project =>
+        project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        project.description.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
         <>
             <ProjectCreateModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
-        <ProjectList
-            projects={projects}
-            onProjectClick={handleProjectClick}
-            onCreate={handleCreateProject}
-        />
+            <ProjectList
+                projects={filteredProjects}
+                onProjectClick={handleProjectClick}
+                onCreate={handleCreateProject}
+            />
         </>
     );
 };

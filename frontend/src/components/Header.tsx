@@ -1,5 +1,6 @@
 import React from "react";
 import { useAuthStore } from "../store/authStore";
+import { useTestManagerStore } from "../store/testManagerStore";
 import { Bell, Search, Menu } from 'lucide-react';
 
 interface HeaderProps {
@@ -8,6 +9,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   const { user } = useAuthStore();
+  const { searchQuery, setSearchQuery, clearSearchQuery } = useTestManagerStore();
 
   return (
     <header className="glass-panel sticky top-0 z-10 border-b border-white/20">
@@ -20,16 +22,31 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
           >
             <Menu size={20} />
           </button>
-          <div className="relative flex-1 min-w-0 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
-            <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-              size={16}
-            />
+          <div className="relative flex-1 min-w-0 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg group">
             <input
               type="text"
               placeholder="Search..."
-              className="mac-input w-full min-w-0 pl-9 pr-4 py-1.5 text-sm bg-white/50 focus:bg-white"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="searchbar-input w-full min-w-0 pl-4 pr-12 py-2 text-base bg-white/70 focus:bg-white border border-gray-200 focus:border-system-blue shadow-sm focus:shadow-md rounded-xl transition-all duration-200"
+              aria-label="Search"
             />
+
+            {searchQuery && (
+              <button
+                onClick={clearSearchQuery}
+                className="absolute right-9 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <span className="sr-only">Clear search</span>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </button>
+            )}
+
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+              <Search className="text-gray-400 group-focus-within:text-system-blue transition-colors" size={18} aria-hidden />
+            </span>
           </div>
         </div>
 
