@@ -20,6 +20,7 @@ import suiteRoutes, { projectSuiteRoutes } from "./services/testCase/routes/test
 import caseRoutes, { suiteCaseRoutes, projectCaseRoutes } from "./services/testCase/routes/testCase.route.js";
 import uploadRoutes from "./services/upload/routes/upload.route.js";
 import statisticsRoutes from "./services/statistics/routes/statistics.route.js";
+import geminiRoutes from "./services/geminigen/gemini.route.js";
 import { getCorsOptions } from "./config/dynamicCors.js";
 
 const app: Express = express();
@@ -36,7 +37,9 @@ app.use(cookieParser()); // allows us to parse incoming cookies
 app.use("/api/auth", authRoutes);
 app.use("/api/example", exampleRoutes);
 app.use("/api/upload", uploadRoutes);
+app.use("/api/upload", uploadRoutes);
 app.use("/api/statistics", statisticsRoutes);
+app.use("/api/gemini", geminiRoutes);
 
 // Test Case Management Routes
 app.use("/api/projects", projectRoutes);

@@ -8,10 +8,10 @@ const userSchema = new Schema<IUserDocument>(
 	{
 		email: {
 			type: String,
-			required: function(this: IUserDocument) { return !this.googleId; },
+			required: function (this: IUserDocument) { return !this.googleId; },
 			unique: true,
 			validate: {
-				validator: function(email: string) {
+				validator: function (email: string) {
 					return emailRegex.test(email);
 				},
 				message: 'Please enter a valid email address with a proper domain'
@@ -19,7 +19,7 @@ const userSchema = new Schema<IUserDocument>(
 		},
 		password: {
 			type: String,
-			required: function(this: IUserDocument) { return !this.googleId; },
+			required: function (this: IUserDocument) { return !this.googleId; },
 		},
 		name: {
 			type: String,
@@ -45,6 +45,10 @@ const userSchema = new Schema<IUserDocument>(
 			sparse: true
 		},
 		profilePicture: String,
+		geminiApiKey: {
+			type: String,
+			select: false // Always exclude by default for security
+		}
 	},
 	{ timestamps: true }
 );

@@ -10,6 +10,7 @@ export interface IUser {
   password?: string;
   googleId?: string;
   profilePicture?: string;
+  geminiApiKey?: string;
   isVerified: boolean;
   lastLogin: Date;
   resetPasswordToken?: string;

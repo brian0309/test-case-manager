@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
 import TestCaseTable from '../../components/testManager/TestCaseTable';
 import TestCaseModal from '../../components/testManager/TestCaseModal';
@@ -6,8 +7,10 @@ import TestCaseViewModal from '../../components/testManager/TestCaseViewModal';
 import FilterModal from '../../components/testManager/FilterModal';
 import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
+import GeminiGenerationModal from '../../components/testManager/GeminiGenerationModal';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { TestCase, Status, Priority } from '../../types/testManager';
+import { Sparkles } from 'lucide-react';
 
 const TestCasesPage: React.FC = () => {
     const {
@@ -19,6 +22,7 @@ const TestCasesPage: React.FC = () => {
         updateTestCase,
         createTestCase,
         fetchProjects,
+        projects,
         testSuites,
         fetchTestSuites,
         fetchTestCases,
@@ -202,10 +206,49 @@ const TestCasesPage: React.FC = () => {
         );
     }
 
+    const [isGeminiModalOpen, setIsGeminiModalOpen] = useState(false);
+
+    const handleAddGeneratedCases = async (cases: TestCase[]) => {
+        // We need to save these cases to the backend
+        // Iterate and create each one
+        // Note: createTestCase expects a suiteId.
+        if (!activeSuiteId) return;
+
+        for (const testCase of cases) {
+            // Format steps into a readable HTML list for the editor
+            const stepsHtml = testCase.steps && testCase.steps.length > 0
+                ? `<ol>${testCase.steps.map(s => `<li><strong>${s.action}</strong> - <em>${s.expectedResult}</em></li>`).join('')}</ol>`
+                : '';
+
+            await createTestCase(activeSuiteId, {
+                title: testCase.title,
+                priority: testCase.priority,
+                status: testCase.status,
+                area: testCase.area,
+                expectedResult: (testCase.steps && testCase.steps.length > 0) ? testCase.steps[testCase.steps.length - 1].expectedResult : '',
+                stepsContent: stepsHtml,
+                steps: testCase.steps, // Also save structured steps if backend supports it
+                comments: '',
+            } as any);
+        }
+        toast.success(`Added ${cases.length} test cases`);
+    };
+
     return (
         <div className="flex flex-col h-full">
             {/* Context Breadcrumb with Project & Suite selectors */}
-            <ContextBreadcrumb showSuiteSelector={true} />
+            <div className="flex items-center justify-between pr-4">
+                <ContextBreadcrumb showSuiteSelector={true} />
+                {activeProject && activeSuiteId && (
+                    <button
+                        onClick={() => setIsGeminiModalOpen(true)}
+                        className="flex items-center space-x-2 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-md hover:from-blue-700 hover:to-purple-700 transition-all shadow-sm"
+                    >
+                        <Sparkles className="w-4 h-4" />
+                        <span>Generate with AI</span>
+                    </button>
+                )}
+            </div>
 
             {/* Test Case Table */}
             <div className="flex-1 overflow-auto">
@@ -253,6 +296,16 @@ const TestCasesPage: React.FC = () => {
                 />
             )}
             {isFilterModalOpen && <FilterModal />}
+            {isGeminiModalOpen && activeProject && activeSuiteId && (
+                <GeminiGenerationModal
+                    onClose={() => setIsGeminiModalOpen(false)}
+                    onAddCases={handleAddGeneratedCases}
+                    projectContext={projects.find(p => p.id === activeProject)?.name || activeProject || ''}
+                    suiteContext={activeSuite || activeSuiteId}
+                    projectId={activeProject}
+                    suiteId={activeSuiteId}
+                />
+            )}
         </div>
     );
 };

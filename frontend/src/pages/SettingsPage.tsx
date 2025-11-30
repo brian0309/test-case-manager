@@ -7,6 +7,8 @@ import { Lock } from "lucide-react";
 import toast from "react-hot-toast";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
 import { User } from "../types";
+import { API_URL } from "../utils/api";
+import axios from "axios";
 
 interface Tab {
     id: string;
@@ -28,6 +30,7 @@ const SettingsPage: React.FC = () => {
     const tabs: Tab[] = [
         { id: "general", label: "General" },
         { id: "security", label: "Security" },
+        { id: "gemini", label: "Gemini API" },
         { id: "billing", label: "Billing" },
     ];
 
@@ -48,20 +51,20 @@ const SettingsPage: React.FC = () => {
                     {/* Tabs */}
                     <div className="mb-6 border-b border-gray-200">
                         <div className="flex space-x-8 overflow-x-auto">
-                        {tabs.map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`py-3 px-1 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === tab.id
-                                    ? "border-blue-600 text-blue-600"
-                                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                                    }`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
+                            {tabs.map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`py-3 px-1 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === tab.id
+                                        ? "border-blue-600 text-blue-600"
+                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                        }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                </div>
                 </div>
 
                 {/* Tab Content */}
@@ -73,6 +76,7 @@ const SettingsPage: React.FC = () => {
                 >
                     {activeTab === "general" && <GeneralTab user={user} />}
                     {activeTab === "security" && <SecurityTab />}
+                    {activeTab === "gemini" && <GeminiTab />}
                     {activeTab === "billing" && <PlaceholderTab title="Billing" />}
                 </motion.div>
             </div>
@@ -344,6 +348,81 @@ const PlaceholderTab: React.FC<PlaceholderTabProps> = ({ title }) => {
         <div className="mac-card p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-2">{title}</h2>
             <p className="text-sm text-gray-500">This section is coming soon...</p>
+        </div>
+    );
+};
+// Gemini Tab Component
+const GeminiTab = () => {
+    const [apiKey, setApiKey] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSave = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        try {
+            console.log("Saving API Key");
+
+            const response = await axios.post(`${API_URL}/gemini/key`, { apiKey }, { withCredentials: true });
+
+            if (response.data.success) {
+                toast.success("Gemini API Key saved successfully");
+                setApiKey("");
+            }
+        } catch (error: any) {
+            console.error(error);
+            toast.error(error.response?.data?.message || "Failed to save API Key");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="mac-card p-6">
+            <div className="max-w-2xl">
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Gemini API Configuration</h2>
+                <p className="text-sm text-gray-500 mb-6">
+                    Configure your Google Gemini API key to enable AI-powered test case generation.
+                    Your key is encrypted before being stored.
+                </p>
+
+                <form onSubmit={handleSave} className="space-y-6">
+                    <div>
+                        <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 mb-2">
+                            API Key
+                        </label>
+                        <div className="relative">
+                            <Input
+                                id="apiKey"
+                                icon={Lock}
+                                type="password"
+                                placeholder="Enter your Gemini API Key"
+                                value={apiKey}
+                                onChange={(e) => setApiKey(e.target.value)}
+                                required
+                                className="w-full"
+                            />
+                        </div>
+                        <p className="mt-2 text-xs text-gray-500">
+                            You can generate an API key from the <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>.
+                        </p>
+                    </div>
+
+                    <div className="pt-2">
+                        <motion.button
+                            whileHover={{ scale: 1.01 }}
+                            whileTap={{ scale: 0.99 }}
+                            type="submit"
+                            disabled={isLoading}
+                            className={`px-6 py-2.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${isLoading
+                                ? 'bg-blue-400'
+                                : 'bg-blue-600 hover:bg-blue-700'
+                                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+                        >
+                            {isLoading ? 'Saving...' : 'Save API Key'}
+                        </motion.button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 };

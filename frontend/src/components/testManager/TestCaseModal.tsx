@@ -2,8 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { TestCase, Priority, Status, HistoryEntry } from '../../types/testManager';
-import { X, Wand2, Plus, ChevronDown, History, Check, Loader2, Cloud } from 'lucide-react';
-import { generateTestSteps } from '../../services/geminiService';
+import { X, Plus, ChevronDown, History, Check, Loader2, Cloud } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -19,7 +18,6 @@ interface TestCaseModalProps {
 
 const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas, onClose, onSave, onBack }) => {
     const [localCase, setLocalCase] = useState<TestCase | null>(null);
-    const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showHistory, setShowHistory] = useState(false);
     const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
@@ -136,35 +134,6 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
     }, []);
 
     if (!testCase || !localCase) return null;
-
-    const handleGenerateSteps = async () => {
-        setIsGenerating(true);
-        setError(null);
-        try {
-            const newSteps = await generateTestSteps(localCase.title);
-
-            // Convert structured steps to HTML for the editor
-            const stepsHtml = newSteps.map(s => `
-        <li>
-          <p><strong>Action:</strong> ${s.action}</p>
-          <p><em>Expected:</em> ${s.expectedResult}</p>
-        </li>
-      `).join('');
-
-            const newContent = (localCase.stepsContent || '') + `<ol>${stepsHtml}</ol>`;
-
-            setLocalCase(prev => prev ? ({
-                ...prev,
-                steps: [...prev.steps, ...newSteps], // Keep structured for legacy if needed
-                stepsContent: newContent
-            }) : null);
-
-        } catch (err) {
-            setError("Could not generate steps. Check API Key configuration.");
-        } finally {
-            setIsGenerating(false);
-        }
-    };
 
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setLocalCase(prev => prev ? ({ ...prev, title: e.target.value }) : null);
@@ -464,22 +433,8 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                             </div>
                         </div>
 
-                        <div className="mb-4 flex items-center justify-between">
-                            <h3 className="text-lg font-semibold text-gray-900">Test Steps</h3>
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={handleGenerateSteps}
-                                    disabled={isGenerating || !import.meta.env.VITE_GEMINI_API_KEY}
-                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${!import.meta.env.VITE_GEMINI_API_KEY ? 'hidden' :
-                                        isGenerating
-                                            ? 'bg-purple-100 text-purple-700 cursor-wait'
-                                            : 'bg-purple-50 text-purple-600 hover:bg-purple-100'
-                                        }`}
-                                >
-                                    <Wand2 className={`h-4 w-4 ${isGenerating ? 'animate-spin' : ''}`} />
-                                    {isGenerating ? 'Generating...' : 'AI Generate'}
-                                </button>
-                            </div>
+                        <div className="mb-4">
+                            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Test Steps</label>
                         </div>
 
                         {error && (
