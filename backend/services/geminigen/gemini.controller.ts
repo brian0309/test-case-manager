@@ -24,7 +24,7 @@ export const saveGeminiKey = async (req: Request, res: Response) => {
 
 export const generateTestCases = async (req: Request, res: Response) => {
     try {
-        const { context, type = 'new_case', selectedFields } = req.body;
+        const { context, type = 'new_case', selectedFields, existingTestCases = [] } = req.body;
         const userId = req.userId;
 
         const user = await User.findById(userId).select('+geminiApiKey');
@@ -34,7 +34,7 @@ export const generateTestCases = async (req: Request, res: Response) => {
 
         const decryptedKey = decryptApiKey(user.geminiApiKey);
 
-        const result = await generateTestCaseDetails(decryptedKey, context, type, selectedFields);
+        const result = await generateTestCaseDetails(decryptedKey, context, type, selectedFields, existingTestCases);
 
         res.status(200).json({ success: true, data: result });
     } catch (error: any) {

@@ -324,6 +324,7 @@ const TestCasesPage: React.FC = () => {
                     suiteContext={activeSuite || activeSuiteId}
                     projectId={activeProject}
                     suiteId={activeSuiteId}
+                    existingTestCases={displayedCases.map(tc => tc.title)}
                 />
             )}
         </div>

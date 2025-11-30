@@ -109,7 +109,8 @@ export const generateTestCaseDetails = async (
     apiKey: string,
     context: string,
     type: 'new_case' | 'steps' | 'area' | 'expected',
-    selectedFields: { area: boolean; steps: boolean; expected: boolean } = { area: true, steps: true, expected: true }
+    selectedFields: { area: boolean; steps: boolean; expected: boolean } = { area: true, steps: true, expected: true },
+    existingTestCases: string[] = []
 ) => {
     const ai = new GoogleGenAI({ apiKey });
 
@@ -122,9 +123,13 @@ export const generateTestCaseDetails = async (
         if (selectedFields.steps) fieldsRequest.push("list of Steps (Action + Expected Result)");
         if (selectedFields.expected) fieldsRequest.push("Expected Result Summary");
 
+        const existingCasesContext = existingTestCases.length > 0
+            ? `\n\nExisting test cases to avoid duplicating:\n${existingTestCases.map((title, i) => `${i + 1}. ${title}`).join('\n')}\n\nIMPORTANT: Generate NEW test cases that are different from the existing ones listed above. Do not create similar or duplicate test cases.`
+            : '';
+
         prompt = `Based on this context: "${context}", generate a comprehensive set of test case scenarios covering all possible scenarios and edge cases.
         The number of test cases should depend on the complexity and scope of the context provided.
-        For each test case, provide a Title, Description, Preconditions${fieldsRequest.length > 0 ? ", " + fieldsRequest.join(", ") : ""}.`;
+        For each test case, provide a Title, Description, Preconditions${fieldsRequest.length > 0 ? ", " + fieldsRequest.join(", ") : ""}.${existingCasesContext}`;
 
         const properties: any = {
             title: { type: Type.STRING },

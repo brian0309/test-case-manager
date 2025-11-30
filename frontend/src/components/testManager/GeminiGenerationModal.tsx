@@ -13,6 +13,7 @@ interface GeminiGenerationModalProps {
     suiteContext: string;
     projectId: string;
     suiteId: string;
+    existingTestCases: string[];
 }
 
 type GenerationType = 'new_case' | 'steps' | 'area' | 'expected';
@@ -33,7 +34,8 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
     projectContext,
     suiteContext,
     projectId,
-    suiteId
+    suiteId,
+    existingTestCases
 }) => {
     const [generationType, setGenerationType] = useState<GenerationType>('new_case');
     const [selectedFields, setSelectedFields] = useState({
@@ -52,7 +54,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
         try {
             const response = await axios.post(
                 `${API_URL}/gemini/generate`,
-                { context, type: generationType, selectedFields },
+                { context, type: generationType, selectedFields, existingTestCases },
                 { withCredentials: true }
             );
 
@@ -93,7 +95,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                 action: s.action,
                 expectedResult: s.expectedResult
             })) : [],
-            	testDescription: c.description || (c as any).testDescription || '',
+            testDescription: c.description || (c as any).testDescription || '',
             preconditions: c.preconditions,
             expectedResult: c.expectedResult || ''
         } as any)); // Type assertion as TestCase might have more fields
