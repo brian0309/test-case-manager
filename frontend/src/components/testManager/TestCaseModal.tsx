@@ -143,6 +143,10 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
         setLocalCase(prev => prev ? ({ ...prev, expectedResult: e.target.value }) : null);
     };
 
+    const handleTestDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setLocalCase(prev => prev ? ({ ...prev, testDescription: e.target.value }) : null);
+    };
+
     const handleRestoreFromHistory = (historyEntry: HistoryEntry) => {
         if (!localCase) return;
 
@@ -431,6 +435,19 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                     </div>
                                 )}
                             </div>
+                        </div>
+                        
+                        {/* Test Description (between Page/Area and Steps) */}
+                        <div className="mb-2">
+                            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Test Description</label>
+                            <textarea
+                                value={localCase.testDescription || ''}
+                                onChange={handleTestDescriptionChange}
+                                onBlur={handleFieldBlur}
+                                className="w-full text-sm text-gray-700 bg-gray-50 border-transparent rounded-lg focus:border-blue-300 focus:bg-white focus:ring-0 p-3 transition-colors resize-none"
+                                rows={3}
+                                placeholder="Short description of what this test verifies"
+                            />
                         </div>
 
                         <div className="mb-4">

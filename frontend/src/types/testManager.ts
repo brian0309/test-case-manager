@@ -69,6 +69,7 @@ export interface TestCase {
     suite: string;
     area?: string;
     expectedResult?: string;
+    testDescription?: string;
     comments?: string;
     history?: HistoryEntry[];
     projectId: string;

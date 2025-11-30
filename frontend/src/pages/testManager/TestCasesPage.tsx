@@ -132,6 +132,7 @@ const TestCasesPage: React.FC = () => {
                 status: updatedCase.status,
                 area: updatedCase.area,
                 expectedResult: updatedCase.expectedResult,
+                testDescription: (updatedCase as any).testDescription,
                 stepsContent: (updatedCase as any).stepsContent,
                 comments: updatedCase.comments,
             } as any);
@@ -151,9 +152,10 @@ const TestCasesPage: React.FC = () => {
             priority: updatedCase.priority,
             status: updatedCase.status,
             area: updatedCase.area,
-            expectedResult: updatedCase.expectedResult,
-            stepsContent: (updatedCase as any).stepsContent,
-            comments: updatedCase.comments,
+                expectedResult: updatedCase.expectedResult,
+                testDescription: (updatedCase as any).testDescription,
+                stepsContent: (updatedCase as any).stepsContent,
+                comments: updatedCase.comments,
         } as any);
 
         // Return the created case so the modal can update its state with the real ID
@@ -226,6 +228,7 @@ const TestCasesPage: React.FC = () => {
                 status: testCase.status,
                 area: testCase.area,
                 expectedResult: (testCase.steps && testCase.steps.length > 0) ? testCase.steps[testCase.steps.length - 1].expectedResult : '',
+                testDescription: (testCase as any).testDescription || '',
                 stepsContent: stepsHtml,
                 steps: testCase.steps, // Also save structured steps if backend supports it
                 comments: '',

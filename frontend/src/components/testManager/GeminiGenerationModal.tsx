@@ -39,7 +39,8 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
     const [selectedFields, setSelectedFields] = useState({
         area: true,
         steps: true,
-        expected: true
+        expected: true,
+        testDescription: true,
     });
     const [context, setContext] = useState(`Project: ${projectContext}\nSuite: ${suiteContext}`);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -92,7 +93,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                 action: s.action,
                 expectedResult: s.expectedResult
             })) : [],
-            description: c.description,
+            	testDescription: c.description || (c as any).testDescription || '',
             preconditions: c.preconditions,
             expectedResult: c.expectedResult || ''
         } as any)); // Type assertion as TestCase might have more fields
@@ -189,6 +190,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                         />
                                         <span className="text-sm text-gray-700">Expected Result (Summary)</span>
                                     </label>
+                                    {/* Test Description is required and always included; no checkbox */}
                                 </div>
                             </div>
 

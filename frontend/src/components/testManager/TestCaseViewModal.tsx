@@ -153,6 +153,16 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                         </div>
                     )}
 
+                    {/* Test Description */}
+                    {testCase.testDescription && (
+                        <div className="mb-8">
+                            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Test Description</label>
+                            <div className="text-sm text-gray-700 bg-gray-50 rounded-lg p-4 border border-gray-200 whitespace-pre-wrap">
+                                {testCase.testDescription}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Test Steps */}
                     <div className="mb-8">
                         <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Test Steps</label>

@@ -29,6 +29,7 @@ const historyEntrySchema = new Schema<IHistoryEntry>(
       },
       area: String,
       expectedResult: String,
+      testDescription: String,
       stepsContent: String,
       comments: String,
     },
@@ -77,6 +78,11 @@ const testCaseSchema = new Schema<ITestCaseDocument>(
     expectedResult: {
       type: String,
       trim: true,
+    },
+    testDescription: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
     },
     stepsContent: {
       type: String, // HTML content from rich text editor

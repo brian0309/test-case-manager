@@ -51,6 +51,7 @@ const mapTestCaseResponse = (tc: TestCaseResponse): TestCase => ({
     suite: tc.suite,
     area: tc.area,
     expectedResult: tc.expectedResult,
+    testDescription: tc.testDescription,
     comments: tc.comments,
     history: tc.history?.map(h => ({
         id: h.id,

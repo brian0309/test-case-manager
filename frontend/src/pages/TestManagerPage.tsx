@@ -185,6 +185,7 @@ const TestManagerPage: React.FC = () => {
                 status: updatedCase.status,
                 area: updatedCase.area,
                 expectedResult: updatedCase.expectedResult,
+                testDescription: (updatedCase as any).testDescription,
                 stepsContent: updatedCase.stepsContent,
                 comments: updatedCase.comments,
             });
@@ -196,9 +197,10 @@ const TestManagerPage: React.FC = () => {
                 priority: updatedCase.priority,
                 status: updatedCase.status,
                 area: updatedCase.area,
-                expectedResult: updatedCase.expectedResult,
-                stepsContent: updatedCase.stepsContent,
-                comments: updatedCase.comments,
+                    expectedResult: updatedCase.expectedResult,
+                    testDescription: (updatedCase as any).testDescription,
+                    stepsContent: updatedCase.stepsContent,
+                    comments: updatedCase.comments,
             });
         }
     };

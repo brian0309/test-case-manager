@@ -47,6 +47,7 @@ export const createTestCase = async (
       : new Types.ObjectId(userId), // Default to creator
     area: data.area || "",
     expectedResult: data.expectedResult || "",
+    testDescription: data.testDescription || "",
     stepsContent: data.stepsContent || "",
     comments: data.comments || "",
     history: [],
@@ -187,6 +188,10 @@ export const updateTestCase = async (
     changedFields.push("expectedResult");
     snapshot.expectedResult = testCase.expectedResult;
   }
+  if (data.testDescription !== undefined && data.testDescription !== testCase.testDescription) {
+    changedFields.push("testDescription");
+    snapshot.testDescription = testCase.testDescription;
+  }
   if (data.stepsContent !== undefined && data.stepsContent !== testCase.stepsContent) {
     changedFields.push("stepsContent");
     snapshot.stepsContent = testCase.stepsContent;
@@ -206,6 +211,7 @@ export const updateTestCase = async (
     }),
     ...(data.area !== undefined && { area: data.area }),
     ...(data.expectedResult !== undefined && { expectedResult: data.expectedResult }),
+    ...(data.testDescription !== undefined && { testDescription: data.testDescription }),
     ...(data.stepsContent !== undefined && { stepsContent: data.stepsContent }),
     ...(data.comments !== undefined && { comments: data.comments }),
     lastModified: new Date(),
@@ -337,6 +343,7 @@ export const formatTestCaseResponse = (testCase: any): TestCaseResponse => {
     assignedTester: formatTesterResponse(testCase.assignedTester),
     area: testCase.area,
     expectedResult: testCase.expectedResult,
+    testDescription: testCase.testDescription,
     stepsContent: testCase.stepsContent,
     comments: testCase.comments,
     history: (testCase.history || []).map(formatHistoryEntry),

@@ -27,6 +27,7 @@ export interface IHistoryEntry {
     status?: Status;
     area?: string;
     expectedResult?: string;
+    testDescription?: string;
     stepsContent?: string;
     comments?: string;
   };
@@ -73,6 +74,7 @@ export interface ITestCase {
   assignedTester?: Types.ObjectId;
   area?: string;
   expectedResult?: string;
+  testDescription?: string;
   stepsContent?: string;
   comments?: string;
   history: IHistoryEntry[];
@@ -138,6 +140,7 @@ export interface HistoryEntryResponse {
     status?: Status;
     area?: string;
     expectedResult?: string;
+    testDescription?: string;
     stepsContent?: string;
     comments?: string;
   };
@@ -155,6 +158,7 @@ export interface TestCaseResponse {
   assignedTester: TesterResponse;
   area?: string;
   expectedResult?: string;
+  testDescription?: string;
   stepsContent?: string;
   comments?: string;
   history: HistoryEntryResponse[];
@@ -197,6 +201,7 @@ export interface CreateTestCaseRequest {
   assignedTesterId?: string;
   area?: string;
   expectedResult?: string;
+  testDescription?: string;
   stepsContent?: string;
   comments?: string;
 }
@@ -208,6 +213,7 @@ export interface UpdateTestCaseRequest {
   assignedTesterId?: string;
   area?: string;
   expectedResult?: string;
+  testDescription?: string;
   stepsContent?: string;
   comments?: string;
 }
