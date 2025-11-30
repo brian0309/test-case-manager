@@ -316,7 +316,7 @@ export const deleteTestCasesBulk = async (
 
   for (const testCase of testCases) {
     if (accessMap.get(testCase.projectId.toString())) {
-      idsToDelete.push(testCase._id);
+      idsToDelete.push(testCase._id as Types.ObjectId);
     }
   }
 
