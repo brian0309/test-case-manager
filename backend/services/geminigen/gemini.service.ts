@@ -122,7 +122,8 @@ export const generateTestCaseDetails = async (
         if (selectedFields.steps) fieldsRequest.push("list of Steps (Action + Expected Result)");
         if (selectedFields.expected) fieldsRequest.push("Expected Result Summary");
 
-        prompt = `Generate 3 distinct test case scenarios based on this context: "${context}".
+        prompt = `Based on this context: "${context}", generate a comprehensive set of test case scenarios covering all possible scenarios and edge cases.
+        The number of test cases should depend on the complexity and scope of the context provided.
         For each test case, provide a Title, Description, Preconditions${fieldsRequest.length > 0 ? ", " + fieldsRequest.join(", ") : ""}.`;
 
         const properties: any = {
