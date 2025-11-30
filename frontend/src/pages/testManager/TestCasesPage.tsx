@@ -31,6 +31,12 @@ const TestCasesPage: React.FC = () => {
         isFilterModalOpen,
         searchQuery,
         clearSearchQuery,
+        // Selection
+        isSelectionMode,
+        selectedTestCaseIds,
+        toggleTestCaseSelection,
+        selectAllTestCases,
+        clearSelection,
     } = useTestManagerStore();
     const [selectedCase, setSelectedCase] = useState<TestCase | null>(null);
     const [viewCase, setViewCase] = useState<TestCase | null>(null);
@@ -152,10 +158,10 @@ const TestCasesPage: React.FC = () => {
             priority: updatedCase.priority,
             status: updatedCase.status,
             area: updatedCase.area,
-                expectedResult: updatedCase.expectedResult,
-                testDescription: (updatedCase as any).testDescription,
-                stepsContent: (updatedCase as any).stepsContent,
-                comments: updatedCase.comments,
+            expectedResult: updatedCase.expectedResult,
+            testDescription: (updatedCase as any).testDescription,
+            stepsContent: (updatedCase as any).stepsContent,
+            comments: updatedCase.comments,
         } as any);
 
         // Return the created case so the modal can update its state with the real ID
@@ -262,6 +268,17 @@ const TestCasesPage: React.FC = () => {
                     isEditMode={isListEditMode}
                     onUpdate={handleInlineUpdate}
                     onStatusChange={handleStatusChange}
+                    // Selection props
+                    isSelectionMode={isSelectionMode}
+                    selectedIds={selectedTestCaseIds}
+                    onToggleSelection={toggleTestCaseSelection}
+                    onSelectAll={(selectAll: boolean) => {
+                        if (selectAll) {
+                            selectAllTestCases(displayedCases.map(tc => tc.id));
+                        } else {
+                            clearSelection();
+                        }
+                    }}
                 />
             </div>
             {viewCase && (

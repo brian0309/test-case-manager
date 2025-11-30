@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Filter, Download, PenLine, Check, Layers } from 'lucide-react';
+import { Plus, Filter, Download, Layers, Trash2, X, Check } from 'lucide-react';
 import { ViewMode } from '../../types/testManager';
 import { useTestManagerStore } from '../../store/testManagerStore';
 
@@ -14,6 +14,11 @@ interface ToolbarProps {
     isEditMode?: boolean;
     onToggleEditMode?: () => void;
     showEditToggle?: boolean;
+    // Selection props
+    isSelectionMode?: boolean;
+    onToggleSelectionMode?: () => void;
+    selectedCount?: number;
+    onDelete?: () => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = (props) => {
@@ -22,9 +27,11 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
         setViewMode,
         onNew,
         activeSuite,
-        isEditMode,
-        onToggleEditMode,
-        showEditToggle
+        showEditToggle,
+        isSelectionMode,
+        onToggleSelectionMode,
+        selectedCount = 0,
+        onDelete
     } = props;
 
     const getTitle = () => {
@@ -41,8 +48,6 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
 
     const { toggleFilterModal, filters } = useTestManagerStore();
     const hasActiveFilters = filters.status.length > 0 || filters.priority.length > 0 || !!filters.dateRange.start || !!filters.dateRange.end;
-
-
 
     // Helper to determine button text
     const getNewButtonText = () => {
@@ -80,26 +85,40 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
 
             <div className="w-full sm:w-auto flex items-center justify-end gap-2 sm:gap-3">
 
+                {/* Selection Mode Toggle (replaces Edit toggle for Cases view) */}
                 {showEditToggle && (
-                    <button
-                        onClick={onToggleEditMode}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-sm font-medium ${isEditMode
-                            ? 'bg-blue-100 text-blue-600'
-                            : 'text-gray-600 hover:bg-gray-100'
-                            }`}
-                    >
-                        {isEditMode ? (
-                            <>
-                                <Check className="h-4 w-4" />
-                                <span className="text-sm">Done</span>
-                            </>
-                        ) : (
-                            <>
-                                <PenLine className="h-4 w-4" />
-                                <span className="text-sm">Edit</span>
-                            </>
+                    <>
+                        {isSelectionMode && selectedCount > 0 && (
+                            <button
+                                onClick={onDelete}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                <span className="hidden sm:inline">Delete ({selectedCount})</span>
+                                <span className="sm:hidden">({selectedCount})</span>
+                            </button>
                         )}
-                    </button>
+
+                        <button
+                            onClick={onToggleSelectionMode}
+                            className={`flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors text-sm font-medium ${isSelectionMode
+                                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'text-gray-600 hover:bg-gray-100'
+                                }`}
+                        >
+                            {isSelectionMode ? (
+                                <>
+                                    <X className="h-4 w-4" />
+                                    <span>Cancel</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Check className="h-4 w-4" />
+                                    <span>Select</span>
+                                </>
+                            )}
+                        </button>
+                    </>
                 )}
 
                 <button

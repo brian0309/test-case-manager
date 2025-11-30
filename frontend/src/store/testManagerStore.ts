@@ -129,6 +129,17 @@ interface TestManagerStore {
     deleteTestCase: (id: string) => Promise<void>;
     bulkUpdateStatus: (ids: string[], status: Status) => Promise<void>;
 
+    // Selection State
+    isSelectionMode: boolean;
+    selectedTestCaseIds: string[];
+
+    // Selection Actions
+    setSelectionMode: (enabled: boolean) => void;
+    toggleTestCaseSelection: (id: string) => void;
+    selectAllTestCases: (ids: string[]) => void;
+    clearSelection: () => void;
+    bulkDeleteTestCases: (ids: string[]) => Promise<void>;
+
     // Legacy local state actions (for optimistic updates)
     setTestCases: (cases: TestCase[]) => void;
     addTestCase: (testCase: TestCase) => void;
@@ -180,6 +191,36 @@ export const useTestManagerStore = create<TestManagerStore>()(
             searchQuery: '',
             setSearchQuery: (query) => set({ searchQuery: query }),
             clearSearchQuery: () => set({ searchQuery: '' }),
+
+            // Selection Actions
+            isSelectionMode: false,
+            selectedTestCaseIds: [],
+            setSelectionMode: (enabled) => set({ isSelectionMode: enabled, selectedTestCaseIds: [] }),
+            toggleTestCaseSelection: (id) => set((state) => {
+                const isSelected = state.selectedTestCaseIds.includes(id);
+                return {
+                    selectedTestCaseIds: isSelected
+                        ? state.selectedTestCaseIds.filter(tid => tid !== id)
+                        : [...state.selectedTestCaseIds, id]
+                };
+            }),
+            selectAllTestCases: (ids) => set({ selectedTestCaseIds: ids }),
+            clearSelection: () => set({ selectedTestCaseIds: [] }),
+            bulkDeleteTestCases: async (ids) => {
+                set({ isLoading: true, error: null });
+                try {
+                    await testManagerApi.bulkDeleteTestCases(ids);
+                    set((state) => ({
+                        testCases: state.testCases.filter((tc) => !ids.includes(tc.id)),
+                        selectedTestCaseIds: [],
+                        isSelectionMode: false,
+                        isLoading: false,
+                    }));
+                } catch (error: any) {
+                    set({ error: error.message, isLoading: false });
+                    throw error;
+                }
+            },
 
             // =========================================================================
             // PROJECT ACTIONS

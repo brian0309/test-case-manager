@@ -238,3 +238,35 @@ export const bulkUpdateStatus = async (req: Request, res: Response): Promise<voi
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+/**
+ * DELETE /api/cases/bulk
+ * Bulk delete test cases
+ */
+export const deleteTestCasesBulk = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      res.status(400).json({ success: false, message: "Test case IDs are required" });
+      return;
+    }
+
+    const deletedCount = await testCaseService.deleteTestCasesBulk(ids, userId);
+
+    res.status(200).json({
+      success: true,
+      message: `Deleted ${deletedCount} test cases`,
+      data: { deletedCount },
+    });
+  } catch (error) {
+    console.error("Error in deleteTestCasesBulk:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};

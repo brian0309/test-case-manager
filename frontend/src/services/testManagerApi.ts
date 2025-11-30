@@ -375,6 +375,19 @@ export const bulkUpdateStatus = async (
   }
 };
 
+/**
+ * Bulk delete test cases
+ */
+export const bulkDeleteTestCases = async (ids: string[]): Promise<void> => {
+  try {
+    await axios.delete(`${API_URL}/cases/bulk`, {
+      data: { ids }
+    });
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
 // Export all API functions as a namespace for convenience
 export const testManagerApi = {
   // Projects
@@ -399,4 +412,5 @@ export const testManagerApi = {
   updateTestCase,
   deleteTestCase,
   bulkUpdateStatus,
+  bulkDeleteTestCases,
 };

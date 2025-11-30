@@ -11,6 +11,11 @@ interface TestCaseTableProps {
     onViewClick?: (item: TestCase) => void;
     isEditMode?: boolean;
     onUpdate?: (id: string, field: keyof TestCase, value: any) => void;
+    // Selection props
+    isSelectionMode?: boolean;
+    selectedIds?: string[];
+    onToggleSelection?: (id: string) => void;
+    onSelectAll?: (selectAll: boolean) => void;
 }
 
 const IdCell: React.FC<{ id: string }> = ({ id }) => {
@@ -49,7 +54,11 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
     onStatusChange,
     onViewClick,
     isEditMode = false,
-    onUpdate
+    onUpdate,
+    isSelectionMode = false,
+    selectedIds = [],
+    onToggleSelection,
+    onSelectAll
 }) => {
 
     const getStatusColor = (status: Status) => {
@@ -64,6 +73,9 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
         }
     };
 
+    const allSelected = data.length > 0 && data.every(item => selectedIds.includes(item.id));
+    const someSelected = data.some(item => selectedIds.includes(item.id));
+
     return (
         <div className="flex-1 bg-white">
             {/* Desktop table */}
@@ -71,7 +83,24 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                 <table className="w-full text-left border-collapse">
                     <thead className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                         <tr>
-                            <th className="py-3 pl-6 pr-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32">ID</th>
+                            {isSelectionMode && (
+                                <th className="py-3 pl-6 pr-2 w-10">
+                                    <div className="flex items-center justify-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={allSelected}
+                                            ref={input => {
+                                                if (input) {
+                                                    input.indeterminate = someSelected && !allSelected;
+                                                }
+                                            }}
+                                            onChange={(e) => onSelectAll?.(e.target.checked)}
+                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                        />
+                                    </div>
+                                </th>
+                            )}
+                            <th className={`py-3 ${isSelectionMode ? 'pl-2' : 'pl-6'} pr-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32`}>ID</th>
                             <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-1/3">Title</th>
                             <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32">Priority</th>
                             <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40">Status</th>
@@ -82,13 +111,32 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                         {data.map((item) => {
+                            const isSelected = selectedIds.includes(item.id);
                             return (
                                 <tr
                                     key={item.id}
-                                    onClick={() => onRowClick(item)}
-                                    className={`group transition-colors ${isEditMode ? '' : 'cursor-pointer'} hover:bg-gray-50/80`}
+                                    onClick={() => {
+                                        if (isSelectionMode) {
+                                            onToggleSelection?.(item.id);
+                                        } else {
+                                            onRowClick(item);
+                                        }
+                                    }}
+                                    className={`group transition-colors ${isEditMode ? '' : 'cursor-pointer'} ${isSelected ? 'bg-blue-50/50' : 'hover:bg-gray-50/80'}`}
                                 >
-                                    <td className="py-4 pl-6 pr-4 text-sm font-medium text-gray-500 font-mono tracking-tight group-hover:text-gray-900">
+                                    {isSelectionMode && (
+                                        <td className="py-4 pl-6 pr-2">
+                                            <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => onToggleSelection?.(item.id)}
+                                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                />
+                                            </div>
+                                        </td>
+                                    )}
+                                    <td className={`py-4 ${isSelectionMode ? 'pl-2' : 'pl-6'} pr-4 text-sm font-medium text-gray-500 font-mono tracking-tight group-hover:text-gray-900`}>
                                         <IdCell id={item.id} />
                                     </td>
 
@@ -212,30 +260,52 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                         {data.map(item => (
                             <div
                                 key={item.id}
-                                onClick={() => onRowClick(item)}
-                                className="mac-card p-3 flex flex-col gap-2 cursor-pointer hover:bg-gray-50 transition-colors"
+                                onClick={() => {
+                                    if (isSelectionMode) {
+                                        onToggleSelection?.(item.id);
+                                    } else {
+                                        onRowClick(item);
+                                    }
+                                }}
+                                className={`mac-card p-3 flex flex-col gap-2 cursor-pointer transition-colors ${selectedIds.includes(item.id) ? 'bg-blue-50/50 border-blue-200' : 'hover:bg-gray-50'}`}
                             >
-                                <div className="flex items-start justify-between">
+                                <div className="flex items-start gap-3">
+                                    {isSelectionMode && (
+                                        <div className="pt-1" onClick={(e) => e.stopPropagation()}>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.includes(item.id)}
+                                                onChange={() => onToggleSelection?.(item.id)}
+                                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            />
+                                        </div>
+                                    )}
                                     <div className="flex-1 min-w-0">
-                                        <div className="text-sm font-medium text-gray-900">{item.title}</div>
-                                        <div className="text-xs text-gray-400 mt-1 truncate">{item.suite}</div>
-                                    </div>
-                                    <div className="ml-3 flex-shrink-0">
-                                        <StatusBadge type="priority" value={item.priority} />
-                                    </div>
-                                </div>
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex-1 min-w-0">
+                                                <div className="text-sm font-medium text-gray-900">{item.title}</div>
+                                                <div className="text-xs text-gray-400 mt-1 truncate">{item.suite}</div>
+                                            </div>
+                                            <div className="ml-3 flex-shrink-0">
+                                                <StatusBadge type="priority" value={item.priority} />
+                                            </div>
+                                        </div>
 
-                                <div className="flex items-center justify-between mt-2">
-                                    <div className="text-xs font-mono text-gray-500 break-words max-w-[40%]">{item.id}</div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm text-gray-600 truncate max-w-[120px]">{item.assignedTester.name}</span>
-                                        <img src={item.assignedTester.avatar} alt={item.assignedTester.name} className="h-6 w-6 rounded-full border border-gray-200" />
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); onViewClick?.(item); }}
-                                            className="ml-2 inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
-                                        >
-                                            View
-                                        </button>
+                                        <div className="flex items-center justify-between mt-2">
+                                            <div className="text-xs font-mono text-gray-500 break-words max-w-[40%]">{item.id}</div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm text-gray-600 truncate max-w-[120px]">{item.assignedTester.name}</span>
+                                                <img src={item.assignedTester.avatar} alt={item.assignedTester.name} className="h-6 w-6 rounded-full border border-gray-200" />
+                                                {!isSelectionMode && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); onViewClick?.(item); }}
+                                                        className="ml-2 inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                                                    >
+                                                        View
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

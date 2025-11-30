@@ -7,6 +7,7 @@ import {
   updateTestCase,
   deleteTestCase,
   bulkUpdateStatus,
+  deleteTestCasesBulk,
 } from "../controllers/testCase.controller.js";
 import { verifyToken } from "../../../middleware/verifyToken.js";
 
@@ -17,6 +18,7 @@ router.use(verifyToken);
 
 // Bulk operations (must be before /:id routes)
 router.patch("/bulk-status", bulkUpdateStatus);
+router.delete("/bulk", deleteTestCasesBulk);
 
 // Test case CRUD
 router.get("/:id", getTestCase);

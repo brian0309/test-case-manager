@@ -288,6 +288,47 @@ export const bulkUpdateStatus = async (
 };
 
 /**
+ * Bulk delete test cases
+ */
+export const deleteTestCasesBulk = async (
+  testCaseIds: string[],
+  userId: string
+): Promise<number> => {
+  let deletedCount = 0;
+
+  // We could do a bulk delete, but we need to check permissions for each one or group them by project.
+  // For simplicity and safety, we'll iterate and check permissions.
+  // Optimization: Find all test cases, group by project, check project access once per project.
+
+  const testCases = await TestCase.find({ _id: { $in: testCaseIds } });
+
+  // Group by project
+  const projectIds = [...new Set(testCases.map(tc => tc.projectId.toString()))];
+
+  // Check access for all involved projects
+  const accessMap = new Map<string, boolean>();
+  for (const projectId of projectIds) {
+    const hasAccess = await projectService.hasProjectAccess(projectId, userId);
+    accessMap.set(projectId, hasAccess);
+  }
+
+  const idsToDelete: Types.ObjectId[] = [];
+
+  for (const testCase of testCases) {
+    if (accessMap.get(testCase.projectId.toString())) {
+      idsToDelete.push(testCase._id);
+    }
+  }
+
+  if (idsToDelete.length > 0) {
+    const result = await TestCase.deleteMany({ _id: { $in: idsToDelete } });
+    deletedCount = result.deletedCount;
+  }
+
+  return deletedCount;
+};
+
+/**
  * Format tester for API response
  */
 const formatTesterResponse = (user: any): TesterResponse => {
@@ -316,7 +357,7 @@ const formatHistoryEntry = (entry: any): HistoryEntryResponse => {
     timestamp: entry.timestamp?.toISOString() || new Date().toISOString(),
     user: formatTesterResponse(entry.userId),
     snapshot: entry.snapshot || {},
-    changedFields: entry.changedFields || [],
+    changedFields: (entry.changedFields as string[]) || [],
   };
 };
 

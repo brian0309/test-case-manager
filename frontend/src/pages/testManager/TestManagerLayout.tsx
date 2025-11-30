@@ -1,21 +1,28 @@
 import React from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Toolbar from '../../components/testManager/Toolbar';
+import ConfirmationModal from '../../components/testManager/ConfirmationModal';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { ViewMode } from '../../types/testManager';
 
 const TestManagerLayout: React.FC = () => {
-    const { 
-        viewMode, 
-        setViewMode, 
-        activeSuite, 
+    const {
+        viewMode,
+        setViewMode,
+        activeSuite,
         activeSuiteId,
-        setActiveSuite, 
+        setActiveSuite,
         setActiveSuiteId,
         activeProject,
+        // Selection state
+        isSelectionMode,
+        setSelectionMode,
+        selectedTestCaseIds,
+        bulkDeleteTestCases
     } = useTestManagerStore();
     const navigate = useNavigate();
     const location = useLocation();
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
 
     // Sync URL with store
     React.useEffect(() => {
@@ -32,6 +39,10 @@ const TestManagerLayout: React.FC = () => {
         if (mode === 'projects') {
             setActiveSuite(null);
             setActiveSuiteId(null);
+        }
+        // Exit selection mode when changing views
+        if (isSelectionMode) {
+            setSelectionMode(false);
         }
         navigate(`/test-manager/${mode}`);
     };
@@ -64,6 +75,25 @@ const TestManagerLayout: React.FC = () => {
         navigate('/test-manager/cases', { state: { openNewCase: true } });
     };
 
+    const handleToggleSelectionMode = () => {
+        setSelectionMode(!isSelectionMode);
+    };
+
+    const handleDeleteClick = () => {
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        try {
+            await bulkDeleteTestCases(selectedTestCaseIds);
+            setIsDeleteModalOpen(false);
+            // Toast success handled by store or component? Ideally here or store.
+            // Since we don't have toast here, we rely on the component to show updates.
+        } catch (error) {
+            console.error("Failed to delete test cases", error);
+        }
+    };
+
     return (
         <div className="flex flex-col h-full font-sans text-gray-900">
             <main className="mac-card flex-1 flex flex-col min-w-0 overflow-hidden relative mx-2 my-2">
@@ -76,11 +106,26 @@ const TestManagerLayout: React.FC = () => {
                     activeSuiteId={activeSuiteId}
                     activeProject={activeProject}
                     showEditToggle={viewMode === 'cases'}
+                    // Selection props
+                    isSelectionMode={isSelectionMode}
+                    onToggleSelectionMode={handleToggleSelectionMode}
+                    selectedCount={selectedTestCaseIds.length}
+                    onDelete={handleDeleteClick}
                 />
                 <div className="flex-1 overflow-auto relative">
                     <Outlet />
                 </div>
             </main>
+
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title={`Delete ${selectedTestCaseIds.length} Test Case${selectedTestCaseIds.length !== 1 ? 's' : ''}`}
+                message={`Are you sure you want to delete ${selectedTestCaseIds.length} test case${selectedTestCaseIds.length !== 1 ? 's' : ''}? This action cannot be undone.`}
+                confirmText="Delete"
+                isDestructive={true}
+            />
         </div>
     );
 };
