@@ -110,7 +110,8 @@ export const generateTestCaseDetails = async (
     context: string,
     type: 'new_case' | 'steps' | 'area' | 'expected',
     selectedFields: { area: boolean; steps: boolean; expected: boolean } = { area: true, steps: true, expected: true },
-    existingTestCases: string[] = []
+    existingTestCases: string[] = [],
+    imageUrls: string[] = []
 ) => {
     const ai = new GoogleGenAI({ apiKey });
 
@@ -127,7 +128,11 @@ export const generateTestCaseDetails = async (
             ? `\n\nExisting test cases to avoid duplicating:\n${existingTestCases.map((title, i) => `${i + 1}. ${title}`).join('\n')}\n\nIMPORTANT: Generate NEW test cases that are different from the existing ones listed above. Do not create similar or duplicate test cases.`
             : '';
 
-        prompt = `Based on this context: "${context}", generate a comprehensive set of test case scenarios covering all possible scenarios and edge cases.
+        const imageContext = imageUrls.length > 0
+            ? `\n\nI have also provided ${imageUrls.length} image(s) as additional context. Please analyze the images carefully and use the visual information to generate comprehensive test cases that cover UI elements, interactions, and functionality visible in the images.`
+            : '';
+
+        prompt = `Based on this context: "${context}"${imageContext}, generate a comprehensive set of test case scenarios covering all possible scenarios and edge cases.
         The number of test cases should depend on the complexity and scope of the context provided.
         For each test case, provide a Title, Description, Preconditions${fieldsRequest.length > 0 ? ", " + fieldsRequest.join(", ") : ""}.${existingCasesContext}`;
 
@@ -174,9 +179,25 @@ export const generateTestCaseDetails = async (
     }
 
     try {
+        // Build contents array with text and images
+        const contents: any[] = [];
+        
+        // Add images first if provided
+        for (const imageUrl of imageUrls) {
+            contents.push({
+                fileData: {
+                    fileUri: imageUrl,
+                    mimeType: getMimeTypeFromUrl(imageUrl)
+                }
+            });
+        }
+        
+        // Add the text prompt
+        contents.push(prompt);
+
         const response = await ai.models.generateContent({
             model: "gemini-2.0-flash",
-            contents: prompt,
+            contents: contents,
             config: {
                 responseMimeType: "application/json",
                 responseSchema: schema
@@ -227,3 +248,18 @@ export const generateTestCaseDetails = async (
         throw error;
     }
 };
+
+/**
+ * Helper function to get MIME type from URL based on file extension
+ */
+function getMimeTypeFromUrl(url: string): string {
+    const extension = url.split('.').pop()?.toLowerCase().split('?')[0];
+    const mimeTypes: Record<string, string> = {
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'webp': 'image/webp',
+    };
+    return mimeTypes[extension || ''] || 'image/jpeg';
+}
