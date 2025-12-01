@@ -5,6 +5,7 @@ import { API_URL } from '../../utils/api';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { TestCase, Status, Priority } from '../../types/testManager';
+import ImagePreviewUploader from '../ImagePreviewUploader';
 
 interface GeminiGenerationModalProps {
     onClose: () => void;
@@ -45,6 +46,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
         testDescription: true,
     });
     const [context, setContext] = useState(`Project: ${projectContext}\nSuite: ${suiteContext}`);
+    const [contextImages, setContextImages] = useState<string[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedCases, setGeneratedCases] = useState<GeneratedCase[]>([]);
     const [expandedCaseIndex, setExpandedCaseIndex] = useState<number | null>(null);
@@ -54,7 +56,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
         try {
             const response = await axios.post(
                 `${API_URL}/gemini/generate`,
-                { context, type: generationType, selectedFields, existingTestCases },
+                { context, type: generationType, selectedFields, existingTestCases, imageUrls: contextImages },
                 { withCredentials: true }
             );
 
@@ -151,13 +153,21 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Context
                                 </label>
-                                <textarea
-                                    value={context}
-                                    onChange={(e) => setContext(e.target.value)}
-                                    rows={4}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    placeholder="Describe what you want to test..."
-                                />
+                                <div className="space-y-3">
+                                    <ImagePreviewUploader
+                                        images={contextImages}
+                                        onImagesChange={setContextImages}
+                                        maxImages={5}
+                                        disabled={isGenerating}
+                                    />
+                                    <textarea
+                                        value={context}
+                                        onChange={(e) => setContext(e.target.value)}
+                                        rows={4}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        placeholder="Describe what you want to test..."
+                                    />
+                                </div>
                             </div>
 
                             <div>

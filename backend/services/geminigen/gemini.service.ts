@@ -41,7 +41,7 @@ export const generateTestSteps = async (apiKey: string, testCaseTitle: string, c
         Each step should have an Action and an Expected Result. Keep it concise.`;
 
         const response = await ai.models.generateContent({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-pro",
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -110,7 +110,8 @@ export const generateTestCaseDetails = async (
     context: string,
     type: 'new_case' | 'steps' | 'area' | 'expected',
     selectedFields: { area: boolean; steps: boolean; expected: boolean } = { area: true, steps: true, expected: true },
-    existingTestCases: string[] = []
+    existingTestCases: string[] = [],
+    imageUrls: string[] = []
 ) => {
     const ai = new GoogleGenAI({ apiKey });
 
@@ -127,8 +128,24 @@ export const generateTestCaseDetails = async (
             ? `\n\nExisting test cases to avoid duplicating:\n${existingTestCases.map((title, i) => `${i + 1}. ${title}`).join('\n')}\n\nIMPORTANT: Generate NEW test cases that are different from the existing ones listed above. Do not create similar or duplicate test cases.`
             : '';
 
-        prompt = `Based on this context: "${context}", generate a comprehensive set of test case scenarios covering all possible scenarios and edge cases.
-        The number of test cases should depend on the complexity and scope of the context provided.
+        const imageContext = imageUrls.length > 0
+            ? `\n\nI have also provided ${imageUrls.length} image(s) as additional context. Please analyze the images carefully and use the visual information to generate comprehensive test cases that cover UI elements, interactions, and functionality visible in the images.`
+            : '';
+
+        prompt = `Based on this context: "${context}"${imageContext}, generate a comprehensive set of test case scenarios covering all possible scenarios and edge cases.
+        Generate at least 10 test cases (or more if the context is highly complex), ensuring broad coverage across different categories:
+
+        - Positive Test Cases: Normal, expected workflows that should pass
+        - Negative Test Cases: Invalid inputs, error conditions, and failure scenarios
+        - Edge Cases: Boundary conditions, extreme values, and unusual but valid inputs
+        - Boundary Value Tests: Tests at the limits of acceptable input ranges
+        - Error Handling Tests: How the system responds to errors, exceptions, and unexpected conditions
+        - Security/Validation Tests: Input validation, sanitization, and security-related scenarios
+        - Performance/Stress Tests: High load, large data sets, or resource-intensive operations
+        - Integration Tests: Interactions between different components or systems
+        - Accessibility Tests: Usability for different user types or assistive technologies
+        - Cross-browser/Cross-platform Tests: If applicable to the context
+
         For each test case, provide a Title, Description, Preconditions${fieldsRequest.length > 0 ? ", " + fieldsRequest.join(", ") : ""}.${existingCasesContext}`;
 
         const properties: any = {
@@ -174,9 +191,43 @@ export const generateTestCaseDetails = async (
     }
 
     try {
+        // Build contents array - if we have images, we need to use multimodal input
+        let contents: any;
+        
+        if (imageUrls.length > 0) {
+            // For images, we need to fetch and convert to base64
+            const parts: any[] = [];
+            
+            // Add images as inline data
+            for (const imageUrl of imageUrls) {
+                try {
+                    const imageData = await fetchImageAsBase64(imageUrl);
+                    if (imageData) {
+                        parts.push({
+                            inlineData: {
+                                mimeType: imageData.mimeType,
+                                data: imageData.base64
+                            }
+                        });
+                    }
+                } catch (imgError) {
+                    console.warn(`Failed to fetch image ${imageUrl}:`, imgError);
+                    // Continue without this image
+                }
+            }
+            
+            // Add the text prompt
+            parts.push({ text: prompt });
+            
+            contents = parts;
+        } else {
+            // No images, just use the text prompt
+            contents = prompt;
+        }
+
         const response = await ai.models.generateContent({
             model: "gemini-2.0-flash",
-            contents: prompt,
+            contents: contents,
             config: {
                 responseMimeType: "application/json",
                 responseSchema: schema
@@ -227,3 +278,43 @@ export const generateTestCaseDetails = async (
         throw error;
     }
 };
+
+/**
+ * Helper function to get MIME type from URL based on file extension
+ */
+function getMimeTypeFromUrl(url: string): string {
+    const extension = url.split('.').pop()?.toLowerCase().split('?')[0];
+    const mimeTypes: Record<string, string> = {
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'webp': 'image/webp',
+    };
+    return mimeTypes[extension || ''] || 'image/jpeg';
+}
+
+/**
+ * Fetches an image from a URL and returns it as base64
+ */
+async function fetchImageAsBase64(imageUrl: string): Promise<{ base64: string; mimeType: string } | null> {
+    try {
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+            console.warn(`Failed to fetch image: ${response.status} ${response.statusText}`);
+            return null;
+        }
+        
+        const arrayBuffer = await response.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString('base64');
+        const contentType = response.headers.get('content-type') || getMimeTypeFromUrl(imageUrl);
+        
+        return {
+            base64,
+            mimeType: contentType
+        };
+    } catch (error) {
+        console.error(`Error fetching image from ${imageUrl}:`, error);
+        return null;
+    }
+}
