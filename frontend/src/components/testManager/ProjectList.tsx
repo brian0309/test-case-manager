@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Project } from '../../types/testManager';
-import { FolderGit2, MoreHorizontal, Users, Layers, Calendar, Plus } from 'lucide-react';
+import { FolderGit2, MoreHorizontal, Users, Layers, Calendar, Plus, FileText } from 'lucide-react';
 
 interface ProjectListProps {
     projects: Project[];
@@ -53,6 +53,10 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
                                 <div className="flex items-center gap-1.5 hover:text-gray-700 transition-colors">
                                     <Layers className="h-3.5 w-3.5" />
                                     {project.stats.suites} Suites
+                                </div>
+                                <div className="flex items-center gap-1.5 hover:text-gray-700 transition-colors">
+                                    <FileText className="h-3.5 w-3.5" />
+                                    {project.stats.cases} Cases
                                 </div>
                                 <div className="flex items-center gap-1.5 hover:text-gray-700 transition-colors">
                                     <Users className="h-3.5 w-3.5" />
