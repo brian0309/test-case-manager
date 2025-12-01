@@ -41,7 +41,7 @@ export const generateTestSteps = async (apiKey: string, testCaseTitle: string, c
         Each step should have an Action and an Expected Result. Keep it concise.`;
 
         const response = await ai.models.generateContent({
-            model: "gemini-2.0-flash",
+            model: "gemini-2.5-pro",
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -133,7 +133,19 @@ export const generateTestCaseDetails = async (
             : '';
 
         prompt = `Based on this context: "${context}"${imageContext}, generate a comprehensive set of test case scenarios covering all possible scenarios and edge cases.
-        The number of test cases should depend on the complexity and scope of the context provided.
+        Generate at least 10 test cases (or more if the context is highly complex), ensuring broad coverage across different categories:
+
+        - Positive Test Cases: Normal, expected workflows that should pass
+        - Negative Test Cases: Invalid inputs, error conditions, and failure scenarios
+        - Edge Cases: Boundary conditions, extreme values, and unusual but valid inputs
+        - Boundary Value Tests: Tests at the limits of acceptable input ranges
+        - Error Handling Tests: How the system responds to errors, exceptions, and unexpected conditions
+        - Security/Validation Tests: Input validation, sanitization, and security-related scenarios
+        - Performance/Stress Tests: High load, large data sets, or resource-intensive operations
+        - Integration Tests: Interactions between different components or systems
+        - Accessibility Tests: Usability for different user types or assistive technologies
+        - Cross-browser/Cross-platform Tests: If applicable to the context
+
         For each test case, provide a Title, Description, Preconditions${fieldsRequest.length > 0 ? ", " + fieldsRequest.join(", ") : ""}.${existingCasesContext}`;
 
         const properties: any = {
