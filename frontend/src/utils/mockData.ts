@@ -13,6 +13,8 @@ export const mockProjects: Project[] = [
         name: 'Core E-Commerce',
         description: 'Main consumer-facing shopping platform and checkout flow.',
         color: 'bg-blue-500',
+        ownerId: 'u1',
+        members: [{ id: 'u1', name: 'Sarah Chen', email: 'sarah@example.com' }],
         stats: { suites: 12, cases: 145, members: 8 },
         updatedAt: '2023-10-26T09:30:00Z'
     },
@@ -21,6 +23,8 @@ export const mockProjects: Project[] = [
         name: 'iOS Mobile App',
         description: 'Native iOS application testing including iPadOS support.',
         color: 'bg-purple-500',
+        ownerId: 'u2',
+        members: [{ id: 'u2', name: 'Mike Ross', email: 'mike@example.com' }],
         stats: { suites: 8, cases: 92, members: 5 },
         updatedAt: '2023-10-25T14:20:00Z'
     },
@@ -29,6 +33,8 @@ export const mockProjects: Project[] = [
         name: 'Merchant Dashboard',
         description: 'Admin panel for verified merchants to manage inventory.',
         color: 'bg-emerald-500',
+        ownerId: 'u3',
+        members: [{ id: 'u3', name: 'Jessica Lee', email: 'jessica@example.com' }],
         stats: { suites: 15, cases: 210, members: 12 },
         updatedAt: '2023-10-24T11:15:00Z'
     },
@@ -37,6 +43,8 @@ export const mockProjects: Project[] = [
         name: 'Payment Gateway',
         description: 'Integration testing for Stripe, PayPal, and crypto payments.',
         color: 'bg-orange-500',
+        ownerId: 'u1',
+        members: [{ id: 'u1', name: 'Sarah Chen', email: 'sarah@example.com' }],
         stats: { suites: 4, cases: 64, members: 3 },
         updatedAt: '2023-10-20T16:45:00Z'
     }

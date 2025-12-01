@@ -27,11 +27,19 @@ export interface TestStep {
     expectedResult: string;
 }
 
+export interface ProjectMember {
+    id: string;
+    name: string;
+    email: string;
+}
+
 export interface Project {
     id: string;
     name: string;
     description: string;
     color: string;
+    ownerId: string;
+    members: ProjectMember[];
     stats: {
         suites: number;
         cases: number;

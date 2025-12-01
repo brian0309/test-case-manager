@@ -35,6 +35,8 @@ const mapProjectResponse = (p: ProjectResponse): Project => ({
     name: p.name,
     description: p.description || '',
     color: p.color,
+    ownerId: p.ownerId,
+    members: p.members,
     stats: p.stats,
     updatedAt: p.updatedAt,
 });
@@ -114,6 +116,8 @@ interface TestManagerStore {
     createProject: (data: CreateProjectRequest) => Promise<Project>;
     updateProject: (id: string, data: UpdateProjectRequest) => Promise<Project>;
     deleteProject: (id: string) => Promise<void>;
+    addProjectMember: (projectId: string, email: string) => Promise<Project>;
+    removeProjectMember: (projectId: string, memberId: string) => Promise<Project>;
 
     // Test Suite actions
     fetchTestSuites: (projectId: string) => Promise<void>;
@@ -276,6 +280,38 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         projects: state.projects.filter((p) => p.id !== id),
                         isLoading: false,
                     }));
+                } catch (error: any) {
+                    set({ error: error.message, isLoading: false });
+                    throw error;
+                }
+            },
+
+            addProjectMember: async (projectId, email) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await testManagerApi.addProjectMember(projectId, { email });
+                    const project = mapProjectResponse(response);
+                    set((state) => ({
+                        projects: state.projects.map((p) => (p.id === projectId ? project : p)),
+                        isLoading: false,
+                    }));
+                    return project;
+                } catch (error: any) {
+                    set({ error: error.message, isLoading: false });
+                    throw error;
+                }
+            },
+
+            removeProjectMember: async (projectId, memberId) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await testManagerApi.removeProjectMember(projectId, memberId);
+                    const project = mapProjectResponse(response);
+                    set((state) => ({
+                        projects: state.projects.map((p) => (p.id === projectId ? project : p)),
+                        isLoading: false,
+                    }));
+                    return project;
                 } catch (error: any) {
                     set({ error: error.message, isLoading: false });
                     throw error;

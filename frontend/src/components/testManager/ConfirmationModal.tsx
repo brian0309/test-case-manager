@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 
 interface ConfirmationModalProps {
@@ -11,6 +11,8 @@ interface ConfirmationModalProps {
     cancelText?: string;
     isDestructive?: boolean;
     isLoading?: boolean;
+    /** If provided, user must type this text exactly to enable the confirm button */
+    requireConfirmationText?: string;
 }
 
 const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -23,8 +25,22 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     cancelText = 'Cancel',
     isDestructive = false,
     isLoading = false,
+    requireConfirmationText,
 }) => {
+    const [typedConfirmation, setTypedConfirmation] = useState('');
+
+    // Reset the typed confirmation when modal opens/closes
+    useEffect(() => {
+        if (!isOpen) {
+            setTypedConfirmation('');
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
+
+    const isConfirmDisabled = requireConfirmationText 
+        ? typedConfirmation !== requireConfirmationText 
+        : false;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 backdrop-blur-sm animate-in fade-in duration-200">
@@ -44,6 +60,21 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                             <p className="text-sm text-gray-600 leading-relaxed">
                                 {message}
                             </p>
+                            {requireConfirmationText && (
+                                <div className="mt-4">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Type <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-red-600">{requireConfirmationText}</span> to confirm:
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={typedConfirmation}
+                                        onChange={(e) => setTypedConfirmation(e.target.value)}
+                                        placeholder={requireConfirmationText}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+                                        autoComplete="off"
+                                    />
+                                </div>
+                            )}
                         </div>
                         <button
                             onClick={onClose}
@@ -64,8 +95,8 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                     </button>
                     <button
                         onClick={onConfirm}
-                        disabled={isLoading}
-                        className={`px-4 py-2 text-sm font-medium text-white rounded-lg shadow-sm transition-all disabled:opacity-50 flex items-center gap-2
+                        disabled={isLoading || isConfirmDisabled}
+                        className={`px-4 py-2 text-sm font-medium text-white rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2
                             ${isDestructive
                                 ? 'bg-red-600 hover:bg-red-700 active:bg-red-800'
                                 : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'

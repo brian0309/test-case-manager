@@ -2,12 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ProjectList from '../../components/testManager/ProjectList';
 import ProjectCreateModal from '../../components/testManager/ProjectCreateModal';
+import ConfirmationModal from '../../components/testManager/ConfirmationModal';
 import { useTestManagerStore } from '../../store/testManagerStore';
+import { Project } from '../../types/testManager';
 
 const ProjectsPage: React.FC = () => {
-    const { projects, fetchProjects, setActiveProject, searchQuery, clearSearchQuery } = useTestManagerStore();
+    const { projects, fetchProjects, setActiveProject, searchQuery, clearSearchQuery, deleteProject } = useTestManagerStore();
     const navigate = useNavigate();
     const location = useLocation();
+
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Fetch projects when this page mounts so the list is populated after reload
     useEffect(() => {
@@ -36,11 +42,32 @@ const ProjectsPage: React.FC = () => {
         navigate('/test-manager/suites');
     };
 
-    const [isCreateOpen, setIsCreateOpen] = useState(false);
-
     const handleCreateProject = async () => {
         // open the modal to create a project
         setIsCreateOpen(true);
+    };
+
+    const handleEditProject = (project: Project) => {
+        // TODO: Implement edit modal - for now just log
+        console.log('Edit project:', project);
+    };
+
+    const handleDeleteProject = (project: Project) => {
+        setProjectToDelete(project);
+    };
+
+    const confirmDeleteProject = async () => {
+        if (!projectToDelete) return;
+        
+        setIsDeleting(true);
+        try {
+            await deleteProject(projectToDelete.id);
+            setProjectToDelete(null);
+        } catch (error) {
+            console.error('Failed to delete project:', error);
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     // Filter projects based on search query
@@ -52,10 +79,25 @@ const ProjectsPage: React.FC = () => {
     return (
         <>
             <ProjectCreateModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+            
+            <ConfirmationModal
+                isOpen={!!projectToDelete}
+                onClose={() => setProjectToDelete(null)}
+                onConfirm={confirmDeleteProject}
+                title="Delete Project"
+                message={`Are you sure you want to delete "${projectToDelete?.name}"? This will permanently remove all test suites and test cases in this project.`}
+                confirmText="Delete Project"
+                isDestructive={true}
+                isLoading={isDeleting}
+                requireConfirmationText="delete"
+            />
+            
             <ProjectList
                 projects={filteredProjects}
                 onProjectClick={handleProjectClick}
                 onCreate={handleCreateProject}
+                onEdit={handleEditProject}
+                onDelete={handleDeleteProject}
             />
         </>
     );
