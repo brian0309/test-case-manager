@@ -179,21 +179,39 @@ export const generateTestCaseDetails = async (
     }
 
     try {
-        // Build contents array with text and images
-        const contents: any[] = [];
+        // Build contents array - if we have images, we need to use multimodal input
+        let contents: any;
         
-        // Add images first if provided
-        for (const imageUrl of imageUrls) {
-            contents.push({
-                fileData: {
-                    fileUri: imageUrl,
-                    mimeType: getMimeTypeFromUrl(imageUrl)
+        if (imageUrls.length > 0) {
+            // For images, we need to fetch and convert to base64
+            const parts: any[] = [];
+            
+            // Add images as inline data
+            for (const imageUrl of imageUrls) {
+                try {
+                    const imageData = await fetchImageAsBase64(imageUrl);
+                    if (imageData) {
+                        parts.push({
+                            inlineData: {
+                                mimeType: imageData.mimeType,
+                                data: imageData.base64
+                            }
+                        });
+                    }
+                } catch (imgError) {
+                    console.warn(`Failed to fetch image ${imageUrl}:`, imgError);
+                    // Continue without this image
                 }
-            });
+            }
+            
+            // Add the text prompt
+            parts.push({ text: prompt });
+            
+            contents = parts;
+        } else {
+            // No images, just use the text prompt
+            contents = prompt;
         }
-        
-        // Add the text prompt
-        contents.push(prompt);
 
         const response = await ai.models.generateContent({
             model: "gemini-2.0-flash",
@@ -262,4 +280,29 @@ function getMimeTypeFromUrl(url: string): string {
         'webp': 'image/webp',
     };
     return mimeTypes[extension || ''] || 'image/jpeg';
+}
+
+/**
+ * Fetches an image from a URL and returns it as base64
+ */
+async function fetchImageAsBase64(imageUrl: string): Promise<{ base64: string; mimeType: string } | null> {
+    try {
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+            console.warn(`Failed to fetch image: ${response.status} ${response.statusText}`);
+            return null;
+        }
+        
+        const arrayBuffer = await response.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString('base64');
+        const contentType = response.headers.get('content-type') || getMimeTypeFromUrl(imageUrl);
+        
+        return {
+            base64,
+            mimeType: contentType
+        };
+    } catch (error) {
+        console.error(`Error fetching image from ${imageUrl}:`, error);
+        return null;
+    }
 }

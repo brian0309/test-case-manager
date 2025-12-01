@@ -105,8 +105,8 @@ const ImagePreviewUploader: React.FC<ImagePreviewUploaderProps> = ({
     };
 
     const allImages = [
-        ...images.map((url, idx) => ({ id: `img-${idx}`, url, isUploading: false })),
-        ...uploadingImages
+        ...images.map((url, idx) => ({ id: `img-${idx}`, url, isUploading: false, originalIndex: idx })),
+        ...uploadingImages.map(img => ({ ...img, originalIndex: -1 }))
     ];
 
     return (
@@ -136,7 +136,7 @@ const ImagePreviewUploader: React.FC<ImagePreviewUploaderProps> = ({
                             ) : (
                                 <button
                                     type="button"
-                                    onClick={() => removeImage(index)}
+                                    onClick={() => removeImage(img.originalIndex)}
                                     className="absolute top-0.5 right-0.5 w-4 h-4 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                                     disabled={disabled}
                                 >
