@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { X, Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTestManagerStore } from '../../store/testManagerStore';
+import { Project } from '../../types/testManager';
 
 interface Props {
     isOpen: boolean;
     onClose: () => void;
+    project: Project | null;
 }
 
 const colors = [
@@ -17,8 +19,8 @@ const colors = [
     'bg-gray-500',
 ];
 
-const ProjectCreateModal: React.FC<Props> = ({ isOpen, onClose }) => {
-    const { createProject, fetchProjects, setActiveProject } = useTestManagerStore();
+const ProjectEditModal: React.FC<Props> = ({ isOpen, onClose, project }) => {
+    const { updateProject, fetchProjects } = useTestManagerStore();
 
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -26,7 +28,17 @@ const ProjectCreateModal: React.FC<Props> = ({ isOpen, onClose }) => {
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    if (!isOpen) return null;
+    // Reset form when project changes or modal opens
+    useEffect(() => {
+        if (project && isOpen) {
+            setName(project.name);
+            setDescription(project.description || '');
+            setColor(project.color || colors[0]);
+            setError(null);
+        }
+    }, [project, isOpen]);
+
+    if (!isOpen || !project) return null;
 
     const validate = (): string | null => {
         if (!name || name.trim().length === 0) return 'Project name is required';
@@ -46,15 +58,17 @@ const ProjectCreateModal: React.FC<Props> = ({ isOpen, onClose }) => {
         setError(null);
 
         try {
-            const created = await createProject({ name: name.trim(), description: description.trim(), color });
-            // Set active project and refresh list
-            setActiveProject(created.id);
+            await updateProject(project.id, { 
+                name: name.trim(), 
+                description: description.trim(), 
+                color 
+            });
             await fetchProjects();
-            toast.success('Project created successfully');
+            toast.success('Project updated successfully');
             onClose();
         } catch (err: any) {
-            setError(err?.message || 'Could not create project');
-            toast.error(err?.message || 'Failed to create project');
+            setError(err?.message || 'Could not update project');
+            toast.error(err?.message || 'Failed to update project');
         } finally {
             setIsSaving(false);
         }
@@ -66,7 +80,7 @@ const ProjectCreateModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
             <div className="relative w-full h-full sm:h-auto sm:max-w-2xl bg-white sm:rounded-2xl shadow-2xl overflow-y-auto animate-[scaleIn_0.12s_ease-out]">
                 <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-gray-50">
-                    <h3 className="text-lg font-semibold">Create New Project</h3>
+                    <h3 className="text-lg font-semibold">Edit Project</h3>
                     <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100">
                         <X className="h-5 w-5 text-gray-600" />
                     </button>
@@ -122,8 +136,8 @@ const ProjectCreateModal: React.FC<Props> = ({ isOpen, onClose }) => {
                         disabled={isSaving}
                         className={`px-4 py-2 rounded-lg text-sm text-white bg-blue-500 hover:bg-blue-600 flex items-center gap-2 ${isSaving ? 'opacity-80 cursor-wait' : ''}`}
                     >
-                        <Plus className="h-4 w-4" />
-                        {isSaving ? 'Creating...' : 'Create Project'}
+                        <Save className="h-4 w-4" />
+                        {isSaving ? 'Saving...' : 'Save Changes'}
                     </button>
                 </div>
             </div>
@@ -131,4 +145,4 @@ const ProjectCreateModal: React.FC<Props> = ({ isOpen, onClose }) => {
     );
 };
 
-export default ProjectCreateModal;
+export default ProjectEditModal;

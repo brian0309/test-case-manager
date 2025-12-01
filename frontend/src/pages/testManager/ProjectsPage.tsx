@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import ProjectList from '../../components/testManager/ProjectList';
 import ProjectCreateModal from '../../components/testManager/ProjectCreateModal';
+import ProjectEditModal from '../../components/testManager/ProjectEditModal';
 import ConfirmationModal from '../../components/testManager/ConfirmationModal';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { Project } from '../../types/testManager';
@@ -12,6 +14,7 @@ const ProjectsPage: React.FC = () => {
     const location = useLocation();
 
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
     const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
@@ -48,8 +51,7 @@ const ProjectsPage: React.FC = () => {
     };
 
     const handleEditProject = (project: Project) => {
-        // TODO: Implement edit modal - for now just log
-        console.log('Edit project:', project);
+        setProjectToEdit(project);
     };
 
     const handleDeleteProject = (project: Project) => {
@@ -59,12 +61,15 @@ const ProjectsPage: React.FC = () => {
     const confirmDeleteProject = async () => {
         if (!projectToDelete) return;
         
+        const projectName = projectToDelete.name;
         setIsDeleting(true);
         try {
             await deleteProject(projectToDelete.id);
             setProjectToDelete(null);
-        } catch (error) {
+            toast.success(`Project "${projectName}" deleted successfully`);
+        } catch (error: any) {
             console.error('Failed to delete project:', error);
+            toast.error(error?.message || 'Failed to delete project');
         } finally {
             setIsDeleting(false);
         }
@@ -79,6 +84,12 @@ const ProjectsPage: React.FC = () => {
     return (
         <>
             <ProjectCreateModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
+            
+            <ProjectEditModal 
+                isOpen={!!projectToEdit} 
+                onClose={() => setProjectToEdit(null)} 
+                project={projectToEdit} 
+            />
             
             <ConfirmationModal
                 isOpen={!!projectToDelete}

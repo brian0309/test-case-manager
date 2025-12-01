@@ -1,20 +1,55 @@
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TestCase, TestSuite, Status } from '../../types/testManager';
-import { Folder, MoreHorizontal, PieChart, AlertCircle, Plus } from 'lucide-react';
+import { Folder, MoreHorizontal, PieChart, AlertCircle, Plus, Pencil, Trash2 } from 'lucide-react';
 
 interface TestSuiteListProps {
     testCases: TestCase[];
     testSuites: TestSuite[];
     onSuiteClick: (suiteName: string, suiteId?: string) => void;
     onCreate: () => void;
+    onEdit?: (suite: TestSuite) => void;
+    onDelete?: (suite: TestSuite) => void;
 }
 
-const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, onSuiteClick, onCreate }) => {
+interface DropdownPosition {
+    suiteId: string;
+    top: number;
+    right: number;
+}
+
+const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, onSuiteClick, onCreate, onEdit, onDelete }) => {
+    const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
+    const [selectedSuite, setSelectedSuite] = useState<TestSuite | null>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setDropdownPosition(null);
+                setSelectedSuite(null);
+            }
+        };
+
+        if (dropdownPosition) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [dropdownPosition]);
+
     // Use testSuites from API if available, otherwise derive from testCases for backwards compatibility
     const suites = testSuites.length > 0
-        ? testSuites.map(s => ({ id: s.id, name: s.name }))
-        : Array.from(new Set(testCases.map(tc => tc.suite))).sort().map(name => ({ id: undefined, name }));
+        ? testSuites
+        : Array.from(new Set(testCases.map(tc => tc.suite))).sort().map(name => ({ 
+            id: name, 
+            name, 
+            projectId: '', 
+            description: '', 
+            createdAt: new Date().toISOString(), 
+            updatedAt: new Date().toISOString() 
+        } as TestSuite));
 
     const getSuiteStats = (suiteName: string) => {
         const cases = testCases.filter(c => c.suite === suiteName);
@@ -35,7 +70,35 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
         return { total, passed, failed, retest, skipped, draft, executed, progress };
     };
 
+    const handleMenuClick = (e: React.MouseEvent, suite: TestSuite) => {
+        e.stopPropagation();
+        setSelectedSuite(suite);
+
+        // Position dropdown near the button
+        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+        setDropdownPosition({
+            suiteId: suite.id,
+            top: rect.bottom + 4,
+            right: window.innerWidth - rect.right,
+        });
+    };
+
+    const handleEdit = () => {
+        setDropdownPosition(null);
+        if (selectedSuite && onEdit) {
+            onEdit(selectedSuite);
+        }
+    };
+
+    const handleDelete = () => {
+        setDropdownPosition(null);
+        if (selectedSuite && onDelete) {
+            onDelete(selectedSuite);
+        }
+    };
+
     return (
+        <>
         <div className="p-6 md:p-8">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {/* Create New Suite Card */}
@@ -71,7 +134,7 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                         </div>
                                     </div>
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); }}
+                                        onClick={(e) => handleMenuClick(e, suite)}
                                         className="p-2 text-gray-300 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
                                     >
                                         <MoreHorizontal className="h-5 w-5" />
@@ -167,6 +230,35 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                 })}
             </div>
         </div>
+
+        {/* Dropdown Menu */}
+        {dropdownPosition && (
+            <div
+                ref={dropdownRef}
+                className="fixed z-50 bg-white rounded-xl shadow-lg border border-gray-100 py-1 w-48 animate-[scaleIn_0.1s_ease-out]"
+                style={{
+                    top: dropdownPosition.top,
+                    right: dropdownPosition.right,
+                }}
+            >
+                <button
+                    onClick={handleEdit}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                    <Pencil className="h-4 w-4 text-gray-400" />
+                    Edit Suite
+                </button>
+                <div className="h-px bg-gray-100 my-1" />
+                <button
+                    onClick={handleDelete}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                >
+                    <Trash2 className="h-4 w-4" />
+                    Delete Suite
+                </button>
+            </div>
+        )}
+        </>
     );
 };
 

@@ -1,22 +1,33 @@
-import React, { useState } from 'react';
-import { X, Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTestManagerStore } from '../../store/testManagerStore';
+import { TestSuite } from '../../types/testManager';
 
 interface Props {
     isOpen: boolean;
     onClose: () => void;
+    suite: TestSuite | null;
     projectId?: string | null;
 }
 
-const TestSuiteCreateModal: React.FC<Props> = ({ isOpen, onClose, projectId }) => {
-    const { createTestSuite, fetchTestSuites, setActiveSuite, setActiveSuiteId } = useTestManagerStore();
+const TestSuiteEditModal: React.FC<Props> = ({ isOpen, onClose, suite, projectId }) => {
+    const { updateTestSuite, fetchTestSuites } = useTestManagerStore();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    if (!isOpen) return null;
+    // Reset form when suite changes or modal opens
+    useEffect(() => {
+        if (suite && isOpen) {
+            setName(suite.name);
+            setDescription(suite.description || '');
+            setError(null);
+        }
+    }, [suite, isOpen]);
+
+    if (!isOpen || !suite) return null;
 
     const validate = (): string | null => {
         if (!name || name.trim().length === 0) return 'Suite name is required';
@@ -31,24 +42,22 @@ const TestSuiteCreateModal: React.FC<Props> = ({ isOpen, onClose, projectId }) =
             return;
         }
 
-        if (!projectId) {
-            setError('No project selected');
-            return;
-        }
-
         setIsSaving(true);
         setError(null);
         try {
-            const suite = await createTestSuite(projectId, { name: name.trim(), description: description.trim() });
-            // Refresh suites and set active
-            await fetchTestSuites(projectId);
-            setActiveSuite(suite.name);
-            setActiveSuiteId(suite.id);
-            toast.success('Test suite created successfully');
+            await updateTestSuite(suite.id, { 
+                name: name.trim(), 
+                description: description.trim() 
+            });
+            // Refresh suites
+            if (projectId) {
+                await fetchTestSuites(projectId);
+            }
+            toast.success('Test suite updated successfully');
             onClose();
         } catch (err: any) {
-            setError(err?.message || 'Could not create test suite');
-            toast.error(err?.message || 'Failed to create test suite');
+            setError(err?.message || 'Could not update test suite');
+            toast.error(err?.message || 'Failed to update test suite');
         } finally {
             setIsSaving(false);
         }
@@ -58,9 +67,9 @@ const TestSuiteCreateModal: React.FC<Props> = ({ isOpen, onClose, projectId }) =
         <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-2">
             <div className="absolute inset-0 bg-white/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
-            <div className="relative w-full h-full sm:h-auto sm:max-w-xl bg-white sm:rounded-2xl shadow-2xl overflow-y-auto">
+            <div className="relative w-full h-full sm:h-auto sm:max-w-xl bg-white sm:rounded-2xl shadow-2xl overflow-y-auto animate-[scaleIn_0.12s_ease-out]">
                 <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-gray-50">
-                    <h3 className="text-lg font-semibold">Create New Suite</h3>
+                    <h3 className="text-lg font-semibold">Edit Suite</h3>
                     <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100">
                         <X className="h-5 w-5 text-gray-600" />
                     </button>
@@ -100,8 +109,8 @@ const TestSuiteCreateModal: React.FC<Props> = ({ isOpen, onClose, projectId }) =
                         disabled={isSaving}
                         className={`px-4 py-2 rounded-lg text-sm text-white bg-blue-500 hover:bg-blue-600 flex items-center gap-2 ${isSaving ? 'opacity-80 cursor-wait' : ''}`}
                     >
-                        <Plus className="h-4 w-4" />
-                        {isSaving ? 'Creating...' : 'Create Suite'}
+                        <Save className="h-4 w-4" />
+                        {isSaving ? 'Saving...' : 'Save Changes'}
                     </button>
                 </div>
             </div>
@@ -109,4 +118,4 @@ const TestSuiteCreateModal: React.FC<Props> = ({ isOpen, onClose, projectId }) =
     );
 };
 
-export default TestSuiteCreateModal;
+export default TestSuiteEditModal;
