@@ -1,8 +1,25 @@
 
 import React, { useState } from 'react';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { TestCase, Priority, Status } from '../../types/testManager';
 import StatusBadge from './StatusBadge';
-import { Edit, Copy, Check } from 'lucide-react';
+import { Edit, Copy, Check, GripVertical } from 'lucide-react';
 
 interface TestCaseTableProps {
     data: TestCase[];
@@ -16,6 +33,9 @@ interface TestCaseTableProps {
     selectedIds?: string[];
     onToggleSelection?: (id: string) => void;
     onSelectAll?: (selectAll: boolean) => void;
+    // Reorder props
+    enableReorder?: boolean;
+    onReorder?: (items: TestCase[]) => void;
 }
 
 const IdCell: React.FC<{ id: string }> = ({ id }) => {
@@ -48,6 +68,200 @@ const IdCell: React.FC<{ id: string }> = ({ id }) => {
     );
 };
 
+interface SortableRowProps {
+    item: TestCase;
+    isSelected: boolean;
+    isSelectionMode: boolean;
+    isEditMode: boolean;
+    enableReorder: boolean;
+    onRowClick: (item: TestCase) => void;
+    onToggleSelection?: (id: string) => void;
+    onStatusChange?: (caseId: string, status: Status) => void;
+    onViewClick?: (item: TestCase) => void;
+    onUpdate?: (id: string, field: keyof TestCase, value: any) => void;
+    getStatusColor: (status: Status) => string;
+}
+
+const SortableRow: React.FC<SortableRowProps> = ({
+    item,
+    isSelected,
+    isSelectionMode,
+    isEditMode,
+    enableReorder,
+    onRowClick,
+    onToggleSelection,
+    onStatusChange,
+    onViewClick,
+    onUpdate,
+    getStatusColor,
+}) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ 
+        id: item.id,
+        disabled: !enableReorder,
+    });
+
+    const style: React.CSSProperties = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+        zIndex: isDragging ? 1000 : undefined,
+        position: isDragging ? 'relative' : undefined,
+        backgroundColor: isDragging ? '#eff6ff' : undefined,
+    };
+
+    return (
+        <tr
+            ref={setNodeRef}
+            style={style}
+            onClick={() => {
+                if (isSelectionMode) {
+                    onToggleSelection?.(item.id);
+                } else {
+                    onRowClick(item);
+                }
+            }}
+            className={`group transition-colors ${isEditMode ? '' : 'cursor-pointer'} ${isSelected ? 'bg-blue-50/50' : 'hover:bg-gray-50/80'} ${isDragging ? 'shadow-lg' : ''}`}
+        >
+            {enableReorder && (
+                <td className="py-4 pl-3 pr-1 w-10">
+                    <div
+                        {...attributes}
+                        {...listeners}
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab active:cursor-grabbing touch-none"
+                        title="Drag to reorder"
+                    >
+                        <GripVertical className="h-4 w-4" />
+                    </div>
+                </td>
+            )}
+            {isSelectionMode && (
+                <td className="py-4 pl-6 pr-2">
+                    <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => onToggleSelection?.(item.id)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                    </div>
+                </td>
+            )}
+            <td className={`py-4 ${isSelectionMode ? 'pl-2' : enableReorder ? 'pl-2' : 'pl-6'} pr-4 text-sm font-medium text-gray-500 font-mono tracking-tight group-hover:text-gray-900`}>
+                <IdCell id={item.id} />
+            </td>
+
+            {/* Title Cell: Editable or Text */}
+            <td className="py-4 px-4">
+                {isEditMode ? (
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <input
+                            type="text"
+                            value={item.title}
+                            onChange={(e) => onUpdate?.(item.id, 'title', e.target.value)}
+                            className="w-full bg-white border border-blue-300 rounded px-2 py-1 text-sm text-gray-900 focus:ring-2 focus:ring-blue-100 outline-none"
+                        />
+                        <div className="text-xs text-gray-400 mt-1">{item.suite}</div>
+                    </div>
+                ) : (
+                    <>
+                        <div className="text-[15px] font-medium text-gray-900">{item.title}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">{item.suite}</div>
+                    </>
+                )}
+            </td>
+
+            {/* Priority: Editable or Badge */}
+            <td className="py-4 px-4">
+                {isEditMode ? (
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <select
+                            value={item.priority}
+                            onChange={(e) => onUpdate?.(item.id, 'priority', e.target.value)}
+                            className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-xs text-gray-700 outline-none focus:border-blue-300"
+                        >
+                            {Object.values(Priority).map(p => (
+                                <option key={p} value={p}>{p}</option>
+                            ))}
+                        </select>
+                    </div>
+                ) : (
+                    <StatusBadge type="priority" value={item.priority} />
+                )}
+            </td>
+
+            {/* Unified Status Dropdown */}
+            <td className="py-4 px-4">
+                <div onClick={e => e.stopPropagation()}>
+                    <select
+                        value={item.status}
+                        onChange={(e) => onStatusChange?.(item.id, e.target.value as Status)}
+                        className={`text-xs font-semibold px-2.5 py-1 rounded-full border appearance-none cursor-pointer outline-none transition-colors text-center min-w-[90px] ${getStatusColor(item.status)}`}
+                    >
+                        <option value={Status.Draft}>Draft</option>
+                        <option value={Status.Passed}>Passed</option>
+                        <option value={Status.Failed}>Failed</option>
+                        <option value={Status.PassFixed}>Pass - Fixed</option>
+                        <option value={Status.Retest}>Retest</option>
+                        <option value={Status.Skipped}>Skipped</option>
+                    </select>
+                </div>
+            </td>
+
+            {/* Last Modified */}
+            <td className="py-4 px-4">
+                <div className="text-sm text-gray-600">
+                    {new Date(item.lastModified).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                    })}
+                </div>
+                <div className="text-xs text-gray-400 mt-0.5">
+                    {new Date(item.lastModified).toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                    })}
+                </div>
+            </td>
+
+            <td className="py-4 px-4 text-right pr-6">
+                <div className="flex items-center justify-end gap-2">
+                    <span className="text-sm text-gray-600 truncate max-w-[100px]">{item.assignedTester.name}</span>
+                    <img
+                        src={item.assignedTester.avatar}
+                        alt={item.assignedTester.name}
+                        className="h-6 w-6 rounded-full border border-gray-200"
+                    />
+                </div>
+            </td>
+
+            {/* Actions Column */}
+            <td className="py-4 px-4 text-center">
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onViewClick?.(item);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                    title="Edit Test Case"
+                >
+                    <Edit className="h-3.5 w-3.5" />
+                    Edit
+                </button>
+            </td>
+        </tr>
+    );
+};
+
 const TestCaseTable: React.FC<TestCaseTableProps> = ({
     data,
     onRowClick,
@@ -58,8 +272,20 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
     isSelectionMode = false,
     selectedIds = [],
     onToggleSelection,
-    onSelectAll
+    onSelectAll,
+    enableReorder = false,
+    onReorder,
 }) => {
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
 
     const getStatusColor = (status: Status) => {
         switch (status) {
@@ -76,177 +302,90 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
     const allSelected = data.length > 0 && data.every(item => selectedIds.includes(item.id));
     const someSelected = data.some(item => selectedIds.includes(item.id));
 
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, over } = event;
+
+        if (over && active.id !== over.id) {
+            const oldIndex = data.findIndex((item) => item.id === active.id);
+            const newIndex = data.findIndex((item) => item.id === over.id);
+            const newData = arrayMove(data, oldIndex, newIndex);
+            
+            // Update order values
+            const reorderedData = newData.map((item, index) => ({
+                ...item,
+                order: index,
+            }));
+            
+            onReorder?.(reorderedData);
+        }
+    };
+
     return (
         <div className="flex-1 bg-white">
             {/* Desktop table */}
             <div className="hidden sm:block overflow-auto">
-                <table className="w-full text-left border-collapse">
-                    <thead className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
-                        <tr>
-                            {isSelectionMode && (
-                                <th className="py-3 pl-6 pr-2 w-10">
-                                    <div className="flex items-center justify-center">
-                                        <input
-                                            type="checkbox"
-                                            checked={allSelected}
-                                            ref={input => {
-                                                if (input) {
-                                                    input.indeterminate = someSelected && !allSelected;
-                                                }
-                                            }}
-                                            onChange={(e) => onSelectAll?.(e.target.checked)}
-                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                        />
-                                    </div>
-                                </th>
-                            )}
-                            <th className={`py-3 ${isSelectionMode ? 'pl-2' : 'pl-6'} pr-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32`}>ID</th>
-                            <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-1/3">Title</th>
-                            <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32">Priority</th>
-                            <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40">Status</th>
-                            <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40">Last Modified</th>
-                            <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32 text-right pr-6">Assignee</th>
-                            <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-24"></th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {data.map((item) => {
-                            const isSelected = selectedIds.includes(item.id);
-                            return (
-                                <tr
-                                    key={item.id}
-                                    onClick={() => {
-                                        if (isSelectionMode) {
-                                            onToggleSelection?.(item.id);
-                                        } else {
-                                            onRowClick(item);
-                                        }
-                                    }}
-                                    className={`group transition-colors ${isEditMode ? '' : 'cursor-pointer'} ${isSelected ? 'bg-blue-50/50' : 'hover:bg-gray-50/80'}`}
-                                >
-                                    {isSelectionMode && (
-                                        <td className="py-4 pl-6 pr-2">
-                                            <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isSelected}
-                                                    onChange={() => onToggleSelection?.(item.id)}
-                                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                                />
-                                            </div>
-                                        </td>
-                                    )}
-                                    <td className={`py-4 ${isSelectionMode ? 'pl-2' : 'pl-6'} pr-4 text-sm font-medium text-gray-500 font-mono tracking-tight group-hover:text-gray-900`}>
-                                        <IdCell id={item.id} />
-                                    </td>
-
-                                    {/* Title Cell: Editable or Text */}
-                                    <td className="py-4 px-4">
-                                        {isEditMode ? (
-                                            <div onClick={(e) => e.stopPropagation()}>
-                                                <input
-                                                    type="text"
-                                                    value={item.title}
-                                                    onChange={(e) => onUpdate?.(item.id, 'title', e.target.value)}
-                                                    className="w-full bg-white border border-blue-300 rounded px-2 py-1 text-sm text-gray-900 focus:ring-2 focus:ring-blue-100 outline-none"
-                                                />
-                                                <div className="text-xs text-gray-400 mt-1">{item.suite}</div>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <div className="text-[15px] font-medium text-gray-900">{item.title}</div>
-                                                <div className="text-xs text-gray-400 mt-0.5">{item.suite}</div>
-                                            </>
-                                        )}
-                                    </td>
-
-
-
-                                    {/* Priority: Editable or Badge */}
-                                    <td className="py-4 px-4">
-                                        {isEditMode ? (
-                                            <div onClick={(e) => e.stopPropagation()}>
-                                                <select
-                                                    value={item.priority}
-                                                    onChange={(e) => onUpdate?.(item.id, 'priority', e.target.value)}
-                                                    className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-xs text-gray-700 outline-none focus:border-blue-300"
-                                                >
-                                                    {Object.values(Priority).map(p => (
-                                                        <option key={p} value={p}>{p}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        ) : (
-                                            <StatusBadge type="priority" value={item.priority} />
-                                        )}
-                                    </td>
-
-                                    {/* Unified Status Dropdown */}
-                                    <td className="py-4 px-4">
-                                        <div onClick={e => e.stopPropagation()}>
-                                            <select
-                                                value={item.status}
-                                                onChange={(e) => onStatusChange?.(item.id, e.target.value as Status)}
-                                                className={`text-xs font-semibold px-2.5 py-1 rounded-full border appearance-none cursor-pointer outline-none transition-colors text-center min-w-[90px] ${getStatusColor(item.status)}`}
-                                            >
-                                                <option value={Status.Draft}>Draft</option>
-                                                <option value={Status.Passed}>Passed</option>
-                                                <option value={Status.Failed}>Failed</option>
-                                                <option value={Status.PassFixed}>Pass - Fixed</option>
-                                                <option value={Status.Retest}>Retest</option>
-                                                <option value={Status.Skipped}>Skipped</option>
-                                            </select>
-                                        </div>
-                                    </td>
-
-                                    {/* Last Modified */}
-                                    <td className="py-4 px-4">
-                                        <div className="text-sm text-gray-600">
-                                            {new Date(item.lastModified).toLocaleDateString('en-US', {
-                                                month: 'short',
-                                                day: 'numeric',
-                                                year: 'numeric'
-                                            })}
-                                        </div>
-                                        <div className="text-xs text-gray-400 mt-0.5">
-                                            {new Date(item.lastModified).toLocaleTimeString('en-US', {
-                                                hour: 'numeric',
-                                                minute: '2-digit',
-                                                hour12: true
-                                            })}
-                                        </div>
-                                    </td>
-
-                                    <td className="py-4 px-4 text-right pr-6">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <span className="text-sm text-gray-600 truncate max-w-[100px]">{item.assignedTester.name}</span>
-                                            <img
-                                                src={item.assignedTester.avatar}
-                                                alt={item.assignedTester.name}
-                                                className="h-6 w-6 rounded-full border border-gray-200"
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                >
+                    <table className="w-full text-left border-collapse">
+                        <thead className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                            <tr>
+                                {enableReorder && (
+                                    <th className="py-3 pl-2 pr-0 w-8"></th>
+                                )}
+                                {isSelectionMode && (
+                                    <th className="py-3 pl-6 pr-2 w-10">
+                                        <div className="flex items-center justify-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={allSelected}
+                                                ref={input => {
+                                                    if (input) {
+                                                        input.indeterminate = someSelected && !allSelected;
+                                                    }
+                                                }}
+                                                onChange={(e) => onSelectAll?.(e.target.checked)}
+                                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                             />
                                         </div>
-                                    </td>
-
-                                    {/* Actions Column */}
-                                    <td className="py-4 px-4 text-center">
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                onViewClick?.(item);
-                                            }}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
-                                            title="Edit Test Case"
-                                        >
-                                            <Edit className="h-3.5 w-3.5" />
-                                            Edit
-                                        </button>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+                                    </th>
+                                )}
+                                <th className={`py-3 ${isSelectionMode ? 'pl-2' : enableReorder ? 'pl-2' : 'pl-6'} pr-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32`}>ID</th>
+                                <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-1/3">Title</th>
+                                <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32">Priority</th>
+                                <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40">Status</th>
+                                <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40">Last Modified</th>
+                                <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32 text-right pr-6">Assignee</th>
+                                <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-24"></th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            <SortableContext
+                                items={data.map((item) => item.id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                {data.map((item) => (
+                                    <SortableRow
+                                        key={item.id}
+                                        item={item}
+                                        isSelected={selectedIds.includes(item.id)}
+                                        isSelectionMode={isSelectionMode}
+                                        isEditMode={isEditMode}
+                                        enableReorder={enableReorder}
+                                        onRowClick={onRowClick}
+                                        onToggleSelection={onToggleSelection}
+                                        onStatusChange={onStatusChange}
+                                        onViewClick={onViewClick}
+                                        onUpdate={onUpdate}
+                                        getStatusColor={getStatusColor}
+                                    />
+                                ))}
+                            </SortableContext>
+                        </tbody>
+                    </table>
+                </DndContext>
             </div>
 
             {/* Mobile list */}

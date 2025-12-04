@@ -388,6 +388,26 @@ export const bulkDeleteTestCases = async (ids: string[]): Promise<void> => {
   }
 };
 
+/**
+ * Reorder test cases within a suite
+ */
+export const reorderTestCases = async (
+  suiteId: string,
+  orderedIds: string[]
+): Promise<{ updatedCount: number }> => {
+  try {
+    // Convert orderedIds array to items array with { caseId, newOrder } format (backend expects these field names)
+    const items = orderedIds.map((id, index) => ({ caseId: id, newOrder: index }));
+    const response = await axios.patch<ApiResponse<{ updatedCount: number }>>(
+      `${API_URL}/suites/${suiteId}/cases/reorder`,
+      { items }
+    );
+    return response.data.data || { updatedCount: 0 };
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
 // Export all API functions as a namespace for convenience
 export const testManagerApi = {
   // Projects
@@ -413,4 +433,5 @@ export const testManagerApi = {
   deleteTestCase,
   bulkUpdateStatus,
   bulkDeleteTestCases,
+  reorderTestCases,
 };

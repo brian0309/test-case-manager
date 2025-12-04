@@ -30,6 +30,7 @@ const TestManagerLayout: React.FC = () => {
         if (path.includes('/projects')) setViewMode('projects');
         else if (path.includes('/cases')) setViewMode('cases');
         else if (path.includes('/suites')) setViewMode('suites');
+        else if (path.includes('/runs')) setViewMode('runs');
         else if (path.includes('/plans')) setViewMode('plans');
     }, [location.pathname, setViewMode]);
 
@@ -62,6 +63,12 @@ const TestManagerLayout: React.FC = () => {
         if (viewMode === 'cases') {
             // Open the new test case modal on the cases page
             navigate('/test-manager/cases', { state: { openNewCase: true } });
+            return;
+        }
+
+        if (viewMode === 'runs') {
+            // Open the new test run modal on the runs page
+            navigate('/test-manager/runs', { state: { openNewRun: true } });
             return;
         }
 

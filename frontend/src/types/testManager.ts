@@ -15,6 +15,21 @@ export enum Status {
     Skipped = 'Skipped'
 }
 
+export enum TestRunStatus {
+    Draft = 'Draft',
+    InProgress = 'In Progress',
+    Completed = 'Completed',
+    Abandoned = 'Abandoned'
+}
+
+export enum RunItemStatus {
+    NotRun = 'Not Run',
+    Passed = 'Passed',
+    Failed = 'Failed',
+    Blocked = 'Blocked',
+    Skipped = 'Skipped'
+}
+
 export interface Tester {
     id: string;
     name: string;
@@ -75,22 +90,87 @@ export interface TestCase {
     steps: TestStep[];
     stepsContent?: string;
     suite: string;
+    suiteId: string;
     area?: string;
     expectedResult?: string;
     testDescription?: string;
     comments?: string;
     history?: HistoryEntry[];
     projectId: string;
+    order: number;
+}
+
+// Test Run Types
+export interface CaseSnapshot {
+    title: string;
+    priority?: string;
+    area?: string;
+    expectedResult?: string;
+    testDescription?: string;
+    stepsContent?: string;
+}
+
+export interface RunItem {
+    id: string;
+    caseId: string;
+    caseSnapshot: CaseSnapshot;
+    order: number;
+    status: RunItemStatus;
+    assignedTo?: Tester;
+    actualResult?: string;
+    attachments?: string[];
+    timeSpent?: number;
+    executedAt?: string;
+    executedBy?: Tester;
+}
+
+export interface ResultsSummary {
+    total: number;
+    passed: number;
+    failed: number;
+    blocked: number;
+    skipped: number;
+    notRun: number;
+    passRate: number;
+    totalTimeSpent: number;
 }
 
 export interface TestRun {
     id: string;
     title: string;
-    status: string;
-    progress: number;
-    assignedTo: Tester;
-    caseResults: any[];
-    dueDate: string;
+    description?: string;
+    projectId: string;
+    suiteId?: string;
+    suiteName?: string;
+    status: TestRunStatus;
+    environment?: string;
+    tags?: string[];
+    items: RunItem[];
+    createdBy: Tester;
+    startedAt?: string;
+    completedAt?: string;
+    resultsSummary: ResultsSummary;
+    createdAt: string;
+    updatedAt: string;
 }
 
-export type ViewMode = 'projects' | 'cases' | 'suites' | 'plans';
+export interface TestRunListItem {
+    id: string;
+    title: string;
+    description?: string;
+    projectId: string;
+    suiteId?: string;
+    suiteName?: string;
+    status: TestRunStatus;
+    environment?: string;
+    tags?: string[];
+    itemCount: number;
+    createdBy: Tester;
+    startedAt?: string;
+    completedAt?: string;
+    resultsSummary: ResultsSummary;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export type ViewMode = 'projects' | 'cases' | 'suites' | 'plans' | 'runs';

@@ -7,7 +7,8 @@ import {
     Search,
     ChevronRight,
     Inbox,
-    Layers
+    Layers,
+    Play
 } from 'lucide-react';
 import { ViewMode } from '../../types/testManager';
 
@@ -21,6 +22,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) => {
         { id: 'projects', icon: Layers, label: 'Projects' },
         { id: 'cases', icon: Inbox, label: 'All Cases' },
         { id: 'suites', icon: Folder, label: 'Test Suites' },
+        { id: 'runs', icon: Play, label: 'Test Runs' },
         { id: 'plans', icon: ListChecks, label: 'Plans' },
     ];
 

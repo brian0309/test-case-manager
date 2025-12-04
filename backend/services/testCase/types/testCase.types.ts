@@ -80,6 +80,7 @@ export interface ITestCase {
   history: IHistoryEntry[];
   createdBy: Types.ObjectId;
   lastModified: Date;
+  order: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -162,6 +163,7 @@ export interface TestCaseResponse {
   stepsContent?: string;
   comments?: string;
   history: HistoryEntryResponse[];
+  order: number;
   lastModified: string;
   createdAt: string;
   updatedAt: string;
@@ -221,4 +223,11 @@ export interface UpdateTestCaseRequest {
 export interface BulkUpdateStatusRequest {
   testCaseIds: string[];
   status: Status;
+}
+
+export interface ReorderTestCasesRequest {
+  items: Array<{
+    caseId: string;
+    newOrder: number;
+  }>;
 }

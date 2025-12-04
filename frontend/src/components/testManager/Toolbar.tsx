@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Filter, Download, Layers, Trash2, X, Check } from 'lucide-react';
+import { Plus, Filter, Download, Layers, Trash2, X, Check, Play } from 'lucide-react';
 import { ViewMode } from '../../types/testManager';
 import { useTestManagerStore } from '../../store/testManagerStore';
 
@@ -39,6 +39,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
             case 'projects': return 'Projects';
             case 'suites': return 'Test Suites';
             case 'plans': return 'Test Plans';
+            case 'runs': return 'Test Runs';
             case 'cases':
                 // Show suite name if selected, otherwise "All Test Cases"
                 return activeSuite || 'Test Cases';
@@ -53,6 +54,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
     const getNewButtonText = () => {
         if (viewMode === 'projects') return 'Project';
         if (viewMode === 'suites') return 'Suite';
+        if (viewMode === 'runs') return 'Run';
         return 'Case';
     };
 
@@ -67,7 +69,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
                 {/* Segmented control compact on mobile */}
                 <div className="ml-2 bg-gray-100 p-0.5 rounded-full flex items-center h-8 overflow-x-auto">
                     <div className="flex items-center gap-1 px-1">
-                        {(['projects', 'cases', 'suites'] as ViewMode[]).map((mode) => (
+                        {(['projects', 'cases', 'suites', 'runs'] as ViewMode[]).map((mode) => (
                             <button
                                 key={mode}
                                 onClick={() => setViewMode(mode)}
@@ -76,7 +78,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
                                     : 'text-gray-500 hover:text-gray-700'
                                     }`}
                             >
-                                {mode}
+                                {mode === 'runs' ? 'Runs' : mode}
                             </button>
                         ))}
                     </div>

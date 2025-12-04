@@ -78,13 +78,39 @@ export const getTestCasesBySuite = async (
     return [];
   }
 
+  // First, check if any test cases have null/undefined order and initialize them
+  const unorderedCases = await TestCase.find({
+    suiteId: new Types.ObjectId(suiteId),
+    $or: [{ order: null }, { order: { $exists: false } }],
+  }).sort({ lastModified: -1 });
+
+  if (unorderedCases.length > 0) {
+    // Get max order in suite
+    const maxOrderCase = await TestCase.findOne({
+      suiteId: new Types.ObjectId(suiteId),
+      order: { $exists: true, $ne: null },
+    }).sort({ order: -1 });
+
+    let nextOrder = (maxOrderCase?.order ?? -1) + 1;
+
+    // Assign order to unordered cases
+    const bulkOps = unorderedCases.map((tc) => ({
+      updateOne: {
+        filter: { _id: tc._id },
+        update: { $set: { order: nextOrder++ } },
+      },
+    }));
+
+    await TestCase.bulkWrite(bulkOps);
+  }
+
   const testCases = await TestCase.find({
     suiteId: new Types.ObjectId(suiteId),
   })
     .populate("assignedTester", "name email")
     .populate("suiteId", "name")
     .populate("history.userId", "name email")
-    .sort({ lastModified: -1 })
+    .sort({ order: 1, lastModified: -1 })
     .lean();
 
   return testCases as unknown as ITestCaseDocument[];
@@ -108,7 +134,7 @@ export const getTestCasesByProject = async (
     .populate("assignedTester", "name email")
     .populate("suiteId", "name")
     .populate("history.userId", "name email")
-    .sort({ lastModified: -1 })
+    .sort({ suiteId: 1, order: 1, lastModified: -1 })
     .lean();
 
   return testCases as unknown as ITestCaseDocument[];
@@ -329,6 +355,42 @@ export const deleteTestCasesBulk = async (
 };
 
 /**
+ * Reorder test cases within a suite
+ */
+export const reorderTestCases = async (
+  suiteId: string,
+  userId: string,
+  items: Array<{ caseId: string; newOrder: number }>
+): Promise<boolean> => {
+  const suite = await TestSuite.findById(suiteId);
+  if (!suite) {
+    return false;
+  }
+
+  const hasAccess = await projectService.hasProjectAccess(
+    suite.projectId.toString(),
+    userId
+  );
+  if (!hasAccess) {
+    return false;
+  }
+
+  // Update each test case order
+  const bulkOps = items.map(({ caseId, newOrder }) => ({
+    updateOne: {
+      filter: { _id: new Types.ObjectId(caseId), suiteId: new Types.ObjectId(suiteId) },
+      update: { $set: { order: newOrder } },
+    },
+  }));
+
+  if (bulkOps.length > 0) {
+    await TestCase.bulkWrite(bulkOps);
+  }
+
+  return true;
+};
+
+/**
  * Format tester for API response
  */
 const formatTesterResponse = (user: any): TesterResponse => {
@@ -388,6 +450,7 @@ export const formatTestCaseResponse = (testCase: any): TestCaseResponse => {
     stepsContent: testCase.stepsContent,
     comments: testCase.comments,
     history: (testCase.history || []).map(formatHistoryEntry),
+    order: testCase.order ?? 0,
     lastModified: testCase.lastModified?.toISOString() || new Date().toISOString(),
     createdAt: testCase.createdAt?.toISOString() || new Date().toISOString(),
     updatedAt: testCase.updatedAt?.toISOString() || new Date().toISOString(),

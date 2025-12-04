@@ -22,6 +22,7 @@ import ProjectsPage from "./pages/testManager/ProjectsPage";
 import TestCasesPage from "./pages/testManager/TestCasesPage";
 import TestSuitesPage from "./pages/testManager/TestSuitesPage";
 import TestPlansPage from "./pages/testManager/TestPlansPage";
+import TestRunsPage from "./pages/testManager/TestRunsPage";
 
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
@@ -161,6 +162,7 @@ function App() {
             <Route path='cases' element={<TestCasesPage />} />
             <Route path='suites' element={<TestSuitesPage />} />
             <Route path='plans' element={<TestPlansPage />} />
+            <Route path='runs' element={<TestRunsPage />} />
           </Route>
         </Route>
 

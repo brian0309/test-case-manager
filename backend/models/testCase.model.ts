@@ -100,6 +100,10 @@ const testCaseSchema = new Schema<ITestCaseDocument>(
       type: Date,
       default: Date.now,
     },
+    order: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );
@@ -111,6 +115,8 @@ testCaseSchema.index({ projectId: 1 });
 testCaseSchema.index({ assignedTester: 1 });
 testCaseSchema.index({ status: 1 });
 testCaseSchema.index({ projectId: 1, lastModified: -1 });
+// Index for ordering within suite
+testCaseSchema.index({ suiteId: 1, order: 1 });
 
 // Pre-save middleware to update lastModified
 testCaseSchema.pre("save", function (next) {

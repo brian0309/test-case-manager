@@ -5,6 +5,7 @@ import {
   CreateTestCaseRequest,
   UpdateTestCaseRequest,
   BulkUpdateStatusRequest,
+  ReorderTestCasesRequest,
 } from "../types/testCase.types.js";
 
 /**
@@ -267,6 +268,51 @@ export const deleteTestCasesBulk = async (req: Request, res: Response): Promise<
     });
   } catch (error) {
     console.error("Error in deleteTestCasesBulk:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+/**
+ * PATCH /api/suites/:suiteId/cases/reorder
+ * Reorder test cases within a suite
+ */
+export const reorderTestCases = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { suiteId } = req.params;
+    const { items }: ReorderTestCasesRequest = req.body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      res.status(400).json({ success: false, message: "Items array is required" });
+      return;
+    }
+
+    const success = await testCaseService.reorderTestCases(suiteId, userId, items);
+
+    if (!success) {
+      res.status(404).json({
+        success: false,
+        message: "Suite not found or you don't have permission",
+      });
+      return;
+    }
+
+    // Return updated test cases
+    const testCases = await testCaseService.getTestCasesBySuite(suiteId, userId);
+    const responses = testCases.map(testCaseService.formatTestCaseResponse);
+
+    res.status(200).json({
+      success: true,
+      message: "Test cases reordered successfully",
+      data: responses,
+    });
+  } catch (error) {
+    console.error("Error in reorderTestCases:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };

@@ -107,6 +107,7 @@ export interface TestCaseResponse {
   stepsContent?: string;
   comments?: string;
   history: HistoryEntryResponse[];
+  order: number;
   lastModified: string;
   createdAt: string;
   updatedAt: string;
@@ -166,6 +167,133 @@ export interface UpdateTestCaseRequest {
 export interface BulkUpdateStatusRequest {
   testCaseIds: string[];
   status: Status;
+}
+
+export interface ReorderTestCasesRequest {
+  items: Array<{
+    caseId: string;
+    newOrder: number;
+  }>;
+}
+
+// Test Run Enums
+export enum TestRunStatus {
+  Draft = "Draft",
+  InProgress = "In Progress",
+  Completed = "Completed",
+  Abandoned = "Abandoned",
+}
+
+export enum RunItemStatus {
+  NotRun = "Not Run",
+  Passed = "Passed",
+  Failed = "Failed",
+  Blocked = "Blocked",
+  Skipped = "Skipped",
+}
+
+// Test Run Types
+export interface CaseSnapshotResponse {
+  title: string;
+  priority?: string;
+  area?: string;
+  expectedResult?: string;
+  testDescription?: string;
+  stepsContent?: string;
+}
+
+export interface RunItemResponse {
+  id: string;
+  caseId: string;
+  caseSnapshot: CaseSnapshotResponse;
+  order: number;
+  status: RunItemStatus;
+  assignedTo?: TesterResponse;
+  actualResult?: string;
+  attachments?: string[];
+  timeSpent?: number;
+  executedAt?: string;
+  executedBy?: TesterResponse;
+}
+
+export interface ResultsSummaryResponse {
+  total: number;
+  passed: number;
+  failed: number;
+  blocked: number;
+  skipped: number;
+  notRun: number;
+  passRate: number;
+  totalTimeSpent: number;
+}
+
+export interface TestRunResponse {
+  id: string;
+  title: string;
+  description?: string;
+  projectId: string;
+  suiteId?: string;
+  suiteName?: string;
+  status: TestRunStatus;
+  environment?: string;
+  tags?: string[];
+  items: RunItemResponse[];
+  createdBy: TesterResponse;
+  startedAt?: string;
+  completedAt?: string;
+  resultsSummary: ResultsSummaryResponse;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TestRunListResponse {
+  id: string;
+  title: string;
+  description?: string;
+  projectId: string;
+  suiteId?: string;
+  suiteName?: string;
+  status: TestRunStatus;
+  environment?: string;
+  tags?: string[];
+  itemCount: number;
+  createdBy: TesterResponse;
+  startedAt?: string;
+  completedAt?: string;
+  resultsSummary: ResultsSummaryResponse;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTestRunRequest {
+  title: string;
+  description?: string;
+  suiteId?: string;
+  environment?: string;
+  tags?: string[];
+  testCaseIds: string[];
+}
+
+export interface UpdateTestRunRequest {
+  title?: string;
+  description?: string;
+  environment?: string;
+  tags?: string[];
+  status?: TestRunStatus;
+}
+
+export interface UpdateRunItemRequest {
+  status?: RunItemStatus;
+  actualResult?: string;
+  attachments?: string[];
+  timeSpent?: number;
+}
+
+export interface ReorderRunItemsRequest {
+  items: Array<{
+    itemId: string;
+    newOrder: number;
+  }>;
 }
 
 // API Error Response

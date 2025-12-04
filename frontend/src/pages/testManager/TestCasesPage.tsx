@@ -10,6 +10,7 @@ import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import GeminiGenerationModal from '../../components/testManager/GeminiGenerationModal';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { TestCase, Status, Priority } from '../../types/testManager';
+import { reorderTestCases } from '../../services/testManagerApi';
 import { Sparkles } from 'lucide-react';
 
 const TestCasesPage: React.FC = () => {
@@ -216,6 +217,24 @@ const TestCasesPage: React.FC = () => {
 
     const [isGeminiModalOpen, setIsGeminiModalOpen] = useState(false);
 
+    // Handle drag-and-drop reordering of test cases
+    const handleReorder = async (reorderedCases: TestCase[]) => {
+        if (!activeSuiteId) {
+            toast.error('Reordering is only available within a specific suite');
+            return;
+        }
+
+        try {
+            const orderedIds = reorderedCases.map(tc => tc.id);
+            await reorderTestCases(activeSuiteId, orderedIds);
+            // Refetch to get updated order from server
+            fetchTestCases(activeSuiteId);
+        } catch (error) {
+            toast.error('Failed to save new order');
+            console.error('Reorder error:', error);
+        }
+    };
+
     const handleAddGeneratedCases = async (cases: TestCase[]) => {
         // We need to save these cases to the backend
         // Iterate and create each one
@@ -268,6 +287,8 @@ const TestCasesPage: React.FC = () => {
                     isEditMode={isListEditMode}
                     onUpdate={handleInlineUpdate}
                     onStatusChange={handleStatusChange}
+                    enableReorder={!!activeSuiteId}
+                    onReorder={activeSuiteId ? handleReorder : undefined}
                     // Selection props
                     isSelectionMode={isSelectionMode}
                     selectedIds={selectedTestCaseIds}
