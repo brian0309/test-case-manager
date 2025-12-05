@@ -1,10 +1,19 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { Project } from "../../../models/project.model.js";
 import { TestSuite } from "../../../models/testSuite.model.js";
 import { TestCase } from "../../../models/testCase.model.js";
 
 export const getDashboardStats = async (req: Request, res: Response) => {
     try {
+        const userId = req.userId;
+        
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -12,25 +21,66 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         fourteenDaysAgo.setDate(today.getDate() - 13);
         fourteenDaysAgo.setHours(0, 0, 0, 0);
 
-        // 1. Project Count
-        const projectCount = await Project.countDocuments();
+        // Get user's projects (where user is owner or member)
+        const userProjects = await Project.find({
+            $or: [
+                { ownerId: userObjectId },
+                { members: userObjectId }
+            ]
+        }).select('_id');
+        
+        const userProjectIds = userProjects.map(p => p._id);
 
-        // 2. Total Suites & Suites Added Today
-        const totalSuites = await TestSuite.countDocuments();
+        // Early return if user has no projects to avoid unnecessary queries
+        if (userProjectIds.length === 0) {
+            const emptyChartData = [];
+            for (let i = 0; i < 14; i++) {
+                const date = new Date(fourteenDaysAgo);
+                date.setDate(date.getDate() + i);
+                const displayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                emptyChartData.push({
+                    name: displayDate,
+                    value: 0,
+                    fullDate: date.toISOString().split('T')[0]
+                });
+            }
+            return res.status(200).json({
+                projectCount: 0,
+                totalSuites: 0,
+                suitesAddedToday: 0,
+                totalTestCases: 0,
+                testCasesModifiedToday: 0,
+                chartData: emptyChartData,
+                recentActivity: [],
+            });
+        }
+
+        // 1. Project Count (only user's projects)
+        const projectCount = userProjectIds.length;
+
+        // 2. Total Suites & Suites Added Today (only from user's projects)
+        const totalSuites = await TestSuite.countDocuments({
+            projectId: { $in: userProjectIds }
+        });
         const suitesAddedToday = await TestSuite.countDocuments({
+            projectId: { $in: userProjectIds },
             createdAt: { $gte: today },
         });
 
-        // 3. Total Test Cases & Modified/Created Today
-        const totalTestCases = await TestCase.countDocuments();
+        // 3. Total Test Cases & Modified/Created Today (only from user's projects)
+        const totalTestCases = await TestCase.countDocuments({
+            projectId: { $in: userProjectIds }
+        });
         const testCasesModifiedToday = await TestCase.countDocuments({
+            projectId: { $in: userProjectIds },
             updatedAt: { $gte: today },
         });
 
-        // 4. Activity Overview (Last 14 days)
+        // 4. Activity Overview (Last 14 days, only from user's projects)
         const activityOverview = await TestCase.aggregate([
             {
                 $match: {
+                    projectId: { $in: userProjectIds },
                     updatedAt: { $gte: fourteenDaysAgo },
                 },
             },
@@ -64,10 +114,9 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             });
         }
 
-        // 5. Recent Activity (User specific)
-        const userId = req.userId;
-
+        // 5. Recent Activity (User specific, filtered by user's projects)
         const userTestCases = await TestCase.find({
+            projectId: { $in: userProjectIds },
             $or: [
                 { createdBy: userId },
                 { 'history.userId': userId }
