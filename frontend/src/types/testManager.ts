@@ -90,14 +90,14 @@ export interface TestCase {
     steps: TestStep[];
     stepsContent?: string;
     suite: string;
-    suiteId: string;
+    suiteId?: string;
     area?: string;
     expectedResult?: string;
     testDescription?: string;
     comments?: string;
     history?: HistoryEntry[];
     projectId: string;
-    order: number;
+    order?: number;
 }
 
 // Test Run Types
@@ -150,6 +150,7 @@ export interface TestRun {
     startedAt?: string;
     completedAt?: string;
     resultsSummary: ResultsSummary;
+    groupId?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -169,6 +170,18 @@ export interface TestRunListItem {
     startedAt?: string;
     completedAt?: string;
     resultsSummary: ResultsSummary;
+    groupId?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface TestRunGroup {
+    id: string;
+    name: string;
+    description?: string;
+    projectId: string;
+    color?: string;
+    createdBy: Tester;
     createdAt: string;
     updatedAt: string;
 }

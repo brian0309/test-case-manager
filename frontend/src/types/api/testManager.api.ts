@@ -269,6 +269,7 @@ export interface CreateTestRunRequest {
   title: string;
   description?: string;
   suiteId?: string;
+  groupId?: string;
   environment?: string;
   tags?: string[];
   testCaseIds: string[];
@@ -280,6 +281,7 @@ export interface UpdateTestRunRequest {
   environment?: string;
   tags?: string[];
   status?: TestRunStatus;
+  groupId?: string | null; // null to remove from group
 }
 
 export interface UpdateRunItemRequest {
@@ -296,8 +298,36 @@ export interface ReorderRunItemsRequest {
   }>;
 }
 
+// ============================================================================
+// TEST RUN GROUP TYPES
+// ============================================================================
+
+export interface TestRunGroupResponse {
+  id: string;
+  name: string;
+  description?: string;
+  projectId: string;
+  color?: string;
+  createdBy: TesterResponse;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTestRunGroupRequest {
+  name: string;
+  description?: string;
+  color?: string;
+}
+
+export interface UpdateTestRunGroupRequest {
+  name?: string;
+  description?: string;
+  color?: string;
+}
+
 // API Error Response
 export interface ApiErrorResponse {
   message: string;
   success: false;
 }
+

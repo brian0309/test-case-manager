@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Filter, Download, Layers, Trash2, X, Check, Play } from 'lucide-react';
+import { Plus, Filter, Download, Layers, Trash2, X, Check } from 'lucide-react';
 import { ViewMode } from '../../types/testManager';
 import { useTestManagerStore } from '../../store/testManagerStore';
 

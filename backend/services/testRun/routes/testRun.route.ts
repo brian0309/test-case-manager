@@ -10,6 +10,13 @@ import {
   cloneTestRun,
   completeTestRun,
 } from "../controllers/testRun.controller.js";
+import {
+  createTestRunGroup,
+  getTestRunGroupsByProject,
+  getTestRunGroup,
+  updateTestRunGroup,
+  deleteTestRunGroup,
+} from "../controllers/testRunGroup.controller.js";
 import { verifyToken } from "../../../middleware/verifyToken.js";
 
 const router: Router = express.Router();
@@ -37,3 +44,17 @@ export const projectRunRoutes = express.Router({ mergeParams: true });
 projectRunRoutes.use(verifyToken);
 projectRunRoutes.post("/", createTestRun);
 projectRunRoutes.get("/", getTestRunsByProject);
+
+// Test run group routes - mounted under /api/projects/:projectId/run-groups
+export const projectRunGroupRoutes = express.Router({ mergeParams: true });
+projectRunGroupRoutes.use(verifyToken);
+projectRunGroupRoutes.post("/", createTestRunGroup);
+projectRunGroupRoutes.get("/", getTestRunGroupsByProject);
+
+// Standalone run group routes - mounted under /api/run-groups
+export const runGroupRoutes = express.Router();
+runGroupRoutes.use(verifyToken);
+runGroupRoutes.get("/:id", getTestRunGroup);
+runGroupRoutes.put("/:id", updateTestRunGroup);
+runGroupRoutes.delete("/:id", deleteTestRunGroup);
+

@@ -51,6 +51,7 @@ const mapTestCaseResponse = (tc: TestCaseResponse): TestCase => ({
     steps: [], // Not used anymore, stepsContent is used
     stepsContent: tc.stepsContent,
     suite: tc.suite,
+    suiteId: tc.suiteId,
     area: tc.area,
     expectedResult: tc.expectedResult,
     testDescription: tc.testDescription,
@@ -63,6 +64,7 @@ const mapTestCaseResponse = (tc: TestCaseResponse): TestCase => ({
         changedFields: h.changedFields,
     })) as HistoryEntry[],
     projectId: tc.projectId,
+    order: tc.order,
 });
 
 const mapTestSuiteResponse = (s: TestSuiteResponse): TestSuite => ({

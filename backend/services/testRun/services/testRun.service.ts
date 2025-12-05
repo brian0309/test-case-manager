@@ -66,6 +66,7 @@ export const createTestRun = async (
     description: data.description,
     projectId: new Types.ObjectId(projectId),
     suiteId: data.suiteId ? new Types.ObjectId(data.suiteId) : undefined,
+    groupId: data.groupId ? new Types.ObjectId(data.groupId) : undefined,
     status: TestRunStatus.Draft,
     environment: data.environment,
     tags: data.tags || [],
@@ -184,6 +185,9 @@ export const updateTestRun = async (
   if (data.description !== undefined) testRun.description = data.description;
   if (data.environment !== undefined) testRun.environment = data.environment;
   if (data.tags !== undefined) testRun.tags = data.tags;
+  if (data.groupId !== undefined) {
+    testRun.groupId = data.groupId ? new Types.ObjectId(data.groupId) : undefined;
+  }
 
   await testRun.save();
 
@@ -470,6 +474,7 @@ export const formatTestRunResponse = (testRun: any): TestRunResponse => {
         : testRun.suiteId.toString()
       : undefined,
     suiteName,
+    groupId: testRun.groupId?.toString(),
     status: testRun.status,
     environment: testRun.environment,
     tags: testRun.tags,
@@ -503,6 +508,7 @@ export const formatTestRunListResponse = (testRun: any): TestRunListResponse => 
         : testRun.suiteId.toString()
       : undefined,
     suiteName,
+    groupId: testRun.groupId?.toString(),
     status: testRun.status,
     environment: testRun.environment,
     tags: testRun.tags,

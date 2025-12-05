@@ -18,7 +18,7 @@ import exampleRoutes from "./services/example/routes/example.route.js";
 import projectRoutes from "./services/testCase/routes/project.route.js";
 import suiteRoutes, { projectSuiteRoutes } from "./services/testCase/routes/testSuite.route.js";
 import caseRoutes, { suiteCaseRoutes, projectCaseRoutes } from "./services/testCase/routes/testCase.route.js";
-import runRoutes, { projectRunRoutes } from "./services/testRun/routes/testRun.route.js";
+import runRoutes, { projectRunRoutes, projectRunGroupRoutes, runGroupRoutes } from "./services/testRun/routes/testRun.route.js";
 import uploadRoutes from "./services/upload/routes/upload.route.js";
 import statisticsRoutes from "./services/statistics/routes/statistics.route.js";
 import geminiRoutes from "./services/geminigen/gemini.route.js";
@@ -47,10 +47,12 @@ app.use("/api/projects", projectRoutes);
 app.use("/api/projects/:projectId/suites", projectSuiteRoutes);
 app.use("/api/projects/:projectId/cases", projectCaseRoutes);
 app.use("/api/projects/:projectId/runs", projectRunRoutes);
+app.use("/api/projects/:projectId/run-groups", projectRunGroupRoutes);
 app.use("/api/suites", suiteRoutes);
 app.use("/api/suites/:suiteId/cases", suiteCaseRoutes);
 app.use("/api/cases", caseRoutes);
 app.use("/api/runs", runRoutes);
+app.use("/api/run-groups", runGroupRoutes);
 
 // Only serve frontend static files in production for traditional deployment
 // (not when deployed separately to Vercel)

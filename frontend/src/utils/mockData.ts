@@ -69,9 +69,11 @@ export const mockTestCases: TestCase[] = [
         lastModified: '2023-10-24T10:30:00Z',
         assignedTester: testers[0],
         suite: 'Authentication',
+        suiteId: 'suite-auth-1',
         area: 'Login Page',
         expectedResult: 'User successfully logs in and is redirected to the dashboard homepage.',
         projectId: 'p1',
+        order: 0,
         steps: [
             { id: 's1', action: 'Navigate to login page', expectedResult: 'Login page loads' },
             { id: 's2', action: 'Enter valid username and password', expectedResult: 'Fields populated' },

@@ -59,6 +59,7 @@ export interface ITestRun {
   description?: string;
   projectId: Types.ObjectId;
   suiteId?: Types.ObjectId;
+  groupId?: Types.ObjectId;
   status: TestRunStatus;
   environment?: string;
   tags?: string[];
@@ -71,7 +72,7 @@ export interface ITestRun {
   updatedAt: Date;
 }
 
-export interface ITestRunDocument extends ITestRun, Document {}
+export interface ITestRunDocument extends ITestRun, Document { }
 
 // API Response types
 export interface TesterResponse {
@@ -121,6 +122,7 @@ export interface TestRunResponse {
   projectId: string;
   suiteId?: string;
   suiteName?: string;
+  groupId?: string;
   status: TestRunStatus;
   environment?: string;
   tags?: string[];
@@ -140,6 +142,7 @@ export interface TestRunListResponse {
   projectId: string;
   suiteId?: string;
   suiteName?: string;
+  groupId?: string;
   status: TestRunStatus;
   environment?: string;
   tags?: string[];
@@ -157,6 +160,7 @@ export interface CreateTestRunRequest {
   title: string;
   description?: string;
   suiteId?: string;
+  groupId?: string;
   environment?: string;
   tags?: string[];
   testCaseIds: string[]; // IDs of test cases to include
@@ -168,6 +172,7 @@ export interface UpdateTestRunRequest {
   environment?: string;
   tags?: string[];
   status?: TestRunStatus;
+  groupId?: string | null; // null to remove from group
 }
 
 export interface UpdateRunItemRequest {
@@ -190,3 +195,43 @@ export interface ReorderTestCasesRequest {
     newOrder: number;
   }>;
 }
+
+// =========================================================================
+// TEST RUN GROUP TYPES
+// =========================================================================
+
+export interface ITestRunGroup {
+  name: string;
+  description?: string;
+  projectId: Types.ObjectId;
+  color?: string;
+  createdBy: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ITestRunGroupDocument extends ITestRunGroup, Document { }
+
+export interface TestRunGroupResponse {
+  id: string;
+  name: string;
+  description?: string;
+  projectId: string;
+  color?: string;
+  createdBy: TesterResponse;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTestRunGroupRequest {
+  name: string;
+  description?: string;
+  color?: string;
+}
+
+export interface UpdateTestRunGroupRequest {
+  name?: string;
+  description?: string;
+  color?: string;
+}
+

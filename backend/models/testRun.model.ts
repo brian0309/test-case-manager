@@ -88,6 +88,10 @@ const testRunSchema = new Schema<ITestRunDocument>(
       type: Schema.Types.ObjectId,
       ref: "TestSuite",
     },
+    groupId: {
+      type: Schema.Types.ObjectId,
+      ref: "TestRunGroup",
+    },
     status: {
       type: String,
       enum: Object.values(TestRunStatus),
@@ -133,8 +137,10 @@ const testRunSchema = new Schema<ITestRunDocument>(
 // Indexes for performance optimization
 testRunSchema.index({ projectId: 1 });
 testRunSchema.index({ suiteId: 1 });
+testRunSchema.index({ groupId: 1 });
 testRunSchema.index({ projectId: 1, createdAt: -1 });
 testRunSchema.index({ status: 1 });
 testRunSchema.index({ createdBy: 1 });
 
 export const TestRun = mongoose.model<ITestRunDocument>("TestRun", testRunSchema);
+

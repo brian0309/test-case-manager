@@ -216,6 +216,102 @@ export const reorderTestCases = async (
   }
 };
 
+// ============================================================================
+// TEST RUN GROUP API
+// ============================================================================
+
+import {
+  TestRunGroupResponse,
+  CreateTestRunGroupRequest,
+  UpdateTestRunGroupRequest,
+} from "../types/api/testManager.api";
+
+/**
+ * Create a new test run group
+ */
+export const createTestRunGroup = async (
+  projectId: string,
+  data: CreateTestRunGroupRequest
+): Promise<TestRunGroupResponse> => {
+  try {
+    const response = await axios.post<ApiResponse<TestRunGroupResponse>>(
+      `${API_URL}/projects/${projectId}/run-groups`,
+      data
+    );
+    if (!response.data.data) {
+      throw new Error("No data returned from server");
+    }
+    return response.data.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
+/**
+ * Get all test run groups for a project
+ */
+export const getTestRunGroups = async (
+  projectId: string
+): Promise<TestRunGroupResponse[]> => {
+  try {
+    const response = await axios.get<ApiResponse<TestRunGroupResponse[]>>(
+      `${API_URL}/projects/${projectId}/run-groups`
+    );
+    return response.data.data || [];
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
+/**
+ * Get a single test run group by ID
+ */
+export const getTestRunGroup = async (id: string): Promise<TestRunGroupResponse> => {
+  try {
+    const response = await axios.get<ApiResponse<TestRunGroupResponse>>(
+      `${API_URL}/run-groups/${id}`
+    );
+    if (!response.data.data) {
+      throw new Error("Test run group not found");
+    }
+    return response.data.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
+/**
+ * Update a test run group
+ */
+export const updateTestRunGroup = async (
+  id: string,
+  data: UpdateTestRunGroupRequest
+): Promise<TestRunGroupResponse> => {
+  try {
+    const response = await axios.put<ApiResponse<TestRunGroupResponse>>(
+      `${API_URL}/run-groups/${id}`,
+      data
+    );
+    if (!response.data.data) {
+      throw new Error("No data returned from server");
+    }
+    return response.data.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
+/**
+ * Delete a test run group
+ */
+export const deleteTestRunGroup = async (id: string): Promise<void> => {
+  try {
+    await axios.delete(`${API_URL}/run-groups/${id}`);
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
 // Export all API functions as a namespace for convenience
 export const testRunApi = {
   createTestRun,
@@ -228,4 +324,11 @@ export const testRunApi = {
   cloneTestRun,
   completeTestRun,
   reorderTestCases,
+  // Test Run Groups
+  createTestRunGroup,
+  getTestRunGroups,
+  getTestRunGroup,
+  updateTestRunGroup,
+  deleteTestRunGroup,
 };
+
