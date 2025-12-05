@@ -31,6 +31,30 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         
         const userProjectIds = userProjects.map(p => p._id);
 
+        // Early return if user has no projects to avoid unnecessary queries
+        if (userProjectIds.length === 0) {
+            const emptyChartData = [];
+            for (let i = 0; i < 14; i++) {
+                const date = new Date(fourteenDaysAgo);
+                date.setDate(date.getDate() + i);
+                const displayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                emptyChartData.push({
+                    name: displayDate,
+                    value: 0,
+                    fullDate: date.toISOString().split('T')[0]
+                });
+            }
+            return res.status(200).json({
+                projectCount: 0,
+                totalSuites: 0,
+                suitesAddedToday: 0,
+                totalTestCases: 0,
+                testCasesModifiedToday: 0,
+                chartData: emptyChartData,
+                recentActivity: [],
+            });
+        }
+
         // 1. Project Count (only user's projects)
         const projectCount = userProjectIds.length;
 
