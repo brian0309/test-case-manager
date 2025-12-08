@@ -67,6 +67,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
                 <h1 className="text-base sm:text-lg font-semibold text-gray-900 tracking-tight truncate min-w-0">{getTitle()}</h1>
 
                 {/* Segmented control compact on mobile - scrollable independently */}
+                {/* Using inline style for dynamic width calculation based on viewport */}
                 <div className="ml-2 bg-gray-100 p-0.5 rounded-full h-8 overflow-x-auto overflow-y-hidden flex-shrink-0" style={{ maxWidth: 'calc(100vw - 8rem)' }}>
                     <div className="flex items-center gap-1 px-1 w-max">
                         {(['projects', 'cases', 'suites', 'runs'] as ViewMode[]).map((mode) => (
@@ -87,7 +88,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
 
 
             {/* Action buttons - scrollable independently on mobile */}
-            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto overflow-y-hidden flex-shrink-0 min-w-0 w-full sm:w-auto" style={{ maxWidth: '100%' }}>
+            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto overflow-y-hidden flex-shrink-0 min-w-0 w-full sm:w-auto max-w-full">
                 <div className="flex items-center gap-2 sm:gap-3 w-max">
 
                     {/* Selection Mode Toggle (replaces Edit toggle for Cases view) */}
