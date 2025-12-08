@@ -88,6 +88,8 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
 
 
             {/* Action buttons - scrollable independently on mobile */}
+            {/* Width classes: w-full on mobile for full width, sm:w-auto on desktop for content width, 
+                max-w-full prevents overflow, min-w-0 allows shrinking below content size */}
             <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto overflow-y-hidden flex-shrink-0 min-w-0 w-full sm:w-auto max-w-full">
                 <div className="flex items-center gap-2 sm:gap-3 w-max">
 
