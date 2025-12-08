@@ -59,17 +59,16 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
     };
 
     return (
-        <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-2 sm:px-6 sm:py-4 gap-3 border-b border-gray-200 bg-white/80 backdrop-blur-md sticky top-0 z-20 min-w-0">
-            <div className="flex items-center gap-3 min-w-0 mb-2 sm:mb-0 flex-shrink-0">
+        <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-2 sm:px-6 sm:py-4 gap-3 border-b border-gray-200 bg-white/80 backdrop-blur-md sticky top-0 z-20">
+            <div className="w-full sm:w-auto flex items-center gap-3 min-w-0 mb-2 sm:mb-0">
                 {viewMode === 'cases' && activeSuite && (
                     <Layers size={16} className="text-purple-500 flex-shrink-0" />
                 )}
                 <h1 className="text-base sm:text-lg font-semibold text-gray-900 tracking-tight truncate min-w-0">{getTitle()}</h1>
 
-                {/* Segmented control compact on mobile - scrollable independently */}
-                {/* Using inline style for dynamic width calculation based on viewport */}
-                <div className="ml-2 bg-gray-100 p-0.5 rounded-full h-8 overflow-x-auto overflow-y-hidden flex-shrink-0" style={{ maxWidth: 'calc(100vw - 8rem)' }}>
-                    <div className="flex items-center gap-1 px-1 w-max">
+                {/* Segmented control compact on mobile */}
+                <div className="ml-2 bg-gray-100 p-0.5 rounded-full flex items-center h-8 overflow-x-auto">
+                    <div className="flex items-center gap-1 px-1">
                         {(['projects', 'cases', 'suites', 'runs'] as ViewMode[]).map((mode) => (
                             <button
                                 key={mode}
@@ -86,67 +85,61 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
                 </div>
             </div>
 
+            <div className="w-full sm:w-auto flex items-center justify-end gap-2 sm:gap-3">
 
-            {/* Action buttons - scrollable independently on mobile */}
-            {/* Width classes: w-full on mobile for full width, sm:w-auto on desktop for content width, 
-                max-w-full prevents overflow, min-w-0 allows shrinking below content size */}
-            <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto overflow-y-hidden flex-shrink-0 min-w-0 w-full sm:w-auto max-w-full">
-                <div className="flex items-center gap-2 sm:gap-3 w-max">
-
-                    {/* Selection Mode Toggle (replaces Edit toggle for Cases view) */}
-                    {showEditToggle && (
-                        <>
-                            {isSelectionMode && selectedCount > 0 && (
-                                <button
-                                    onClick={onDelete}
-                                    className="flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 whitespace-nowrap"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="hidden sm:inline">Delete ({selectedCount})</span>
-                                    <span className="sm:hidden">({selectedCount})</span>
-                                </button>
-                            )}
-
+                {/* Selection Mode Toggle (replaces Edit toggle for Cases view) */}
+                {showEditToggle && (
+                    <>
+                        {isSelectionMode && selectedCount > 0 && (
                             <button
-                                onClick={onToggleSelectionMode}
-                                className={`flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors text-sm font-medium whitespace-nowrap ${isSelectionMode
-                                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    : 'text-gray-600 hover:bg-gray-100'
-                                    }`}
+                                onClick={onDelete}
+                                className="flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100"
                             >
-                                {isSelectionMode ? (
-                                    <>
-                                        <X className="h-4 w-4" />
-                                        <span>Cancel</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Check className="h-4 w-4" />
-                                        <span>Select</span>
-                                    </>
-                                )}
+                                <Trash2 className="h-4 w-4" />
+                                <span className="hidden sm:inline">Delete ({selectedCount})</span>
+                                <span className="sm:hidden">({selectedCount})</span>
                             </button>
-                        </>
-                    )}
+                        )}
 
-                    <button
-                        onClick={() => toggleFilterModal(true)}
-                        className={`p-1 rounded-md transition-colors flex-shrink-0 ${hasActiveFilters ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' : 'text-gray-500 hover:bg-gray-100'}`}
-                    >
-                        <Filter className="h-4 w-4" strokeWidth={1.5} />
-                    </button>
-                    <button className="p-1 text-gray-500 hover:bg-gray-100 rounded-md transition-colors flex-shrink-0">
-                        <Download className="h-4 w-4" strokeWidth={1.5} />
-                    </button>
+                        <button
+                            onClick={onToggleSelectionMode}
+                            className={`flex items-center gap-1 px-3 py-1.5 rounded-md transition-colors text-sm font-medium ${isSelectionMode
+                                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'text-gray-600 hover:bg-gray-100'
+                                }`}
+                        >
+                            {isSelectionMode ? (
+                                <>
+                                    <X className="h-4 w-4" />
+                                    <span>Cancel</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Check className="h-4 w-4" />
+                                    <span>Select</span>
+                                </>
+                            )}
+                        </button>
+                    </>
+                )}
 
-                    <button
-                        onClick={onNew}
-                        className="mac-button ml-2 flex items-center gap-2 bg-[#007AFF] hover:bg-[#0062cc] text-white px-3 py-1 rounded-md shadow-sm active:scale-95 text-sm font-medium whitespace-nowrap"
-                    >
-                        <Plus className="h-4 w-4" strokeWidth={2.5} />
-                        <span className="inline">New {getNewButtonText()}</span>
-                    </button>
-                </div>
+                <button
+                    onClick={() => toggleFilterModal(true)}
+                    className={`p-1 rounded-md transition-colors ${hasActiveFilters ? 'text-blue-600 bg-blue-50 hover:bg-blue-100' : 'text-gray-500 hover:bg-gray-100'}`}
+                >
+                    <Filter className="h-4 w-4" strokeWidth={1.5} />
+                </button>
+                <button className="p-1 text-gray-500 hover:bg-gray-100 rounded-md transition-colors">
+                    <Download className="h-4 w-4" strokeWidth={1.5} />
+                </button>
+
+                <button
+                    onClick={onNew}
+                    className="mac-button ml-2 flex items-center gap-2 bg-[#007AFF] hover:bg-[#0062cc] text-white px-3 py-1 rounded-md shadow-sm active:scale-95 text-sm font-medium"
+                >
+                    <Plus className="h-4 w-4" strokeWidth={2.5} />
+                    <span className="inline">New {getNewButtonText()}</span>
+                </button>
             </div>
         </div>
     );
