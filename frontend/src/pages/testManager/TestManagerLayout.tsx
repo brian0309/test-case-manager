@@ -32,6 +32,7 @@ const TestManagerLayout: React.FC = () => {
         else if (path.includes('/suites')) setViewMode('suites');
         else if (path.includes('/runs')) setViewMode('runs');
         else if (path.includes('/plans')) setViewMode('plans');
+        else if (path.includes('/reports')) setViewMode('reports');
     }, [location.pathname, setViewMode]);
 
     const handleViewChange = (mode: ViewMode) => {

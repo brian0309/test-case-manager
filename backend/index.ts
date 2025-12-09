@@ -22,6 +22,7 @@ import runRoutes, { projectRunRoutes, projectRunGroupRoutes, runGroupRoutes } fr
 import uploadRoutes from "./services/upload/routes/upload.route.js";
 import statisticsRoutes from "./services/statistics/routes/statistics.route.js";
 import geminiRoutes from "./services/geminigen/gemini.route.js";
+import reportingRoutes from "./services/reporting/routes/reporting.route.js";
 import { getCorsOptions } from "./config/dynamicCors.js";
 
 const app: Express = express();
@@ -41,6 +42,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/statistics", statisticsRoutes);
 app.use("/api/gemini", geminiRoutes);
+app.use("/api/reports", reportingRoutes);
 
 // Test Case Management Routes
 app.use("/api/projects", projectRoutes);
