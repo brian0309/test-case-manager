@@ -427,22 +427,22 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
             <div 
                 className="absolute inset-0 bg-white/40 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
-            <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="relative bg-white rounded-lg sm:rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col">
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                    <div>
-                        <h2 className="text-xl font-semibold text-gray-900">{testRun.title}</h2>
-                        <div className="text-sm text-gray-500 mt-1">
+                <div className="px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex items-center justify-between">
+                    <div className="flex-1 min-w-0 pr-2">
+                        <h2 className="text-base sm:text-xl font-semibold text-gray-900 truncate">{testRun.title}</h2>
+                        <div className="text-xs sm:text-sm text-gray-500 mt-1">
                             Progress: {executedCount} / {totalItems} ({Math.round((executedCount / totalItems) * 100)}%)
                         </div>
                     </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-                        <XCircle className="w-6 h-6" />
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 flex-shrink-0">
+                        <XCircle className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
                 </div>
 
@@ -459,48 +459,48 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                 </div>
 
                 {/* Current item */}
-                <div className="flex-1 overflow-y-auto p-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-500">
+                <div className="flex-1 overflow-y-auto p-3 sm:p-6">
+                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                            <span className="text-xs sm:text-sm text-gray-500">
                                 Case {currentIndex + 1} of {totalItems}
                             </span>
-                            <span className={`px-2 py-0.5 text-xs font-medium rounded ${getItemStatusColor(currentItem.status)} text-white`}>
+                            <span className={`px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded ${getItemStatusColor(currentItem.status)} text-white`}>
                                 {currentItem.status}
                             </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2">
                             <button
                                 onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
                                 disabled={currentIndex === 0}
-                                className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                                className="p-1.5 sm:p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50 active:bg-gray-100 rounded"
                             >
                                 <ChevronLeft className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => setCurrentIndex(Math.min(totalItems - 1, currentIndex + 1))}
                                 disabled={currentIndex === totalItems - 1}
-                                className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                                className="p-1.5 sm:p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50 active:bg-gray-100 rounded"
                             >
                                 <ChevronRight className="w-5 h-5" />
                             </button>
                         </div>
                     </div>
 
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
                         {currentItem.caseSnapshot.title}
                     </h3>
 
                     {currentItem.caseSnapshot.testDescription && (
-                        <div className="mb-4">
-                            <h4 className="text-sm font-medium text-gray-700 mb-1">Description</h4>
-                            <p className="text-sm text-gray-600">{currentItem.caseSnapshot.testDescription}</p>
+                        <div className="mb-5 sm:mb-6">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Description</h4>
+                            <p className="text-sm text-gray-600 leading-relaxed">{currentItem.caseSnapshot.testDescription}</p>
                         </div>
                     )}
 
                     {currentItem.caseSnapshot.stepsContent && (
-                        <div className="mb-4">
-                            <h4 className="text-sm font-medium text-gray-700 mb-1">Steps</h4>
+                        <div className="mb-5 sm:mb-6">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Steps</h4>
                             <div
                                 className="prose prose-sm max-w-none text-gray-600"
                                 dangerouslySetInnerHTML={{ __html: currentItem.caseSnapshot.stepsContent }}
@@ -509,14 +509,14 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                     )}
 
                     {currentItem.caseSnapshot.expectedResult && (
-                        <div className="mb-4">
-                            <h4 className="text-sm font-medium text-gray-700 mb-1">Expected Result</h4>
-                            <p className="text-sm text-gray-600">{currentItem.caseSnapshot.expectedResult}</p>
+                        <div className="mb-5 sm:mb-6">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Expected Result</h4>
+                            <p className="text-sm text-gray-600 leading-relaxed">{currentItem.caseSnapshot.expectedResult}</p>
                         </div>
                     )}
 
-                    <div className="mb-4">
-                        <h4 className="text-sm font-medium text-gray-700 mb-1">Actual Result / Notes</h4>
+                    <div className="mb-0">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Actual Result / Notes</h4>
                         <RichTextEditor
                             content={actualResult}
                             onChange={setActualResult}
@@ -527,46 +527,94 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                 </div>
 
                 {/* Action buttons */}
-                <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                    <div className="flex gap-2">
+                <div className="px-3 sm:px-6 py-4 sm:py-5 border-t border-gray-200">
+                    {/* Mobile: Stacked layout */}
+                    <div className="sm:hidden flex flex-col gap-3">
+                        {/* Status buttons grid */}
+                        <div className="grid grid-cols-2 gap-2.5">
+                            <button
+                                onClick={() => handleStatusUpdate(RunItemStatus.Passed)}
+                                disabled={isUpdating}
+                                className="flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium text-white bg-green-600 rounded-lg active:bg-green-700 disabled:opacity-50"
+                            >
+                                <CheckCircle className="w-4 h-4" />
+                                Pass
+                            </button>
+                            <button
+                                onClick={() => handleStatusUpdate(RunItemStatus.Failed)}
+                                disabled={isUpdating}
+                                className="flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium text-white bg-red-600 rounded-lg active:bg-red-700 disabled:opacity-50"
+                            >
+                                <XCircle className="w-4 h-4" />
+                                Fail
+                            </button>
+                            <button
+                                onClick={() => handleStatusUpdate(RunItemStatus.Blocked)}
+                                disabled={isUpdating}
+                                className="flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium text-white bg-orange-600 rounded-lg active:bg-orange-700 disabled:opacity-50"
+                            >
+                                <AlertCircle className="w-4 h-4" />
+                                Blocked
+                            </button>
+                            <button
+                                onClick={() => handleStatusUpdate(RunItemStatus.Skipped)}
+                                disabled={isUpdating}
+                                className="flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg active:bg-gray-300 disabled:opacity-50"
+                            >
+                                Skip
+                            </button>
+                        </div>
+                        {/* Complete button */}
                         <button
-                            onClick={() => handleStatusUpdate(RunItemStatus.Passed)}
-                            disabled={isUpdating}
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
+                            onClick={handleComplete}
+                            className="w-full px-4 py-3 text-sm font-medium text-blue-600 border border-blue-600 rounded-lg active:bg-blue-50"
                         >
-                            <CheckCircle className="w-4 h-4" />
-                            Pass
-                        </button>
-                        <button
-                            onClick={() => handleStatusUpdate(RunItemStatus.Failed)}
-                            disabled={isUpdating}
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
-                        >
-                            <XCircle className="w-4 h-4" />
-                            Fail
-                        </button>
-                        <button
-                            onClick={() => handleStatusUpdate(RunItemStatus.Blocked)}
-                            disabled={isUpdating}
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 disabled:opacity-50"
-                        >
-                            <AlertCircle className="w-4 h-4" />
-                            Blocked
-                        </button>
-                        <button
-                            onClick={() => handleStatusUpdate(RunItemStatus.Skipped)}
-                            disabled={isUpdating}
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
-                        >
-                            Skip
+                            Complete Run
                         </button>
                     </div>
-                    <button
-                        onClick={handleComplete}
-                        className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50"
-                    >
-                        Complete Run
-                    </button>
+                    
+                    {/* Desktop: Horizontal layout */}
+                    <div className="hidden sm:flex items-center justify-between">
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => handleStatusUpdate(RunItemStatus.Passed)}
+                                disabled={isUpdating}
+                                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
+                            >
+                                <CheckCircle className="w-4 h-4" />
+                                Pass
+                            </button>
+                            <button
+                                onClick={() => handleStatusUpdate(RunItemStatus.Failed)}
+                                disabled={isUpdating}
+                                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+                            >
+                                <XCircle className="w-4 h-4" />
+                                Fail
+                            </button>
+                            <button
+                                onClick={() => handleStatusUpdate(RunItemStatus.Blocked)}
+                                disabled={isUpdating}
+                                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 disabled:opacity-50"
+                            >
+                                <AlertCircle className="w-4 h-4" />
+                                Blocked
+                            </button>
+                            <button
+                                onClick={() => handleStatusUpdate(RunItemStatus.Skipped)}
+                                disabled={isUpdating}
+                                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                            >
+                                Skip
+                            </button>
+                        </div>
+                        <button
+                            onClick={handleComplete}
+                            className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50"
+                        >
+                            Complete Run
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
