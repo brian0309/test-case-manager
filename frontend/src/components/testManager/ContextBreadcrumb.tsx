@@ -103,11 +103,11 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
     const uniqueAreas = Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort();
 
     return (
-        <div className="h-16 flex items-center gap-3 px-6 bg-gray-50/50 border-b border-gray-100">
+        <div className="min-h-16 flex flex-wrap items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 bg-gray-50/50 border-b border-gray-100">
             {/* Home / Projects link */}
             <button
                 onClick={goToProjects}
-                className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600 transition-colors"
+                className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600 transition-colors flex-shrink-0"
             >
                 <Home size={14} />
                 <span className="hidden sm:inline">Projects</span>
@@ -116,15 +116,15 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
             {/* Project Selector */}
             {activeProject && (
                 <>
-                    <ChevronRight size={14} className="text-gray-300" />
+                    <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
                     <div className="relative" ref={projectRef}>
                         <button
                             onClick={() => setIsProjectOpen(!isProjectOpen)}
                             className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-gray-700 hover:bg-white hover:shadow-sm rounded-md transition-all"
                         >
-                            <Folder size={14} className="text-blue-500" />
-                            <span className="max-w-[120px] truncate">{currentProject?.name || 'Project'}</span>
-                            <ChevronDown size={14} className={`text-gray-400 transition-transform ${isProjectOpen ? 'rotate-180' : ''}`} />
+                            <Folder size={14} className="text-blue-500 flex-shrink-0" />
+                            <span className="max-w-[80px] sm:max-w-[120px] truncate">{currentProject?.name || 'Project'}</span>
+                            <ChevronDown size={14} className={`text-gray-400 transition-transform flex-shrink-0 ${isProjectOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isProjectOpen && (
@@ -163,11 +163,11 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                                 : 'text-gray-500 hover:text-gray-700 hover:bg-white hover:shadow-sm'
                                 }`}
                         >
-                            <Layers size={14} className={activeSuiteId ? 'text-purple-500' : 'text-gray-400'} />
-                            <span className="max-w-[120px] truncate">
+                            <Layers size={14} className={activeSuiteId ? 'text-purple-500 flex-shrink-0' : 'text-gray-400 flex-shrink-0'} />
+                            <span className="max-w-[80px] sm:max-w-[120px] truncate">
                                 {currentSuite?.name || activeSuite || 'All Suites'}
                             </span>
-                            <ChevronDown size={14} className={`text-gray-400 transition-transform ${isSuiteOpen ? 'rotate-180' : ''}`} />
+                            <ChevronDown size={14} className={`text-gray-400 transition-transform flex-shrink-0 ${isSuiteOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isSuiteOpen && (
@@ -225,7 +225,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
             {/* Area Selector - only show if we have a suite selected or at least project selected */}
             {showSuiteSelector && activeProject && (
                 <>
-                    <ChevronRight size={14} className="text-gray-300" />
+                    <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
                     <div className="relative" ref={areaRef}>
                         <button
                             onClick={() => setIsAreaOpen(!isAreaOpen)}
@@ -234,11 +234,11 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                                 : 'text-gray-500 hover:text-gray-700 hover:bg-white hover:shadow-sm'
                                 }`}
                         >
-                            <Map size={14} className={activeArea ? 'text-green-500' : 'text-gray-400'} />
-                            <span className="max-w-[120px] truncate">
+                            <Map size={14} className={activeArea ? 'text-green-500 flex-shrink-0' : 'text-gray-400 flex-shrink-0'} />
+                            <span className="max-w-[80px] sm:max-w-[120px] truncate">
                                 {activeArea || 'All Areas'}
                             </span>
-                            <ChevronDown size={14} className={`text-gray-400 transition-transform ${isAreaOpen ? 'rotate-180' : ''}`} />
+                            <ChevronDown size={14} className={`text-gray-400 transition-transform flex-shrink-0 ${isAreaOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isAreaOpen && (

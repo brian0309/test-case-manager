@@ -265,12 +265,12 @@ const TestCasesPage: React.FC = () => {
     return (
         <div className="flex flex-col h-full">
             {/* Context Breadcrumb with Project & Suite selectors */}
-            <div className="flex items-center justify-between pr-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 sm:justify-between px-4 sm:pr-4 sm:pl-0">
                 <ContextBreadcrumb showSuiteSelector={true} />
                 {activeProject && activeSuiteId && (
                     <button
                         onClick={() => setIsGeminiModalOpen(true)}
-                        className="flex items-center space-x-2 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-md hover:from-blue-700 hover:to-purple-700 transition-all shadow-sm"
+                        className="flex items-center justify-center sm:justify-start space-x-2 px-3 py-2 sm:py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-md hover:from-blue-700 hover:to-purple-700 transition-all shadow-sm w-full sm:w-auto flex-shrink-0"
                     >
                         <Sparkles className="w-4 h-4" />
                         <span>Generate with AI</span>
