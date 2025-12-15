@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     DndContext,
     closestCenter,
@@ -19,7 +19,10 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { TestCase, Priority, Status } from '../../types/testManager';
 import StatusBadge from './StatusBadge';
-import { Edit, Copy, Check, GripVertical } from 'lucide-react';
+import { Edit, Copy, Check, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
+
+type SortField = 'title' | 'priority' | 'status' | 'lastModified' | 'assignedTester';
+type SortOrder = 'asc' | 'desc';
 
 interface TestCaseTableProps {
     data: TestCase[];
@@ -276,6 +279,11 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
     enableReorder = false,
     onReorder,
 }) => {
+    // Sorting state
+    const [sortMode, setSortMode] = useState<'custom' | 'standard'>('custom');
+    const [sortField, setSortField] = useState<SortField>('title');
+    const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
@@ -299,16 +307,74 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
         }
     };
 
-    const allSelected = data.length > 0 && data.every(item => selectedIds.includes(item.id));
-    const someSelected = data.some(item => selectedIds.includes(item.id));
+    const getPriorityValue = (priority: Priority): number => {
+        switch (priority) {
+            case Priority.Critical: return 4;
+            case Priority.High: return 3;
+            case Priority.Medium: return 2;
+            case Priority.Low: return 1;
+            default: return 0;
+        }
+    };
+
+    // Sort data based on current mode and settings
+    const sortedData = useMemo(() => {
+        if (sortMode === 'custom') {
+            return [...data];
+        }
+
+        return [...data].sort((a, b) => {
+            let comparison = 0;
+
+            switch (sortField) {
+                case 'title':
+                    comparison = a.title.localeCompare(b.title);
+                    break;
+                case 'priority':
+                    comparison = getPriorityValue(a.priority) - getPriorityValue(b.priority);
+                    break;
+                case 'status':
+                    comparison = a.status.localeCompare(b.status);
+                    break;
+                case 'lastModified':
+                    comparison = new Date(a.lastModified).getTime() - new Date(b.lastModified).getTime();
+                    break;
+                case 'assignedTester':
+                    comparison = a.assignedTester.name.localeCompare(b.assignedTester.name);
+                    break;
+            }
+
+            return sortOrder === 'asc' ? comparison : -comparison;
+        });
+    }, [data, sortMode, sortField, sortOrder]);
+
+    const handleColumnSort = (field: SortField) => {
+        if (sortMode === 'custom') {
+            setSortMode('standard');
+            setSortField(field);
+            setSortOrder('asc');
+        } else if (sortField === field) {
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortOrder('asc');
+        }
+    };
+
+    const resetToCustomOrder = () => {
+        setSortMode('custom');
+    };
+
+    const allSelected = sortedData.length > 0 && sortedData.every(item => selectedIds.includes(item.id));
+    const someSelected = sortedData.some(item => selectedIds.includes(item.id));
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
 
         if (over && active.id !== over.id) {
-            const oldIndex = data.findIndex((item) => item.id === active.id);
-            const newIndex = data.findIndex((item) => item.id === over.id);
-            const newData = arrayMove(data, oldIndex, newIndex);
+            const oldIndex = sortedData.findIndex((item) => item.id === active.id);
+            const newIndex = sortedData.findIndex((item) => item.id === over.id);
+            const newData = arrayMove(sortedData, oldIndex, newIndex);
             
             // Update order values
             const reorderedData = newData.map((item, index) => ({
@@ -320,10 +386,47 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
         }
     };
 
+    const SortIcon: React.FC<{ field: SortField }> = ({ field }) => {
+        if (sortMode === 'custom' || sortField !== field) {
+            return <ArrowUpDown className="h-3.5 w-3.5 text-gray-400" />;
+        }
+        return sortOrder === 'asc' 
+            ? <ArrowUp className="h-3.5 w-3.5 text-blue-600" />
+            : <ArrowDown className="h-3.5 w-3.5 text-blue-600" />;
+    };
+
     return (
-        <div className="flex-1 bg-white">
+        <div className="flex-1 bg-white flex flex-col">
+            {/* Sort Controls Bar */}
+            {enableReorder && (
+                <div className="flex items-center justify-between px-6 py-2 border-b border-gray-200 bg-gray-50/50">
+                    <div className="flex items-center gap-2">
+                        {sortMode === 'custom' ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-full border border-blue-200">
+                                <GripVertical className="h-3 w-3" />
+                                Custom Order
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-purple-700 bg-purple-50 rounded-full border border-purple-200">
+                                {sortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                                Sorted by {sortField.charAt(0).toUpperCase() + sortField.slice(1)}
+                            </span>
+                        )}
+                    </div>
+                    {sortMode === 'standard' && (
+                        <button
+                            onClick={resetToCustomOrder}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 hover:text-gray-900 bg-white hover:bg-gray-50 rounded-md border border-gray-300 transition-colors"
+                        >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                            Reset to Custom Order
+                        </button>
+                    )}
+                </div>
+            )}
+
             {/* Desktop table */}
-            <div className="hidden sm:block overflow-auto">
+            <div className="hidden sm:block overflow-auto flex-1">
                 <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -332,7 +435,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                     <table className="w-full text-left border-collapse">
                         <thead className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                             <tr>
-                                {enableReorder && (
+                                {enableReorder && sortMode === 'custom' && (
                                     <th className="py-3 pl-2 pr-0 w-8"></th>
                                 )}
                                 {isSelectionMode && (
@@ -352,28 +455,68 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         </div>
                                     </th>
                                 )}
-                                <th className={`py-3 ${isSelectionMode ? 'pl-2' : enableReorder ? 'pl-2' : 'pl-6'} pr-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32`}>ID</th>
-                                <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-1/3">Title</th>
-                                <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32">Priority</th>
-                                <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40">Status</th>
-                                <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40">Last Modified</th>
-                                <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32 text-right pr-6">Assignee</th>
+                                <th className={`py-3 ${isSelectionMode ? 'pl-2' : (enableReorder && sortMode === 'custom') ? 'pl-2' : 'pl-6'} pr-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32`}>ID</th>
+                                <th 
+                                    className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-1/3 cursor-pointer hover:bg-gray-50 select-none"
+                                    onClick={() => handleColumnSort('title')}
+                                >
+                                    <div className="flex items-center gap-1.5">
+                                        Title
+                                        <SortIcon field="title" />
+                                    </div>
+                                </th>
+                                <th 
+                                    className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32 cursor-pointer hover:bg-gray-50 select-none"
+                                    onClick={() => handleColumnSort('priority')}
+                                >
+                                    <div className="flex items-center gap-1.5">
+                                        Priority
+                                        <SortIcon field="priority" />
+                                    </div>
+                                </th>
+                                <th 
+                                    className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 select-none"
+                                    onClick={() => handleColumnSort('status')}
+                                >
+                                    <div className="flex items-center gap-1.5">
+                                        Status
+                                        <SortIcon field="status" />
+                                    </div>
+                                </th>
+                                <th 
+                                    className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 select-none"
+                                    onClick={() => handleColumnSort('lastModified')}
+                                >
+                                    <div className="flex items-center gap-1.5">
+                                        Last Modified
+                                        <SortIcon field="lastModified" />
+                                    </div>
+                                </th>
+                                <th 
+                                    className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32 text-right pr-6 cursor-pointer hover:bg-gray-50 select-none"
+                                    onClick={() => handleColumnSort('assignedTester')}
+                                >
+                                    <div className="flex items-center justify-end gap-1.5">
+                                        Assignee
+                                        <SortIcon field="assignedTester" />
+                                    </div>
+                                </th>
                                 <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-24"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             <SortableContext
-                                items={data.map((item) => item.id)}
+                                items={sortedData.map((item) => item.id)}
                                 strategy={verticalListSortingStrategy}
                             >
-                                {data.map((item) => (
+                                {sortedData.map((item) => (
                                     <SortableRow
                                         key={item.id}
                                         item={item}
                                         isSelected={selectedIds.includes(item.id)}
                                         isSelectionMode={isSelectionMode}
                                         isEditMode={isEditMode}
-                                        enableReorder={enableReorder}
+                                        enableReorder={enableReorder && sortMode === 'custom'}
                                         onRowClick={onRowClick}
                                         onToggleSelection={onToggleSelection}
                                         onStatusChange={onStatusChange}
@@ -389,14 +532,14 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
             </div>
 
             {/* Mobile list */}
-            <div className="block sm:hidden p-2">
-                {data.length === 0 ? (
+            <div className="block sm:hidden p-2 flex-1 overflow-auto">
+                {sortedData.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-40 text-gray-400">
                         <p>No test cases found</p>
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        {data.map(item => (
+                        {sortedData.map(item => (
                             <div
                                 key={item.id}
                                 onClick={() => {
