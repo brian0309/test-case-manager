@@ -32,7 +32,7 @@ export const decryptApiKey = (text: string): string => {
     return decrypted.toString();
 };
 
-export const generateTestSteps = async (apiKey: string, testCaseTitle: string, context?: string) => {
+export const generateTestSteps = async (apiKey: string, testCaseTitle: string, context?: string, model: string = 'gemini-2.5-flash') => {
     const ai = new GoogleGenAI({ apiKey });
 
     try {
@@ -41,7 +41,7 @@ export const generateTestSteps = async (apiKey: string, testCaseTitle: string, c
         Each step should have an Action and an Expected Result. Keep it concise.`;
 
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-pro",
+            model: model,
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -111,7 +111,8 @@ export const generateTestCaseDetails = async (
     type: 'new_case' | 'steps' | 'area' | 'expected',
     selectedFields: { area: boolean; steps: boolean; expected: boolean } = { area: true, steps: true, expected: true },
     existingTestCases: string[] = [],
-    imageUrls: string[] = []
+    imageUrls: string[] = [],
+    model: string = 'gemini-2.5-flash'
 ) => {
     const ai = new GoogleGenAI({ apiKey });
 
@@ -226,7 +227,7 @@ export const generateTestCaseDetails = async (
         }
 
         const response = await ai.models.generateContent({
-            model: "gemini-2.0-flash",
+            model: model,
             contents: contents,
             config: {
                 responseMimeType: "application/json",

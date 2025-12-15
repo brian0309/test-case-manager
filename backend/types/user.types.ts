@@ -11,6 +11,7 @@ export interface IUser {
   googleId?: string;
   profilePicture?: string;
   geminiApiKey?: string;
+  geminiModel?: string;
   isVerified: boolean;
   lastLogin: Date;
   resetPasswordToken?: string;

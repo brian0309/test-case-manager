@@ -4,20 +4,56 @@ import { encryptApiKey, decryptApiKey, generateTestCaseDetails } from "./gemini.
 
 export const saveGeminiKey = async (req: Request, res: Response) => {
     try {
-        const { apiKey } = req.body;
+        const { apiKey, model } = req.body;
         const userId = req.userId;
 
-        if (!apiKey) {
-            return res.status(400).json({ success: false, message: "API Key is required" });
+        const updateData: any = {};
+
+        // Only update API key if provided
+        if (apiKey) {
+            const encryptedKey = encryptApiKey(apiKey);
+            updateData.geminiApiKey = encryptedKey;
         }
 
-        const encryptedKey = encryptApiKey(apiKey);
+        // Always update model if provided
+        if (model) {
+            updateData.geminiModel = model;
+        }
 
-        await User.findByIdAndUpdate(userId, { geminiApiKey: encryptedKey });
+        // If neither is provided, return error
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ success: false, message: "API Key or Model must be provided" });
+        }
 
-        res.status(200).json({ success: true, message: "API Key saved successfully" });
+        await User.findByIdAndUpdate(userId, updateData);
+
+        res.status(200).json({ success: true, message: "Settings saved successfully" });
     } catch (error: any) {
-        console.error("Error saving Gemini key:", error);
+        console.error("Error saving Gemini settings:", error);
+        res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+export const getGeminiSettings = async (req: Request, res: Response) => {
+    try {
+        const userId = req.userId;
+
+        // geminiApiKey is select:false, so we must explicitly include it to compute hasApiKey.
+        // We still do NOT return the key to the client.
+        const user = await User.findById(userId).select('+geminiApiKey geminiModel');
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        res.status(200).json({ 
+            success: true, 
+            data: {
+                hasApiKey: typeof user.geminiApiKey === 'string' && user.geminiApiKey.length > 0,
+                model: user.geminiModel || 'gemini-2.5-flash'
+            }
+        });
+    } catch (error: any) {
+        console.error("Error fetching Gemini settings:", error);
         res.status(500).json({ success: false, message: "Server error" });
     }
 };
@@ -33,8 +69,9 @@ export const generateTestCases = async (req: Request, res: Response) => {
         }
 
         const decryptedKey = decryptApiKey(user.geminiApiKey);
+        const model = user.geminiModel || 'gemini-2.5-flash';
 
-        const result = await generateTestCaseDetails(decryptedKey, context, type, selectedFields, existingTestCases, imageUrls);
+        const result = await generateTestCaseDetails(decryptedKey, context, type, selectedFields, existingTestCases, imageUrls, model);
 
         res.status(200).json({ success: true, data: result });
     } catch (error: any) {

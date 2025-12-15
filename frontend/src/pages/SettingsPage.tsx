@@ -354,23 +354,65 @@ const PlaceholderTab: React.FC<PlaceholderTabProps> = ({ title }) => {
 // Gemini Tab Component
 const GeminiTab = () => {
     const [apiKey, setApiKey] = useState("");
+    const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
     const [isLoading, setIsLoading] = useState(false);
+    const [hasExistingKey, setHasExistingKey] = useState(false);
+
+    // Available Gemini models based on https://ai.google.dev/gemini-api/docs/pricing
+    const geminiModels = [
+        { value: "gemini-2.0-flash-lite", label: "Gemini 2.0 Flash-Lite", description: "Smallest and most cost effective, built for at scale usage" },
+        { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash", description: "Most balanced multimodal model, great for Agents" },
+        { value: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite", description: "Smallest and most cost effective, built for at scale usage" },
+        { value: "gemini-2.5-flash-preview-09-2025", label: "Gemini 2.5 Flash Preview", description: "Best for large scale processing, low-latency, and agentic use cases" },
+        { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash", description: "First hybrid reasoning model with 1M token context and thinking budgets" },
+        { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro", description: "State-of-the-art model, excels at coding and complex reasoning tasks" },
+        { value: "gemini-3-pro-preview", label: "Gemini 3 Pro Preview", description: "Best model for multimodal understanding, most powerful agentic model" },
+    ];
+
+    // Fetch current settings on mount
+    React.useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const response = await axios.get(`${API_URL}/gemini/settings`, { withCredentials: true });
+                if (response.data.success) {
+                    setHasExistingKey(response.data.data.hasApiKey);
+                    setSelectedModel(response.data.data.model || "gemini-2.5-flash");
+                }
+            } catch (error) {
+                console.error("Error fetching Gemini settings:", error);
+            }
+        };
+        fetchSettings();
+    }, []);
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Validate that either API key exists or user is providing a new one
+        if (!hasExistingKey && !apiKey) {
+            toast.error("Please enter an API Key");
+            return;
+        }
+
         setIsLoading(true);
         try {
-            console.log("Saving API Key");
+            console.log("Saving API Key and Model");
 
-            const response = await axios.post(`${API_URL}/gemini/key`, { apiKey }, { withCredentials: true });
+            const payload: any = { model: selectedModel };
+            if (apiKey) {
+                payload.apiKey = apiKey;
+            }
+
+            const response = await axios.post(`${API_URL}/gemini/key`, payload, { withCredentials: true });
 
             if (response.data.success) {
-                toast.success("Gemini API Key saved successfully");
+                toast.success("Gemini API settings saved successfully");
                 setApiKey("");
+                setHasExistingKey(true);
             }
         } catch (error: any) {
             console.error(error);
-            toast.error(error.response?.data?.message || "Failed to save API Key");
+            toast.error(error.response?.data?.message || "Failed to save API settings");
         } finally {
             setIsLoading(false);
         }
@@ -388,22 +430,57 @@ const GeminiTab = () => {
                 <form onSubmit={handleSave} className="space-y-6">
                     <div>
                         <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 mb-2">
-                            API Key
+                            API Key {hasExistingKey ? "(Optional - Update)" : ""}
                         </label>
+                        {hasExistingKey && (
+                            <div className="mb-3 p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-md flex items-start gap-2">
+                                <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <div>
+                                    <p className="font-medium">API Key is configured</p>
+                                    <p className="text-xs mt-1">Leave blank to keep your current key, or enter a new one to update it.</p>
+                                </div>
+                            </div>
+                        )}
                         <div className="relative">
                             <Input
                                 id="apiKey"
                                 icon={Lock}
                                 type="password"
-                                placeholder="Enter your Gemini API Key"
+                                placeholder={hasExistingKey ? "Leave blank to keep current key" : "Enter your Gemini API Key"}
                                 value={apiKey}
                                 onChange={(e) => setApiKey(e.target.value)}
-                                required
+                                required={!hasExistingKey}
                                 className="w-full"
                             />
                         </div>
+                        {!hasExistingKey && (
+                            <p className="mt-2 text-xs text-gray-500">
+                                You can generate an API key from the <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>.
+                            </p>
+                        )}
+                    </div>
+
+                    <div>
+                        <label htmlFor="geminiModel" className="block text-sm font-medium text-gray-700 mb-2">
+                            Gemini Model
+                        </label>
+                        <select
+                            id="geminiModel"
+                            value={selectedModel}
+                            onChange={(e) => setSelectedModel(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            {geminiModels.map((model) => (
+                                <option key={model.value} value={model.value}>
+                                    {model.label}
+                                </option>
+                            ))}
+                        </select>
                         <p className="mt-2 text-xs text-gray-500">
-                            You can generate an API key from the <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>.
+                            {geminiModels.find(m => m.value === selectedModel)?.description}. 
+                            See <a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">pricing details</a>.
                         </p>
                     </div>
 
@@ -418,7 +495,7 @@ const GeminiTab = () => {
                                 : 'bg-blue-600 hover:bg-blue-700'
                                 } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
                         >
-                            {isLoading ? 'Saving...' : 'Save API Key'}
+                            {isLoading ? 'Saving...' : hasExistingKey ? 'Update Settings' : 'Save API Settings'}
                         </motion.button>
                     </div>
                 </form>

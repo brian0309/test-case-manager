@@ -48,6 +48,10 @@ const userSchema = new Schema<IUserDocument>(
 		geminiApiKey: {
 			type: String,
 			select: false // Always exclude by default for security
+		},
+		geminiModel: {
+			type: String,
+			default: 'gemini-2.5-flash'
 		}
 	},
 	{ timestamps: true }
