@@ -17,7 +17,7 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { TestCase, Priority, Status } from '../../types/testManager';
+import { TestCase, Priority, Status, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
 import StatusBadge from './StatusBadge';
 import { Edit, Copy, Check, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
 
@@ -39,6 +39,10 @@ interface TestCaseTableProps {
     // Reorder props
     enableReorder?: boolean;
     onReorder?: (items: TestCase[]) => void;
+    // Custom fields and visibility
+    customFieldDefinitions?: CustomFieldDefinition[];
+    visibleCustomFieldIds?: string[];
+    hiddenColumns?: HiddenDefaultColumns;
 }
 
 const IdCell: React.FC<{ id: string }> = ({ id }) => {
@@ -83,6 +87,10 @@ interface SortableRowProps {
     onViewClick?: (item: TestCase) => void;
     onUpdate?: (id: string, field: keyof TestCase, value: any) => void;
     getStatusColor: (status: Status) => string;
+    // Custom fields and visibility
+    customFieldDefinitions?: CustomFieldDefinition[];
+    visibleCustomFieldIds?: string[];
+    hiddenColumns?: HiddenDefaultColumns;
 }
 
 const SortableRow: React.FC<SortableRowProps> = ({
@@ -97,6 +105,9 @@ const SortableRow: React.FC<SortableRowProps> = ({
     onViewClick,
     onUpdate,
     getStatusColor,
+    customFieldDefinitions = [],
+    visibleCustomFieldIds = [],
+    hiddenColumns = {},
 }) => {
     const {
         attributes,
@@ -157,95 +168,123 @@ const SortableRow: React.FC<SortableRowProps> = ({
                     </div>
                 </td>
             )}
-            <td className={`py-4 ${isSelectionMode ? 'pl-2' : enableReorder ? 'pl-2' : 'pl-6'} pr-4 text-sm font-medium text-gray-500 font-mono tracking-tight group-hover:text-gray-900`}>
-                <IdCell id={item.id} />
-            </td>
+            {/* ID Column */}
+            {!hiddenColumns.id && (
+                <td className={`py-4 ${isSelectionMode ? 'pl-2' : enableReorder ? 'pl-2' : 'pl-6'} pr-4 text-sm font-medium text-gray-500 font-mono tracking-tight group-hover:text-gray-900`}>
+                    <IdCell id={item.id} />
+                </td>
+            )}
 
             {/* Title Cell: Editable or Text */}
-            <td className="py-4 px-4">
-                {isEditMode ? (
-                    <div onClick={(e) => e.stopPropagation()}>
-                        <input
-                            type="text"
-                            value={item.title}
-                            onChange={(e) => onUpdate?.(item.id, 'title', e.target.value)}
-                            className="w-full bg-white border border-blue-300 rounded px-2 py-1 text-sm text-gray-900 focus:ring-2 focus:ring-blue-100 outline-none"
-                        />
-                        <div className="text-xs text-gray-400 mt-1">{item.suite}</div>
-                    </div>
-                ) : (
-                    <>
-                        <div className="text-[15px] font-medium text-gray-900">{item.title}</div>
-                        <div className="text-xs text-gray-400 mt-0.5">{item.suite}</div>
-                    </>
-                )}
-            </td>
+            {!hiddenColumns.title && (
+                <td className="py-4 px-4">
+                    {isEditMode ? (
+                        <div onClick={(e) => e.stopPropagation()}>
+                            <input
+                                type="text"
+                                value={item.title}
+                                onChange={(e) => onUpdate?.(item.id, 'title', e.target.value)}
+                                className="w-full bg-white border border-blue-300 rounded px-2 py-1 text-sm text-gray-900 focus:ring-2 focus:ring-blue-100 outline-none"
+                            />
+                            <div className="text-xs text-gray-400 mt-1">{item.suite}</div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="text-[15px] font-medium text-gray-900">{item.title}</div>
+                            <div className="text-xs text-gray-400 mt-0.5">{item.suite}</div>
+                        </>
+                    )}
+                </td>
+            )}
 
             {/* Priority: Editable or Badge */}
-            <td className="py-4 px-4">
-                {isEditMode ? (
-                    <div onClick={(e) => e.stopPropagation()}>
-                        <select
-                            value={item.priority}
-                            onChange={(e) => onUpdate?.(item.id, 'priority', e.target.value)}
-                            className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-xs text-gray-700 outline-none focus:border-blue-300"
-                        >
-                            {Object.values(Priority).map(p => (
-                                <option key={p} value={p}>{p}</option>
-                            ))}
-                        </select>
-                    </div>
-                ) : (
-                    <StatusBadge type="priority" value={item.priority} />
-                )}
-            </td>
+            {!hiddenColumns.priority && (
+                <td className="py-4 px-4">
+                    {isEditMode ? (
+                        <div onClick={(e) => e.stopPropagation()}>
+                            <select
+                                value={item.priority}
+                                onChange={(e) => onUpdate?.(item.id, 'priority', e.target.value)}
+                                className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-xs text-gray-700 outline-none focus:border-blue-300"
+                            >
+                                {Object.values(Priority).map(p => (
+                                    <option key={p} value={p}>{p}</option>
+                                ))}
+                            </select>
+                        </div>
+                    ) : (
+                        <StatusBadge type="priority" value={item.priority} />
+                    )}
+                </td>
+            )}
 
             {/* Unified Status Dropdown */}
-            <td className="py-4 px-4">
-                <div onClick={e => e.stopPropagation()}>
-                    <select
-                        value={item.status}
-                        onChange={(e) => onStatusChange?.(item.id, e.target.value as Status)}
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-full border appearance-none cursor-pointer outline-none transition-colors text-center min-w-[90px] ${getStatusColor(item.status)}`}
-                    >
-                        <option value={Status.Draft}>Draft</option>
-                        <option value={Status.Passed}>Passed</option>
-                        <option value={Status.Failed}>Failed</option>
-                        <option value={Status.PassFixed}>Pass - Fixed</option>
-                        <option value={Status.Retest}>Retest</option>
-                        <option value={Status.Skipped}>Skipped</option>
-                    </select>
-                </div>
-            </td>
+            {!hiddenColumns.status && (
+                <td className="py-4 px-4">
+                    <div onClick={e => e.stopPropagation()}>
+                        <select
+                            value={item.status}
+                            onChange={(e) => onStatusChange?.(item.id, e.target.value as Status)}
+                            className={`text-xs font-semibold px-2.5 py-1 rounded-full border appearance-none cursor-pointer outline-none transition-colors text-center min-w-[90px] ${getStatusColor(item.status)}`}
+                        >
+                            <option value={Status.Draft}>Draft</option>
+                            <option value={Status.Passed}>Passed</option>
+                            <option value={Status.Failed}>Failed</option>
+                            <option value={Status.PassFixed}>Pass - Fixed</option>
+                            <option value={Status.Retest}>Retest</option>
+                            <option value={Status.Skipped}>Skipped</option>
+                        </select>
+                    </div>
+                </td>
+            )}
 
             {/* Last Modified */}
-            <td className="py-4 px-4">
-                <div className="text-sm text-gray-600">
-                    {new Date(item.lastModified).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                    })}
-                </div>
-                <div className="text-xs text-gray-400 mt-0.5">
-                    {new Date(item.lastModified).toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                        hour12: true
-                    })}
-                </div>
-            </td>
+            {!hiddenColumns.lastModified && (
+                <td className="py-4 px-4">
+                    <div className="text-sm text-gray-600">
+                        {new Date(item.lastModified).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                        })}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-0.5">
+                        {new Date(item.lastModified).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                        })}
+                    </div>
+                </td>
+            )}
 
-            <td className="py-4 px-4 text-right pr-6">
-                <div className="flex items-center justify-end gap-2">
-                    <span className="text-sm text-gray-600 truncate max-w-[100px]">{item.assignedTester.name}</span>
-                    <img
-                        src={item.assignedTester.avatar}
-                        alt={item.assignedTester.name}
-                        className="h-6 w-6 rounded-full border border-gray-200"
-                    />
-                </div>
-            </td>
+            {/* Assignee */}
+            {!hiddenColumns.assignedTester && (
+                <td className="py-4 px-4 text-right pr-6">
+                    <div className="flex items-center justify-end gap-2">
+                        <span className="text-sm text-gray-600 truncate max-w-[100px]">{item.assignedTester.name}</span>
+                        <img
+                            src={item.assignedTester.avatar}
+                            alt={item.assignedTester.name}
+                            className="h-6 w-6 rounded-full border border-gray-200"
+                        />
+                    </div>
+                </td>
+            )}
+
+            {/* Custom Field Columns */}
+            {visibleCustomFieldIds.map((fieldId) => {
+                const fieldDef = customFieldDefinitions.find(f => f.id === fieldId);
+                if (!fieldDef) return null;
+                
+                const value = item.customFields?.[fieldId] || '';
+                
+                return (
+                    <td key={fieldId} className="py-4 px-4">
+                        <div className="text-sm text-gray-900">{value || '-'}</div>
+                    </td>
+                );
+            })}
 
             {/* Actions Column */}
             <td className="py-4 px-4 text-center">
@@ -278,6 +317,9 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
     onSelectAll,
     enableReorder = false,
     onReorder,
+    customFieldDefinitions = [],
+    visibleCustomFieldIds = [],
+    hiddenColumns = {},
 }) => {
     // Sorting state
     const [sortMode, setSortMode] = useState<'custom' | 'standard'>('custom');
@@ -455,52 +497,92 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         </div>
                                     </th>
                                 )}
-                                <th className={`py-3 ${isSelectionMode ? 'pl-2' : (enableReorder && sortMode === 'custom') ? 'pl-2' : 'pl-6'} pr-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32`}>ID</th>
-                                <th 
-                                    className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-1/3 cursor-pointer hover:bg-gray-50 select-none"
-                                    onClick={() => handleColumnSort('title')}
-                                >
-                                    <div className="flex items-center gap-1.5">
-                                        Title
-                                        <SortIcon field="title" />
-                                    </div>
-                                </th>
-                                <th 
-                                    className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32 cursor-pointer hover:bg-gray-50 select-none"
-                                    onClick={() => handleColumnSort('priority')}
-                                >
-                                    <div className="flex items-center gap-1.5">
-                                        Priority
-                                        <SortIcon field="priority" />
-                                    </div>
-                                </th>
-                                <th 
-                                    className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 select-none"
-                                    onClick={() => handleColumnSort('status')}
-                                >
-                                    <div className="flex items-center gap-1.5">
-                                        Status
-                                        <SortIcon field="status" />
-                                    </div>
-                                </th>
-                                <th 
-                                    className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 select-none"
-                                    onClick={() => handleColumnSort('lastModified')}
-                                >
-                                    <div className="flex items-center gap-1.5">
-                                        Last Modified
-                                        <SortIcon field="lastModified" />
-                                    </div>
-                                </th>
-                                <th 
-                                    className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32 text-right pr-6 cursor-pointer hover:bg-gray-50 select-none"
-                                    onClick={() => handleColumnSort('assignedTester')}
-                                >
-                                    <div className="flex items-center justify-end gap-1.5">
-                                        Assignee
-                                        <SortIcon field="assignedTester" />
-                                    </div>
-                                </th>
+                                {/* ID Header */}
+                                {!hiddenColumns?.id && (
+                                    <th className={`py-3 ${isSelectionMode ? 'pl-2' : (enableReorder && sortMode === 'custom') ? 'pl-2' : 'pl-6'} pr-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32`}>ID</th>
+                                )}
+                                
+                                {/* Title Header */}
+                                {!hiddenColumns?.title && (
+                                    <th 
+                                        className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-1/3 cursor-pointer hover:bg-gray-50 select-none"
+                                        onClick={() => handleColumnSort('title')}
+                                    >
+                                        <div className="flex items-center gap-1.5">
+                                            Title
+                                            <SortIcon field="title" />
+                                        </div>
+                                    </th>
+                                )}
+                                
+                                {/* Priority Header */}
+                                {!hiddenColumns?.priority && (
+                                    <th 
+                                        className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32 cursor-pointer hover:bg-gray-50 select-none"
+                                        onClick={() => handleColumnSort('priority')}
+                                    >
+                                        <div className="flex items-center gap-1.5">
+                                            Priority
+                                            <SortIcon field="priority" />
+                                        </div>
+                                    </th>
+                                )}
+                                
+                                {/* Status Header */}
+                                {!hiddenColumns?.status && (
+                                    <th 
+                                        className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 select-none"
+                                        onClick={() => handleColumnSort('status')}
+                                    >
+                                        <div className="flex items-center gap-1.5">
+                                            Status
+                                            <SortIcon field="status" />
+                                        </div>
+                                    </th>
+                                )}
+                                
+                                {/* Last Modified Header */}
+                                {!hiddenColumns?.lastModified && (
+                                    <th 
+                                        className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 select-none"
+                                        onClick={() => handleColumnSort('lastModified')}
+                                    >
+                                        <div className="flex items-center gap-1.5">
+                                            Last Modified
+                                            <SortIcon field="lastModified" />
+                                        </div>
+                                    </th>
+                                )}
+                                
+                                {/* Assignee Header */}
+                                {!hiddenColumns?.assignedTester && (
+                                    <th 
+                                        className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32 text-right pr-6 cursor-pointer hover:bg-gray-50 select-none"
+                                        onClick={() => handleColumnSort('assignedTester')}
+                                    >
+                                        <div className="flex items-center justify-end gap-1.5">
+                                            Assignee
+                                            <SortIcon field="assignedTester" />
+                                        </div>
+                                    </th>
+                                )}
+                                
+                                {/* Custom Field Headers */}
+                                {visibleCustomFieldIds?.map((fieldId) => {
+                                    const fieldDef = customFieldDefinitions?.find(f => f.id === fieldId);
+                                    if (!fieldDef) return null;
+                                    
+                                    return (
+                                        <th 
+                                            key={fieldId}
+                                            className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32"
+                                        >
+                                            {fieldDef.label}
+                                        </th>
+                                    );
+                                })}
+                                
+                                {/* Actions Header */}
                                 <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-24"></th>
                             </tr>
                         </thead>
@@ -523,6 +605,9 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         onViewClick={onViewClick}
                                         onUpdate={onUpdate}
                                         getStatusColor={getStatusColor}
+                                        customFieldDefinitions={customFieldDefinitions}
+                                        visibleCustomFieldIds={visibleCustomFieldIds}
+                                        hiddenColumns={hiddenColumns}
                                     />
                                 ))}
                             </SortableContext>

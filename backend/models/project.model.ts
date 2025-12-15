@@ -1,6 +1,49 @@
 import mongoose, { Schema } from "mongoose";
 import { IProjectDocument } from "../services/testCase/types/testCase.types.js";
 
+const customFieldDefinitionSchema = new Schema(
+  {
+    id: {
+      type: String,
+      required: true,
+    },
+    key: {
+      type: String,
+      trim: true,
+    },
+    label: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    type: {
+      type: String,
+      enum: ["text", "long_text", "dropdown", "wysiwyg"],
+      required: true,
+    },
+    required: {
+      type: Boolean,
+      default: false,
+    },
+    options: [
+      {
+        id: String,
+        label: String,
+      },
+    ],
+    defaultValue: String,
+    showOnTableByDefault: {
+      type: Boolean,
+      default: false,
+    },
+    order: {
+      type: Number,
+      default: 0,
+    },
+  },
+  { _id: false }
+);
+
 const projectSchema = new Schema<IProjectDocument>(
   {
     name: {
@@ -29,6 +72,32 @@ const projectSchema = new Schema<IProjectDocument>(
         ref: "User",
       },
     ],
+    settings: {
+      testCases: {
+        hiddenDefaultFields: {
+          area: { type: Boolean, default: false },
+          testDescription: { type: Boolean, default: false },
+          stepsContent: { type: Boolean, default: false },
+          expectedResult: { type: Boolean, default: false },
+          comments: { type: Boolean, default: false },
+          priority: { type: Boolean, default: false },
+          status: { type: Boolean, default: false },
+          assignedTester: { type: Boolean, default: false },
+        },
+        table: {
+          hiddenDefaultColumns: {
+            id: { type: Boolean, default: false },
+            title: { type: Boolean, default: false },
+            priority: { type: Boolean, default: false },
+            status: { type: Boolean, default: false },
+            lastModified: { type: Boolean, default: false },
+            assignedTester: { type: Boolean, default: false },
+          },
+          visibleCustomFieldIds: [String],
+        },
+        customFields: [customFieldDefinitionSchema],
+      },
+    },
   },
   { timestamps: true }
 );

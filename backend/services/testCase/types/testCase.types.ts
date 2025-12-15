@@ -30,6 +30,7 @@ export interface IHistoryEntry {
     testDescription?: string;
     stepsContent?: string;
     comments?: string;
+    customFields?: Record<string, string>;
   };
   changedFields: string[];
 }
@@ -39,6 +40,57 @@ export interface ITestStep {
   expectedResult: string;
 }
 
+// Custom field definition interfaces
+export interface ICustomFieldOption {
+  id: string;
+  label: string;
+}
+
+export interface ICustomFieldDefinition {
+  id: string;
+  key?: string;
+  label: string;
+  type: "text" | "long_text" | "dropdown" | "wysiwyg";
+  required?: boolean;
+  options?: ICustomFieldOption[];
+  defaultValue?: string;
+  showOnTableByDefault?: boolean;
+  order?: number;
+  deleted?: boolean;
+  deletedAt?: Date;
+}
+
+export interface IHiddenDefaultFields {
+  area?: boolean;
+  testDescription?: boolean;
+  stepsContent?: boolean;
+  expectedResult?: boolean;
+  comments?: boolean;
+  priority?: boolean;
+  status?: boolean;
+  assignedTester?: boolean;
+}
+
+export interface IHiddenDefaultColumns {
+  id?: boolean;
+  title?: boolean;
+  priority?: boolean;
+  status?: boolean;
+  lastModified?: boolean;
+  assignedTester?: boolean;
+}
+
+export interface IProjectSettings {
+  testCases?: {
+    hiddenDefaultFields?: IHiddenDefaultFields;
+    table?: {
+      hiddenDefaultColumns?: IHiddenDefaultColumns;
+      visibleCustomFieldIds?: string[];
+    };
+    customFields?: ICustomFieldDefinition[];
+  };
+}
+
 // Project interfaces
 export interface IProject {
   name: string;
@@ -46,6 +98,7 @@ export interface IProject {
   color: string;
   ownerId: Types.ObjectId;
   members: Types.ObjectId[];
+  settings?: IProjectSettings;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -77,6 +130,7 @@ export interface ITestCase {
   testDescription?: string;
   stepsContent?: string;
   comments?: string;
+  customFields?: Record<string, string>;
   history: IHistoryEntry[];
   createdBy: Types.ObjectId;
   lastModified: Date;
@@ -206,6 +260,7 @@ export interface CreateTestCaseRequest {
   testDescription?: string;
   stepsContent?: string;
   comments?: string;
+  customFields?: Record<string, string>;
 }
 
 export interface UpdateTestCaseRequest {
@@ -218,6 +273,7 @@ export interface UpdateTestCaseRequest {
   testDescription?: string;
   stepsContent?: string;
   comments?: string;
+  customFields?: Record<string, string>;
 }
 
 export interface BulkUpdateStatusRequest {

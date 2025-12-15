@@ -58,3 +58,76 @@ export interface ErrorResponse {
   message: string;
   error?: string;
 }
+
+/**
+ * Custom field option
+ */
+export interface CustomFieldOption {
+  id: string;
+  label: string;
+}
+
+/**
+ * Custom field definition
+ */
+export interface CustomFieldDefinition {
+  id: string;
+  key?: string;
+  label: string;
+  type: "text" | "long_text" | "dropdown" | "wysiwyg";
+  required?: boolean;
+  options?: CustomFieldOption[];
+  defaultValue?: string;
+  showOnTableByDefault?: boolean;
+  order?: number;
+  deleted?: boolean;
+  deletedAt?: string;
+}
+
+/**
+ * Hidden default fields configuration
+ */
+export interface HiddenDefaultFields {
+  area?: boolean;
+  testDescription?: boolean;
+  stepsContent?: boolean;
+  expectedResult?: boolean;
+  comments?: boolean;
+  priority?: boolean;
+  status?: boolean;
+  assignedTester?: boolean;
+}
+
+/**
+ * Hidden default columns configuration
+ */
+export interface HiddenDefaultColumns {
+  id?: boolean;
+  title?: boolean;
+  priority?: boolean;
+  status?: boolean;
+  lastModified?: boolean;
+  assignedTester?: boolean;
+}
+
+/**
+ * Project settings for test cases
+ */
+export interface ProjectSettings {
+  testCases?: {
+    hiddenDefaultFields?: HiddenDefaultFields;
+    table?: {
+      hiddenDefaultColumns?: HiddenDefaultColumns;
+      visibleCustomFieldIds?: string[];
+    };
+    customFields?: CustomFieldDefinition[];
+  };
+}
+
+/**
+ * Project settings response
+ */
+export interface ProjectSettingsResponse {
+  success: boolean;
+  data: ProjectSettings;
+}

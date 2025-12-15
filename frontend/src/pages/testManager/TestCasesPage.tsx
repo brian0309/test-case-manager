@@ -9,7 +9,7 @@ import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import GeminiGenerationModal from '../../components/testManager/GeminiGenerationModal';
 import { useTestManagerStore } from '../../store/testManagerStore';
-import { TestCase, Status, Priority } from '../../types/testManager';
+import { TestCase, Status, Priority, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
 import { reorderTestCases } from '../../services/testManagerApi';
 import { Sparkles } from 'lucide-react';
 
@@ -38,6 +38,9 @@ const TestCasesPage: React.FC = () => {
         toggleTestCaseSelection,
         selectAllTestCases,
         clearSelection,
+        // Project settings
+        fetchProjectSettings,
+        getProjectSettings,
     } = useTestManagerStore();
     const [selectedCase, setSelectedCase] = useState<TestCase | null>(null);
     const [viewCase, setViewCase] = useState<TestCase | null>(null);
@@ -47,6 +50,19 @@ const TestCasesPage: React.FC = () => {
 
     const location = useLocation();
     const navigate = useNavigate();
+
+    // Load project settings when active project changes
+    useEffect(() => {
+        if (activeProject) {
+            fetchProjectSettings(activeProject);
+        }
+    }, [activeProject, fetchProjectSettings]);
+
+    // Get custom fields and visibility settings for table (filter out deleted fields)
+    const projectSettings = activeProject ? getProjectSettings(activeProject) : null;
+    const customFieldDefinitions: CustomFieldDefinition[] = (projectSettings?.testCases?.customFields || []).filter((f: CustomFieldDefinition) => !f.deleted);
+    const visibleCustomFieldIds: string[] = projectSettings?.testCases?.table?.visibleCustomFieldIds || [];
+    const hiddenColumns: HiddenDefaultColumns = projectSettings?.testCases?.table?.hiddenDefaultColumns || {};
 
     // Ensure projects are loaded when this page is visited directly
     useEffect(() => {
@@ -300,6 +316,10 @@ const TestCasesPage: React.FC = () => {
                             clearSelection();
                         }
                     }}
+                    // Custom fields and visibility props
+                    customFieldDefinitions={customFieldDefinitions}
+                    visibleCustomFieldIds={visibleCustomFieldIds}
+                    hiddenColumns={hiddenColumns}
                 />
             </div>
             {viewCase && (

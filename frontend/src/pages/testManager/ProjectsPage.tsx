@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import ProjectList from '../../components/testManager/ProjectList';
 import ProjectCreateModal from '../../components/testManager/ProjectCreateModal';
 import ProjectEditModal from '../../components/testManager/ProjectEditModal';
+import ProjectSettingsModal from '../../components/testManager/ProjectSettingsModal';
 import ConfirmationModal from '../../components/testManager/ConfirmationModal';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { Project } from '../../types/testManager';
@@ -15,6 +16,7 @@ const ProjectsPage: React.FC = () => {
 
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
+    const [projectToSettings, setProjectToSettings] = useState<Project | null>(null);
     const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
@@ -54,6 +56,10 @@ const ProjectsPage: React.FC = () => {
         setProjectToEdit(project);
     };
 
+    const handleProjectSettings = (project: Project) => {
+        setProjectToSettings(project);
+    };
+
     const handleDeleteProject = (project: Project) => {
         setProjectToDelete(project);
     };
@@ -90,6 +96,12 @@ const ProjectsPage: React.FC = () => {
                 onClose={() => setProjectToEdit(null)} 
                 project={projectToEdit} 
             />
+
+            <ProjectSettingsModal
+                isOpen={!!projectToSettings}
+                onClose={() => setProjectToSettings(null)}
+                project={projectToSettings}
+            />
             
             <ConfirmationModal
                 isOpen={!!projectToDelete}
@@ -108,6 +120,7 @@ const ProjectsPage: React.FC = () => {
                 onProjectClick={handleProjectClick}
                 onCreate={handleCreateProject}
                 onEdit={handleEditProject}
+                onSettings={handleProjectSettings}
                 onDelete={handleDeleteProject}
             />
         </>

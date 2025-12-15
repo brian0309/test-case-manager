@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTestManagerStore } from '../../store/testManagerStore';
-import { TestCase, Priority, Status, HistoryEntry } from '../../types/testManager';
+import { TestCase, Priority, Status, HistoryEntry, CustomFieldDefinition } from '../../types/testManager';
 import { X, Plus, ChevronDown, History, Check, Loader2, Cloud } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 
@@ -32,7 +32,30 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
     const lastSavedCaseRef = useRef<string | null>(null);
 
     // Store access for projects/suites selection
-    const { projects, testSuites, fetchTestSuites } = useTestManagerStore();
+    const { projects, testSuites, fetchTestSuites, fetchProjectSettings, projectSettings } = useTestManagerStore();
+
+    // Project settings
+    const [customFields, setCustomFields] = useState<CustomFieldDefinition[]>([]);
+    const [hiddenFields, setHiddenFields] = useState<any>({});
+
+    // Load project settings when project changes
+    useEffect(() => {
+        if (localCase?.projectId) {
+            const loadSettings = async () => {
+                try {
+                    await fetchProjectSettings(localCase.projectId);
+                    const settings = projectSettings[localCase.projectId];
+                    if (settings?.testCases) {
+                        setCustomFields(settings.testCases.customFields || []);
+                        setHiddenFields(settings.testCases.hiddenDefaultFields || {});
+                    }
+                } catch (err) {
+                    console.error('Failed to load project settings:', err);
+                }
+            };
+            loadSettings();
+        }
+    }, [localCase?.projectId, fetchProjectSettings]);
 
     // Combobox state
     const [isAreaDropdownOpen, setIsAreaDropdownOpen] = useState(false);
@@ -285,7 +308,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                 placeholder="Test Case Title"
                             />
                         </div>
-                        {/* Project & Suite selectors */}
+                        {/* Project & Suite selectors - Always visible */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
                             <div>
                                 <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Project</label>
@@ -324,17 +347,20 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
 
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
                             {/* Assignee */}
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Assignee</label>
-                                <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50/50 border border-transparent">
-                                    <img src={localCase.assignedTester.avatar} className="h-6 w-6 rounded-full" alt="avatar" />
-                                    <span className="text-sm text-gray-700 font-medium">{localCase.assignedTester.name}</span>
+                            {!hiddenFields.assignedTester && (
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Assignee</label>
+                                    <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50/50 border border-transparent">
+                                        <img src={localCase.assignedTester.avatar} className="h-6 w-6 rounded-full" alt="avatar" />
+                                        <span className="text-sm text-gray-700 font-medium">{localCase.assignedTester.name}</span>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Priority (Editable) */}
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Priority</label>
+                            {!hiddenFields.priority && (
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Priority</label>
                                 <div className="relative">
                                     <select
                                         value={localCase.priority}
@@ -348,11 +374,13 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                     </select>
                                     <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 pointer-events-none opacity-50" />
                                 </div>
-                            </div>
+                                </div>
+                            )}
 
                             {/* Status (Editable) */}
-                            <div>
-                                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Status</label>
+                            {!hiddenFields.status && (
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Status</label>
                                 <div className="relative">
                                     <select
                                         value={localCase.status}
@@ -366,11 +394,13 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                     </select>
                                     <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 pointer-events-none opacity-50" />
                                 </div>
-                            </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Searchable Page/Area Input - Moved below grid */}
-                        <div className="mb-8">
+                        {!hiddenFields.area && (
+                            <div className="mb-8">
                             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Page / Area</label>
                             <div className="relative" ref={areaRef}>
                                 <div className="flex items-center gap-2">
@@ -435,10 +465,12 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                     </div>
                                 )}
                             </div>
-                        </div>
+                            </div>
+                        )}
                         
                         {/* Test Description (between Page/Area and Steps) */}
-                        <div className="mb-2">
+                        {!hiddenFields.testDescription && (
+                            <div className="mb-2">
                             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Test Description</label>
                             <textarea
                                 value={localCase.testDescription || ''}
@@ -448,29 +480,33 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                 rows={3}
                                 placeholder="Short description of what this test verifies"
                             />
-                        </div>
-
-                        <div className="mb-4">
-                            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Test Steps</label>
-                        </div>
-
-                        {error && (
-                            <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg flex items-center gap-2">
-                                <span className="font-bold">Error:</span> {error}
                             </div>
                         )}
 
-                        <div className="mb-8">
-                            <RichTextEditor
-                                content={localCase.stepsContent || ''}
-                                onChange={(html) => setLocalCase(prev => prev ? ({ ...prev, stepsContent: html }) : null)}
-                                onBlur={handleFieldBlur}
-                                placeholder="Describe the test steps here. You can use lists, bold text, etc."
-                            />
-                        </div>
+                        {!hiddenFields.stepsContent && (
+                            <div className="mb-4">
+                                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Test Steps</label>
+
+                                {error && (
+                                    <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg flex items-center gap-2">
+                                        <span className="font-bold">Error:</span> {error}
+                                    </div>
+                                )}
+
+                                <div className="mb-8">
+                                    <RichTextEditor
+                                        content={localCase.stepsContent || ''}
+                                        onChange={(html) => setLocalCase(prev => prev ? ({ ...prev, stepsContent: html }) : null)}
+                                        onBlur={handleFieldBlur}
+                                        placeholder="Describe the test steps here. You can use lists, bold text, etc."
+                                    />
+                                </div>
+                            </div>
+                        )}
 
                         {/* Moved Expected Result to bottom */}
-                        <div className="mb-2">
+                        {!hiddenFields.expectedResult && (
+                            <div className="mb-2">
                             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Expected Result (Summary)</label>
                             <textarea
                                 value={localCase.expectedResult || ''}
@@ -480,10 +516,12 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                 rows={3}
                                 placeholder="What is the high-level expected outcome of this test case?"
                             />
-                        </div>
+                            </div>
+                        )}
 
                         {/* Comments Section */}
-                        <div className="mb-2">
+                        {!hiddenFields.comments && (
+                            <div className="mb-2">
                             <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Comments</label>
                             <RichTextEditor
                                 content={localCase.comments || ''}
@@ -491,7 +529,89 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                 onBlur={handleFieldBlur}
                                 placeholder="Add comments, notes, or additional information about this test case..."
                             />
-                        </div>
+                            </div>
+                        )}
+
+                        {/* Custom Fields */}
+                        {customFields.filter(f => !f.deleted).length > 0 && (
+                            <div className="mt-8 space-y-6">
+                                <div className="border-t border-gray-200 pt-6">
+                                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Custom Fields</h3>
+                                    {customFields.filter(f => !f.deleted).map((field) => {
+                                        const value = localCase.customFields?.[field.id] || '';
+                                        return (
+                                            <div key={field.id} className="mb-6">
+                                                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                                                    {field.label}
+                                                    {field.required && <span className="text-red-500 ml-1">*</span>}
+                                                </label>
+                                                {field.type === 'text' && (
+                                                    <input
+                                                        type="text"
+                                                        value={value}
+                                                        onChange={(e) => {
+                                                            setLocalCase(prev => prev ? ({
+                                                                ...prev,
+                                                                customFields: { ...(prev.customFields || {}), [field.id]: e.target.value }
+                                                            }) : null);
+                                                        }}
+                                                        onBlur={handleFieldBlur}
+                                                        className="w-full text-sm text-gray-700 bg-gray-50 border-transparent rounded-lg focus:border-blue-300 focus:bg-white focus:ring-0 p-3 transition-colors"
+                                                        placeholder={`Enter ${field.label.toLowerCase()}`}
+                                                    />
+                                                )}
+                                                {field.type === 'long_text' && (
+                                                    <textarea
+                                                        value={value}
+                                                        onChange={(e) => {
+                                                            setLocalCase(prev => prev ? ({
+                                                                ...prev,
+                                                                customFields: { ...(prev.customFields || {}), [field.id]: e.target.value }
+                                                            }) : null);
+                                                        }}
+                                                        onBlur={handleFieldBlur}
+                                                        className="w-full text-sm text-gray-700 bg-gray-50 border-transparent rounded-lg focus:border-blue-300 focus:bg-white focus:ring-0 p-3 transition-colors resize-none"
+                                                        rows={4}
+                                                        placeholder={`Enter ${field.label.toLowerCase()}`}
+                                                    />
+                                                )}
+                                                {field.type === 'dropdown' && (
+                                                    <select
+                                                        value={value}
+                                                        onChange={(e) => {
+                                                            setLocalCase(prev => prev ? ({
+                                                                ...prev,
+                                                                customFields: { ...(prev.customFields || {}), [field.id]: e.target.value }
+                                                            }) : null);
+                                                        }}
+                                                        onBlur={handleFieldBlur}
+                                                        className="w-full rounded-lg py-2 px-3 text-sm font-medium border bg-white"
+                                                    >
+                                                        <option value="">Select {field.label.toLowerCase()}...</option>
+                                                        {(field.options || []).map(opt => (
+                                                            <option key={opt.id} value={opt.id}>{opt.label}</option>
+                                                        ))}
+                                                    </select>
+                                                )}
+                                                {field.type === 'wysiwyg' && (
+                                                    <RichTextEditor
+                                                        content={value}
+                                                        onChange={(html) => {
+                                                            setLocalCase(prev => prev ? ({
+                                                                ...prev,
+                                                                customFields: { ...(prev.customFields || {}), [field.id]: html }
+                                                            }) : null);
+                                                        }}
+                                                        onBlur={handleFieldBlur}
+                                                        placeholder={`Enter ${field.label.toLowerCase()}...`}
+                                                    />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
 
                     </div>
 

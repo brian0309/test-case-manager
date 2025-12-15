@@ -32,6 +32,10 @@ const historyEntrySchema = new Schema<IHistoryEntry>(
       testDescription: String,
       stepsContent: String,
       comments: String,
+      customFields: {
+        type: Map,
+        of: String,
+      },
     },
     changedFields: [String],
   },
@@ -89,6 +93,11 @@ const testCaseSchema = new Schema<ITestCaseDocument>(
     },
     comments: {
       type: String, // HTML content from rich text editor
+    },
+    customFields: {
+      type: Map,
+      of: String,
+      default: {},
     },
     history: [historyEntrySchema],
     createdBy: {

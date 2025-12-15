@@ -56,6 +56,7 @@ const mapTestCaseResponse = (tc: TestCaseResponse): TestCase => ({
     expectedResult: tc.expectedResult,
     testDescription: tc.testDescription,
     comments: tc.comments,
+    customFields: tc.customFields,
     history: tc.history?.map(h => ({
         id: h.id,
         timestamp: h.timestamp,
@@ -88,6 +89,7 @@ interface TestManagerStore {
     testSuites: TestSuite[];
     isLoading: boolean;
     error: string | null;
+    projectSettings: Record<string, any>;
 
     // Filter State
     isFilterModalOpen: boolean;
@@ -120,6 +122,11 @@ interface TestManagerStore {
     deleteProject: (id: string) => Promise<void>;
     addProjectMember: (projectId: string, email: string) => Promise<Project>;
     removeProjectMember: (projectId: string, memberId: string) => Promise<Project>;
+    
+    // Project Settings actions
+    fetchProjectSettings: (projectId: string) => Promise<any>;
+    updateProjectSettings: (projectId: string, settings: any) => Promise<any>;
+    getProjectSettings: (projectId: string) => any;
 
     // Test Suite actions
     fetchTestSuites: (projectId: string) => Promise<void>;
@@ -157,18 +164,19 @@ interface TestManagerStore {
 
 export const useTestManagerStore = create<TestManagerStore>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             // Initial state
-            viewMode: 'projects',
-            activeSuite: null,
-            activeSuiteId: null,
-            activeProject: null,
-            activeArea: null,
-            testCases: [],
-            projects: [],
-            testSuites: [],
+            viewMode: 'projects' as ViewMode,
+            activeSuite: null as string | null,
+            activeSuiteId: null as string | null,
+            activeProject: null as string | null,
+            activeArea: null as string | null,
+            testCases: [] as TestCase[],
+            projects: [] as Project[],
+            testSuites: [] as TestSuite[],
             isLoading: false,
-            error: null,
+            error: null as string | null,
+            projectSettings: {} as Record<string, any>,
 
             // Filter State
             isFilterModalOpen: false,
@@ -194,13 +202,13 @@ export const useTestManagerStore = create<TestManagerStore>()(
             clearFilters: () => set({ filters: initialFilters }),
 
             // Search Actions
-            searchQuery: '',
+            searchQuery: '' as string,
             setSearchQuery: (query) => set({ searchQuery: query }),
             clearSearchQuery: () => set({ searchQuery: '' }),
 
             // Selection Actions
             isSelectionMode: false,
-            selectedTestCaseIds: [],
+            selectedTestCaseIds: [] as string[],
             setSelectionMode: (enabled) => set({ isSelectionMode: enabled, selectedTestCaseIds: [] }),
             toggleTestCaseSelection: (id) => set((state) => {
                 const isSelected = state.selectedTestCaseIds.includes(id);
@@ -321,9 +329,43 @@ export const useTestManagerStore = create<TestManagerStore>()(
             },
 
             // =========================================================================
+            // PROJECT SETTINGS ACTIONS
+            // =========================================================================
+            fetchProjectSettings: async (projectId) => {
+                try {
+                    const settings = await testManagerApi.getProjectSettings(projectId);
+                    set((state) => ({
+                        projectSettings: { ...state.projectSettings, [projectId]: settings }
+                    }));
+                    return settings;
+                } catch (error: any) {
+                    console.error('Error fetching project settings:', error);
+                    throw error;
+                }
+            },
+
+            updateProjectSettings: async (projectId, settings) => {
+                try {
+                    const updatedSettings = await testManagerApi.updateProjectSettings(projectId, settings);
+                    set((state) => ({
+                        projectSettings: { ...state.projectSettings, [projectId]: updatedSettings }
+                    }));
+                    return updatedSettings;
+                } catch (error: any) {
+                    console.error('Error updating project settings:', error);
+                    throw error;
+                }
+            },
+
+            getProjectSettings: (projectId: string) => {
+                const state = get();
+                return state.projectSettings[projectId] || { testCases: { customFields: [], table: { visibleCustomFieldIds: [] } } };
+            },
+
+            // =========================================================================
             // TEST SUITE ACTIONS
             // =========================================================================
-            fetchTestSuites: async (projectId) => {
+            fetchTestSuites: async (projectId: string) => {
                 set({ error: null });
                 try {
                     const response = await testManagerApi.getTestSuites(projectId);
@@ -334,7 +376,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
                 }
             },
 
-            createTestSuite: async (projectId, data) => {
+            createTestSuite: async (projectId: string, data: any) => {
                 set({ isLoading: true, error: null });
                 try {
                     const response = await testManagerApi.createTestSuite(projectId, data);
@@ -350,7 +392,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
                 }
             },
 
-            updateTestSuite: async (id, data) => {
+            updateTestSuite: async (id: string, data: any) => {
                 set({ isLoading: true, error: null });
                 try {
                     const response = await testManagerApi.updateTestSuite(id, data);
@@ -366,7 +408,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
                 }
             },
 
-            deleteTestSuite: async (id) => {
+            deleteTestSuite: async (id: string) => {
                 set({ isLoading: true, error: null });
                 try {
                     await testManagerApi.deleteTestSuite(id);
@@ -383,7 +425,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
             // =========================================================================
             // TEST CASE ACTIONS
             // =========================================================================
-            fetchTestCases: async (suiteId) => {
+            fetchTestCases: async (suiteId: string) => {
                 set({ error: null });
                 try {
                     const response = await testManagerApi.getTestCases(suiteId);
@@ -394,7 +436,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
                 }
             },
 
-            fetchTestCasesByProject: async (projectId) => {
+            fetchTestCasesByProject: async (projectId: string) => {
                 set({ error: null });
                 try {
                     const response = await testManagerApi.getTestCasesByProject(projectId);
@@ -405,7 +447,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
                 }
             },
 
-            createTestCase: async (suiteId, data) => {
+            createTestCase: async (suiteId: string, data: any) => {
                 set({ isLoading: true, error: null });
                 try {
                     const response = await testManagerApi.createTestCase(suiteId, data);
@@ -421,7 +463,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
                 }
             },
 
-            updateTestCase: async (id, data) => {
+            updateTestCase: async (id: string, data: any) => {
                 set({ isLoading: true, error: null });
                 try {
                     const response = await testManagerApi.updateTestCase(id, data);
@@ -437,7 +479,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
                 }
             },
 
-            deleteTestCase: async (id) => {
+            deleteTestCase: async (id: string) => {
                 set({ isLoading: true, error: null });
                 try {
                     await testManagerApi.deleteTestCase(id);
@@ -451,7 +493,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
                 }
             },
 
-            bulkUpdateStatus: async (ids, status) => {
+            bulkUpdateStatus: async (ids: string[], status: any) => {
                 set({ isLoading: true, error: null });
                 try {
                     await testManagerApi.bulkUpdateStatus(ids, status);
@@ -470,16 +512,16 @@ export const useTestManagerStore = create<TestManagerStore>()(
             // =========================================================================
             // LOCAL STATE ACTIONS (for optimistic updates and legacy support)
             // =========================================================================
-            setTestCases: (cases) => set({ testCases: cases }),
-            addTestCase: (testCase) => set((state) => ({ testCases: [testCase, ...state.testCases] })),
-            updateTestCaseLocal: (updatedCase) => set((state) => ({
-                testCases: state.testCases.map((c) => c.id === updatedCase.id ? updatedCase : c)
+            setTestCases: (cases: any) => set({ testCases: cases }),
+            addTestCase: (testCase: any) => set((state) => ({ testCases: [testCase, ...state.testCases] })),
+            updateTestCaseLocal: (updatedCase: any) => set((state) => ({
+                testCases: state.testCases.map((c) => (c.id === updatedCase.id ? updatedCase : c)),
             })),
-            deleteTestCaseLocal: (id) => set((state) => ({
-                testCases: state.testCases.filter((c) => c.id !== id)
+            deleteTestCaseLocal: (id: string) => set((state) => ({
+                testCases: state.testCases.filter((c) => c.id !== id),
             })),
-            setProjects: (projects) => set({ projects }),
-            addProject: (project) => set((state) => ({ projects: [project, ...state.projects] })),
+            setProjects: (projects: any) => set({ projects }),
+            addProject: (project: any) => set((state) => ({ projects: [project, ...state.projects] })),
         }),
         {
             name: 'test-manager-storage', // localStorage key

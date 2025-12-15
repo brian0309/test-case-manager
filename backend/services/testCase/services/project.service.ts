@@ -261,3 +261,122 @@ export const formatProjectResponse = async (
     updatedAt: project.updatedAt?.toISOString() || new Date().toISOString(),
   };
 };
+
+/**
+ * Get project settings
+ */
+export const getProjectSettings = async (
+  projectId: string,
+  userId: string
+): Promise<any | null> => {
+  const project = await Project.findOne({
+    _id: new Types.ObjectId(projectId),
+    $or: [
+      { ownerId: new Types.ObjectId(userId) },
+      { members: new Types.ObjectId(userId) },
+    ],
+  })
+    .select("settings")
+    .lean();
+
+  if (!project) {
+    return null;
+  }
+
+  return project.settings || { testCases: { customFields: [], table: { visibleCustomFieldIds: [] } } };
+};
+
+/**
+ * Validate custom field definition
+ */
+const validateCustomFieldDefinition = (field: any): void => {
+  if (!field.id || !field.label || !field.type) {
+    throw new Error("Custom field validation failed: id, label, and type are required");
+  }
+
+  const validTypes = ["text", "long_text", "dropdown", "wysiwyg"];
+  if (!validTypes.includes(field.type)) {
+    throw new Error(`Custom field validation failed: invalid type "${field.type}"`);
+  }
+
+  if (field.type === "dropdown") {
+    if (!field.options || !Array.isArray(field.options) || field.options.length === 0) {
+      throw new Error("Custom field validation failed: dropdown fields must have options");
+    }
+    for (const option of field.options) {
+      if (!option.id || !option.label) {
+        throw new Error("Custom field validation failed: dropdown options must have id and label");
+      }
+    }
+  }
+};
+
+/**
+ * Update project settings
+ */
+export const updateProjectSettings = async (
+  projectId: string,
+  userId: string,
+  settingsData: any
+): Promise<any | null> => {
+  // Validate custom fields if provided
+  if (settingsData?.testCases?.customFields) {
+    for (const field of settingsData.testCases.customFields) {
+      validateCustomFieldDefinition(field);
+    }
+  }
+
+  const project = await Project.findOneAndUpdate(
+    {
+      _id: new Types.ObjectId(projectId),
+      $or: [
+        { ownerId: new Types.ObjectId(userId) },
+        { members: new Types.ObjectId(userId) },
+      ],
+    },
+    {
+      $set: {
+        settings: settingsData,
+      },
+    },
+    { new: true }
+  )
+    .select("settings")
+    .lean();
+
+  if (!project) {
+    return null;
+  }
+
+  return project.settings || { testCases: { customFields: [], table: { visibleCustomFieldIds: [] } } };
+};
+
+/**
+ * Permanently delete a custom field's data from all test cases in a project
+ */
+export const permanentlyDeleteCustomFieldData = async (
+  projectId: string,
+  userId: string,
+  fieldId: string
+): Promise<{ deletedCount: number }> => {
+  // Verify user has access to the project
+  const project = await Project.findOne({
+    _id: new Types.ObjectId(projectId),
+    $or: [
+      { ownerId: new Types.ObjectId(userId) },
+      { members: new Types.ObjectId(userId) },
+    ],
+  });
+
+  if (!project) {
+    throw new Error("Project not found or access denied");
+  }
+
+  // Remove the field from all test cases in this project
+  const result = await TestCase.updateMany(
+    { projectId: new Types.ObjectId(projectId) },
+    { $unset: { [`customFields.${fieldId}`]: "" } }
+  );
+
+  return { deletedCount: result.modifiedCount };
+};

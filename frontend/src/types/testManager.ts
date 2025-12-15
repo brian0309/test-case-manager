@@ -48,6 +48,56 @@ export interface ProjectMember {
     email: string;
 }
 
+export interface CustomFieldOption {
+    id: string;
+    label: string;
+}
+
+export interface CustomFieldDefinition {
+    id: string;
+    key?: string;
+    label: string;
+    type: 'text' | 'long_text' | 'dropdown' | 'wysiwyg';
+    required?: boolean;
+    options?: CustomFieldOption[];
+    defaultValue?: string;
+    showOnTableByDefault?: boolean;
+    order?: number;
+    deleted?: boolean;
+    deletedAt?: string;
+}
+
+export interface HiddenDefaultFields {
+    area?: boolean;
+    testDescription?: boolean;
+    stepsContent?: boolean;
+    expectedResult?: boolean;
+    comments?: boolean;
+    priority?: boolean;
+    status?: boolean;
+    assignedTester?: boolean;
+}
+
+export interface HiddenDefaultColumns {
+    id?: boolean;
+    title?: boolean;
+    priority?: boolean;
+    status?: boolean;
+    lastModified?: boolean;
+    assignedTester?: boolean;
+}
+
+export interface ProjectSettings {
+    testCases?: {
+        hiddenDefaultFields?: HiddenDefaultFields;
+        table?: {
+            hiddenDefaultColumns?: HiddenDefaultColumns;
+            visibleCustomFieldIds?: string[];
+        };
+        customFields?: CustomFieldDefinition[];
+    };
+}
+
 export interface Project {
     id: string;
     name: string;
@@ -61,6 +111,7 @@ export interface Project {
         members: number;
     };
     updatedAt: string;
+    settings?: ProjectSettings;
 }
 
 export interface TestSuite {
@@ -95,6 +146,7 @@ export interface TestCase {
     expectedResult?: string;
     testDescription?: string;
     comments?: string;
+    customFields?: Record<string, string>;
     history?: HistoryEntry[];
     projectId: string;
     order?: number;

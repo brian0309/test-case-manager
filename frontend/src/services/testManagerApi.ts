@@ -159,6 +159,65 @@ export const removeProjectMember = async (
   }
 };
 
+/**
+ * Get project settings
+ */
+export const getProjectSettings = async (projectId: string): Promise<any> => {
+  try {
+    const response = await axios.get<ApiResponse<any>>(
+      `${API_URL}/projects/${projectId}/settings`
+    );
+    if (!response.data.data) {
+      throw new Error("No data returned from server");
+    }
+    return response.data.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
+/**
+ * Update project settings
+ */
+export const updateProjectSettings = async (
+  projectId: string,
+  settings: any
+): Promise<any> => {
+  try {
+    const response = await axios.put<ApiResponse<any>>(
+      `${API_URL}/projects/${projectId}/settings`,
+      settings
+    );
+    if (!response.data.data) {
+      throw new Error("No data returned from server");
+    }
+    return response.data.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
+/**
+ * Permanently delete custom field data from all test cases
+ */
+export const permanentlyDeleteCustomFieldData = async (
+  projectId: string,
+  fieldId: string
+): Promise<{ deletedCount: number }> => {
+  try {
+    const response = await axios.delete<ApiResponse<{ deletedCount: number }>>(
+      `${API_URL}/projects/${projectId}/settings/custom-fields/${fieldId}`,
+      { withCredentials: true }
+    );
+    if (!response.data.data) {
+      throw new Error("No data returned from server");
+    }
+    return response.data.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
 // ============================================================================
 // TEST SUITE API
 // ============================================================================

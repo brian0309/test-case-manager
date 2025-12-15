@@ -7,6 +7,9 @@ import {
   deleteProject,
   addMember,
   removeMember,
+  getProjectSettings,
+  updateProjectSettings,
+  permanentlyDeleteCustomFieldData,
 } from "../controllers/project.controller.js";
 import { verifyToken } from "../../../middleware/verifyToken.js";
 
@@ -25,5 +28,10 @@ router.delete("/:id", deleteProject);
 // Member management
 router.post("/:id/members", addMember);
 router.delete("/:id/members/:memberId", removeMember);
+
+// Project settings
+router.get("/:id/settings", getProjectSettings);
+router.put("/:id/settings", updateProjectSettings);
+router.delete("/:id/settings/custom-fields/:fieldId", permanentlyDeleteCustomFieldData);
 
 export default router;

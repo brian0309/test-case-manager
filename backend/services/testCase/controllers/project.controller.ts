@@ -227,3 +227,97 @@ export const removeMember = async (req: Request, res: Response): Promise<void> =
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+/**
+ * GET /api/projects/:id/settings
+ * Get project settings
+ */
+export const getProjectSettings = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { id } = req.params;
+    const settings = await projectService.getProjectSettings(id, userId);
+
+    if (settings === null) {
+      res.status(404).json({ success: false, message: "Project not found" });
+      return;
+    }
+
+    res.status(200).json({ success: true, data: settings });
+  } catch (error) {
+    console.error("Error in getProjectSettings:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+/**
+ * PUT /api/projects/:id/settings
+ * Update project settings (owner or member)
+ */
+export const updateProjectSettings = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { id } = req.params;
+    const settingsData = req.body;
+
+    const settings = await projectService.updateProjectSettings(id, userId, settingsData);
+
+    if (settings === null) {
+      res.status(404).json({
+        success: false,
+        message: "Project not found or you don't have permission",
+      });
+      return;
+    }
+
+    res.status(200).json({ success: true, data: settings });
+  } catch (error: any) {
+    console.error("Error in updateProjectSettings:", error);
+    if (error.message && error.message.includes("validation")) {
+      res.status(400).json({ success: false, message: error.message });
+      return;
+    }
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+/**
+ * DELETE /api/projects/:id/settings/custom-fields/:fieldId
+ * Permanently delete a custom field's data from all test cases
+ */
+export const permanentlyDeleteCustomFieldData = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { id: projectId, fieldId } = req.params;
+
+    const result = await projectService.permanentlyDeleteCustomFieldData(projectId, userId, fieldId);
+
+    res.status(200).json({ 
+      success: true, 
+      data: result,
+      message: `Custom field data deleted from ${result.deletedCount} test case(s)` 
+    });
+  } catch (error: any) {
+    console.error("Error in permanentlyDeleteCustomFieldData:", error);
+    if (error.message === "Project not found or access denied") {
+      res.status(404).json({ success: false, message: error.message });
+      return;
+    }
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};

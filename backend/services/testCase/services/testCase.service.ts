@@ -50,6 +50,7 @@ export const createTestCase = async (
     testDescription: data.testDescription || "",
     stepsContent: data.stepsContent || "",
     comments: data.comments || "",
+    customFields: data.customFields || {},
     history: [],
     createdBy: new Types.ObjectId(userId),
   });
@@ -226,6 +227,14 @@ export const updateTestCase = async (
     changedFields.push("comments");
     snapshot.comments = testCase.comments;
   }
+  if (data.customFields !== undefined) {
+    const currentCustomFields = testCase.customFields || {};
+    const hasCustomFieldChanges = JSON.stringify(currentCustomFields) !== JSON.stringify(data.customFields);
+    if (hasCustomFieldChanges) {
+      changedFields.push("customFields");
+      snapshot.customFields = currentCustomFields;
+    }
+  }
 
   // Build update object
   const updateObj: any = {
@@ -240,6 +249,7 @@ export const updateTestCase = async (
     ...(data.testDescription !== undefined && { testDescription: data.testDescription }),
     ...(data.stepsContent !== undefined && { stepsContent: data.stepsContent }),
     ...(data.comments !== undefined && { comments: data.comments }),
+    ...(data.customFields !== undefined && { customFields: data.customFields }),
     lastModified: new Date(),
   };
 

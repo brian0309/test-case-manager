@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Project } from '../../types/testManager';
-import { FolderGit2, MoreHorizontal, Users, Layers, Calendar, Plus, FileText, Pencil, Trash2 } from 'lucide-react';
+import { FolderGit2, MoreHorizontal, Users, Layers, Calendar, Plus, FileText, Pencil, Trash2, Settings } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import ProjectMembersModal from './ProjectMembersModal';
 import ProjectActionSheet from './ProjectActionSheet';
@@ -11,6 +11,7 @@ interface ProjectListProps {
     onProjectClick: (id: string) => void;
     onCreate: () => void;
     onEdit?: (project: Project) => void;
+    onSettings?: (project: Project) => void;
     onDelete?: (project: Project) => void;
 }
 
@@ -20,7 +21,7 @@ interface DropdownPosition {
     right: number;
 }
 
-const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onCreate, onEdit, onDelete }) => {
+const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onCreate, onEdit, onSettings, onDelete }) => {
     const { user } = useAuthStore();
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [showMembersModal, setShowMembersModal] = useState(false);
@@ -79,6 +80,13 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
         setDropdownPosition(null);
         if (selectedProject && onEdit) {
             onEdit(selectedProject);
+        }
+    };
+
+    const handleSettings = () => {
+        setDropdownPosition(null);
+        if (selectedProject && onSettings) {
+            onSettings(selectedProject);
         }
     };
 
@@ -165,6 +173,13 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
                     }}
                 >
                     <button
+                        onClick={handleSettings}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                        <Settings className="h-4 w-4 text-gray-400" />
+                        Project Settings
+                    </button>
+                    <button
                         onClick={handleManageMembers}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
@@ -197,6 +212,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
                     onClose={() => setShowActionSheet(false)}
                     onManageMembers={handleManageMembers}
                     onEdit={handleEdit}
+                    onSettings={handleSettings}
                     onDelete={handleDelete}
                 />
             )}
