@@ -82,7 +82,7 @@ const ProjectSettingsModal: React.FC<Props> = ({ isOpen, onClose, project }) => 
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
-            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity" onClick={onClose} />
+            <div className="absolute inset-0 bg-white/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
             <div className="relative bg-white w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
                 {/* Header */}
