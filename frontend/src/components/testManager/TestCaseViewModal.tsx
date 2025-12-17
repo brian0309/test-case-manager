@@ -35,8 +35,8 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                 try {
                     await fetchProjectSettings(testCase.projectId);
                     const settings = projectSettings[testCase.projectId];
-                    if (settings?.testCases) {
-                        setCustomFields(settings.testCases.customFields || []);
+                    if (settings?.testCases?.customFields) {
+                        setCustomFields(settings.testCases.customFields);
                     }
                 } catch (err) {
                     console.error('Failed to load project settings:', err);
@@ -44,7 +44,15 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
             };
             loadSettings();
         }
-    }, [testCase?.projectId, fetchProjectSettings, projectSettings]);
+    }, [testCase?.projectId, fetchProjectSettings]);
+    
+    // Separate effect to update custom fields when projectSettings changes
+    useEffect(() => {
+        if (testCase?.projectId && projectSettings[testCase.projectId]?.testCases?.customFields) {
+            const fields = projectSettings[testCase.projectId].testCases.customFields;
+            setCustomFields(fields);
+        }
+    }, [testCase?.projectId, projectSettings]);
 
     // Auto-save changes
     const handlePriorityChange = (priority: Priority) => {
@@ -243,9 +251,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                             <div className="border-t border-gray-200 pt-6">
                                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Custom Fields</h3>
                                 {customFields.filter(f => !f.deleted).map((field) => {
-                                    const value = testCase.customFields?.[field.id] || '';
-                                    // Don't show field if no value
-                                    if (!value) return null;
+                                    const value = localCase.customFields?.[field.id] || '';
                                     
                                     return (
                                         <div key={field.id} className="mb-6">

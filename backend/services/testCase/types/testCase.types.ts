@@ -216,6 +216,7 @@ export interface TestCaseResponse {
   testDescription?: string;
   stepsContent?: string;
   comments?: string;
+  customFields?: Record<string, string>;
   history: HistoryEntryResponse[];
   order: number;
   lastModified: string;

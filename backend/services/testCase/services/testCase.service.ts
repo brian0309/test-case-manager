@@ -442,6 +442,16 @@ export const formatTestCaseResponse = (testCase: any): TestCaseResponse => {
       ? testCase.suiteId.name
       : "Unknown Suite";
 
+  // Convert Map to plain object if necessary
+  let customFieldsObj: Record<string, string> | undefined;
+  if (testCase.customFields) {
+    if (testCase.customFields instanceof Map) {
+      customFieldsObj = Object.fromEntries(testCase.customFields);
+    } else if (typeof testCase.customFields === 'object') {
+      customFieldsObj = testCase.customFields;
+    }
+  }
+
   return {
     id: testCase._id.toString(),
     title: testCase.title,
@@ -459,6 +469,7 @@ export const formatTestCaseResponse = (testCase: any): TestCaseResponse => {
     testDescription: testCase.testDescription,
     stepsContent: testCase.stepsContent,
     comments: testCase.comments,
+    customFields: customFieldsObj,
     history: (testCase.history || []).map(formatHistoryEntry),
     order: testCase.order ?? 0,
     lastModified: testCase.lastModified?.toISOString() || new Date().toISOString(),

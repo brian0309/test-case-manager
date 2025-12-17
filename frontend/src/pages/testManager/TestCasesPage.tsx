@@ -158,6 +158,7 @@ const TestCasesPage: React.FC = () => {
                 testDescription: (updatedCase as any).testDescription,
                 stepsContent: (updatedCase as any).stepsContent,
                 comments: updatedCase.comments,
+                customFields: updatedCase.customFields,
             } as any);
             // Don't close modal - auto-save should keep it open
             return;
@@ -179,6 +180,7 @@ const TestCasesPage: React.FC = () => {
             testDescription: (updatedCase as any).testDescription,
             stepsContent: (updatedCase as any).stepsContent,
             comments: updatedCase.comments,
+            customFields: updatedCase.customFields,
         } as any);
 
         // Return the created case so the modal can update its state with the real ID
@@ -337,6 +339,7 @@ const TestCasesPage: React.FC = () => {
                             expectedResult: updatedCase.expectedResult,
                             stepsContent: (updatedCase as any).stepsContent,
                             comments: updatedCase.comments,
+                            customFields: updatedCase.customFields,
                         } as any);
                         setViewCase(prev => prev ? { ...prev, ...updatedCase } : updatedCase); // Update local state to reflect changes
                     }}
