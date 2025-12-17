@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { TestCase, Priority, Status } from '../../types/testManager';
+import { TestCase, Priority, Status, CustomFieldDefinition } from '../../types/testManager';
 import { X, Edit2, ChevronDown } from 'lucide-react';
-
+import { useTestManagerStore } from '../../store/testManagerStore';
 import RichTextEditor from './RichTextEditor';
 
 interface TestCaseViewModalProps {
@@ -18,11 +18,33 @@ interface TestCaseViewModalProps {
 const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCases, onClose, onEdit, onUpdate, onNavigate }) => {
     const [localCase, setLocalCase] = useState<TestCase>(testCase);
     const currentIndex = testCases.findIndex(tc => tc.id === testCase.id);
+    
+    // Project settings for custom fields
+    const { fetchProjectSettings, projectSettings } = useTestManagerStore();
+    const [customFields, setCustomFields] = useState<CustomFieldDefinition[]>([]);
 
     // Update local state when testCase prop changes
     useEffect(() => {
         setLocalCase(testCase);
     }, [testCase]);
+    
+    // Load project settings when test case changes
+    useEffect(() => {
+        if (testCase?.projectId) {
+            const loadSettings = async () => {
+                try {
+                    await fetchProjectSettings(testCase.projectId);
+                    const settings = projectSettings[testCase.projectId];
+                    if (settings?.testCases) {
+                        setCustomFields(settings.testCases.customFields || []);
+                    }
+                } catch (err) {
+                    console.error('Failed to load project settings:', err);
+                }
+            };
+            loadSettings();
+        }
+    }, [testCase?.projectId, fetchProjectSettings, projectSettings]);
 
     // Auto-save changes
     const handlePriorityChange = (priority: Priority) => {
@@ -212,6 +234,48 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                                 onChange={() => { }}
                                 editable={false}
                             />
+                        </div>
+                    )}
+
+                    {/* Custom Fields */}
+                    {customFields.filter(f => !f.deleted).length > 0 && (
+                        <div className="mt-8 space-y-6">
+                            <div className="border-t border-gray-200 pt-6">
+                                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Custom Fields</h3>
+                                {customFields.filter(f => !f.deleted).map((field) => {
+                                    const value = testCase.customFields?.[field.id] || '';
+                                    // Don't show field if no value
+                                    if (!value) return null;
+                                    
+                                    return (
+                                        <div key={field.id} className="mb-6">
+                                            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                                                {field.label}
+                                            </label>
+                                            {(field.type === 'text' || field.type === 'dropdown') && (
+                                                <div className="text-sm font-medium text-gray-700 py-2 border-b border-gray-200">
+                                                    {field.type === 'dropdown' 
+                                                        ? (field.options?.find(opt => opt.id === value)?.label || value)
+                                                        : value
+                                                    }
+                                                </div>
+                                            )}
+                                            {field.type === 'long_text' && (
+                                                <div className="text-sm text-gray-700 bg-gray-50 rounded-lg p-4 border border-gray-200 whitespace-pre-wrap">
+                                                    {value}
+                                                </div>
+                                            )}
+                                            {field.type === 'wysiwyg' && (
+                                                <RichTextEditor
+                                                    content={value}
+                                                    onChange={() => { }}
+                                                    editable={false}
+                                                />
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     )}
 
