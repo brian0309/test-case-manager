@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
-import TestCaseTable from '../../components/testManager/TestCaseTable';
+import TestCaseTable, { SortInfo } from '../../components/testManager/TestCaseTable';
 import TestCaseModal from '../../components/testManager/TestCaseModal';
 import TestCaseViewModal from '../../components/testManager/TestCaseViewModal';
 import FilterModal from '../../components/testManager/FilterModal';
@@ -11,7 +11,7 @@ import GeminiGenerationModal from '../../components/testManager/GeminiGeneration
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { TestCase, Status, Priority, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
 import { reorderTestCases } from '../../services/testManagerApi';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, GripVertical, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
 
 const TestCasesPage: React.FC = () => {
     const {
@@ -45,6 +45,7 @@ const TestCasesPage: React.FC = () => {
     const [selectedCase, setSelectedCase] = useState<TestCase | null>(null);
     const [viewCase, setViewCase] = useState<TestCase | null>(null);
     const [isListEditMode] = useState(false);
+    const [sortInfo, setSortInfo] = useState<SortInfo | null>(null);
 
     const uniqueAreas = Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort();
 
@@ -285,15 +286,42 @@ const TestCasesPage: React.FC = () => {
             {/* Context Breadcrumb with Project & Suite selectors */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 sm:justify-between px-4 sm:pr-4 sm:pl-0">
                 <ContextBreadcrumb showSuiteSelector={true} />
-                {activeProject && activeSuiteId && (
-                    <button
-                        onClick={() => setIsGeminiModalOpen(true)}
-                        className="flex items-center justify-center sm:justify-start space-x-2 px-3 py-2 sm:py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-md hover:from-blue-700 hover:to-purple-700 transition-all shadow-sm w-full sm:w-auto flex-shrink-0"
-                    >
-                        <Sparkles className="w-4 h-4" />
-                        <span>Generate with AI</span>
-                    </button>
-                )}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                    {/* Sorting controls - Desktop only, next to Generate AI button */}
+                    {activeProject && activeSuiteId && sortInfo && (
+                        <div className="hidden sm:flex items-center gap-2">
+                            {sortInfo.sortMode === 'custom' ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-full border border-blue-200">
+                                    <GripVertical className="h-3 w-3" />
+                                    Custom Order
+                                </span>
+                            ) : (
+                                <>
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-purple-700 bg-purple-50 rounded-full border border-purple-200">
+                                        {sortInfo.sortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                                        Sorted by {sortInfo.sortField.charAt(0).toUpperCase() + sortInfo.sortField.slice(1)}
+                                    </span>
+                                    <button
+                                        onClick={sortInfo.resetToCustomOrder}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 hover:text-gray-900 bg-white hover:bg-gray-50 rounded-md border border-gray-300 transition-colors"
+                                    >
+                                        <RotateCcw className="h-3.5 w-3.5" />
+                                        Reset to Custom Order
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    )}
+                    {activeProject && activeSuiteId && (
+                        <button
+                            onClick={() => setIsGeminiModalOpen(true)}
+                            className="flex items-center justify-center sm:justify-start space-x-2 px-3 py-2 sm:py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-md hover:from-blue-700 hover:to-purple-700 transition-all shadow-sm w-full sm:w-auto flex-shrink-0"
+                        >
+                            <Sparkles className="w-4 h-4" />
+                            <span>Generate with AI</span>
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Test Case Table */}
@@ -322,6 +350,9 @@ const TestCasesPage: React.FC = () => {
                     customFieldDefinitions={customFieldDefinitions}
                     visibleCustomFieldIds={visibleCustomFieldIds}
                     hiddenColumns={hiddenColumns}
+                    // Sorting controls in header (desktop only)
+                    showSortControlsInHeader={true}
+                    onSortInfoChange={setSortInfo}
                 />
             </div>
             {viewCase && (

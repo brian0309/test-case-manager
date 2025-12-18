@@ -24,6 +24,13 @@ import { Edit, Copy, Check, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, Rotat
 type SortField = 'title' | 'priority' | 'status' | 'lastModified' | 'assignedTester';
 type SortOrder = 'asc' | 'desc';
 
+export interface SortInfo {
+    sortMode: 'custom' | 'standard';
+    sortField: SortField;
+    sortOrder: SortOrder;
+    resetToCustomOrder: () => void;
+}
+
 interface TestCaseTableProps {
     data: TestCase[];
     onRowClick: (item: TestCase) => void;
@@ -43,6 +50,10 @@ interface TestCaseTableProps {
     customFieldDefinitions?: CustomFieldDefinition[];
     visibleCustomFieldIds?: string[];
     hiddenColumns?: HiddenDefaultColumns;
+    // Show sorting controls in header (desktop only)
+    showSortControlsInHeader?: boolean;
+    // Callback to expose sorting state to parent
+    onSortInfoChange?: (sortInfo: SortInfo) => void;
 }
 
 const IdCell: React.FC<{ id: string }> = ({ id }) => {
@@ -320,11 +331,29 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
     customFieldDefinitions = [],
     visibleCustomFieldIds = [],
     hiddenColumns = {},
+    showSortControlsInHeader = false,
+    onSortInfoChange,
 }) => {
     // Sorting state
     const [sortMode, setSortMode] = useState<'custom' | 'standard'>('custom');
     const [sortField, setSortField] = useState<SortField>('title');
     const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
+    const resetToCustomOrder = () => {
+        setSortMode('custom');
+    };
+
+    // Notify parent of sorting state changes
+    React.useEffect(() => {
+        if (onSortInfoChange && enableReorder) {
+            onSortInfoChange({
+                sortMode,
+                sortField,
+                sortOrder,
+                resetToCustomOrder,
+            });
+        }
+    }, [sortMode, sortField, sortOrder, enableReorder, onSortInfoChange]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -403,10 +432,6 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
         }
     };
 
-    const resetToCustomOrder = () => {
-        setSortMode('custom');
-    };
-
     const allSelected = sortedData.length > 0 && sortedData.every(item => selectedIds.includes(item.id));
     const someSelected = sortedData.some(item => selectedIds.includes(item.id));
 
@@ -439,9 +464,9 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
 
     return (
         <div className="flex-1 bg-white flex flex-col">
-            {/* Sort Controls Bar */}
+            {/* Sort Controls Bar - Show on mobile, hide on desktop if showSortControlsInHeader */}
             {enableReorder && (
-                <div className="flex items-center justify-between px-6 py-2 border-b border-gray-200 bg-gray-50/50">
+                <div className={`flex items-center justify-between px-6 py-2 border-b border-gray-200 bg-gray-50/50 ${showSortControlsInHeader ? 'sm:hidden' : ''}`}>
                     <div className="flex items-center gap-2">
                         {sortMode === 'custom' ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-full border border-blue-200">
