@@ -290,9 +290,16 @@ const SortableRow: React.FC<SortableRowProps> = ({
                 
                 const value = item.customFields?.[fieldId] || '';
                 
+                // For dropdown fields, look up the display label from the option ID
+                let displayValue = value;
+                if (fieldDef.type === 'dropdown' && value && fieldDef.options) {
+                    const selectedOption = fieldDef.options.find(opt => opt.id === value);
+                    displayValue = selectedOption?.label || value;
+                }
+                
                 return (
                     <td key={fieldId} className="py-4 px-4">
-                        <div className="text-sm text-gray-900">{value || '-'}</div>
+                        <div className="text-sm text-gray-900">{displayValue || '-'}</div>
                     </td>
                 );
             })}

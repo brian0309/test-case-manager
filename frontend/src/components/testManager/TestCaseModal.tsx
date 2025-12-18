@@ -304,7 +304,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                 value={localCase.title}
                                 onChange={handleTitleChange}
                                 onBlur={handleFieldBlur}
-                                className="w-full text-2xl font-semibold text-gray-900 border-none p-0 focus:ring-0 placeholder:text-gray-300 bg-transparent"
+                                className="w-full text-2xl font-semibold text-gray-900 border border-gray-200 rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-300 bg-white"
                                 placeholder="Test Case Title"
                             />
                         </div>
