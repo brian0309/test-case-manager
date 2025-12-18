@@ -195,7 +195,7 @@ export const cloneTestCase = async (req: Request, res: Response): Promise<void> 
 
     // Fetch the populated test case for response
     const populatedTestCase = await testCaseService.getTestCaseById(
-      clonedTestCase._id.toString(),
+      String(clonedTestCase._id),
       userId
     );
     const response = testCaseService.formatTestCaseResponse(populatedTestCase);
