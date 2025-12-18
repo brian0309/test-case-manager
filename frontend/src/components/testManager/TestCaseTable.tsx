@@ -36,6 +36,7 @@ interface TestCaseTableProps {
     onRowClick: (item: TestCase) => void;
     onStatusChange?: (caseId: string, status: Status) => void;
     onViewClick?: (item: TestCase) => void;
+    onCloneClick?: (item: TestCase) => void;
     isEditMode?: boolean;
     onUpdate?: (id: string, field: keyof TestCase, value: any) => void;
     // Selection props
@@ -96,6 +97,7 @@ interface SortableRowProps {
     onToggleSelection?: (id: string) => void;
     onStatusChange?: (caseId: string, status: Status) => void;
     onViewClick?: (item: TestCase) => void;
+    onCloneClick?: (item: TestCase) => void;
     onUpdate?: (id: string, field: keyof TestCase, value: any) => void;
     getStatusColor: (status: Status) => string;
     // Custom fields and visibility
@@ -114,6 +116,7 @@ const SortableRow: React.FC<SortableRowProps> = ({
     onToggleSelection,
     onStatusChange,
     onViewClick,
+    onCloneClick,
     onUpdate,
     getStatusColor,
     customFieldDefinitions = [],
@@ -306,17 +309,30 @@ const SortableRow: React.FC<SortableRowProps> = ({
 
             {/* Actions Column */}
             <td className="py-4 px-4 text-center">
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onViewClick?.(item);
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
-                    title="Edit Test Case"
-                >
-                    <Edit className="h-3.5 w-3.5" />
-                    Edit
-                </button>
+                <div className="flex items-center justify-center gap-1">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onCloneClick?.(item);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Clone Test Case"
+                    >
+                        <Copy className="h-3.5 w-3.5" />
+                        Clone
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onViewClick?.(item);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                        title="Edit Test Case"
+                    >
+                        <Edit className="h-3.5 w-3.5" />
+                        Edit
+                    </button>
+                </div>
             </td>
         </tr>
     );
@@ -327,6 +343,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
     onRowClick,
     onStatusChange,
     onViewClick,
+    onCloneClick,
     isEditMode = false,
     onUpdate,
     isSelectionMode = false,
@@ -635,6 +652,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         onToggleSelection={onToggleSelection}
                                         onStatusChange={onStatusChange}
                                         onViewClick={onViewClick}
+                                        onCloneClick={onCloneClick}
                                         onUpdate={onUpdate}
                                         getStatusColor={getStatusColor}
                                         customFieldDefinitions={customFieldDefinitions}

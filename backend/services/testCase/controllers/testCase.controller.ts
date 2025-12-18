@@ -170,6 +170,44 @@ export const updateTestCase = async (req: Request, res: Response): Promise<void>
 };
 
 /**
+ * POST /api/cases/:id/clone
+ * Clone a test case
+ */
+export const cloneTestCase = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { id } = req.params;
+
+    const clonedTestCase = await testCaseService.cloneTestCase(id, userId);
+
+    if (!clonedTestCase) {
+      res.status(404).json({
+        success: false,
+        message: "Test case not found or you don't have permission",
+      });
+      return;
+    }
+
+    // Fetch the populated test case for response
+    const populatedTestCase = await testCaseService.getTestCaseById(
+      clonedTestCase._id.toString(),
+      userId
+    );
+    const response = testCaseService.formatTestCaseResponse(populatedTestCase);
+
+    res.status(201).json({ success: true, data: response });
+  } catch (error) {
+    console.error("Error in cloneTestCase:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+/**
  * DELETE /api/cases/:id
  * Delete a test case
  */

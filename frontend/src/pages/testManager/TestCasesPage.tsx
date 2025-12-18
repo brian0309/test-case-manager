@@ -22,6 +22,7 @@ const TestCasesPage: React.FC = () => {
         activeArea,
         updateTestCase,
         createTestCase,
+        cloneTestCase,
         fetchProjects,
         projects,
         testSuites,
@@ -131,6 +132,16 @@ const TestCasesPage: React.FC = () => {
     const handleViewClick = (item: TestCase) => {
         // View button opens edit modal
         setSelectedCase(item);
+    };
+
+    const handleCloneClick = async (item: TestCase) => {
+        try {
+            await cloneTestCase(item.id);
+            toast.success('Test case cloned successfully');
+        } catch (error) {
+            toast.error('Failed to clone test case');
+            console.error('Clone error:', error);
+        }
     };
 
     const handleEditFromView = (item: TestCase) => {
@@ -330,6 +341,7 @@ const TestCasesPage: React.FC = () => {
                     data={displayedCases}
                     onRowClick={handleRowClick}
                     onViewClick={handleViewClick}
+                    onCloneClick={handleCloneClick}
                     isEditMode={isListEditMode}
                     onUpdate={handleInlineUpdate}
                     onStatusChange={handleStatusChange}

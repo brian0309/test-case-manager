@@ -9,6 +9,7 @@ import {
   bulkUpdateStatus,
   deleteTestCasesBulk,
   reorderTestCases,
+  cloneTestCase,
 } from "../controllers/testCase.controller.js";
 import { verifyToken } from "../../../middleware/verifyToken.js";
 
@@ -25,6 +26,7 @@ router.delete("/bulk", deleteTestCasesBulk);
 router.get("/:id", getTestCase);
 router.put("/:id", updateTestCase);
 router.delete("/:id", deleteTestCase);
+router.post("/:id/clone", cloneTestCase);
 
 export default router;
 

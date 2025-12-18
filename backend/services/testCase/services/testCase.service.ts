@@ -279,6 +279,48 @@ export const updateTestCase = async (
 };
 
 /**
+ * Clone a test case
+ */
+export const cloneTestCase = async (
+  testCaseId: string,
+  userId: string
+): Promise<ITestCaseDocument | null> => {
+  const originalTestCase = await TestCase.findById(testCaseId);
+  if (!originalTestCase) {
+    return null;
+  }
+
+  const hasAccess = await projectService.hasProjectAccess(
+    originalTestCase.projectId.toString(),
+    userId
+  );
+  if (!hasAccess) {
+    return null;
+  }
+
+  const clonedTestCase = new TestCase({
+    title: `Copy of ${originalTestCase.title}`,
+    priority: originalTestCase.priority,
+    status: Status.Draft,
+    projectId: originalTestCase.projectId,
+    suiteId: originalTestCase.suiteId,
+    assignedTester: originalTestCase.assignedTester,
+    area: originalTestCase.area,
+    expectedResult: originalTestCase.expectedResult,
+    testDescription: originalTestCase.testDescription,
+    stepsContent: originalTestCase.stepsContent,
+    comments: originalTestCase.comments,
+    customFields: originalTestCase.customFields,
+    history: [],
+    createdBy: new Types.ObjectId(userId),
+    order: originalTestCase.order,
+  });
+
+  await clonedTestCase.save();
+  return clonedTestCase;
+};
+
+/**
  * Delete a test case
  */
 export const deleteTestCase = async (

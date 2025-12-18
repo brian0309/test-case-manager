@@ -139,6 +139,7 @@ interface TestManagerStore {
     fetchTestCasesByProject: (projectId: string) => Promise<void>;
     createTestCase: (suiteId: string, data: CreateTestCaseRequest) => Promise<TestCase>;
     updateTestCase: (id: string, data: UpdateTestCaseRequest) => Promise<TestCase>;
+    cloneTestCase: (id: string) => Promise<TestCase>;
     deleteTestCase: (id: string) => Promise<void>;
     bulkUpdateStatus: (ids: string[], status: Status) => Promise<void>;
 
@@ -473,6 +474,27 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         isLoading: false,
                     }));
                     return testCase;
+                } catch (error: any) {
+                    set({ error: error.message, isLoading: false });
+                    throw error;
+                }
+            },
+
+            cloneTestCase: async (id: string) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await testManagerApi.cloneTestCase(id);
+                    const clonedTestCase = mapTestCaseResponse(response);
+                    set((state) => {
+                        const originalIndex = state.testCases.findIndex(tc => tc.id === id);
+                        const newTestCases = [...state.testCases];
+                        newTestCases.splice(originalIndex + 1, 0, clonedTestCase);
+                        return {
+                            testCases: newTestCases,
+                            isLoading: false,
+                        };
+                    });
+                    return clonedTestCase;
                 } catch (error: any) {
                     set({ error: error.message, isLoading: false });
                     throw error;

@@ -404,6 +404,23 @@ export const updateTestCase = async (
 };
 
 /**
+ * Clone a test case
+ */
+export const cloneTestCase = async (id: string): Promise<TestCaseResponse> => {
+  try {
+    const response = await axios.post<ApiResponse<TestCaseResponse>>(
+      `${API_URL}/cases/${id}/clone`
+    );
+    if (!response.data.data) {
+      throw new Error("No data returned from server");
+    }
+    return response.data.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
+/**
  * Delete a test case
  */
 export const deleteTestCase = async (id: string): Promise<void> => {
