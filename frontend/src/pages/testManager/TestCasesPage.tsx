@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import TestCaseTable, { SortInfo } from '../../components/testManager/TestCaseTable';
 import TestCaseModal from '../../components/testManager/TestCaseModal';
 import TestCaseViewModal from '../../components/testManager/TestCaseViewModal';
@@ -10,7 +10,7 @@ import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import GeminiGenerationModal from '../../components/testManager/GeminiGenerationModal';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { TestCase, Status, Priority, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
-import { reorderTestCases } from '../../services/testManagerApi';
+import { reorderTestCases, getTestCase } from '../../services/testManagerApi';
 import { Sparkles, GripVertical, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
 
 const TestCasesPage: React.FC = () => {
@@ -42,16 +42,24 @@ const TestCasesPage: React.FC = () => {
         // Project settings
         fetchProjectSettings,
         getProjectSettings,
+        // Context setting actions
+        setActiveProject,
+        setActiveSuiteWithId,
+        setActiveArea,
     } = useTestManagerStore();
     const [selectedCase, setSelectedCase] = useState<TestCase | null>(null);
     const [viewCase, setViewCase] = useState<TestCase | null>(null);
     const [isListEditMode] = useState(false);
     const [sortInfo, setSortInfo] = useState<SortInfo | null>(null);
+    
+    // Track if we've already processed the testCaseId URL parameter
+    const processedTestCaseIdRef = useRef<string | null>(null);
 
     const uniqueAreas = Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort();
 
     const location = useLocation();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     // Load project settings when active project changes
     useEffect(() => {
@@ -72,6 +80,79 @@ const TestCasesPage: React.FC = () => {
         clearSearchQuery(); // Clear search when entering
         return () => clearSearchQuery(); // Clear search when leaving
     }, [fetchProjects, clearSearchQuery]);
+    
+    // Handle testCaseId URL parameter for direct links
+    useEffect(() => {
+        const testCaseId = searchParams.get('testCaseId');
+        
+        // Skip if no testCaseId or already processed this ID
+        if (!testCaseId || processedTestCaseIdRef.current === testCaseId) {
+            return;
+        }
+        
+        const loadTestCaseFromUrl = async () => {
+            try {
+                // Fetch the test case from API
+                const testCaseResponse = await getTestCase(testCaseId);
+                
+                // Mark as processed to prevent re-fetching
+                processedTestCaseIdRef.current = testCaseId;
+                
+                // Set up the context (project, suite, area)
+                if (testCaseResponse.projectId) {
+                    setActiveProject(testCaseResponse.projectId);
+                    
+                    // Fetch test suites for the project
+                    await fetchTestSuites(testCaseResponse.projectId);
+                }
+                
+                if (testCaseResponse.suiteId && testCaseResponse.suite) {
+                    setActiveSuiteWithId(testCaseResponse.suiteId, testCaseResponse.suite);
+                    
+                    // Fetch test cases for the suite
+                    await fetchTestCases(testCaseResponse.suiteId);
+                }
+                
+                if (testCaseResponse.area) {
+                    setActiveArea(testCaseResponse.area);
+                }
+                
+                // Map the API response to TestCase format and open the view modal
+                const mappedTestCase: TestCase = {
+                    id: testCaseResponse.id,
+                    title: testCaseResponse.title,
+                    priority: testCaseResponse.priority as Priority,
+                    status: testCaseResponse.status as Status,
+                    lastModified: testCaseResponse.lastModified,
+                    assignedTester: testCaseResponse.assignedTester,
+                    steps: [],
+                    stepsContent: testCaseResponse.stepsContent,
+                    suite: testCaseResponse.suite,
+                    suiteId: testCaseResponse.suiteId,
+                    area: testCaseResponse.area,
+                    expectedResult: testCaseResponse.expectedResult,
+                    testDescription: testCaseResponse.testDescription,
+                    comments: testCaseResponse.comments,
+                    customFields: testCaseResponse.customFields,
+                    projectId: testCaseResponse.projectId,
+                    order: testCaseResponse.order,
+                };
+                
+                setViewCase(mappedTestCase);
+                
+                // Clear the URL parameter after loading (optional, keeps URL clean)
+                setSearchParams({}, { replace: true });
+                
+            } catch (error) {
+                console.error('Failed to load test case from URL:', error);
+                toast.error('Failed to load test case. It may not exist or you may not have access.');
+                // Clear the URL parameter on error
+                setSearchParams({}, { replace: true });
+            }
+        };
+        
+        loadTestCaseFromUrl();
+    }, [searchParams, setSearchParams, setActiveProject, setActiveSuiteWithId, setActiveArea, fetchTestSuites, fetchTestCases]);
 
     // Fetch test suites when project is active
     useEffect(() => {

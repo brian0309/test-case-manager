@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { TestCase, Priority, Status, CustomFieldDefinition } from '../../types/testManager';
-import { X, Edit2, ChevronDown } from 'lucide-react';
+import { X, Edit2, ChevronDown, Share2 } from 'lucide-react';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import RichTextEditor from './RichTextEditor';
+import toast from 'react-hot-toast';
 
 interface TestCaseViewModalProps {
     testCase: TestCase;
@@ -89,6 +90,23 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
         }
     };
 
+    const handleShareClick = async () => {
+        const shareUrl = `${window.location.origin}/test-manager/cases?testCaseId=${testCase.id}`;
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            toast.success('Link copied to clipboard');
+        } catch (err) {
+            // Fallback for browsers that don't support clipboard API
+            const textArea = document.createElement('textarea');
+            textArea.value = shareUrl;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            toast.success('Link copied to clipboard');
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
             <div
@@ -104,6 +122,14 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                         <span className="text-xs text-gray-400">View Mode</span>
                     </div>
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleShareClick}
+                            className="px-3 py-1.5 rounded-lg text-sm font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-colors flex items-center gap-1.5"
+                            title="Copy link to clipboard"
+                        >
+                            <Share2 className="h-4 w-4" />
+                            Share
+                        </button>
                         <button
                             onClick={() => onEdit(testCase)}
                             className="px-3 py-1.5 rounded-lg text-sm font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 transition-colors flex items-center gap-1.5"
