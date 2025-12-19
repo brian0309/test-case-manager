@@ -115,6 +115,10 @@ interface TestManagerStore {
     setSearchQuery: (query: string) => void;
     clearSearchQuery: () => void;
 
+    // Export callback
+    onExportTestCases: (() => void) | null;
+    setExportTestCasesCallback: (callback: (() => void) | null) => void;
+
     // Project actions
     fetchProjects: () => Promise<void>;
     createProject: (data: CreateProjectRequest) => Promise<Project>;
@@ -206,6 +210,10 @@ export const useTestManagerStore = create<TestManagerStore>()(
             searchQuery: '' as string,
             setSearchQuery: (query) => set({ searchQuery: query }),
             clearSearchQuery: () => set({ searchQuery: '' }),
+
+            // Export callback
+            onExportTestCases: null,
+            setExportTestCasesCallback: (callback) => set({ onExportTestCases: callback }),
 
             // Selection Actions
             isSelectionMode: false,

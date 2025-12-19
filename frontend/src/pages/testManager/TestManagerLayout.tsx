@@ -18,7 +18,9 @@ const TestManagerLayout: React.FC = () => {
         isSelectionMode,
         setSelectionMode,
         selectedTestCaseIds,
-        bulkDeleteTestCases
+        bulkDeleteTestCases,
+        // Export callback
+        onExportTestCases,
     } = useTestManagerStore();
     const navigate = useNavigate();
     const location = useLocation();
@@ -119,6 +121,8 @@ const TestManagerLayout: React.FC = () => {
                     onToggleSelectionMode={handleToggleSelectionMode}
                     selectedCount={selectedTestCaseIds.length}
                     onDelete={handleDeleteClick}
+                    // Export prop
+                    onDownload={onExportTestCases || undefined}
                 />
                 <div className="flex-1 overflow-auto relative">
                     <Outlet />

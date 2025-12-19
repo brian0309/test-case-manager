@@ -19,6 +19,8 @@ interface ToolbarProps {
     onToggleSelectionMode?: () => void;
     selectedCount?: number;
     onDelete?: () => void;
+    // Export prop
+    onDownload?: () => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = (props) => {
@@ -31,7 +33,8 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
         isSelectionMode,
         onToggleSelectionMode,
         selectedCount = 0,
-        onDelete
+        onDelete,
+        onDownload
     } = props;
 
     const getTitle = () => {
@@ -135,9 +138,15 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
                 >
                     <Filter className="h-4 w-4" strokeWidth={1.5} />
                 </button>
-                <button className="p-1 text-gray-500 hover:bg-gray-100 rounded-md transition-colors">
-                    <Download className="h-4 w-4" strokeWidth={1.5} />
-                </button>
+                {viewMode === 'cases' && onDownload && (
+                    <button
+                        onClick={onDownload}
+                        className="p-1 text-gray-500 hover:bg-gray-100 rounded-md transition-colors"
+                        title="Export test cases to CSV"
+                    >
+                        <Download className="h-4 w-4" strokeWidth={1.5} />
+                    </button>
+                )}
 
                 {viewMode !== 'reports' && (
                     <button

@@ -8,9 +8,11 @@ import FilterModal from '../../components/testManager/FilterModal';
 import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import GeminiGenerationModal from '../../components/testManager/GeminiGenerationModal';
+import ExportTestCasesModal from '../../components/testManager/ExportTestCasesModal';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { TestCase, Status, Priority, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
 import { reorderTestCases, getTestCase } from '../../services/testManagerApi';
+import { exportTestCasesToCSV, ExportColumn } from '../../utils/exportTestCases';
 import { Sparkles, GripVertical, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
 
 const TestCasesPage: React.FC = () => {
@@ -46,11 +48,14 @@ const TestCasesPage: React.FC = () => {
         setActiveProject,
         setActiveSuiteWithId,
         setActiveArea,
+        // Export callback
+        setExportTestCasesCallback,
     } = useTestManagerStore();
     const [selectedCase, setSelectedCase] = useState<TestCase | null>(null);
     const [viewCase, setViewCase] = useState<TestCase | null>(null);
     const [isListEditMode] = useState(false);
     const [sortInfo, setSortInfo] = useState<SortInfo | null>(null);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     
     // Track if we've already processed the testCaseId URL parameter
     const processedTestCaseIdRef = useRef<string | null>(null);
@@ -67,6 +72,12 @@ const TestCasesPage: React.FC = () => {
             fetchProjectSettings(activeProject);
         }
     }, [activeProject, fetchProjectSettings]);
+
+    // Register export callback
+    useEffect(() => {
+        setExportTestCasesCallback(() => setIsExportModalOpen(true));
+        return () => setExportTestCasesCallback(null);
+    }, [setExportTestCasesCallback]);
 
     // Get custom fields and visibility settings for table (filter out deleted fields)
     const projectSettings = activeProject ? getProjectSettings(activeProject) : null;
@@ -379,6 +390,26 @@ const TestCasesPage: React.FC = () => {
         toast.success(`Added ${cases.length} test cases`);
     };
 
+    const handleExportTestCases = (columns: ExportColumn[]) => {
+        try {
+            const projectName = projects.find(p => p.id === activeProject)?.name;
+            const suiteName = activeSuite;
+            
+            exportTestCasesToCSV(
+                displayedCases,
+                { columns },
+                customFieldDefinitions,
+                projectName,
+                suiteName || undefined
+            );
+            
+            toast.success(`Exported ${displayedCases.length} test case${displayedCases.length !== 1 ? 's' : ''} to CSV`);
+        } catch (error) {
+            console.error('Export error:', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to export test cases');
+        }
+    };
+
     return (
         <div className="flex flex-col h-full">
             {/* Context Breadcrumb with Project & Suite selectors */}
@@ -499,6 +530,17 @@ const TestCasesPage: React.FC = () => {
                     projectId={activeProject}
                     suiteId={activeSuiteId}
                     existingTestCases={displayedCases.map(tc => tc.title)}
+                />
+            )}
+            {isExportModalOpen && (
+                <ExportTestCasesModal
+                    isOpen={isExportModalOpen}
+                    onClose={() => setIsExportModalOpen(false)}
+                    onExport={handleExportTestCases}
+                    customFieldDefinitions={customFieldDefinitions}
+                    visibleCustomFieldIds={visibleCustomFieldIds}
+                    hiddenColumns={hiddenColumns}
+                    testCaseCount={displayedCases.length}
                 />
             )}
         </div>
