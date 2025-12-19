@@ -366,6 +366,7 @@ const GeminiTab = () => {
         { value: "gemini-2.5-flash-preview-09-2025", label: "Gemini 2.5 Flash Preview", description: "Best for large scale processing, low-latency, and agentic use cases" },
         { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash", description: "First hybrid reasoning model with 1M token context and thinking budgets" },
         { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro", description: "State-of-the-art model, excels at coding and complex reasoning tasks" },
+        { value: "gemini-3-flash-preview", label: "Gemini 3 Flash Preview", description: "Fastest and most efficient model for high-volume tasks" },
         { value: "gemini-3-pro-preview", label: "Gemini 3 Pro Preview", description: "Best model for multimodal understanding, most powerful agentic model" },
     ];
 
