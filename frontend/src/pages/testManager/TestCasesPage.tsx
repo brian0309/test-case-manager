@@ -118,6 +118,7 @@ const TestCasesPage: React.FC = () => {
                 }
                 
                 // Map the API response to TestCase format and open the view modal
+                // Note: steps array is empty as the app uses stepsContent (rich text) instead
                 const mappedTestCase: TestCase = {
                     id: testCaseResponse.id,
                     title: testCaseResponse.title,
@@ -125,7 +126,7 @@ const TestCasesPage: React.FC = () => {
                     status: testCaseResponse.status as Status,
                     lastModified: testCaseResponse.lastModified,
                     assignedTester: testCaseResponse.assignedTester,
-                    steps: [],
+                    steps: [], // Legacy field - app uses stepsContent for rich text steps
                     stepsContent: testCaseResponse.stepsContent,
                     suite: testCaseResponse.suite,
                     suiteId: testCaseResponse.suiteId,
@@ -152,6 +153,11 @@ const TestCasesPage: React.FC = () => {
         };
         
         loadTestCaseFromUrl();
+        
+        // Reset the processed ref when the component unmounts to allow re-loading if user navigates back
+        return () => {
+            processedTestCaseIdRef.current = null;
+        };
     }, [searchParams, setSearchParams, setActiveProject, setActiveSuiteWithId, setActiveArea, fetchTestSuites, fetchTestCases]);
 
     // Fetch test suites when project is active
