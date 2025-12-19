@@ -11,6 +11,12 @@ import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import toast from 'react-hot-toast';
 import {
+    exportProjectSummaryToCSV,
+    exportTrendReportToCSV,
+    exportSuiteComparisonToCSV,
+    exportTestCaseHealthToCSV,
+} from '../../utils/csvExport';
+import {
     LineChart,
     Line,
     BarChart,
@@ -124,6 +130,46 @@ const ReportsPage: React.FC = () => {
         }
     }, [activeProject, dateRange, groupBy]);
 
+    // Handle export
+    const handleExport = () => {
+        if (!activeProject) return;
+
+        try {
+            const projectName = activeProject; // You can fetch the actual project name if available
+            
+            // Export based on active tab
+            switch (activeTab) {
+                case 'overview':
+                    if (summaryReport) {
+                        exportProjectSummaryToCSV(summaryReport, projectName);
+                        toast.success('Report exported successfully');
+                    }
+                    break;
+                case 'trends':
+                    if (trendReport) {
+                        exportTrendReportToCSV(trendReport, projectName);
+                        toast.success('Trend report exported successfully');
+                    }
+                    break;
+                case 'suites':
+                    if (suiteReport) {
+                        exportSuiteComparisonToCSV(suiteReport, projectName);
+                        toast.success('Suite comparison exported successfully');
+                    }
+                    break;
+                case 'health':
+                    if (healthReport) {
+                        exportTestCaseHealthToCSV(healthReport, projectName);
+                        toast.success('Health report exported successfully');
+                    }
+                    break;
+            }
+        } catch (error: any) {
+            toast.error('Failed to export report');
+            console.error('Error exporting report:', error);
+        }
+    };
+
     if (!activeProject) {
         return (
             <EmptyProjectState
@@ -156,6 +202,7 @@ const ReportsPage: React.FC = () => {
                             <Activity className="w-5 h-5" />
                         </button>
                         <button
+                            onClick={handleExport}
                             className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
                             title="Export Report"
                         >
