@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { X, Sparkles, ChevronDown, ChevronUp, Loader2, Eye, EyeOff } from 'lucide-react';
 import { API_URL } from '../../utils/api';
-import axios from 'axios';
 import toast from 'react-hot-toast';
 import { TestCase, Status, Priority } from '../../types/testManager';
 import ImagePreviewUploader from '../ImagePreviewUploader';
@@ -50,25 +49,178 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedCases, setGeneratedCases] = useState<GeneratedCase[]>([]);
     const [expandedCaseIndex, setExpandedCaseIndex] = useState<number | null>(null);
+    
+    // Streaming state
+    const [streamingText, setStreamingText] = useState('');
+    const [showLivePreview, setShowLivePreview] = useState(true);
+    const streamingTextRef = useRef('');
+    const livePreviewRef = useRef<HTMLPreElement>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
+
+    // Auto-scroll live preview to bottom
+    useEffect(() => {
+        if (livePreviewRef.current && showLivePreview) {
+            livePreviewRef.current.scrollTop = livePreviewRef.current.scrollHeight;
+        }
+    }, [streamingText, showLivePreview]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
+    }, []);
+
+    /**
+     * Parse the accumulated JSON text and extract test cases
+     */
+    const parseStreamedJson = (text: string): GeneratedCase[] => {
+        // Clean up the text - remove markdown code blocks if present
+        let cleanText = text.trim();
+        cleanText = cleanText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        
+        try {
+            const parsed = JSON.parse(cleanText);
+            return Array.isArray(parsed) ? parsed.map((c: any) => ({ ...c, selected: true })) : [];
+        } catch {
+            // Try to recover truncated JSON by finding the last complete object
+            if (cleanText.startsWith('[')) {
+                const closingBraces: number[] = [];
+                let pos = cleanText.indexOf('}');
+                while (pos !== -1) {
+                    closingBraces.push(pos);
+                    pos = cleanText.indexOf('}', pos + 1);
+                }
+                
+                // Try the last few closing braces
+                for (let i = closingBraces.length - 1; i >= Math.max(0, closingBraces.length - 5); i--) {
+                    const cutPos = closingBraces[i];
+                    const recovered = cleanText.substring(0, cutPos + 1) + ']';
+                    try {
+                        const parsed = JSON.parse(recovered);
+                        return Array.isArray(parsed) ? parsed.map((c: any) => ({ ...c, selected: true })) : [];
+                    } catch {
+                        // Continue trying
+                    }
+                }
+            }
+            return [];
+        }
+    };
 
     const handleGenerate = async () => {
         setIsGenerating(true);
+        setStreamingText('');
+        setGeneratedCases([]);
+        streamingTextRef.current = '';
+        
+        // Create abort controller for cancellation
+        abortControllerRef.current = new AbortController();
+        
         try {
-            const response = await axios.post(
-                `${API_URL}/gemini/generate`,
-                { context, type: generationType, selectedFields, existingTestCases, imageUrls: contextImages },
-                { withCredentials: true }
-            );
+            const response = await fetch(`${API_URL}/gemini/generate-stream`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    context,
+                    type: generationType,
+                    selectedFields,
+                    existingTestCases,
+                    imageUrls: contextImages
+                }),
+                signal: abortControllerRef.current.signal
+            });
 
-            if (response.data.success) {
-                const cases = response.data.data.map((c: any) => ({ ...c, selected: true }));
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
+
+            const reader = response.body?.getReader();
+            if (!reader) {
+                throw new Error('No response body');
+            }
+
+            const decoder = new TextDecoder();
+            let buffer = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                
+                // Process SSE events (format: "data: {...}\n\n")
+                const lines = buffer.split('\n\n');
+                buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            
+                            if (data.type === 'chunk') {
+                                streamingTextRef.current += data.content;
+                                setStreamingText(streamingTextRef.current);
+                            } else if (data.type === 'done') {
+                                // Parse the final result
+                                const cases = parseStreamedJson(streamingTextRef.current);
+                                setGeneratedCases(cases);
+                            } else if (data.type === 'error') {
+                                throw new Error(data.message);
+                            }
+                        } catch (e) {
+                            if (e instanceof SyntaxError) {
+                                console.warn('Failed to parse SSE data:', line);
+                            } else {
+                                throw e;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Handle any remaining buffer
+            if (buffer.startsWith('data: ')) {
+                try {
+                    const data = JSON.parse(buffer.slice(6));
+                    if (data.type === 'chunk') {
+                        streamingTextRef.current += data.content;
+                        setStreamingText(streamingTextRef.current);
+                    }
+                } catch {
+                    // Ignore incomplete data
+                }
+            }
+
+            // Final parse if we haven't gotten a 'done' event
+            if (generatedCases.length === 0 && streamingTextRef.current) {
+                const cases = parseStreamedJson(streamingTextRef.current);
                 setGeneratedCases(cases);
             }
+
         } catch (error: any) {
-            console.error(error);
-            toast.error(error.response?.data?.message || "Failed to generate test cases");
+            if (error.name === 'AbortError') {
+                toast.error('Generation cancelled');
+            } else {
+                console.error(error);
+                toast.error(error.message || "Failed to generate test cases");
+            }
         } finally {
             setIsGenerating(false);
+            abortControllerRef.current = null;
+        }
+    };
+
+    const handleCancel = () => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
         }
     };
 
@@ -206,24 +358,70 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                 </div>
                             </div>
 
-                            <button
-                                onClick={handleGenerate}
-                                disabled={isGenerating}
-                                className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2.5 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50"
-                            >
-                                {isGenerating ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                        <span>Generating...</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Sparkles className="w-4 h-4" />
-                                        <span>Generate Test Cases</span>
-                                    </>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleGenerate}
+                                    disabled={isGenerating}
+                                    className="flex-1 flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2.5 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50"
+                                >
+                                    {isGenerating ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            <span>Generating...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="w-4 h-4" />
+                                            <span>Generate Test Cases</span>
+                                        </>
+                                    )}
+                                </button>
+                                {isGenerating && (
+                                    <button
+                                        onClick={handleCancel}
+                                        className="px-4 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
+                                    >
+                                        Cancel
+                                    </button>
                                 )}
-                            </button>
+                            </div>
                         </div>
+
+                        {/* Live Preview - Streaming Output */}
+                        {(isGenerating || streamingText) && (
+                            <div className="space-y-2 pt-4 border-t border-gray-100">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-2">
+                                        <h3 className="text-sm font-medium text-gray-900">Live Preview</h3>
+                                        {isGenerating && (
+                                            <span className="flex items-center space-x-1 text-xs text-blue-600">
+                                                <span className="relative flex h-2 w-2">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                                                </span>
+                                                <span>Streaming...</span>
+                                            </span>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => setShowLivePreview(!showLivePreview)}
+                                        className="flex items-center space-x-1 text-xs text-gray-500 hover:text-gray-700"
+                                    >
+                                        {showLivePreview ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                        <span>{showLivePreview ? 'Hide' : 'Show'}</span>
+                                    </button>
+                                </div>
+                                {showLivePreview && (
+                                    <pre
+                                        ref={livePreviewRef}
+                                        className="bg-gray-900 text-green-400 text-xs p-3 rounded-lg overflow-auto max-h-48 font-mono whitespace-pre-wrap break-words"
+                                    >
+                                        {streamingText || 'Waiting for AI response...'}
+                                        {isGenerating && <span className="animate-pulse">▊</span>}
+                                    </pre>
+                                )}
+                            </div>
+                        )}
 
                         {/* Results */}
                         {generatedCases.length > 0 && (

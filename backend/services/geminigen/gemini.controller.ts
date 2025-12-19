@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { User } from "../../models/user.model.js";
-import { encryptApiKey, decryptApiKey, generateTestCaseDetails } from "./gemini.service.js";
+import { encryptApiKey, decryptApiKey, generateTestCaseDetails, generateTestCaseDetailsStream } from "./gemini.service.js";
 
 export const saveGeminiKey = async (req: Request, res: Response) => {
     try {
@@ -77,5 +77,59 @@ export const generateTestCases = async (req: Request, res: Response) => {
     } catch (error: any) {
         console.error("Error generating test cases:", error);
         res.status(500).json({ success: false, message: error.message || "Generation failed" });
+    }
+};
+
+/**
+ * Streaming endpoint for test case generation
+ * Uses Server-Sent Events to stream AI output in real-time
+ */
+export const generateTestCasesStream = async (req: Request, res: Response) => {
+    try {
+        const { context, type = 'new_case', selectedFields, existingTestCases = [], imageUrls = [] } = req.body;
+        const userId = req.userId;
+
+        const user = await User.findById(userId).select('+geminiApiKey');
+        if (!user || !user.geminiApiKey) {
+            return res.status(403).json({ success: false, message: "Gemini API Key not found. Please configure it in Settings." });
+        }
+
+        const decryptedKey = decryptApiKey(user.geminiApiKey);
+        const model = user.geminiModel || 'gemini-2.5-flash';
+
+        // Set SSE headers
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+        res.flushHeaders();
+
+        // Handle client disconnect
+        req.on('close', () => {
+            console.log('Client disconnected from stream');
+        });
+
+        // Stream the response
+        await generateTestCaseDetailsStream(
+            decryptedKey,
+            context,
+            type,
+            selectedFields,
+            existingTestCases,
+            imageUrls,
+            model,
+            res
+        );
+
+    } catch (error: any) {
+        console.error("Error in streaming test case generation:", error);
+        // If headers haven't been sent yet, send error response
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: error.message || "Generation failed" });
+        } else {
+            // Headers already sent, send error as SSE event
+            res.write(`data: ${JSON.stringify({ type: 'error', message: error.message || 'Generation failed' })}\n\n`);
+            res.end();
+        }
     }
 };

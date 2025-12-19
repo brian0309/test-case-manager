@@ -1,5 +1,6 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import crypto from 'crypto';
+import { Response } from 'express';
 
 const ALGORITHM = 'aes-256-cbc';
 // ENCRYPTION_KEY must be 32 chars
@@ -319,3 +320,170 @@ async function fetchImageAsBase64(imageUrl: string): Promise<{ base64: string; m
         return null;
     }
 }
+
+/**
+ * Build prompt and schema for test case generation (shared between streaming and non-streaming)
+ */
+function buildPromptAndSchema(
+    context: string,
+    type: 'new_case' | 'steps' | 'area' | 'expected',
+    selectedFields: { area: boolean; steps: boolean; expected: boolean; testDescription?: boolean },
+    existingTestCases: string[] = [],
+    imageUrls: string[] = []
+): { prompt: string; schema: any } {
+    let prompt = "";
+    let schema: any = {};
+
+    if (type === 'new_case') {
+        const fieldsRequest = [];
+        if (selectedFields.area) fieldsRequest.push("Page/Area");
+        if (selectedFields.steps) fieldsRequest.push("list of Steps (Action + Expected Result)");
+        if (selectedFields.expected) fieldsRequest.push("Expected Result Summary");
+
+        const existingCasesContext = existingTestCases.length > 0
+            ? `\n\nExisting test cases to avoid duplicating:\n${existingTestCases.map((title, i) => `${i + 1}. ${title}`).join('\n')}\n\nIMPORTANT: Generate NEW test cases that are different from the existing ones listed above. Do not create similar or duplicate test cases.`
+            : '';
+
+        const imageContext = imageUrls.length > 0
+            ? `\n\nI have also provided ${imageUrls.length} image(s) as additional context. Please analyze the images carefully and use the visual information to generate comprehensive test cases that cover UI elements, interactions, and functionality visible in the images.`
+            : '';
+
+        prompt = `Based on this context: "${context}"${imageContext}, generate a comprehensive set of test case scenarios covering all possible scenarios and edge cases.
+        Generate at least 10 test cases (or more if the context is highly complex), ensuring broad coverage across different categories:
+
+        - Positive Test Cases: Normal, expected workflows that should pass
+        - Negative Test Cases: Invalid inputs, error conditions, and failure scenarios
+        - Edge Cases: Boundary conditions, extreme values, and unusual but valid inputs
+        - Boundary Value Tests: Tests at the limits of acceptable input ranges
+        - Error Handling Tests: How the system responds to errors, exceptions, and unexpected conditions
+        - Security/Validation Tests: Input validation, sanitization, and security-related scenarios
+        - Performance/Stress Tests: High load, large data sets, or resource-intensive operations
+        - Integration Tests: Interactions between different components or systems
+        - Accessibility Tests: Usability for different user types or assistive technologies
+        - Cross-browser/Cross-platform Tests: If applicable to the context
+
+        For each test case, provide a Title, Description, Preconditions${fieldsRequest.length > 0 ? ", " + fieldsRequest.join(", ") : ""}.${existingCasesContext}`;
+
+        const properties: any = {
+            title: { type: Type.STRING },
+            description: { type: Type.STRING },
+            preconditions: { type: Type.STRING }
+        };
+
+        const required = ["title", "description"];
+
+        if (selectedFields.area) {
+            properties.area = { type: Type.STRING };
+        }
+        if (selectedFields.expected) {
+            properties.expectedResult = { type: Type.STRING };
+        }
+        if (selectedFields.steps) {
+            properties.steps = {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        action: { type: Type.STRING },
+                        expectedResult: { type: Type.STRING }
+                    }
+                }
+            };
+            required.push("steps");
+        }
+
+        schema = {
+            type: Type.ARRAY,
+            items: {
+                type: Type.OBJECT,
+                properties: properties,
+                required: required
+            }
+        };
+    } else {
+        // Fallback or specific field generation
+        prompt = `Generate content for "${type}" based on: "${context}"`;
+    }
+
+    return { prompt, schema };
+}
+
+/**
+ * Build contents for Gemini API (handles images if present)
+ */
+async function buildContents(prompt: string, imageUrls: string[] = []): Promise<any> {
+    if (imageUrls.length > 0) {
+        const parts: any[] = [];
+        
+        for (const imageUrl of imageUrls) {
+            try {
+                const imageData = await fetchImageAsBase64(imageUrl);
+                if (imageData) {
+                    parts.push({
+                        inlineData: {
+                            mimeType: imageData.mimeType,
+                            data: imageData.base64
+                        }
+                    });
+                }
+            } catch (imgError) {
+                console.warn(`Failed to fetch image ${imageUrl}:`, imgError);
+            }
+        }
+        
+        parts.push({ text: prompt });
+        return parts;
+    }
+    
+    return prompt;
+}
+
+/**
+ * Streaming version of generateTestCaseDetails
+ * Streams chunks directly to the Express response using Server-Sent Events
+ */
+export const generateTestCaseDetailsStream = async (
+    apiKey: string,
+    context: string,
+    type: 'new_case' | 'steps' | 'area' | 'expected',
+    selectedFields: { area: boolean; steps: boolean; expected: boolean; testDescription?: boolean },
+    existingTestCases: string[],
+    imageUrls: string[],
+    model: string,
+    res: Response
+): Promise<void> => {
+    const ai = new GoogleGenAI({ apiKey });
+    
+    const { prompt, schema } = buildPromptAndSchema(context, type, selectedFields, existingTestCases, imageUrls);
+    const contents = await buildContents(prompt, imageUrls);
+
+    try {
+        const stream = await ai.models.generateContentStream({
+            model: model,
+            contents: contents,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: schema
+            }
+        });
+
+        // Stream each chunk to the client
+        for await (const chunk of stream) {
+            const text = chunk.text;
+            if (text) {
+                // Send as SSE data event
+                res.write(`data: ${JSON.stringify({ type: 'chunk', content: text })}\n\n`);
+            }
+        }
+
+        // Send completion event
+        res.write(`data: ${JSON.stringify({ type: 'done' })}\n\n`);
+        res.end();
+
+    } catch (error: any) {
+        console.error("Gemini streaming generation failed:", error);
+        // Send error event
+        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message || 'Generation failed' })}\n\n`);
+        res.end();
+    }
+};
