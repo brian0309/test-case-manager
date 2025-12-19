@@ -33,6 +33,52 @@ export const decryptApiKey = (text: string): string => {
     return decrypted.toString();
 };
 
+/**
+ * Simplifies Gemini API error messages for user-friendly display
+ */
+export const simplifyGeminiError = (error: any): string => {
+    // Handle nested error objects from Gemini API
+    const errorObj = error?.error || error;
+    const code = errorObj?.code || error?.status;
+    const message = errorObj?.message || error?.message || 'An error occurred';
+    
+    // Rate limiting / quota errors
+    if (code === 429 || message.includes('quota') || message.includes('rate limit')) {
+        if (message.includes('free tier') || message.includes('free_tier')) {
+            return 'Free tier quota exceeded. Please upgrade your Gemini API plan or try again later.';
+        }
+        return 'Rate limit exceeded. Please try again in a few moments.';
+    }
+    
+    // Authentication errors
+    if (code === 401 || code === 403) {
+        return 'Invalid API key. Please check your Gemini API settings.';
+    }
+    
+    // Invalid request errors
+    if (code === 400) {
+        return 'Invalid request. Please check your input and try again.';
+    }
+    
+    // Server errors
+    if (code >= 500) {
+        return 'Gemini service is temporarily unavailable. Please try again later.';
+    }
+    
+    // Network/timeout errors
+    if (message.includes('fetch') || message.includes('network') || message.includes('timeout')) {
+        return 'Network error. Please check your connection and try again.';
+    }
+    
+    // Generic fallback - extract first sentence if message is too long
+    if (message.length > 100) {
+        const firstSentence = message.split(/[.!?]\s/)[0];
+        return firstSentence.substring(0, 100) + '...';
+    }
+    
+    return message;
+};
+
 export const generateTestSteps = async (apiKey: string, testCaseTitle: string, context?: string, model: string = 'gemini-2.5-flash') => {
     const ai = new GoogleGenAI({ apiKey });
 
@@ -482,8 +528,9 @@ export const generateTestCaseDetailsStream = async (
 
     } catch (error: any) {
         console.error("Gemini streaming generation failed:", error);
+        const simplifiedMessage = simplifyGeminiError(error);
         // Send error event
-        res.write(`data: ${JSON.stringify({ type: 'error', message: error.message || 'Generation failed' })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: 'error', message: simplifiedMessage })}\n\n`);
         res.end();
     }
 };

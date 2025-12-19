@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { User } from "../../models/user.model.js";
-import { encryptApiKey, decryptApiKey, generateTestCaseDetails, generateTestCaseDetailsStream } from "./gemini.service.js";
+import { encryptApiKey, decryptApiKey, generateTestCaseDetails, generateTestCaseDetailsStream, simplifyGeminiError } from "./gemini.service.js";
 
 export const saveGeminiKey = async (req: Request, res: Response) => {
     try {
@@ -76,7 +76,8 @@ export const generateTestCases = async (req: Request, res: Response) => {
         res.status(200).json({ success: true, data: result });
     } catch (error: any) {
         console.error("Error generating test cases:", error);
-        res.status(500).json({ success: false, message: error.message || "Generation failed" });
+        const simplifiedMessage = simplifyGeminiError(error);
+        res.status(500).json({ success: false, message: simplifiedMessage });
     }
 };
 
@@ -123,12 +124,13 @@ export const generateTestCasesStream = async (req: Request, res: Response) => {
 
     } catch (error: any) {
         console.error("Error in streaming test case generation:", error);
+        const simplifiedMessage = simplifyGeminiError(error);
         // If headers haven't been sent yet, send error response
         if (!res.headersSent) {
-            res.status(500).json({ success: false, message: error.message || "Generation failed" });
+            res.status(500).json({ success: false, message: simplifiedMessage });
         } else {
             // Headers already sent, send error as SSE event
-            res.write(`data: ${JSON.stringify({ type: 'error', message: error.message || 'Generation failed' })}\n\n`);
+            res.write(`data: ${JSON.stringify({ type: 'error', message: simplifiedMessage })}\n\n`);
             res.end();
         }
     }

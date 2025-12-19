@@ -209,8 +209,27 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
             if (error.name === 'AbortError') {
                 toast.error('Generation cancelled');
             } else {
-                console.error(error);
-                toast.error(error.message || "Failed to generate test cases");
+                console.error('Generation error:', error);
+                // Extract simplified message from error
+                let errorMessage = "Failed to generate test cases";
+                
+                // Try to get the error message from various possible locations
+                if (typeof error === 'string') {
+                    errorMessage = error;
+                } else if (error?.message) {
+                    errorMessage = error.message;
+                } else if (error?.error?.message) {
+                    errorMessage = error.error.message;
+                }
+                
+                // Limit error message length for toasts
+                if (errorMessage.length > 150) {
+                    errorMessage = errorMessage.substring(0, 147) + '...';
+                }
+                
+                toast.error(errorMessage, {
+                    duration: 5000
+                });
             }
         } finally {
             setIsGenerating(false);
