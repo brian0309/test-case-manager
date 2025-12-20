@@ -1,10 +1,28 @@
 import request from "supertest";
 import app from "../../index.js";
-import { User } from "../../models/user.model.js";
-import { connectTestDb, disconnectTestDb } from "../../__tests__/setup/testDb.js";
-import { createTestUser } from "../../__tests__/helpers/testHelpers.js";
 import { encryptApiKey, decryptApiKey } from "./gemini.service.js";
 import jwt from "jsonwebtoken";
+import { Types } from "mongoose";
+
+// Mock all models
+jest.mock("../../models/user.model.js");
+
+import { User } from "../../models/user.model.js";
+
+const mockUser = User as jest.Mocked<typeof User>;
+
+// Helper function to setup User.findById mock
+const setupUserMock = (userId: string, geminiApiKey: string | undefined) => {
+  (mockUser.findById as any) = jest.fn().mockReturnValue({
+    select: jest.fn().mockResolvedValue({
+      _id: new Types.ObjectId(userId),
+      email: "test@example.com",
+      name: "Test User",
+      geminiApiKey,
+      save: jest.fn().mockResolvedValue(true),
+    }),
+  });
+};
 
 // Mock the GoogleGenAI class
 jest.mock("@google/genai", () => {
@@ -39,15 +57,17 @@ const getAuthCookie = (userId: string) => {
 };
 
 describe("Gemini Integration", () => {
-    beforeAll(async () => {
-        await connectTestDb();
+    let testUserId: string;
+
+    beforeAll(() => {
         // Set a dummy encryption key for testing if not set
         process.env.ENCRYPTION_KEY = "12345678901234567890123456789012";
         process.env.JWT_SECRET = "test_secret";
+        testUserId = new Types.ObjectId().toString();
     });
 
-    afterAll(async () => {
-        await disconnectTestDb();
+    beforeEach(() => {
+        jest.clearAllMocks();
     });
 
     describe("Encryption Service", () => {
@@ -65,18 +85,23 @@ describe("Gemini Integration", () => {
         let cookie: string;
         let userId: string;
 
-        beforeEach(async () => {
-            const user = await createTestUser({
-                email: "test@example.com",
-                password: "password123",
-                name: "Test User"
-            });
-            userId = user._id.toString();
+        beforeEach(() => {
+            userId = new Types.ObjectId().toString();
             cookie = getAuthCookie(userId);
         });
 
         it("should save the API key encrypted", async () => {
             const apiKey = "test-api-key-123";
+            const mockUserDoc = {
+                _id: new Types.ObjectId(userId),
+                email: "test@example.com",
+                geminiApiKey: undefined,
+                save: jest.fn().mockResolvedValue(true),
+            };
+
+            (mockUser.findById as any) = jest.fn().mockReturnValue({
+                select: jest.fn().mockResolvedValue(mockUserDoc),
+            });
 
             const res = await request(app)
                 .post("/api/gemini/key")
@@ -85,25 +110,21 @@ describe("Gemini Integration", () => {
 
             expect(res.status).toBe(200);
             expect(res.body.success).toBe(true);
+            expect(mockUserDoc.save).toHaveBeenCalled();
 
-            // Verify in DB
-            const updatedUser = await User.findById(userId).select('+geminiApiKey');
-            expect(updatedUser?.geminiApiKey).toBeDefined();
-            expect(updatedUser?.geminiApiKey).not.toBe(apiKey);
+            // Verify the API key was set on the user
+            expect(mockUserDoc.geminiApiKey).toBeDefined();
+            expect(mockUserDoc.geminiApiKey).not.toBe(apiKey);
 
             // Verify decryption
-            const decrypted = decryptApiKey(updatedUser!.geminiApiKey!);
+            const decrypted = decryptApiKey(mockUserDoc.geminiApiKey!);
             expect(decrypted).toBe(apiKey);
         });
 
         it("should generate test cases using the saved key", async () => {
-            // First save the key
-            await request(app)
-                .post("/api/gemini/key")
-                .set("Cookie", cookie)
-                .send({ apiKey: "valid-key" });
+            const encryptedKey = encryptApiKey("valid-key");
+            setupUserMock(userId, encryptedKey);
 
-            // Then generate
             const res = await request(app)
                 .post("/api/gemini/generate")
                 .set("Cookie", cookie)
@@ -119,17 +140,11 @@ describe("Gemini Integration", () => {
         });
 
         it("should return 403 if API key is not set", async () => {
-            // Create a new user without key
-            const newUser = await createTestUser({
-                email: "nokey@example.com",
-                password: "password123",
-                name: "No Key User"
-            });
-            const newCookie = getAuthCookie(newUser._id.toString());
+            setupUserMock(userId, undefined);
 
             const res = await request(app)
                 .post("/api/gemini/generate")
-                .set("Cookie", newCookie)
+                .set("Cookie", cookie)
                 .send({ context: "test" });
 
             expect(res.status).toBe(403);
