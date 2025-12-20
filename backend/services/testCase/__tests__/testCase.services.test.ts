@@ -38,9 +38,10 @@ describe("Test Case Management Services", () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // Don't clear model constructors, only clear method mocks
+    jest.restoreAllMocks();
     // Re-setup the spy after clearing
-    hasProjectAccessSpy.mockResolvedValue(true);
+    hasProjectAccessSpy = jest.spyOn(projectService, 'hasProjectAccess').mockResolvedValue(true);
   });
 
   afterAll(() => {
@@ -261,6 +262,14 @@ describe("Test Case Management Services", () => {
       // Mock hasProjectAccess to return false for user2
       hasProjectAccessSpy.mockResolvedValueOnce(false);
 
+      // Mock TestSuite.findById to return a suite with lean()
+      mockTestSuite.findById = jest.fn().mockReturnValue({
+        lean: jest.fn().mockResolvedValue({
+          _id: new Types.ObjectId(testSuiteId),
+          projectId: new Types.ObjectId(testProjectId),
+        }),
+      });
+
       const accessedSuite = await testSuiteService.getTestSuiteById(
         testSuiteId,
         testUser2Id
@@ -312,6 +321,7 @@ describe("Test Case Management Services", () => {
         suiteId: new Types.ObjectId(testSuiteId),
         projectId: new Types.ObjectId(testProjectId),
         history: [],
+        customFields: {},
         toObject: jest.fn().mockReturnValue({
           title: "Original Title",
           priority: Priority.Low,
@@ -334,14 +344,14 @@ describe("Test Case Management Services", () => {
       // Mock findById for getting existing case in the update function
       mockTestCase.findById = jest.fn().mockResolvedValue(mockExistingCase);
 
-      // Mock findOneAndUpdate for updating
+      // Mock findByIdAndUpdate for updating
       const populateChain = {
         populate: jest.fn().mockReturnThis(),
         lean: jest.fn().mockResolvedValue(mockUpdatedCase),
       };
       populateChain.populate = jest.fn().mockReturnValue(populateChain);
 
-      mockTestCase.findOneAndUpdate = jest.fn().mockReturnValue(populateChain);
+      mockTestCase.findByIdAndUpdate = jest.fn().mockReturnValue(populateChain);
 
       const updated = await testCaseService.updateTestCase(
         testCaseId,
