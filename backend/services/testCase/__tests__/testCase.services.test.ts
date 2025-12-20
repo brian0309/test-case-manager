@@ -38,9 +38,9 @@ describe("Test Case Management Services", () => {
   });
 
   beforeEach(() => {
-    // Don't clear model constructors, only clear method mocks
+    // Restore all mocks to their original implementations
     jest.restoreAllMocks();
-    // Re-setup the spy after clearing
+    // Re-setup the spy after restoring
     hasProjectAccessSpy = jest.spyOn(projectService, 'hasProjectAccess').mockResolvedValue(true);
   });
 
