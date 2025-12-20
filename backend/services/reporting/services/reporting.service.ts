@@ -94,9 +94,8 @@ export class ReportingService {
     async getProjectSummary(projectId: string, params: ReportFilterParams): Promise<ProjectSummaryReport> {
         const filter = this.buildRunFilter(projectId, params);
         
-        // Get all runs with basic aggregation
+        // Get all runs with items for accurate suite breakdown
         const runs = await TestRun.find(filter)
-            .populate('suiteId', 'name')
             .populate('groupId', 'name color')
             .sort({ completedAt: -1 })
             .lean();
@@ -118,9 +117,10 @@ export class ReportingService {
             [TestRunStatus.Abandoned]: 0,
         };
 
-        const suiteMap = new Map<string, any>();
         const groupMap = new Map<string, any>();
 
+        // Collect all unique caseIds from all runs for suite breakdown
+        const allCaseIds = new Set<string>();
         runs.forEach(run => {
             statusCounts[run.status]++;
             
@@ -136,30 +136,10 @@ export class ReportingService {
             totalNotRun += run.resultsSummary.notRun;
             totalDuration += run.resultsSummary.totalTimeSpent;
 
-            // Suite breakdown
-            if (run.suiteId) {
-                const suiteId = run.suiteId._id?.toString() || run.suiteId.toString();
-                const suiteName = (run.suiteId as any).name || 'Unknown Suite';
-                
-                if (!suiteMap.has(suiteId)) {
-                    suiteMap.set(suiteId, {
-                        suiteId,
-                        suiteName,
-                        totalRuns: 0,
-                        totalTests: 0,
-                        totalPassed: 0,
-                        totalFailed: 0,
-                        totalDuration: 0,
-                    });
-                }
-                
-                const suite = suiteMap.get(suiteId);
-                suite.totalRuns++;
-                suite.totalTests += run.resultsSummary.total;
-                suite.totalPassed += run.resultsSummary.passed;
-                suite.totalFailed += run.resultsSummary.failed;
-                suite.totalDuration += run.resultsSummary.totalTimeSpent;
-            }
+            // Collect case IDs for suite breakdown
+            run.items?.forEach(item => {
+                allCaseIds.add(item.caseId.toString());
+            });
 
             // Group breakdown
             if (run.groupId) {
@@ -185,16 +165,77 @@ export class ReportingService {
             }
         });
 
+        // Fetch test cases with their suite information for accurate breakdown
+        const testCases = await TestCase.find({
+            _id: { $in: Array.from(allCaseIds).map(id => new Types.ObjectId(id)) }
+        })
+            .select('_id suiteId')
+            .lean();
+
+        // Create a map of caseId -> suiteId
+        const caseToSuiteMap = new Map<string, string>();
+        testCases.forEach(tc => {
+            caseToSuiteMap.set(tc._id.toString(), tc.suiteId.toString());
+        });
+
+        // Fetch all suites for the project to get their names
+        const suites = await TestSuite.find({
+            projectId: new Types.ObjectId(projectId)
+        })
+            .select('_id name')
+            .lean();
+
+        // Create a map of suiteId -> suiteName
+        const suiteNameMap = new Map<string, string>();
+        suites.forEach(suite => {
+            suiteNameMap.set(suite._id.toString(), suite.name);
+        });
+
+        // Calculate suite breakdown based on actual test case suites
+        const suiteMap = new Map<string, any>();
+        runs.forEach(run => {
+            run.items?.forEach(item => {
+                const caseId = item.caseId.toString();
+                const suiteId = caseToSuiteMap.get(caseId);
+                
+                if (!suiteId) return;
+
+                const suiteName = suiteNameMap.get(suiteId) || 'Unknown Suite';
+                
+                if (!suiteMap.has(suiteId)) {
+                    suiteMap.set(suiteId, {
+                        suiteId,
+                        suiteName,
+                        runIds: new Set(),
+                        totalTests: 0,
+                        totalPassed: 0,
+                        totalFailed: 0,
+                        totalDuration: 0,
+                    });
+                }
+                
+                const suite = suiteMap.get(suiteId);
+                suite.runIds.add(run._id.toString());
+                suite.totalTests++;
+                if (item.status === RunItemStatus.Passed) {
+                    suite.totalPassed++;
+                } else if (item.status === RunItemStatus.Failed) {
+                    suite.totalFailed++;
+                }
+                suite.totalDuration += item.timeSpent || 0;
+            });
+        });
+
         // Calculate suite breakdown with averages
         const suiteBreakdown: SuiteBreakdownItem[] = Array.from(suiteMap.values()).map(suite => ({
             suiteId: suite.suiteId,
             suiteName: suite.suiteName,
-            totalRuns: suite.totalRuns,
+            totalRuns: suite.runIds.size,
             averagePassRate: suite.totalTests > 0 ? (suite.totalPassed / suite.totalTests) * 100 : 0,
             totalTests: suite.totalTests,
             totalPassed: suite.totalPassed,
             totalFailed: suite.totalFailed,
-            averageDuration: suite.totalRuns > 0 ? suite.totalDuration / suite.totalRuns : 0,
+            averageDuration: suite.runIds.size > 0 ? suite.totalDuration / suite.runIds.size : 0,
         }));
 
         // Calculate group breakdown with averages
@@ -403,67 +444,154 @@ export class ReportingService {
 
     /**
      * Get suite comparison report
+     * This method aggregates test results by the actual suite each test case belongs to,
+     * rather than by the run's suite assignment. This provides accurate metrics when
+     * test runs contain test cases from multiple suites.
      */
     async getSuiteComparison(projectId: string, params: ReportFilterParams): Promise<SuiteComparisonReport> {
         const filter = this.buildRunFilter(projectId, params);
         filter.status = TestRunStatus.Completed;
 
+        // Get all completed runs with their items
         const runs = await TestRun.find(filter)
-            .populate('suiteId', 'name')
+            .select('items resultsSummary completedAt')
             .sort({ completedAt: -1 })
             .lean();
 
+        // Collect all unique caseIds from all runs
+        const allCaseIds = new Set<string>();
+        runs.forEach(run => {
+            run.items.forEach(item => {
+                allCaseIds.add(item.caseId.toString());
+            });
+        });
+
+        // Fetch test cases with their suite information
+        const testCases = await TestCase.find({
+            _id: { $in: Array.from(allCaseIds).map(id => new Types.ObjectId(id)) }
+        })
+            .select('_id suiteId')
+            .lean();
+
+        // Create a map of caseId -> suiteId
+        const caseToSuiteMap = new Map<string, string>();
+        testCases.forEach(tc => {
+            caseToSuiteMap.set(tc._id.toString(), tc.suiteId.toString());
+        });
+
+        // Fetch all suites for the project to get their names
+        const suites = await TestSuite.find({
+            projectId: new Types.ObjectId(projectId)
+        })
+            .select('_id name')
+            .lean();
+
+        // Create a map of suiteId -> suiteName
+        const suiteNameMap = new Map<string, string>();
+        suites.forEach(suite => {
+            suiteNameMap.set(suite._id.toString(), suite.name);
+        });
+
+        // Aggregate results by actual suite
         const suiteMap = new Map<string, any>();
 
         runs.forEach(run => {
-            if (!run.suiteId) return;
+            // Track which suites were involved in this run for trend calculation
+            const suitesInRun = new Map<string, { passed: number; total: number }>();
 
-            const suiteId = run.suiteId._id?.toString() || run.suiteId.toString();
-            const suiteName = (run.suiteId as any).name || 'Unknown Suite';
+            run.items.forEach(item => {
+                const caseId = item.caseId.toString();
+                const suiteId = caseToSuiteMap.get(caseId);
+                
+                if (!suiteId) return; // Skip if case no longer exists
 
-            if (!suiteMap.has(suiteId)) {
-                suiteMap.set(suiteId, {
-                    suiteId,
-                    suiteName,
-                    runs: [],
-                    totalRuns: 0,
-                    totalTests: 0,
-                    passed: 0,
-                    failed: 0,
-                    blocked: 0,
-                    skipped: 0,
-                    totalDuration: 0,
-                });
-            }
+                const suiteName = suiteNameMap.get(suiteId) || 'Unknown Suite';
 
-            const suite = suiteMap.get(suiteId);
-            suite.runs.push({
-                passRate: run.resultsSummary.passRate,
-                completedAt: run.completedAt,
+                if (!suiteMap.has(suiteId)) {
+                    suiteMap.set(suiteId, {
+                        suiteId,
+                        suiteName,
+                        runSnapshots: [], // For trend calculation
+                        totalExecutions: 0, // Total individual test case executions
+                        passed: 0,
+                        failed: 0,
+                        blocked: 0,
+                        skipped: 0,
+                        notRun: 0,
+                        totalDuration: 0,
+                        runIds: new Set(), // Track unique runs that included this suite's tests
+                    });
+                }
+
+                const suite = suiteMap.get(suiteId);
+                
+                // Count results based on individual test case status
+                suite.totalExecutions++;
+                switch (item.status) {
+                    case RunItemStatus.Passed:
+                        suite.passed++;
+                        break;
+                    case RunItemStatus.Failed:
+                        suite.failed++;
+                        break;
+                    case RunItemStatus.Blocked:
+                        suite.blocked++;
+                        break;
+                    case RunItemStatus.Skipped:
+                        suite.skipped++;
+                        break;
+                    case RunItemStatus.NotRun:
+                        suite.notRun++;
+                        break;
+                }
+                
+                suite.totalDuration += item.timeSpent || 0;
+                suite.runIds.add(run._id.toString());
+
+                // Track per-run stats for this suite
+                if (!suitesInRun.has(suiteId)) {
+                    suitesInRun.set(suiteId, { passed: 0, total: 0 });
+                }
+                const runSuiteStats = suitesInRun.get(suiteId)!;
+                runSuiteStats.total++;
+                if (item.status === RunItemStatus.Passed) {
+                    runSuiteStats.passed++;
+                }
             });
-            suite.totalRuns++;
-            suite.totalTests += run.resultsSummary.total;
-            suite.passed += run.resultsSummary.passed;
-            suite.failed += run.resultsSummary.failed;
-            suite.blocked += run.resultsSummary.blocked;
-            suite.skipped += run.resultsSummary.skipped;
-            suite.totalDuration += run.resultsSummary.totalTimeSpent;
+
+            // Store run-level pass rates per suite for trend calculation
+            suitesInRun.forEach((stats, suiteId) => {
+                const suite = suiteMap.get(suiteId);
+                if (suite && stats.total > 0) {
+                    suite.runSnapshots.push({
+                        passRate: (stats.passed / stats.total) * 100,
+                        completedAt: run.completedAt,
+                    });
+                }
+            });
         });
 
-        const suites: SuiteComparisonItem[] = Array.from(suiteMap.values()).map(suite => {
-            const passRate = suite.totalTests > 0 ? (suite.passed / suite.totalTests) * 100 : 0;
-            const failureRate = suite.totalTests > 0 ? (suite.failed / suite.totalTests) * 100 : 0;
-            const averageDuration = suite.totalRuns > 0 ? suite.totalDuration / suite.totalRuns : 0;
+        // Calculate final metrics for each suite
+        const suitesResult: SuiteComparisonItem[] = Array.from(suiteMap.values()).map(suite => {
+            const executedTests = suite.totalExecutions - suite.notRun;
+            const passRate = executedTests > 0 ? (suite.passed / executedTests) * 100 : 0;
+            const failureRate = executedTests > 0 ? (suite.failed / executedTests) * 100 : 0;
+            const totalRuns = suite.runIds.size;
+            const averageDuration = totalRuns > 0 ? suite.totalDuration / totalRuns : 0;
 
-            // Calculate trend
+            // Calculate trend based on recent run snapshots
             let trend: 'improving' | 'declining' | 'stable' = 'stable';
-            if (suite.runs.length >= 2) {
-                const recentRuns = suite.runs.slice(0, Math.min(5, suite.runs.length));
-                const olderRuns = suite.runs.slice(Math.min(5, suite.runs.length));
+            const snapshots = suite.runSnapshots.sort((a: any, b: any) => 
+                new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+            );
+            
+            if (snapshots.length >= 2) {
+                const recentSnapshots = snapshots.slice(0, Math.min(5, Math.ceil(snapshots.length / 2)));
+                const olderSnapshots = snapshots.slice(Math.min(5, Math.ceil(snapshots.length / 2)));
 
-                if (olderRuns.length > 0) {
-                    const recentAvg = recentRuns.reduce((sum: number, r: any) => sum + r.passRate, 0) / recentRuns.length;
-                    const olderAvg = olderRuns.reduce((sum: number, r: any) => sum + r.passRate, 0) / olderRuns.length;
+                if (olderSnapshots.length > 0) {
+                    const recentAvg = recentSnapshots.reduce((sum: number, r: any) => sum + r.passRate, 0) / recentSnapshots.length;
+                    const olderAvg = olderSnapshots.reduce((sum: number, r: any) => sum + r.passRate, 0) / olderSnapshots.length;
 
                     if (recentAvg > olderAvg + 2) trend = 'improving';
                     else if (recentAvg < olderAvg - 2) trend = 'declining';
@@ -473,8 +601,8 @@ export class ReportingService {
             return {
                 suiteId: suite.suiteId,
                 suiteName: suite.suiteName,
-                totalRuns: suite.totalRuns,
-                totalTests: suite.totalTests,
+                totalRuns,
+                totalTests: suite.totalExecutions,
                 passed: suite.passed,
                 failed: suite.failed,
                 blocked: suite.blocked,
@@ -494,7 +622,7 @@ export class ReportingService {
         return {
             projectId,
             dateRange,
-            suites: suites.sort((a, b) => b.totalRuns - a.totalRuns),
+            suites: suitesResult.sort((a, b) => b.totalRuns - a.totalRuns),
         };
     }
 
@@ -509,18 +637,54 @@ export class ReportingService {
             .select('items')
             .lean();
 
+        // Collect all unique caseIds from runs
+        const allCaseIds = new Set<string>();
+        runs.forEach(run => {
+            run.items.forEach(item => {
+                allCaseIds.add(item.caseId.toString());
+            });
+        });
+
+        // Fetch test cases with their suite information
+        const testCasesForSuites = await TestCase.find({
+            _id: { $in: Array.from(allCaseIds).map(id => new Types.ObjectId(id)) }
+        })
+            .select('_id suiteId')
+            .lean();
+
+        // Create a map of caseId -> suiteId
+        const caseToSuiteMap = new Map<string, string>();
+        testCasesForSuites.forEach(tc => {
+            caseToSuiteMap.set(tc._id.toString(), tc.suiteId.toString());
+        });
+
+        // Fetch all suites for the project to get their names
+        const suitesForNames = await TestSuite.find({
+            projectId: new Types.ObjectId(projectId)
+        })
+            .select('_id name')
+            .lean();
+
+        // Create a map of suiteId -> suiteName
+        const suiteNameMap = new Map<string, string>();
+        suitesForNames.forEach(suite => {
+            suiteNameMap.set(suite._id.toString(), suite.name);
+        });
+
         // Map to track test case executions
         const caseExecutionMap = new Map<string, any>();
 
         runs.forEach(run => {
             run.items.forEach(item => {
                 const caseId = item.caseId.toString();
+                const suiteId = caseToSuiteMap.get(caseId);
+                const suiteName = suiteId ? (suiteNameMap.get(suiteId) || 'Unknown') : 'Unknown';
 
                 if (!caseExecutionMap.has(caseId)) {
                     caseExecutionMap.set(caseId, {
                         caseId,
                         title: item.caseSnapshot.title,
-                        suite: 'Unknown',
+                        suite: suiteName,
                         executions: [],
                     });
                 }
@@ -589,9 +753,9 @@ export class ReportingService {
             }
         });
 
-        // Get never executed tests
+        // Get never executed tests (with suite information)
         const allCases = await TestCase.find({ projectId: new Types.ObjectId(projectId) })
-            .select('_id title suite createdAt')
+            .select('_id title suiteId createdAt')
             .lean();
 
         const executedCaseIds = new Set(caseExecutionMap.keys());
@@ -601,11 +765,12 @@ export class ReportingService {
                 const createdAt = new Date(tc.createdAt);
                 const now = new Date();
                 const daysSinceCreation = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+                const suiteName = tc.suiteId ? (suiteNameMap.get(tc.suiteId.toString()) || 'Unknown') : 'Unknown';
 
                 return {
                     caseId: tc._id.toString(),
                     title: tc.title,
-                    suite: 'Unknown',
+                    suite: suiteName,
                     createdAt,
                     daysSinceCreation,
                 };
