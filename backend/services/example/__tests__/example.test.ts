@@ -1,4 +1,4 @@
-// @ts-nocheck
+// @ts-nocheck - Test file with complex mocking patterns
 import { describe, it, expect, beforeAll, beforeEach, jest } from '@jest/globals';
 import request from 'supertest';
 import express, { Express } from 'express';
@@ -13,6 +13,13 @@ import { User } from '../../../models/user.model';
 import exampleRoutes from '../routes/example.route';
 
 const mockUser = User as jest.Mocked<typeof User>;
+
+// Helper function to setup User.findById mock
+const setupUserMock = (userId: string, userData: any | null) => {
+  mockUser.findById = jest.fn().mockReturnValue({
+    select: jest.fn().mockResolvedValue(userData),
+  });
+};
 
 describe('Example Feature Integration Tests', () => {
   let app: Express;
@@ -47,12 +54,10 @@ describe('Example Feature Integration Tests', () => {
   describe('GET /api/example/example', () => {
     it('should return hello world message when authenticated', async () => {
       // Mock User.findById for authentication
-      (mockUser.findById as any) = jest.fn().mockReturnValue({
-        select: jest.fn().mockResolvedValue({
-          _id: new Types.ObjectId(testUserId),
-          email: 'test@example.com',
-          name: 'Test User',
-        } as any),
+      setupUserMock(testUserId, {
+        _id: new Types.ObjectId(testUserId),
+        email: 'test@example.com',
+        name: 'Test User',
       });
 
       const response = await request(app)
@@ -78,6 +83,8 @@ describe('Example Feature Integration Tests', () => {
     });
 
     it('should reject request with invalid token', async () => {
+      // Note: Invalid tokens cause jwt.verify() to throw an error in verifyToken middleware,
+      // which is caught and returns 500 (see backend/middleware/verifyToken.ts:15-18)
       const response = await request(app)
         .get('/api/example/example')
         .set('Cookie', ['token=invalid-token'])
@@ -95,6 +102,8 @@ describe('Example Feature Integration Tests', () => {
 
       await new Promise(resolve => setTimeout(resolve, 100));
 
+      // Note: Expired tokens cause jwt.verify() to throw a TokenExpiredError,
+      // which is caught and returns 500 (see backend/middleware/verifyToken.ts:15-18)
       const response = await request(app)
         .get('/api/example/example')
         .set('Cookie', [`token=${expiredToken}`])
@@ -112,9 +121,7 @@ describe('Example Feature Integration Tests', () => {
       );
 
       // Mock User.findById to return null (user deleted)
-      (mockUser.findById as any) = jest.fn().mockReturnValue({
-        select: jest.fn().mockResolvedValue(null as any),
-      });
+      setupUserMock(tempUserId, null);
 
       const response = await request(app)
         .get('/api/example/example')

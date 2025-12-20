@@ -11,6 +11,19 @@ import { User } from "../../models/user.model.js";
 
 const mockUser = User as jest.Mocked<typeof User>;
 
+// Helper function to setup User.findById mock
+const setupUserMock = (userId: string, geminiApiKey: string | undefined) => {
+  (mockUser.findById as any) = jest.fn().mockReturnValue({
+    select: jest.fn().mockResolvedValue({
+      _id: new Types.ObjectId(userId),
+      email: "test@example.com",
+      name: "Test User",
+      geminiApiKey,
+      save: jest.fn().mockResolvedValue(true),
+    }),
+  });
+};
+
 // Mock the GoogleGenAI class
 jest.mock("@google/genai", () => {
     return {
@@ -75,15 +88,6 @@ describe("Gemini Integration", () => {
         beforeEach(() => {
             userId = new Types.ObjectId().toString();
             cookie = getAuthCookie(userId);
-
-            // Mock User.findById for authentication
-            mockUser.findById = jest.fn().mockReturnValue({
-                select: jest.fn().mockResolvedValue({
-                    _id: new Types.ObjectId(userId),
-                    email: "test@example.com",
-                    name: "Test User",
-                }),
-            });
         });
 
         it("should save the API key encrypted", async () => {
@@ -95,7 +99,7 @@ describe("Gemini Integration", () => {
                 save: jest.fn().mockResolvedValue(true),
             };
 
-            mockUser.findById = jest.fn().mockReturnValue({
+            (mockUser.findById as any) = jest.fn().mockReturnValue({
                 select: jest.fn().mockResolvedValue(mockUserDoc),
             });
 
@@ -119,14 +123,7 @@ describe("Gemini Integration", () => {
 
         it("should generate test cases using the saved key", async () => {
             const encryptedKey = encryptApiKey("valid-key");
-            
-            mockUser.findById = jest.fn().mockReturnValue({
-                select: jest.fn().mockResolvedValue({
-                    _id: new Types.ObjectId(userId),
-                    email: "test@example.com",
-                    geminiApiKey: encryptedKey,
-                }),
-            });
+            setupUserMock(userId, encryptedKey);
 
             const res = await request(app)
                 .post("/api/gemini/generate")
@@ -143,13 +140,7 @@ describe("Gemini Integration", () => {
         });
 
         it("should return 403 if API key is not set", async () => {
-            mockUser.findById = jest.fn().mockReturnValue({
-                select: jest.fn().mockResolvedValue({
-                    _id: new Types.ObjectId(userId),
-                    email: "nokey@example.com",
-                    geminiApiKey: undefined,
-                }),
-            });
+            setupUserMock(userId, undefined);
 
             const res = await request(app)
                 .post("/api/gemini/generate")
