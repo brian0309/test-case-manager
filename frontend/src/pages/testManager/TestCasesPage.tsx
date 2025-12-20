@@ -9,10 +9,12 @@ import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import GeminiGenerationModal from '../../components/testManager/GeminiGenerationModal';
 import ExportTestCasesModal from '../../components/testManager/ExportTestCasesModal';
+import ImportTestCasesModal from '../../components/testManager/ImportTestCasesModal';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { TestCase, Status, Priority, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
-import { reorderTestCases, getTestCase } from '../../services/testManagerApi';
+import { reorderTestCases, getTestCase, bulkImportTestCases } from '../../services/testManagerApi';
 import { exportTestCasesToCSV, ExportColumn } from '../../utils/exportTestCases';
+import { CreateTestCaseRequest } from '../../types/api/testManager.api';
 import { Sparkles, GripVertical, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
 
 const TestCasesPage: React.FC = () => {
@@ -50,12 +52,15 @@ const TestCasesPage: React.FC = () => {
         setActiveArea,
         // Export callback
         setExportTestCasesCallback,
+        // Import callback
+        setImportTestCasesCallback,
     } = useTestManagerStore();
     const [selectedCase, setSelectedCase] = useState<TestCase | null>(null);
     const [viewCase, setViewCase] = useState<TestCase | null>(null);
     const [isListEditMode] = useState(false);
     const [sortInfo, setSortInfo] = useState<SortInfo | null>(null);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     
     // Track if we've already processed the testCaseId URL parameter
     const processedTestCaseIdRef = useRef<string | null>(null);
@@ -78,6 +83,12 @@ const TestCasesPage: React.FC = () => {
         setExportTestCasesCallback(() => setIsExportModalOpen(true));
         return () => setExportTestCasesCallback(null);
     }, [setExportTestCasesCallback]);
+
+    // Register import callback
+    useEffect(() => {
+        setImportTestCasesCallback(() => setIsImportModalOpen(true));
+        return () => setImportTestCasesCallback(null);
+    }, [setImportTestCasesCallback]);
 
     // Get custom fields and visibility settings for table (filter out deleted fields)
     const projectSettings = activeProject ? getProjectSettings(activeProject) : null;
@@ -410,6 +421,30 @@ const TestCasesPage: React.FC = () => {
         }
     };
 
+    const handleImportTestCases = async (
+        testCases: CreateTestCaseRequest[],
+        skipDuplicates: boolean
+    ) => {
+        if (!activeSuiteId) {
+            throw new Error('No suite selected');
+        }
+
+        try {
+            const result = await bulkImportTestCases(activeSuiteId, {
+                testCases,
+                skipDuplicates,
+            });
+
+            // Refresh test cases to show imported ones
+            await fetchTestCases(activeSuiteId);
+
+            return result;
+        } catch (error) {
+            console.error('Import error:', error);
+            throw error;
+        }
+    };
+
     return (
         <div className="flex flex-col h-full">
             {/* Context Breadcrumb with Project & Suite selectors */}
@@ -541,6 +576,19 @@ const TestCasesPage: React.FC = () => {
                     visibleCustomFieldIds={visibleCustomFieldIds}
                     hiddenColumns={hiddenColumns}
                     testCaseCount={displayedCases.length}
+                />
+            )}
+            {isImportModalOpen && activeProject && (
+                <ImportTestCasesModal
+                    isOpen={isImportModalOpen}
+                    onClose={() => setIsImportModalOpen(false)}
+                    onImport={handleImportTestCases}
+                    customFieldDefinitions={customFieldDefinitions}
+                    projectMembers={
+                        projects
+                            .find((p) => p.id === activeProject)
+                            ?.members.map((m) => ({ id: m.id, name: m.name })) || []
+                    }
                 />
             )}
         </div>

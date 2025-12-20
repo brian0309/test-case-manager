@@ -20,6 +20,8 @@ import {
   CreateTestCaseRequest,
   UpdateTestCaseRequest,
   Status,
+  BulkImportTestCasesRequest,
+  BulkImportResult,
 } from "../types/api/testManager.api";
 
 // Configure axios to send credentials with all requests
@@ -484,6 +486,27 @@ export const reorderTestCases = async (
   }
 };
 
+/**
+ * Bulk import test cases from CSV
+ */
+export const bulkImportTestCases = async (
+  suiteId: string,
+  data: BulkImportTestCasesRequest
+): Promise<BulkImportResult> => {
+  try {
+    const response = await axios.post<ApiResponse<BulkImportResult>>(
+      `${API_URL}/suites/${suiteId}/cases/bulk-import`,
+      data
+    );
+    if (!response.data.data) {
+      throw new Error("No data returned from server");
+    }
+    return response.data.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
 // Export all API functions as a namespace for convenience
 export const testManagerApi = {
   // Projects
@@ -510,4 +533,5 @@ export const testManagerApi = {
   bulkUpdateStatus,
   bulkDeleteTestCases,
   reorderTestCases,
+  bulkImportTestCases,
 };

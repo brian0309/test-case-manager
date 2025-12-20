@@ -288,3 +288,22 @@ export interface ReorderTestCasesRequest {
     newOrder: number;
   }>;
 }
+
+export interface BulkImportTestCasesRequest {
+  testCases: CreateTestCaseRequest[];
+  skipDuplicates?: boolean;
+}
+
+export interface BulkImportError {
+  index: number;
+  title?: string;
+  message: string;
+}
+
+export interface BulkImportResult {
+  created: number;
+  skipped: number;
+  failed: number;
+  errors: BulkImportError[];
+  duplicates?: string[];
+}

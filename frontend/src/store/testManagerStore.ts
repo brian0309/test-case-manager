@@ -119,6 +119,10 @@ interface TestManagerStore {
     onExportTestCases: (() => void) | null;
     setExportTestCasesCallback: (callback: (() => void) | null) => void;
 
+    // Import callback
+    onImportTestCases: (() => void) | null;
+    setImportTestCasesCallback: (callback: (() => void) | null) => void;
+
     // Project actions
     fetchProjects: () => Promise<void>;
     createProject: (data: CreateProjectRequest) => Promise<Project>;
@@ -214,6 +218,10 @@ export const useTestManagerStore = create<TestManagerStore>()(
             // Export callback
             onExportTestCases: null,
             setExportTestCasesCallback: (callback) => set({ onExportTestCases: callback }),
+
+            // Import callback
+            onImportTestCases: null,
+            setImportTestCasesCallback: (callback) => set({ onImportTestCases: callback }),
 
             // Selection Actions
             isSelectionMode: false,

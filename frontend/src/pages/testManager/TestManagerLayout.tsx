@@ -21,6 +21,8 @@ const TestManagerLayout: React.FC = () => {
         bulkDeleteTestCases,
         // Export callback
         onExportTestCases,
+        // Import callback
+        onImportTestCases,
     } = useTestManagerStore();
     const navigate = useNavigate();
     const location = useLocation();
@@ -123,6 +125,8 @@ const TestManagerLayout: React.FC = () => {
                     onDelete={handleDeleteClick}
                     // Export prop
                     onDownload={onExportTestCases || undefined}
+                    // Import prop
+                    onUpload={onImportTestCases || undefined}
                 />
                 <div className="flex-1 overflow-auto relative">
                     <Outlet />

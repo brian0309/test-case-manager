@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Filter, Download, Layers, Trash2, X, Check, BarChart3 } from 'lucide-react';
+import { Plus, Filter, Download, Upload, Layers, Trash2, X, Check, BarChart3 } from 'lucide-react';
 import { ViewMode } from '../../types/testManager';
 import { useTestManagerStore } from '../../store/testManagerStore';
 
@@ -21,6 +21,8 @@ interface ToolbarProps {
     onDelete?: () => void;
     // Export prop
     onDownload?: () => void;
+    // Import prop
+    onUpload?: () => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = (props) => {
@@ -34,7 +36,8 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
         onToggleSelectionMode,
         selectedCount = 0,
         onDelete,
-        onDownload
+        onDownload,
+        onUpload
     } = props;
 
     const getTitle = () => {
@@ -138,6 +141,15 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
                 >
                     <Filter className="h-4 w-4" strokeWidth={1.5} />
                 </button>
+                {viewMode === 'cases' && onUpload && (
+                    <button
+                        onClick={onUpload}
+                        className="p-1 text-gray-500 hover:bg-gray-100 rounded-md transition-colors"
+                        title="Import test cases from CSV"
+                    >
+                        <Upload className="h-4 w-4" strokeWidth={1.5} />
+                    </button>
+                )}
                 {viewMode === 'cases' && onDownload && (
                     <button
                         onClick={onDownload}

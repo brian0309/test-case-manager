@@ -519,3 +519,158 @@ export const formatTestCaseResponse = (testCase: any): TestCaseResponse => {
     updatedAt: testCase.updatedAt?.toISOString() || new Date().toISOString(),
   };
 };
+
+/**
+ * Bulk import test cases with duplicate detection and continue-on-error
+ */
+export const bulkImportTestCases = async (
+  suiteId: string,
+  userId: string,
+  testCases: any[],
+  skipDuplicates = false
+): Promise<{
+  created: number;
+  skipped: number;
+  failed: number;
+  errors: Array<{ index: number; title?: string; message: string }>;
+  duplicates?: string[];
+}> => {
+  // Get suite and check project access
+  const suite = await TestSuite.findById(suiteId);
+  if (!suite) {
+    throw new Error("Test suite not found");
+  }
+
+  const hasAccess = await projectService.hasProjectAccess(
+    suite.projectId.toString(),
+    userId
+  );
+  if (!hasAccess) {
+    throw new Error("You don't have access to this project");
+  }
+
+  const result = {
+    created: 0,
+    skipped: 0,
+    failed: 0,
+    errors: [] as Array<{ index: number; title?: string; message: string }>,
+    duplicates: [] as string[],
+  };
+
+  // Get existing test case titles in this suite for duplicate detection
+  const existingTitles = new Set<string>();
+  if (skipDuplicates) {
+    const existingCases = await TestCase.find({
+      suiteId: new Types.ObjectId(suiteId),
+    }).select("title");
+    existingCases.forEach((tc) => existingTitles.add(tc.title.toLowerCase().trim()));
+  }
+
+  // Get max order in suite for sequential ordering
+  const maxOrderCase = await TestCase.findOne({
+    suiteId: new Types.ObjectId(suiteId),
+  }).sort({ order: -1 });
+  let nextOrder = (maxOrderCase?.order ?? -1) + 1;
+
+  // Process each test case
+  for (let i = 0; i < testCases.length; i++) {
+    const data = testCases[i];
+    const trimmedTitle = data.title?.trim();
+
+    try {
+      // Validate required fields
+      if (!trimmedTitle || trimmedTitle.length === 0) {
+        result.failed++;
+        result.errors.push({
+          index: i + 1,
+          title: trimmedTitle,
+          message: "Title is required",
+        });
+        continue;
+      }
+
+      // Check for duplicates if option is enabled
+      if (skipDuplicates && existingTitles.has(trimmedTitle.toLowerCase())) {
+        result.skipped++;
+        result.duplicates!.push(trimmedTitle);
+        continue;
+      }
+
+      // Validate priority if provided
+      if (data.priority && !Object.values(Priority).includes(data.priority)) {
+        result.failed++;
+        result.errors.push({
+          index: i + 1,
+          title: trimmedTitle,
+          message: `Invalid priority: ${data.priority}. Must be one of: ${Object.values(Priority).join(", ")}`,
+        });
+        continue;
+      }
+
+      // Validate status if provided
+      if (data.status && !Object.values(Status).includes(data.status)) {
+        result.failed++;
+        result.errors.push({
+          index: i + 1,
+          title: trimmedTitle,
+          message: `Invalid status: ${data.status}. Must be one of: ${Object.values(Status).join(", ")}`,
+        });
+        continue;
+      }
+
+      // Validate assigned tester if provided
+      let assignedTesterId = data.assignedTesterId;
+      if (assignedTesterId) {
+        if (!Types.ObjectId.isValid(assignedTesterId)) {
+          // If not a valid ObjectId, try to find user by name or default to creator
+          assignedTesterId = userId;
+        } else {
+          // Verify user exists
+          const userExists = await User.findById(assignedTesterId);
+          if (!userExists) {
+            assignedTesterId = userId;
+          }
+        }
+      }
+
+      // Create test case
+      const testCase = new TestCase({
+        title: trimmedTitle,
+        priority: data.priority || Priority.Medium,
+        status: data.status || Status.Draft,
+        projectId: suite.projectId,
+        suiteId: new Types.ObjectId(suiteId),
+        assignedTester: assignedTesterId
+          ? new Types.ObjectId(assignedTesterId)
+          : new Types.ObjectId(userId),
+        area: data.area || "",
+        expectedResult: data.expectedResult || "",
+        testDescription: data.testDescription || "",
+        stepsContent: data.stepsContent || "",
+        comments: data.comments || "",
+        customFields: data.customFields || {},
+        history: [],
+        createdBy: new Types.ObjectId(userId),
+        order: nextOrder++,
+      });
+
+      await testCase.save();
+      result.created++;
+
+      // Add to duplicate check set
+      if (skipDuplicates) {
+        existingTitles.add(trimmedTitle.toLowerCase());
+      }
+    } catch (error: any) {
+      result.failed++;
+      result.errors.push({
+        index: i + 1,
+        title: trimmedTitle,
+        message: error.message || "Failed to create test case",
+      });
+    }
+  }
+
+  return result;
+};
+

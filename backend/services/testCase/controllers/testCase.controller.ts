@@ -6,6 +6,7 @@ import {
   UpdateTestCaseRequest,
   BulkUpdateStatusRequest,
   ReorderTestCasesRequest,
+  BulkImportTestCasesRequest,
 } from "../types/testCase.types.js";
 
 /**
@@ -354,3 +355,51 @@ export const reorderTestCases = async (req: Request, res: Response): Promise<voi
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
+/**
+ * POST /api/suites/:suiteId/cases/bulk-import
+ * Bulk import test cases with duplicate detection
+ */
+export const bulkImportTestCases = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { suiteId } = req.params;
+    const { testCases, skipDuplicates }: BulkImportTestCasesRequest = req.body;
+
+    if (!testCases || !Array.isArray(testCases) || testCases.length === 0) {
+      res.status(400).json({ 
+        success: false, 
+        message: "testCases array is required and cannot be empty" 
+      });
+      return;
+    }
+
+    const result = await testCaseService.bulkImportTestCases(
+      suiteId,
+      userId,
+      testCases,
+      skipDuplicates
+    );
+
+    res.status(200).json({
+      success: true,
+      message: `Import completed: ${result.created} created, ${result.skipped} skipped, ${result.failed} failed`,
+      data: result,
+    });
+  } catch (error: any) {
+    console.error("Error in bulkImportTestCases:", error);
+    
+    if (error.message === "Test suite not found" || error.message.includes("don't have access")) {
+      res.status(404).json({ success: false, message: error.message });
+      return;
+    }
+    
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+

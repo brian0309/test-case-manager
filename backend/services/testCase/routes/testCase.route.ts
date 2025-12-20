@@ -10,6 +10,7 @@ import {
   deleteTestCasesBulk,
   reorderTestCases,
   cloneTestCase,
+  bulkImportTestCases,
 } from "../controllers/testCase.controller.js";
 import { verifyToken } from "../../../middleware/verifyToken.js";
 
@@ -35,6 +36,7 @@ export const suiteCaseRoutes = express.Router({ mergeParams: true });
 suiteCaseRoutes.use(verifyToken);
 suiteCaseRoutes.post("/", createTestCase);
 suiteCaseRoutes.get("/", getTestCasesBySuite);
+suiteCaseRoutes.post("/bulk-import", bulkImportTestCases);
 suiteCaseRoutes.patch("/reorder", reorderTestCases);
 
 // Export routes that need to be mounted under /api/projects/:projectId
