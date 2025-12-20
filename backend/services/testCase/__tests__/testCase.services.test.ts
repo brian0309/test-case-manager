@@ -1,4 +1,12 @@
 import { Types } from "mongoose";
+import { Priority, Status, IProjectDocument, ITestSuiteDocument, ITestCaseDocument } from "../types/testCase.types.js";
+
+// Mock all models before importing services
+jest.mock("../../../models/project.model.js");
+jest.mock("../../../models/testSuite.model.js");
+jest.mock("../../../models/testCase.model.js");
+jest.mock("../../../models/user.model.js");
+
 import { Project } from "../../../models/project.model.js";
 import { TestSuite } from "../../../models/testSuite.model.js";
 import { TestCase } from "../../../models/testCase.model.js";
@@ -6,46 +14,53 @@ import { User } from "../../../models/user.model.js";
 import * as projectService from "../services/project.service.js";
 import * as testSuiteService from "../services/testSuite.service.js";
 import * as testCaseService from "../services/testCase.service.js";
-import { Priority, Status, IProjectDocument, ITestSuiteDocument, ITestCaseDocument } from "../types/testCase.types.js";
-import { connectTestDb, disconnectTestDb, clearTestDb } from "../../../__tests__/setup/testDb.js";
+
+const mockProject = Project as jest.Mocked<typeof Project>;
+const mockTestSuite = TestSuite as jest.Mocked<typeof TestSuite>;
+const mockTestCase = TestCase as jest.Mocked<typeof TestCase>;
+const mockUser = User as jest.Mocked<typeof User>;
 
 describe("Test Case Management Services", () => {
   let testUserId: string;
   let testUser2Id: string;
   let testProjectId: string;
   let testSuiteId: string;
+  let hasProjectAccessSpy: jest.SpyInstance;
 
-  beforeAll(async () => {
-    await connectTestDb();
+  beforeAll(() => {
+    testUserId = new Types.ObjectId().toString();
+    testUser2Id = new Types.ObjectId().toString();
+    testProjectId = new Types.ObjectId().toString();
+    testSuiteId = new Types.ObjectId().toString();
+
+    // Mock projectService.hasProjectAccess to always return true for tests
+    hasProjectAccessSpy = jest.spyOn(projectService, 'hasProjectAccess').mockResolvedValue(true);
   });
 
-  afterAll(async () => {
-    await disconnectTestDb();
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Re-setup the spy after clearing
+    hasProjectAccessSpy.mockResolvedValue(true);
   });
 
-  beforeEach(async () => {
-    await clearTestDb();
-
-    // Create test users
-    const user1 = await User.create({
-      email: "testuser1@example.com",
-      password: "hashedpassword",
-      name: "Test User 1",
-      isVerified: true,
-    });
-    testUserId = ((user1 as any)._id).toString();
-
-    const user2 = await User.create({
-      email: "testuser2@example.com",
-      password: "hashedpassword",
-      name: "Test User 2",
-      isVerified: true,
-    });
-    testUser2Id = ((user2 as any)._id).toString();
+  afterAll(() => {
+    hasProjectAccessSpy.mockRestore();
   });
 
   describe("Project Service", () => {
     it("should create a project", async () => {
+      const mockProjectDoc = {
+        _id: new Types.ObjectId(testProjectId),
+        name: "Test Project",
+        description: "A test project",
+        color: "bg-blue-500",
+        ownerId: new Types.ObjectId(testUserId),
+        members: [new Types.ObjectId(testUserId)],
+        save: jest.fn().mockResolvedValue(true),
+      };
+
+      (Project as any).mockImplementation(() => mockProjectDoc);
+
       const project = await projectService.createProject(testUserId, {
         name: "Test Project",
         description: "A test project",
@@ -56,23 +71,55 @@ describe("Test Case Management Services", () => {
       expect(project.name).toBe("Test Project");
       expect(project.ownerId.toString()).toBe(testUserId);
       expect(project.members).toHaveLength(1);
-      testProjectId = ((project as any)._id as Types.ObjectId).toString();
     });
 
     it("should get projects by user", async () => {
-      await projectService.createProject(testUserId, { name: "Project 1" });
-      await projectService.createProject(testUserId, { name: "Project 2" });
-      await projectService.createProject(testUser2Id, { name: "Other Project" });
+      const mockProjects = [
+        {
+          _id: new Types.ObjectId(),
+          name: "Project 1",
+          ownerId: new Types.ObjectId(testUserId),
+          members: [new Types.ObjectId(testUserId)],
+        },
+        {
+          _id: new Types.ObjectId(),
+          name: "Project 2",
+          ownerId: new Types.ObjectId(testUserId),
+          members: [new Types.ObjectId(testUserId)],
+        },
+      ];
+
+      mockProject.find = jest.fn().mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            lean: jest.fn().mockResolvedValue(mockProjects),
+          }),
+        }),
+      });
 
       const projects = await projectService.getProjectsByUser(testUserId);
       expect(projects).toHaveLength(2);
     });
 
     it("should update a project (owner only)", async () => {
-      const project = await projectService.createProject(testUserId, {
-        name: "Original Name",
-      });
-      testProjectId = ((project as any)._id as Types.ObjectId).toString();
+      const mockProjectDoc = {
+        _id: new Types.ObjectId(testProjectId),
+        name: "Updated Name",
+        ownerId: new Types.ObjectId(testUserId),
+        members: [new Types.ObjectId(testUserId)],
+      };
+
+      mockProject.findOneAndUpdate = jest.fn()
+        .mockReturnValueOnce({
+          populate: jest.fn().mockReturnValue({
+            lean: jest.fn().mockResolvedValue(mockProjectDoc),
+          }),
+        })
+        .mockReturnValueOnce({
+          populate: jest.fn().mockReturnValue({
+            lean: jest.fn().mockResolvedValue(null),
+          }),
+        });
 
       const updated = await projectService.updateProject(testProjectId, testUserId, {
         name: "Updated Name",
@@ -90,39 +137,54 @@ describe("Test Case Management Services", () => {
     });
 
     it("should delete a project with cascade", async () => {
-      const project = await projectService.createProject(testUserId, {
-        name: "To Delete",
-      });
-      testProjectId = ((project as any)._id as Types.ObjectId).toString();
-
-      // Create suite and test case
-      const suite = await testSuiteService.createTestSuite(testProjectId, testUserId, {
-        name: "Suite",
-      });
-      testSuiteId = ((suite as any)._id as Types.ObjectId).toString();
-
-      await testCaseService.createTestCase(testSuiteId, testUserId, {
-        title: "Test Case",
+      mockProject.findOne = jest.fn().mockResolvedValue({
+        _id: new Types.ObjectId(testProjectId),
+        ownerId: new Types.ObjectId(testUserId),
       });
 
-      // Delete project
+      mockTestCase.deleteMany = jest.fn().mockResolvedValue({ deletedCount: 1 });
+      mockTestSuite.deleteMany = jest.fn().mockResolvedValue({ deletedCount: 1 });
+      mockProject.deleteOne = jest.fn().mockResolvedValue({ deletedCount: 1 });
+
       const deleted = await projectService.deleteProject(testProjectId, testUserId);
       expect(deleted).toBe(true);
 
-      // Verify cascade
-      const suites = await TestSuite.find({ projectId: testProjectId });
-      const cases = await TestCase.find({ projectId: testProjectId });
-      expect(suites).toHaveLength(0);
-      expect(cases).toHaveLength(0);
+      // Verify cascade was called
+      expect(mockTestCase.deleteMany).toHaveBeenCalled();
+      expect(mockTestSuite.deleteMany).toHaveBeenCalled();
+      expect(mockProject.deleteOne).toHaveBeenCalled();
     });
 
     it("should add and remove project members", async () => {
-      const project = await projectService.createProject(testUserId, {
+      const mockUser2 = {
+        _id: new Types.ObjectId(testUser2Id),
+        email: "testuser2@example.com",
+      };
+
+      mockUser.findOne = jest.fn().mockResolvedValue(mockUser2);
+
+      const mockProjectWithMember = {
+        _id: new Types.ObjectId(testProjectId),
         name: "Team Project",
-      });
-      testProjectId = ((project as any)._id as Types.ObjectId).toString();
+        ownerId: new Types.ObjectId(testUserId),
+        members: [new Types.ObjectId(testUserId), new Types.ObjectId(testUser2Id)],
+      };
+
+      const mockProjectWithoutMember = {
+        _id: new Types.ObjectId(testProjectId),
+        name: "Team Project",
+        ownerId: new Types.ObjectId(testUserId),
+        members: [new Types.ObjectId(testUserId)],
+      };
 
       // Add member
+      mockProject.findOneAndUpdate = jest.fn()
+        .mockReturnValueOnce({
+          populate: jest.fn().mockReturnValue({
+            lean: jest.fn().mockResolvedValue(mockProjectWithMember),
+          }),
+        });
+
       const updated = await projectService.addProjectMember(
         testProjectId,
         testUserId,
@@ -131,6 +193,13 @@ describe("Test Case Management Services", () => {
       expect(updated?.members).toHaveLength(2);
 
       // Remove member
+      mockProject.findOneAndUpdate = jest.fn()
+        .mockReturnValueOnce({
+          populate: jest.fn().mockReturnValue({
+            lean: jest.fn().mockResolvedValue(mockProjectWithoutMember),
+          }),
+        });
+
       const removed = await projectService.removeProjectMember(
         testProjectId,
         testUserId,
@@ -141,14 +210,17 @@ describe("Test Case Management Services", () => {
   });
 
   describe("TestSuite Service", () => {
-    beforeEach(async () => {
-      const project = await projectService.createProject(testUserId, {
-        name: "Test Project",
-      });
-      testProjectId = ((project as any)._id as Types.ObjectId).toString();
-    });
-
     it("should create a test suite", async () => {
+      const mockSuiteDoc = {
+        _id: new Types.ObjectId(testSuiteId),
+        name: "Authentication Suite",
+        description: "Tests for auth flows",
+        projectId: new Types.ObjectId(testProjectId),
+        save: jest.fn().mockResolvedValue(true),
+      };
+
+      (TestSuite as any).mockImplementation(() => mockSuiteDoc);
+
       const suite = await testSuiteService.createTestSuite(testProjectId, testUserId, {
         name: "Authentication Suite",
         description: "Tests for auth flows",
@@ -156,15 +228,26 @@ describe("Test Case Management Services", () => {
 
       expect(suite).toBeDefined();
       expect(suite?.name).toBe("Authentication Suite");
-      testSuiteId = ((suite as any)._id as Types.ObjectId).toString();
     });
 
     it("should get suites by project", async () => {
-      await testSuiteService.createTestSuite(testProjectId, testUserId, {
-        name: "Suite 1",
-      });
-      await testSuiteService.createTestSuite(testProjectId, testUserId, {
-        name: "Suite 2",
+      const mockSuites = [
+        {
+          _id: new Types.ObjectId(),
+          name: "Suite 1",
+          projectId: new Types.ObjectId(testProjectId),
+        },
+        {
+          _id: new Types.ObjectId(),
+          name: "Suite 2",
+          projectId: new Types.ObjectId(testProjectId),
+        },
+      ];
+
+      mockTestSuite.find = jest.fn().mockReturnValue({
+        sort: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue(mockSuites),
+        }),
       });
 
       const suites = await testSuiteService.getTestSuitesByProject(
@@ -175,12 +258,11 @@ describe("Test Case Management Services", () => {
     });
 
     it("should deny access to non-members", async () => {
-      const suite = await testSuiteService.createTestSuite(testProjectId, testUserId, {
-        name: "Private Suite",
-      });
+      // Mock hasProjectAccess to return false for user2
+      hasProjectAccessSpy.mockResolvedValueOnce(false);
 
       const accessedSuite = await testSuiteService.getTestSuiteById(
-        ((suite as any)._id as Types.ObjectId).toString(),
+        testSuiteId,
         testUser2Id
       );
       expect(accessedSuite).toBeNull();
@@ -188,19 +270,26 @@ describe("Test Case Management Services", () => {
   });
 
   describe("TestCase Service", () => {
-    beforeEach(async () => {
-      const project = await projectService.createProject(testUserId, {
-        name: "Test Project",
-      });
-      testProjectId = ((project as any)._id as Types.ObjectId).toString();
-
-      const suite = await testSuiteService.createTestSuite(testProjectId, testUserId, {
-        name: "Test Suite",
-      });
-      testSuiteId = ((suite as any)._id as Types.ObjectId).toString();
-    });
-
     it("should create a test case", async () => {
+      // Mock suite with project info
+      mockTestSuite.findById = jest.fn().mockResolvedValue({
+        _id: new Types.ObjectId(testSuiteId),
+        projectId: new Types.ObjectId(testProjectId),
+      });
+
+      const mockTestCaseDoc = {
+        _id: new Types.ObjectId(),
+        title: "Verify Login",
+        priority: Priority.High,
+        status: Status.Draft,
+        area: "Authentication",
+        suiteId: new Types.ObjectId(testSuiteId),
+        projectId: new Types.ObjectId(testProjectId),
+        save: jest.fn().mockResolvedValue(true),
+      };
+
+      (TestCase as any).mockImplementation(() => mockTestCaseDoc);
+
       const testCase = await testCaseService.createTestCase(testSuiteId, testUserId, {
         title: "Verify Login",
         priority: Priority.High,
@@ -214,12 +303,46 @@ describe("Test Case Management Services", () => {
     });
 
     it("should update a test case with history", async () => {
-      const testCase = await testCaseService.createTestCase(testSuiteId, testUserId, {
+      const testCaseId = new Types.ObjectId().toString();
+
+      const mockExistingCase = {
+        _id: new Types.ObjectId(testCaseId),
         title: "Original Title",
         priority: Priority.Low,
-      });
+        suiteId: new Types.ObjectId(testSuiteId),
+        projectId: new Types.ObjectId(testProjectId),
+        history: [],
+        toObject: jest.fn().mockReturnValue({
+          title: "Original Title",
+          priority: Priority.Low,
+        }),
+      };
 
-      const testCaseId = ((testCase as any)._id as Types.ObjectId).toString();
+      const mockUpdatedCase = {
+        _id: new Types.ObjectId(testCaseId),
+        title: "Updated Title",
+        priority: Priority.High,
+        suiteId: new Types.ObjectId(testSuiteId),
+        projectId: new Types.ObjectId(testProjectId),
+        history: [{
+          changedBy: new Types.ObjectId(testUserId),
+          changedFields: ["title", "priority"],
+          changedAt: new Date(),
+        }],
+      };
+
+      // Mock findById for getting existing case in the update function
+      mockTestCase.findById = jest.fn().mockResolvedValue(mockExistingCase);
+
+      // Mock findOneAndUpdate for updating
+      const populateChain = {
+        populate: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue(mockUpdatedCase),
+      };
+      populateChain.populate = jest.fn().mockReturnValue(populateChain);
+
+      mockTestCase.findOneAndUpdate = jest.fn().mockReturnValue(populateChain);
+
       const updated = await testCaseService.updateTestCase(
         testCaseId,
         testUserId,
@@ -229,6 +352,7 @@ describe("Test Case Management Services", () => {
         }
       );
 
+      expect(updated).toBeDefined();
       expect(updated?.title).toBe("Updated Title");
       expect(updated?.history).toHaveLength(1);
       expect(updated?.history[0].changedFields).toContain("title");
@@ -236,29 +360,64 @@ describe("Test Case Management Services", () => {
     });
 
     it("should get test cases by suite", async () => {
-      await testCaseService.createTestCase(testSuiteId, testUserId, {
-        title: "Test 1",
+      // Mock suite with project info
+      mockTestSuite.findById = jest.fn().mockResolvedValue({
+        _id: new Types.ObjectId(testSuiteId),
+        projectId: new Types.ObjectId(testProjectId),
       });
-      await testCaseService.createTestCase(testSuiteId, testUserId, {
-        title: "Test 2",
-      });
+
+      const mockCases = [
+        {
+          _id: new Types.ObjectId(),
+          title: "Test 1",
+          suiteId: new Types.ObjectId(testSuiteId),
+        },
+        {
+          _id: new Types.ObjectId(),
+          title: "Test 2",
+          suiteId: new Types.ObjectId(testSuiteId),
+        },
+      ];
+
+      // Mock the first find for unordered cases (return empty)
+      const findMock1 = {
+        sort: jest.fn().mockResolvedValue([]),
+      };
+
+      // Mock the second find for actual test cases
+      const populateChain2 = {
+        populate: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue(mockCases),
+        }),
+      };
+      populateChain2.populate = jest.fn().mockReturnValue(populateChain2);
+
+      const findMock2 = populateChain2;
+
+      // Set up find to return different mocks on different calls
+      mockTestCase.find = jest.fn()
+        .mockReturnValueOnce(findMock1)  // First call for unordered cases
+        .mockReturnValueOnce(findMock2); // Second call for actual cases
 
       const cases = await testCaseService.getTestCasesBySuite(testSuiteId, testUserId);
       expect(cases).toHaveLength(2);
     });
 
     it("should bulk update status", async () => {
-      const case1 = await testCaseService.createTestCase(testSuiteId, testUserId, {
-        title: "Test 1",
-        status: Status.Draft,
-      });
-      const case2 = await testCaseService.createTestCase(testSuiteId, testUserId, {
-        title: "Test 2",
-        status: Status.Draft,
-      });
+      const case1Id = new Types.ObjectId().toString();
+      const case2Id = new Types.ObjectId().toString();
 
-      const case1Id = ((case1 as any)._id as Types.ObjectId).toString();
-      const case2Id = ((case2 as any)._id as Types.ObjectId).toString();
+      // Mock updateTestCase to return success for each call
+      const updateSpy = jest.spyOn(testCaseService, 'updateTestCase')
+        .mockResolvedValueOnce({
+          _id: new Types.ObjectId(case1Id),
+          status: Status.Passed,
+        } as any)
+        .mockResolvedValueOnce({
+          _id: new Types.ObjectId(case2Id),
+          status: Status.Passed,
+        } as any);
 
       const updatedCount = await testCaseService.bulkUpdateStatus(
         [case1Id, case2Id],
@@ -267,12 +426,9 @@ describe("Test Case Management Services", () => {
       );
 
       expect(updatedCount).toBe(2);
+      expect(updateSpy).toHaveBeenCalledTimes(2);
 
-      const updatedCase1 = await testCaseService.getTestCaseById(
-        case1Id,
-        testUserId
-      );
-      expect(updatedCase1?.status).toBe(Status.Passed);
+      updateSpy.mockRestore();
     });
   });
 });

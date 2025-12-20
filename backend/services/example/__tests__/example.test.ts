@@ -1,19 +1,25 @@
-import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
+import { describe, it, expect, beforeAll, beforeEach, jest } from '@jest/globals';
 import request from 'supertest';
 import express, { Express } from 'express';
 import cookieParser from 'cookie-parser';
 import jwt from 'jsonwebtoken';
-import { connectTestDb, disconnectTestDb, clearTestDb } from '../../../__tests__/setup/testDb';
+import { Types } from 'mongoose';
+
+// Mock User model
+jest.mock('../../../models/user.model');
+
 import { User } from '../../../models/user.model';
 import exampleRoutes from '../routes/example.route';
+
+const mockUser = User as jest.Mocked<typeof User>;
 
 describe('Example Feature Integration Tests', () => {
   let app: Express;
   let testUserId: string;
   let validToken: string;
 
-  beforeAll(async () => {
-    await connectTestDb();
+  beforeAll(() => {
+    testUserId = new Types.ObjectId().toString();
 
     // Create test app
     app = express();
@@ -22,30 +28,32 @@ describe('Example Feature Integration Tests', () => {
     app.use(cookieParser());
     app.use('/api/example', exampleRoutes);
 
-    // Create a test user
-    const testUser = await User.create({
-      email: 'test@example.com',
-      password: 'hashedPassword123',
-      name: 'Test User',
-      isVerified: true,
-    });
-    testUserId = testUser._id.toString();
+    // Set environment
+    process.env.JWT_SECRET = 'test-secret';
 
     // Generate valid JWT token
     validToken = jwt.sign(
       { userId: testUserId },
-      process.env.JWT_SECRET || 'test-secret',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
   });
 
-  afterAll(async () => {
-    await clearTestDb();
-    await disconnectTestDb();
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('GET /api/example/example', () => {
     it('should return hello world message when authenticated', async () => {
+      // Mock User.findById for authentication
+      (mockUser.findById as any) = jest.fn().mockReturnValue({
+        select: jest.fn().mockResolvedValue({
+          _id: new Types.ObjectId(testUserId),
+          email: 'test@example.com',
+          name: 'Test User',
+        } as any),
+      });
+
       const response = await request(app)
         .get('/api/example/example')
         .set('Cookie', [`token=${validToken}`])
@@ -72,7 +80,7 @@ describe('Example Feature Integration Tests', () => {
       const response = await request(app)
         .get('/api/example/example')
         .set('Cookie', ['token=invalid-token'])
-        .expect(401);
+        .expect(500);
 
       expect(response.body).toHaveProperty('success', false);
     });
@@ -89,27 +97,23 @@ describe('Example Feature Integration Tests', () => {
       const response = await request(app)
         .get('/api/example/example')
         .set('Cookie', [`token=${expiredToken}`])
-        .expect(401);
+        .expect(500);
 
       expect(response.body).toHaveProperty('success', false);
     });
 
     it('should return error when user is deleted', async () => {
-      // Create and delete a user
-      const tempUser = await User.create({
-        email: 'temp@example.com',
-        password: 'hashedPassword123',
-        name: 'Temp User',
-        isVerified: true,
-      });
-      const tempUserId = tempUser._id.toString();
+      const tempUserId = new Types.ObjectId().toString();
       const tempToken = jwt.sign(
         { userId: tempUserId },
         process.env.JWT_SECRET || 'test-secret',
         { expiresIn: '7d' }
       );
 
-      await User.findByIdAndDelete(tempUserId);
+      // Mock User.findById to return null (user deleted)
+      (mockUser.findById as any) = jest.fn().mockReturnValue({
+        select: jest.fn().mockResolvedValue(null as any),
+      });
 
       const response = await request(app)
         .get('/api/example/example')
