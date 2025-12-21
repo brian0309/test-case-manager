@@ -118,8 +118,10 @@ const TestSuitesPage: React.FC = () => {
     // Show loading spinner only while suites are loading (not waiting for cases)
     if (isSuitesLoading) {
         return (
-            <div className="flex flex-col h-full">
-                <ContextBreadcrumb showSuiteSelector={false} />
+            <div className="flex flex-col h-auto sm:h-full">
+                <div className="bg-white sm:sticky sm:top-0 sm:z-10">
+                    <ContextBreadcrumb showSuiteSelector={false} />
+                </div>
                 <div className="flex-1 flex items-center justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                 </div>
@@ -128,11 +130,13 @@ const TestSuitesPage: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-auto sm:h-full">
             {/* Context Breadcrumb - project only, no suite selector */}
-            <ContextBreadcrumb showSuiteSelector={false} />
+            <div className="bg-white sm:sticky sm:top-0 sm:z-10">
+                <ContextBreadcrumb showSuiteSelector={false} />
+            </div>
             
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 sm:overflow-auto">
                 <TestSuiteCreateModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} projectId={activeProject} />
                 
                 <TestSuiteEditModal 

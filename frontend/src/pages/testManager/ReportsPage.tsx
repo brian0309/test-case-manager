@@ -142,9 +142,9 @@ const ReportsPage: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col h-full bg-gray-50">
+        <div className="flex flex-col h-auto sm:h-full bg-gray-50">
             {/* Header */}
-            <div className="bg-white border-b border-gray-200 px-4 py-3">
+            <div className="bg-white border-b border-gray-200 px-4 py-3 sm:sticky sm:top-0 sm:z-10">
                 <div className="flex items-center justify-between mb-3">
                     <ContextBreadcrumb showSuiteSelector={false} />
                     <div className="flex items-center gap-2">
@@ -231,7 +231,7 @@ const ReportsPage: React.FC = () => {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-auto p-6">
+            <div className="flex-1 sm:overflow-auto p-6">
                 {activeTab === 'overview' && (
                     <OverviewTab summaryReport={summaryReport} trendReport={trendReport} />
                 )}

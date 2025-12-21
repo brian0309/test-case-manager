@@ -446,9 +446,9 @@ const TestCasesPage: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-auto sm:h-full">
             {/* Context Breadcrumb with Project & Suite selectors */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 sm:justify-between px-4 sm:pr-4 sm:pl-0">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 sm:justify-between px-4 sm:pr-4 sm:pl-0 bg-white sm:sticky sm:top-0 sm:z-10">
                 <ContextBreadcrumb showSuiteSelector={true} />
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                     {/* Sorting controls - Desktop only, next to Generate AI button */}
@@ -489,7 +489,7 @@ const TestCasesPage: React.FC = () => {
             </div>
 
             {/* Test Case Table */}
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 sm:overflow-auto">
                 <TestCaseTable
                     data={displayedCases}
                     onRowClick={handleRowClick}

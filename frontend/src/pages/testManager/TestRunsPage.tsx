@@ -845,9 +845,9 @@ const TestRunsPage: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-auto sm:h-full">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white sm:sticky sm:top-0 sm:z-10">
                 <div className="flex items-center gap-2">
                     {/* Mobile Menu Toggle */}
                     <button
@@ -892,7 +892,7 @@ const TestRunsPage: React.FC = () => {
             )}
 
             {/* Main Content with Sidebar */}
-            <div className="flex-1 flex overflow-hidden">
+            <div className="flex-1 flex sm:overflow-hidden">
                 {/* Desktop Groups Sidebar */}
                 <div className="hidden md:block">
                     <RunGroupsSidebar
@@ -912,7 +912,7 @@ const TestRunsPage: React.FC = () => {
                 </div>
 
                 {/* Test Runs List */}
-                <div className="flex-1 overflow-auto p-4 bg-gray-50/50">
+                <div className="flex-1 sm:overflow-auto p-4 bg-gray-50/50">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-full">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
