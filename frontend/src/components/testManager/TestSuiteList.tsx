@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { TestCase, TestSuite, Status } from '../../types/testManager';
 import { Folder, MoreHorizontal, PieChart, AlertCircle, Plus, Pencil, Trash2 } from 'lucide-react';
+import { useTestManagerStore } from '../../store/testManagerStore';
 
 interface TestSuiteListProps {
     testCases: TestCase[];
@@ -19,6 +21,8 @@ interface DropdownPosition {
 }
 
 const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, onSuiteClick, onCreate, onEdit, onDelete }) => {
+    const navigate = useNavigate();
+    const { setActiveSuiteWithId, setFilters } = useTestManagerStore();
     const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
     const [selectedSuite, setSelectedSuite] = useState<TestSuite | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -95,6 +99,16 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
         if (selectedSuite && onDelete) {
             onDelete(selectedSuite);
         }
+    };
+
+    const handleStatusClick = (e: React.MouseEvent, suite: TestSuite, status: Status) => {
+        e.stopPropagation(); // Prevent suite card click
+        // Set the suite as active
+        setActiveSuiteWithId(suite.id, suite.name);
+        // Set the filter for the clicked status
+        setFilters({ status: [status] });
+        // Navigate to test cases page
+        navigate('/test-manager/cases');
     };
 
     return (
@@ -189,34 +203,49 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
 
                             <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-50 mt-4">
                                 {stats.passed > 0 && (
-                                    <div className="flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-50 px-2.5 py-1.5 rounded-full">
+                                    <button
+                                        onClick={(e) => handleStatusClick(e, suite, Status.Passed)}
+                                        className="flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-50 px-2.5 py-1.5 rounded-full hover:bg-green-100 transition-colors cursor-pointer"
+                                    >
                                         <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
                                         {stats.passed} Passed
-                                    </div>
+                                    </button>
                                 )}
                                 {stats.failed > 0 && (
-                                    <div className="flex items-center gap-1.5 text-xs font-medium text-red-600 bg-red-50 px-2.5 py-1.5 rounded-full">
+                                    <button
+                                        onClick={(e) => handleStatusClick(e, suite, Status.Failed)}
+                                        className="flex items-center gap-1.5 text-xs font-medium text-red-600 bg-red-50 px-2.5 py-1.5 rounded-full hover:bg-red-100 transition-colors cursor-pointer"
+                                    >
                                         <AlertCircle className="h-3.5 w-3.5" />
                                         {stats.failed} Failed
-                                    </div>
+                                    </button>
                                 )}
                                 {stats.retest > 0 && (
-                                    <div className="flex items-center gap-1.5 text-xs font-medium text-orange-600 bg-orange-50 px-2.5 py-1.5 rounded-full">
+                                    <button
+                                        onClick={(e) => handleStatusClick(e, suite, Status.Retest)}
+                                        className="flex items-center gap-1.5 text-xs font-medium text-orange-600 bg-orange-50 px-2.5 py-1.5 rounded-full hover:bg-orange-100 transition-colors cursor-pointer"
+                                    >
                                         <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
                                         {stats.retest} Retest
-                                    </div>
+                                    </button>
                                 )}
                                 {stats.draft > 0 && (
-                                    <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1.5 rounded-full">
+                                    <button
+                                        onClick={(e) => handleStatusClick(e, suite, Status.Draft)}
+                                        className="flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1.5 rounded-full hover:bg-gray-200 transition-colors cursor-pointer"
+                                    >
                                         <div className="h-1.5 w-1.5 rounded-full bg-gray-400" />
                                         {stats.draft} Draft
-                                    </div>
+                                    </button>
                                 )}
                                 {stats.skipped > 0 && (
-                                    <div className="flex items-center gap-1.5 text-xs font-medium text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-full">
+                                    <button
+                                        onClick={(e) => handleStatusClick(e, suite, Status.Skipped)}
+                                        className="flex items-center gap-1.5 text-xs font-medium text-blue-600 bg-blue-50 px-2.5 py-1.5 rounded-full hover:bg-blue-100 transition-colors cursor-pointer"
+                                    >
                                         <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
                                         {stats.skipped} Skipped
-                                    </div>
+                                    </button>
                                 )}
                                 {stats.total === 0 && (
                                     <div className="flex items-center gap-1.5 text-xs font-medium text-gray-400 px-2 py-1.5">

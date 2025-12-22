@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { reportingApi } from '../../services/reportingApi';
 import {
@@ -49,10 +50,21 @@ const COLORS = {
 
 const ReportsPage: React.FC = () => {
     const { activeProject } = useTestManagerStore();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'overview' | 'trends' | 'suites' | 'health'>('overview');
-    const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
-    const [groupBy, setGroupBy] = useState<'day' | 'week' | 'month'>('day');
+    
+    // Initialize state from URL params or defaults
+    const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | 'all' | 'custom'>(
+        (searchParams.get('range') as any) || '30d'
+    );
+    const [customRange, setCustomRange] = useState({
+        start: searchParams.get('start') || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        end: searchParams.get('end') || new Date().toISOString().split('T')[0]
+    });
+    const [groupBy, setGroupBy] = useState<'day' | 'week' | 'month'>(
+        (searchParams.get('groupBy') as any) || 'day'
+    );
     
     // Report data
     const [summaryReport, setSummaryReport] = useState<ProjectSummaryReport | null>(null);
@@ -60,8 +72,25 @@ const ReportsPage: React.FC = () => {
     const [suiteReport, setSuiteReport] = useState<SuiteComparisonReport | null>(null);
     const [healthReport, setHealthReport] = useState<TestCaseHealthReport | null>(null);
 
+    // Sync URL params when state changes
+    useEffect(() => {
+        const params: any = { range: dateRange, groupBy };
+        if (dateRange === 'custom') {
+            params.start = customRange.start;
+            params.end = customRange.end;
+        }
+        setSearchParams(params, { replace: true });
+    }, [dateRange, customRange, groupBy, setSearchParams]);
+
     // Calculate date range
     const getDateRange = () => {
+        if (dateRange === 'custom') {
+            return {
+                startDate: new Date(customRange.start).toISOString(),
+                endDate: new Date(customRange.end).toISOString(),
+            };
+        }
+
         const endDate = new Date();
         let startDate = new Date();
         
@@ -89,10 +118,19 @@ const ReportsPage: React.FC = () => {
     // Fetch reports
     const fetchReports = async () => {
         if (!activeProject) return;
+
+        const range = getDateRange();
+        
+        // Validation for custom range
+        if (dateRange === 'custom') {
+            if (new Date(range.startDate) > new Date(range.endDate)) {
+                toast.error('Start date cannot be after end date');
+                return;
+            }
+        }
         
         setIsLoading(true);
         try {
-            const range = getDateRange();
             const params = {
                 startDate: range.startDate,
                 endDate: range.endDate,
@@ -122,7 +160,7 @@ const ReportsPage: React.FC = () => {
         if (activeProject) {
             fetchReports();
         }
-    }, [activeProject, dateRange, groupBy]);
+    }, [activeProject, dateRange, groupBy, customRange]);
 
     if (!activeProject) {
         return (
@@ -167,7 +205,7 @@ const ReportsPage: React.FC = () => {
                 {/* Filters */}
                 <div className="flex items-center gap-3 flex-wrap">
                     <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
-                        {(['7d', '30d', '90d', 'all'] as const).map((range) => (
+                        {(['7d', '30d', '90d', 'all', 'custom'] as const).map((range) => (
                             <button
                                 key={range}
                                 onClick={() => setDateRange(range)}
@@ -177,13 +215,39 @@ const ReportsPage: React.FC = () => {
                                         : 'text-gray-600 hover:text-gray-900'
                                 }`}
                             >
-                                {range === '7d' && 'Last 7 days'}
-                                {range === '30d' && 'Last 30 days'}
-                                {range === '90d' && 'Last 90 days'}
-                                {range === 'all' && 'All time'}
+                                {range === '7d' && '7d'}
+                                {range === '30d' && '30d'}
+                                {range === '90d' && '90d'}
+                                {range === 'all' && 'All'}
+                                {range === 'custom' && 'Custom'}
                             </button>
                         ))}
                     </div>
+
+                    {dateRange === 'custom' && (
+                        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2 duration-200">
+                            <div className="relative">
+                                <input
+                                    type="date"
+                                    value={customRange.start}
+                                    max={customRange.end}
+                                    onChange={(e) => setCustomRange({ ...customRange, start: e.target.value })}
+                                    className="text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                                />
+                            </div>
+                            <span className="text-gray-400 font-medium">to</span>
+                            <div className="relative">
+                                <input
+                                    type="date"
+                                    value={customRange.end}
+                                    min={customRange.start}
+                                    max={new Date().toISOString().split('T')[0]}
+                                    onChange={(e) => setCustomRange({ ...customRange, end: e.target.value })}
+                                    className="text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     {activeTab === 'trends' && (
                         <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
