@@ -1,4 +1,4 @@
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 
 /**
  * Core User interface representing user data structure
@@ -28,7 +28,7 @@ export interface IUser {
  * Used for MongoDB operations
  */
 export interface IUserDocument extends Omit<IUser, '_id'>, Document {
-  _id: string;
+  _id: Types.ObjectId;
 }
 
 /**
