@@ -120,6 +120,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                     <div className="relative" ref={projectRef}>
                         <button
                             onClick={() => setIsProjectOpen(!isProjectOpen)}
+                            title={currentProject?.name || 'Project'}
                             className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-gray-700 hover:bg-white hover:shadow-sm rounded-md transition-all"
                         >
                             <Folder size={14} className="text-blue-500 flex-shrink-0" />
@@ -137,6 +138,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                                         <button
                                             key={project.id}
                                             onClick={() => handleProjectChange(project.id)}
+                                            title={project.name}
                                             className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 transition-colors ${activeProject === project.id ? 'text-blue-600 bg-blue-50/50' : 'text-gray-700'}`}
                                         >
                                             <Folder size={14} className={activeProject === project.id ? 'text-blue-500' : 'text-gray-400'} />
@@ -158,6 +160,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                     <div className="relative" ref={suiteRef}>
                         <button
                             onClick={() => setIsSuiteOpen(!isSuiteOpen)}
+                            title={currentSuite?.name || activeSuite || 'All Suites'}
                             className={`flex items-center gap-1 px-2 py-0.5 text-sm font-medium rounded-md transition-all ${activeSuiteId
                                 ? 'text-gray-700 hover:bg-white hover:shadow-sm'
                                 : 'text-gray-500 hover:text-gray-700 hover:bg-white hover:shadow-sm'
@@ -193,6 +196,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                                         <button
                                             key={suite.id}
                                             onClick={() => handleSuiteChange(suite.id, suite.name)}
+                                            title={suite.name}
                                             className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 transition-colors ${activeSuiteId === suite.id ? 'text-blue-600 bg-blue-50/50' : 'text-gray-700'}`}
                                         >
                                             <Layers size={14} className={activeSuiteId === suite.id ? 'text-purple-500' : 'text-gray-400'} />
@@ -229,6 +233,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                     <div className="relative" ref={areaRef}>
                         <button
                             onClick={() => setIsAreaOpen(!isAreaOpen)}
+                            title={activeArea || 'All Areas'}
                             className={`flex items-center gap-1 px-2 py-0.5 text-sm font-medium rounded-md transition-all ${activeArea
                                 ? 'text-gray-700 hover:bg-white hover:shadow-sm'
                                 : 'text-gray-500 hover:text-gray-700 hover:bg-white hover:shadow-sm'
@@ -264,6 +269,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                                         <button
                                             key={area}
                                             onClick={() => handleAreaChange(area)}
+                                            title={area}
                                             className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 transition-colors ${activeArea === area ? 'text-blue-600 bg-blue-50/50' : 'text-gray-700'}`}
                                         >
                                             <Map size={14} className={activeArea === area ? 'text-green-500' : 'text-gray-400'} />

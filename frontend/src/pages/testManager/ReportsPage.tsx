@@ -182,7 +182,7 @@ const ReportsPage: React.FC = () => {
     return (
         <div className="flex flex-col h-auto sm:h-full bg-gray-50">
             {/* Header */}
-            <div className="bg-white border-b border-gray-200 px-4 py-3 sm:sticky sm:top-0 sm:z-10">
+            <div className="bg-white border-b border-gray-200 px-4 py-3 sm:sticky sm:top-0 sm:z-20">
                 <div className="flex items-center justify-between mb-3">
                     <ContextBreadcrumb showSuiteSelector={false} />
                     <div className="flex items-center gap-2">
