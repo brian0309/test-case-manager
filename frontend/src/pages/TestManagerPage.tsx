@@ -25,6 +25,7 @@ const TestManagerPage: React.FC = () => {
         testSuites,
         isLoading,
         error,
+        activeArea,
         clearError,
         fetchProjects,
         createProject,
@@ -282,6 +283,8 @@ const TestManagerPage: React.FC = () => {
                             isEditMode={isListEditMode}
                             onUpdate={handleInlineUpdate}
                             onStatusChange={handleStatusChange}
+                            activeArea={activeArea}
+                            activeSuiteId={activeSuiteId}
                         />
                     )}
 

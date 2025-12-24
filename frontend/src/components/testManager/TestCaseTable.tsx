@@ -55,6 +55,9 @@ interface TestCaseTableProps {
     showSortControlsInHeader?: boolean;
     // Callback to expose sorting state to parent
     onSortInfoChange?: (sortInfo: SortInfo) => void;
+    // Context info
+    activeArea?: string | null;
+    activeSuiteId?: string | null;
 }
 
 const IdCell: React.FC<{ id: string }> = ({ id }) => {
@@ -104,6 +107,8 @@ interface SortableRowProps {
     customFieldDefinitions?: CustomFieldDefinition[];
     visibleCustomFieldIds?: string[];
     hiddenColumns?: HiddenDefaultColumns;
+    activeArea?: string | null;
+    activeSuiteId?: string | null;
 }
 
 const SortableRow: React.FC<SortableRowProps> = ({
@@ -122,6 +127,8 @@ const SortableRow: React.FC<SortableRowProps> = ({
     customFieldDefinitions = [],
     visibleCustomFieldIds = [],
     hiddenColumns = {},
+    activeArea,
+    activeSuiteId,
 }) => {
     const {
         attributes,
@@ -142,6 +149,16 @@ const SortableRow: React.FC<SortableRowProps> = ({
         zIndex: isDragging ? 1000 : undefined,
         position: isDragging ? 'relative' : undefined,
         backgroundColor: isDragging ? '#eff6ff' : undefined,
+    };
+
+    const getContextInfo = () => {
+        const showSuite = !activeSuiteId;
+        const showArea = !activeArea && !!item.area;
+
+        if (showSuite && showArea) return `${item.suite} | ${item.area}`;
+        if (showSuite) return item.suite;
+        if (showArea) return item.area;
+        return '';
     };
 
     return (
@@ -200,12 +217,20 @@ const SortableRow: React.FC<SortableRowProps> = ({
                                 onChange={(e) => onUpdate?.(item.id, 'title', e.target.value)}
                                 className="w-full bg-white border border-blue-300 rounded px-2 py-1 text-sm text-gray-900 focus:ring-2 focus:ring-blue-100 outline-none"
                             />
-                            <div className="text-xs text-gray-400 mt-1">{item.suite}</div>
+                            {getContextInfo() && (
+                                <div className="text-xs text-gray-400 mt-1">
+                                    {getContextInfo()}
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <>
                             <div className="text-[15px] font-medium text-gray-900">{item.title}</div>
-                            <div className="text-xs text-gray-400 mt-0.5">{item.suite}</div>
+                            {getContextInfo() && (
+                                <div className="text-xs text-gray-400 mt-0.5">
+                                    {getContextInfo()}
+                                </div>
+                            )}
                         </>
                     )}
                 </td>
@@ -357,6 +382,8 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
     hiddenColumns = {},
     showSortControlsInHeader = false,
     onSortInfoChange,
+    activeArea,
+    activeSuiteId,
 }) => {
     // Sorting state
     const [sortMode, setSortMode] = useState<'custom' | 'standard'>('custom');
@@ -458,6 +485,16 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
 
     const allSelected = sortedData.length > 0 && sortedData.every(item => selectedIds.includes(item.id));
     const someSelected = sortedData.some(item => selectedIds.includes(item.id));
+
+    const getContextInfo = (item: TestCase) => {
+        const showSuite = !activeSuiteId;
+        const showArea = !activeArea && !!item.area;
+
+        if (showSuite && showArea) return `${item.suite} | ${item.area}`;
+        if (showSuite) return item.suite;
+        if (showArea) return item.area;
+        return '';
+    };
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { active, over } = event;
@@ -658,6 +695,8 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         customFieldDefinitions={customFieldDefinitions}
                                         visibleCustomFieldIds={visibleCustomFieldIds}
                                         hiddenColumns={hiddenColumns}
+                                        activeArea={activeArea}
+                                        activeSuiteId={activeSuiteId}
                                     />
                                 ))}
                             </SortableContext>
@@ -701,7 +740,11 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1 min-w-0">
                                                 <div className="text-sm font-medium text-gray-900">{item.title}</div>
-                                                <div className="text-xs text-gray-400 mt-1 truncate">{item.suite}</div>
+                                                {getContextInfo(item) && (
+                                                    <div className="text-xs text-gray-400 mt-1 truncate">
+                                                        {getContextInfo(item)}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="ml-3 flex-shrink-0">
                                                 <StatusBadge type="priority" value={item.priority} />

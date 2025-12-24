@@ -518,6 +518,8 @@ const TestCasesPage: React.FC = () => {
                     // Sorting controls in header (desktop only)
                     showSortControlsInHeader={true}
                     onSortInfoChange={setSortInfo}
+                    activeArea={activeArea}
+                    activeSuiteId={activeSuiteId}
                 />
             </div>
             {viewCase && (
