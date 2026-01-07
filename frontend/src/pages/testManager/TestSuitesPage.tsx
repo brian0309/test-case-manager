@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import EmptyProjectState from '../../components/testManager/EmptyProjectState';
@@ -11,8 +11,13 @@ import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import { TestSuite } from '../../types/testManager';
 
 const TestSuitesPage: React.FC = () => {
-    const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchTestCasesByProject, fetchProjects, deleteTestSuite } = useTestManagerStore();
+    const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchTestCasesByProject, fetchProjects, deleteTestSuite, setActiveProject } = useTestManagerStore();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    
+    // Track processed projectId to prevent double loading
+    const processedProjectIdRef = useRef<string | null>(null);
+
     const [isSuitesLoading, setIsSuitesLoading] = useState(true);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [suiteToEdit, setSuiteToEdit] = useState<TestSuite | null>(null);
@@ -25,6 +30,28 @@ const TestSuitesPage: React.FC = () => {
             fetchProjects();
         }
     }, [projects.length, fetchProjects]);
+
+    // Handle projectId URL parameter for direct links to a project
+    useEffect(() => {
+        const projectId = searchParams.get('projectId');
+        
+        if (!projectId || processedProjectIdRef.current === projectId) {
+            return;
+        }
+        
+        // Mark as processed immediately
+        processedProjectIdRef.current = projectId;
+        
+        // Use timeout to ensure store actions are processed correctly if needed
+        setActiveProject(projectId);
+        
+        // Clear the URL parameter
+        setSearchParams({}, { replace: true });
+        
+        // Show success toast (only once)
+        toast.success('Project context loaded');
+        
+    }, [searchParams, setSearchParams, setActiveProject]);
 
     // Fetch test suites and test cases when project is active
     // Prioritize loading suites first for faster initial display

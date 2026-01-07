@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import toast from 'react-hot-toast';
 import { Project } from '../../types/testManager';
-import { FolderGit2, MoreHorizontal, Users, Layers, Calendar, Plus, FileText, Pencil, Trash2, Settings } from 'lucide-react';
+import { FolderGit2, MoreHorizontal, Users, Layers, Calendar, Plus, FileText, Pencil, Trash2, Settings, Share2 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import ProjectMembersModal from './ProjectMembersModal';
 import ProjectActionSheet from './ProjectActionSheet';
@@ -89,7 +90,17 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
             onSettings(selectedProject);
         }
     };
-
+    const handleShareClick = async (e: React.MouseEvent, projectId: string) => {
+        e.stopPropagation();
+        const shareUrl = `${window.location.origin}/test-manager/suites?projectId=${projectId}`;
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            toast.success('Link copied to clipboard');
+        } catch (err) {
+            console.error('Failed to copy link: ', err);
+            toast.error('Failed to copy link');
+        }
+    };
     const handleDelete = () => {
         setDropdownPosition(null);
         if (selectedProject && onDelete) {
@@ -124,12 +135,21 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
                                     <div className={`h-12 w-12 rounded-2xl ${project.color} shadow-lg flex items-center justify-center text-white`}>
                                         <FolderGit2 className="h-6 w-6" />
                                     </div>
-                                    <button
-                                        onClick={(e) => handleMenuClick(e, project)}
-                                        className="p-2 text-gray-300 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100 md:opacity-0 opacity-100"
-                                    >
-                                        <MoreHorizontal className="h-5 w-5" />
-                                    </button>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={(e) => handleShareClick(e, project.id)}
+                                            className="p-2 text-gray-300 hover:text-blue-500 rounded-full hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100 md:opacity-0 opacity-100"
+                                            title="Share Project"
+                                        >
+                                            <Share2 className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleMenuClick(e, project)}
+                                            className="p-2 text-gray-300 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100 md:opacity-0 opacity-100"
+                                        >
+                                            <MoreHorizontal className="h-5 w-5" />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <h3 className="font-semibold text-gray-900 text-xl tracking-tight mb-2">{project.name}</h3>
@@ -173,6 +193,13 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
                     }}
                 >
                     <button
+                        onClick={(e) => handleShareClick(e, selectedProject!.id)}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                        <Share2 className="h-4 w-4 text-gray-400" />
+                        Share Project
+                    </button>
+                    <button
                         onClick={handleSettings}
                         className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
@@ -214,6 +241,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
                     onEdit={handleEdit}
                     onSettings={handleSettings}
                     onDelete={handleDelete}
+                    onShare={() => handleShareClick({ stopPropagation: () => {} } as React.MouseEvent, selectedProject.id)}
                 />
             )}
 

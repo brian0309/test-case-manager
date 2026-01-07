@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Users, Pencil, Trash2, X, Settings } from 'lucide-react';
+import { Users, Pencil, Trash2, X, Settings, Share2 } from 'lucide-react';
 import { Project } from '../../types/testManager';
 
 interface ActionSheetOption {
@@ -17,6 +17,7 @@ interface Props {
     onEdit: () => void;
     onDelete: () => void;
     onSettings: () => void;
+    onShare: () => void;
 }
 
 const ProjectActionSheet: React.FC<Props> = ({ 
@@ -26,7 +27,8 @@ const ProjectActionSheet: React.FC<Props> = ({
     onManageMembers, 
     onEdit, 
     onDelete,
-    onSettings
+    onSettings,
+    onShare
 }) => {
     const sheetRef = useRef<HTMLDivElement>(null);
 
@@ -94,6 +96,14 @@ const ProjectActionSheet: React.FC<Props> = ({
     if (!isOpen) return null;
 
     const options: ActionSheetOption[] = [
+        {
+            label: 'Share Project',
+            icon: <Share2 className="h-5 w-5" />,
+            onClick: () => {
+                onShare();
+                onClose();
+            },
+        },
         {
             label: 'Project Settings',
             icon: <Settings className="h-5 w-5" />,
