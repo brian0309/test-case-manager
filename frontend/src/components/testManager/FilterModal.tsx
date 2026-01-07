@@ -9,6 +9,7 @@ const FilterModal: React.FC = () => {
         toggleFilterModal,
         filters,
         setFilters,
+        setActiveArea,
     } = useTestManagerStore();
 
     const [localFilters, setLocalFilters] = useState(filters);
@@ -52,6 +53,9 @@ const FilterModal: React.FC = () => {
 
     const handleApply = () => {
         setFilters(localFilters);
+        if (localFilters.status.length > 0) {
+            setActiveArea(null);
+        }
         toggleFilterModal(false);
     };
 

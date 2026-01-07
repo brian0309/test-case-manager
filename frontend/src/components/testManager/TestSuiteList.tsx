@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { TestCase, TestSuite, Status } from '../../types/testManager';
-import { Folder, MoreHorizontal, PieChart, AlertCircle, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Folder, MoreHorizontal, PieChart, AlertCircle, Plus, Pencil, Trash2, Share2 } from 'lucide-react';
 import { useTestManagerStore } from '../../store/testManagerStore';
 
 interface TestSuiteListProps {
@@ -22,7 +23,7 @@ interface DropdownPosition {
 
 const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, onSuiteClick, onCreate, onEdit, onDelete }) => {
     const navigate = useNavigate();
-    const { setActiveSuiteWithId, setFilters } = useTestManagerStore();
+    const { setActiveSuiteWithId, setFilters, setActiveArea } = useTestManagerStore();
     const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
     const [selectedSuite, setSelectedSuite] = useState<TestSuite | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -87,6 +88,18 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
         });
     };
 
+    const handleShareClick = async (e: React.MouseEvent, suiteId: string) => {
+        e.stopPropagation();
+        const shareUrl = `${window.location.origin}/test-manager/cases?suiteId=${suiteId}`;
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            toast.success('Link copied to clipboard');
+        } catch (err) {
+            console.error('Failed to copy link: ', err);
+            toast.error('Failed to copy link');
+        }
+    };
+
     const handleEdit = () => {
         setDropdownPosition(null);
         if (selectedSuite && onEdit) {
@@ -107,6 +120,8 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
         setActiveSuiteWithId(suite.id, suite.name);
         // Set the filter for the clicked status
         setFilters({ status: [status] });
+        // Reset area filter
+        setActiveArea(null);
         // Navigate to test cases page
         navigate('/test-manager/cases');
     };
@@ -147,12 +162,21 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                             <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">{stats.total} Cases</span>
                                         </div>
                                     </div>
-                                    <button
-                                        onClick={(e) => handleMenuClick(e, suite)}
-                                        className="p-2 text-gray-300 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
-                                    >
-                                        <MoreHorizontal className="h-5 w-5" />
-                                    </button>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={(e) => handleShareClick(e, suite.id)}
+                                            className="p-2 text-gray-300 hover:text-blue-500 rounded-full hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100"
+                                            title="Share Suite"
+                                        >
+                                            <Share2 className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleMenuClick(e, suite)}
+                                            className="p-2 text-gray-300 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100"
+                                        >
+                                            <MoreHorizontal className="h-5 w-5" />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-4 mb-2">

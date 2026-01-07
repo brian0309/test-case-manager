@@ -12,7 +12,7 @@ import ExportTestCasesModal from '../../components/testManager/ExportTestCasesMo
 import ImportTestCasesModal from '../../components/testManager/ImportTestCasesModal';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { TestCase, Status, Priority, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
-import { reorderTestCases, getTestCase, bulkImportTestCases } from '../../services/testManagerApi';
+import { reorderTestCases, getTestCase, getTestSuite, bulkImportTestCases } from '../../services/testManagerApi';
 import { exportTestCasesToCSV, ExportColumn } from '../../utils/exportTestCases';
 import { CreateTestCaseRequest } from '../../types/api/testManager.api';
 import { Sparkles, GripVertical, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
@@ -64,6 +64,7 @@ const TestCasesPage: React.FC = () => {
     
     // Track if we've already processed the testCaseId URL parameter
     const processedTestCaseIdRef = useRef<string | null>(null);
+    const processedSuiteIdRef = useRef<string | null>(null);
 
     const uniqueAreas = Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort();
 
@@ -112,13 +113,13 @@ const TestCasesPage: React.FC = () => {
             return;
         }
         
+        // Mark as processed immediately to prevent double-fetching in Strict Mode
+        processedTestCaseIdRef.current = testCaseId;
+        
         const loadTestCaseFromUrl = async () => {
             try {
                 // Fetch the test case from API
                 const testCaseResponse = await getTestCase(testCaseId);
-                
-                // Mark as processed to prevent re-fetching
-                processedTestCaseIdRef.current = testCaseId;
                 
                 // Set up the context (project, suite, area)
                 if (testCaseResponse.projectId) {
@@ -176,11 +177,54 @@ const TestCasesPage: React.FC = () => {
         
         loadTestCaseFromUrl();
         
-        // Reset the processed ref when the component unmounts to allow re-loading if user navigates back
-        return () => {
-            processedTestCaseIdRef.current = null;
-        };
     }, [searchParams, setSearchParams, setActiveProject, setActiveSuiteWithId, setActiveArea, fetchTestSuites, fetchTestCases]);
+
+    // Handle suiteId URL parameter for direct links to a suite
+    useEffect(() => {
+        const suiteId = searchParams.get('suiteId');
+        const testCaseId = searchParams.get('testCaseId');
+        
+        // Skip if no suiteId, already processed, or if testCaseId is present (which handles its own suite context)
+        if (!suiteId || testCaseId || processedSuiteIdRef.current === suiteId) {
+            return;
+        }
+        
+        // Mark as processed immediately to prevent double-fetching
+        processedSuiteIdRef.current = suiteId;
+        
+        const loadTestSuiteFromUrl = async () => {
+            try {
+                // Fetch the test suite from API
+                const suiteResponse = await getTestSuite(suiteId);
+                
+                // Set up the context (project, suite)
+                if (suiteResponse.projectId) {
+                    setActiveProject(suiteResponse.projectId);
+                    
+                    // Fetch all suites for this project so the dropdown is populated
+                    await fetchTestSuites(suiteResponse.projectId);
+                    
+                    // Set the active suite
+                    setActiveSuiteWithId(suiteResponse.id, suiteResponse.name);
+                    
+                    // Fetch test cases for the suite
+                    await fetchTestCases(suiteResponse.id);
+                }
+                
+                // Clear the URL parameter
+                setSearchParams({}, { replace: true });
+                
+                toast.success(`Loaded suite: ${suiteResponse.name}`);
+            } catch (error) {
+                console.error('Failed to load test suite from URL:', error);
+                toast.error('Failed to load test suite. It may not exist or you may not have access.');
+                setSearchParams({}, { replace: true });
+            }
+        };
+        
+        loadTestSuiteFromUrl();
+        
+    }, [searchParams, setSearchParams, setActiveProject, setActiveSuiteWithId, fetchTestSuites, fetchTestCases]);
 
     // Fetch test suites when project is active
     useEffect(() => {
