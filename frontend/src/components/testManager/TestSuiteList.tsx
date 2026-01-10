@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { TestCase, TestSuite, Status } from '../../types/testManager';
-import { Folder, MoreHorizontal, PieChart, AlertCircle, Plus, Pencil, Trash2, Share2 } from 'lucide-react';
+import { Folder, MoreHorizontal, PieChart, AlertCircle, Plus, Pencil, Trash2, Share2, ArrowUp, ArrowDown } from 'lucide-react';
 import { useTestManagerStore } from '../../store/testManagerStore';
 
 interface TestSuiteListProps {
@@ -13,6 +13,8 @@ interface TestSuiteListProps {
     onCreate: () => void;
     onEdit?: (suite: TestSuite) => void;
     onDelete?: (suite: TestSuite) => void;
+    viewMode: 'card' | 'table';
+    onViewModeToggle: () => void;
 }
 
 interface DropdownPosition {
@@ -21,12 +23,18 @@ interface DropdownPosition {
     right: number;
 }
 
-const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, onSuiteClick, onCreate, onEdit, onDelete }) => {
+type SortField = 'name' | 'total' | 'progress' | 'updatedAt';
+type SortOrder = 'asc' | 'desc';
+
+const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, onSuiteClick, onCreate, onEdit, onDelete, viewMode, onViewModeToggle: _onViewModeToggle }) => {
     const navigate = useNavigate();
     const { setActiveSuiteWithId, setFilters, setActiveArea } = useTestManagerStore();
     const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
     const [selectedSuite, setSelectedSuite] = useState<TestSuite | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    const [sortField, setSortField] = useState<SortField>('name');
+    const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
     // Close dropdown on outside click
     useEffect(() => {
@@ -47,32 +55,63 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
     // Use testSuites from API if available, otherwise derive from testCases for backwards compatibility
     const suites = testSuites.length > 0
         ? testSuites
-        : Array.from(new Set(testCases.map(tc => tc.suite))).sort().map(name => ({ 
-            id: name, 
-            name, 
-            projectId: '', 
-            description: '', 
-            createdAt: new Date().toISOString(), 
-            updatedAt: new Date().toISOString() 
+        : Array.from(new Set(testCases.map(tc => tc.suite))).sort().map(name => ({
+            id: name,
+            name,
+            projectId: '',
+            description: '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
         } as TestSuite));
 
     const getSuiteStats = (suiteName: string) => {
         const cases = testCases.filter(c => c.suite === suiteName);
         const total = cases.length;
 
-        // Count all statuses
         const passed = cases.filter(c => [Status.Passed, Status.PassFixed].includes(c.status)).length;
         const failed = cases.filter(c => c.status === Status.Failed).length;
         const retest = cases.filter(c => c.status === Status.Retest).length;
         const skipped = cases.filter(c => c.status === Status.Skipped).length;
         const draft = cases.filter(c => c.status === Status.Draft).length;
 
-        // Progress calculation: passed tests as percentage of total
-        // This represents actual success/completion, not just execution
         const executed = passed + failed + retest;
         const progress = total === 0 ? 0 : Math.round((passed / total) * 100);
 
         return { total, passed, failed, retest, skipped, draft, executed, progress };
+    };
+
+    const getSortedSuites = () => {
+        return [...suites].sort((a, b) => {
+            const aStats = getSuiteStats(a.name);
+            const bStats = getSuiteStats(b.name);
+            let comparison = 0;
+
+            switch (sortField) {
+                case 'name':
+                    comparison = a.name.localeCompare(b.name);
+                    break;
+                case 'total':
+                    comparison = aStats.total - bStats.total;
+                    break;
+                case 'progress':
+                    comparison = aStats.progress - bStats.progress;
+                    break;
+                case 'updatedAt':
+                    comparison = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+                    break;
+            }
+
+            return sortOrder === 'asc' ? comparison : -comparison;
+        });
+    };
+
+    const handleSort = (field: SortField) => {
+        if (sortField === field) {
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortOrder('asc');
+        }
     };
 
     const handleMenuClick = (e: React.MouseEvent, suite: TestSuite) => {
@@ -115,20 +154,19 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
     };
 
     const handleStatusClick = (e: React.MouseEvent, suite: TestSuite, status: Status) => {
-        e.stopPropagation(); // Prevent suite card click
-        // Set the suite as active
+        e.stopPropagation();
         setActiveSuiteWithId(suite.id, suite.name);
-        // Set the filter for the clicked status
         setFilters({ status: [status] });
-        // Reset area filter
         setActiveArea(null);
-        // Navigate to test cases page
         navigate('/test-manager/cases');
     };
+
+    const sortedSuites = getSortedSuites();
 
     return (
         <>
         <div className="p-6 md:p-8">
+            {viewMode === 'card' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {/* Create New Suite Card */}
                 <div
@@ -142,7 +180,7 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                     <p className="text-xs text-gray-500 mt-1 text-center">Organize your cases</p>
                 </div>
 
-                {suites.map(suite => {
+                {sortedSuites.map(suite => {
                     const stats = getSuiteStats(suite.name);
 
                     return (
@@ -282,6 +320,229 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                     );
                 })}
             </div>
+            ) : (
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                            <tr>
+                                <th
+                                    className="py-3 pl-4 pr-4 text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-50 select-none"
+                                    onClick={() => handleSort('name')}
+                                >
+                                    <div className="flex items-center gap-1.5">
+                                        Suite Name
+                                        {sortField === 'name' && (
+                                            sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-blue-600" /> : <ArrowDown className="h-3.5 w-3.5 text-blue-600" />
+                                        )}
+                                    </div>
+                                </th>
+                                <th
+                                    className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-50 select-none"
+                                    onClick={() => handleSort('total')}
+                                >
+                                    <div className="flex items-center gap-1.5">
+                                        Cases
+                                        {sortField === 'total' && (
+                                            sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-blue-600" /> : <ArrowDown className="h-3.5 w-3.5 text-blue-600" />
+                                        )}
+                                    </div>
+                                </th>
+                                <th
+                                    className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-50 select-none"
+                                    onClick={() => handleSort('progress')}
+                                >
+                                    <div className="flex items-center gap-1.5">
+                                        Progress
+                                        {sortField === 'progress' && (
+                                            sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-blue-600" /> : <ArrowDown className="h-3.5 w-3.5 text-blue-600" />
+                                        )}
+                                    </div>
+                                </th>
+                                <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider">Status Breakdown</th>
+                                <th
+                                    className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-50 select-none"
+                                    onClick={() => handleSort('updatedAt')}
+                                >
+                                    <div className="flex items-center gap-1.5">
+                                        Updated
+                                        {sortField === 'updatedAt' && (
+                                            sortOrder === 'asc' ? <ArrowUp className="h-3.5 w-3.5 text-blue-600" /> : <ArrowDown className="h-3.5 w-3.5 text-blue-600" />
+                                        )}
+                                    </div>
+                                </th>
+                                <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {sortedSuites.map(suite => {
+                                const stats = getSuiteStats(suite.name);
+                                return (
+                                    <tr
+                                        key={suite.id || suite.name}
+                                        className="group hover:bg-gray-50/80 transition-colors cursor-pointer"
+                                        onClick={() => onSuiteClick(suite.name, suite.id)}
+                                    >
+                                        <td className="py-4 pl-4 pr-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500">
+                                                    <Folder className="h-4 w-4 fill-blue-100" strokeWidth={2} />
+                                                </div>
+                                                <span className="text-sm font-medium text-gray-900">{suite.name}</span>
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-4">
+                                            <span className="text-sm text-gray-600">{stats.total}</span>
+                                        </td>
+                                        <td className="py-4 px-4">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`text-sm font-semibold ${stats.progress === 100 ? 'text-green-600' : 'text-gray-900'}`}>{stats.progress}%</span>
+                                                <div className="w-16 bg-gray-100 rounded-full h-1.5 overflow-hidden flex">
+                                                    {stats.passed > 0 && (
+                                                        <div
+                                                            className="bg-green-500 h-full transition-all duration-500"
+                                                            style={{ width: `${(stats.passed / stats.total) * 100}%` }}
+                                                        />
+                                                    )}
+                                                    {stats.failed > 0 && (
+                                                        <div
+                                                            className="bg-red-500 h-full transition-all duration-500"
+                                                            style={{ width: `${(stats.failed / stats.total) * 100}%` }}
+                                                        />
+                                                    )}
+                                                    {stats.retest > 0 && (
+                                                        <div
+                                                            className="bg-orange-500 h-full transition-all duration-500"
+                                                            style={{ width: `${(stats.retest / stats.total) * 100}%` }}
+                                                        />
+                                                    )}
+                                                    {stats.draft > 0 && (
+                                                        <div
+                                                            className="bg-gray-400 h-full transition-all duration-500"
+                                                            style={{ width: `${(stats.draft / stats.total) * 100}%` }}
+                                                        />
+                                                    )}
+                                                    {stats.skipped > 0 && (
+                                                        <div
+                                                            className="bg-blue-500 h-full transition-all duration-500"
+                                                            style={{ width: `${(stats.skipped / stats.total) * 100}%` }}
+                                                        />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-4">
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {stats.passed > 0 && (
+                                                    <button
+                                                        onClick={(e) => handleStatusClick(e, suite, Status.Passed)}
+                                                        className="flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 px-2 py-1 rounded hover:bg-green-100 transition-colors cursor-pointer"
+                                                    >
+                                                        <div className="h-1 w-1 rounded-full bg-green-500" />
+                                                        {stats.passed} Passed
+                                                    </button>
+                                                )}
+                                                {stats.failed > 0 && (
+                                                    <button
+                                                        onClick={(e) => handleStatusClick(e, suite, Status.Failed)}
+                                                        className="flex items-center gap-1 text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded hover:bg-red-100 transition-colors cursor-pointer"
+                                                    >
+                                                        <AlertCircle className="h-3 w-3" />
+                                                        {stats.failed} Failed
+                                                    </button>
+                                                )}
+                                                {stats.retest > 0 && (
+                                                    <button
+                                                        onClick={(e) => handleStatusClick(e, suite, Status.Retest)}
+                                                        className="flex items-center gap-1 text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded hover:bg-orange-100 transition-colors cursor-pointer"
+                                                    >
+                                                        <div className="h-1 w-1 rounded-full bg-orange-500" />
+                                                        {stats.retest} Retest
+                                                    </button>
+                                                )}
+                                                {stats.draft > 0 && (
+                                                    <button
+                                                        onClick={(e) => handleStatusClick(e, suite, Status.Draft)}
+                                                        className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded hover:bg-gray-200 transition-colors cursor-pointer"
+                                                    >
+                                                        <div className="h-1 w-1 rounded-full bg-gray-400" />
+                                                        {stats.draft} Draft
+                                                    </button>
+                                                )}
+                                                {stats.skipped > 0 && (
+                                                    <button
+                                                        onClick={(e) => handleStatusClick(e, suite, Status.Skipped)}
+                                                        className="flex items-center gap-1 text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition-colors cursor-pointer"
+                                                    >
+                                                        <div className="h-1 w-1 rounded-full bg-blue-500" />
+                                                        {stats.skipped} Skipped
+                                                    </button>
+                                                )}
+                                                {stats.total === 0 && (
+                                                    <span className="flex items-center gap-1 text-xs font-medium text-gray-400 px-2 py-1">
+                                                        <PieChart className="h-3 w-3" />
+                                                        No cases
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-4">
+                                            <div className="text-sm text-gray-600">
+                                                {new Date(suite.updatedAt).toLocaleDateString('en-US', {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    year: 'numeric'
+                                                })}
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-4 text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleShareClick(e, suite.id);
+                                                    }}
+                                                    className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors"
+                                                    title="Share Suite"
+                                                >
+                                                    <Share2 className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedSuite(suite);
+                                                        setDropdownPosition(null);
+                                                        if (onEdit) {
+                                                            onEdit(suite);
+                                                        }
+                                                    }}
+                                                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                                    title="Edit Suite"
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedSuite(suite);
+                                                        setDropdownPosition(null);
+                                                        if (onDelete) {
+                                                            onDelete(suite);
+                                                        }
+                                                    }}
+                                                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                    title="Delete Suite"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
 
         {/* Dropdown Menu */}

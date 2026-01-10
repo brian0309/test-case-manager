@@ -42,6 +42,21 @@ const TestManagerPage: React.FC = () => {
     // Edit Mode State
     const [isListEditMode, setIsListEditMode] = useState(false);
 
+    // Suite view mode (card vs table)
+    const [suiteViewMode, setSuiteViewMode] = useState<'card' | 'table'>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('suiteViewMode');
+            return saved === 'table' ? 'table' : 'card';
+        }
+        return 'card';
+    });
+
+    const handleSuiteViewModeToggle = () => {
+        const newMode = suiteViewMode === 'card' ? 'table' : 'card';
+        setSuiteViewMode(newMode);
+        localStorage.setItem('suiteViewMode', newMode);
+    };
+
     // Fetch projects on mount
     useEffect(() => {
         fetchProjects();
@@ -294,6 +309,8 @@ const TestManagerPage: React.FC = () => {
                             testSuites={testSuites}
                             onSuiteClick={handleSuiteClick}
                             onCreate={handleCreateSuite}
+                            viewMode={suiteViewMode}
+                            onViewModeToggle={handleSuiteViewModeToggle}
                         />
                     )}
 

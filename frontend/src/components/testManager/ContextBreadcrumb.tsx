@@ -1,13 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, ChevronDown, Folder, Layers, Check, Home, Map } from 'lucide-react';
+import { ChevronRight, ChevronDown, Folder, Layers, Check, Home, Map, Grid2x2, Table } from 'lucide-react';
 import { useTestManagerStore } from '../../store/testManagerStore';
 
 interface ContextBreadcrumbProps {
     showSuiteSelector?: boolean;
+    viewToggle?: {
+        mode: 'card' | 'table';
+        onToggle: () => void;
+    };
 }
 
-const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector = true }) => {
+const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector = true, viewToggle }) => {
     const {
         projects,
         testSuites,
@@ -287,6 +291,18 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                         )}
                     </div>
                 </>
+            )}
+
+            {/* View Toggle Button - shows when provided */}
+            {viewToggle && (
+                <button
+                    onClick={viewToggle.onToggle}
+                    className="ml-auto flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm"
+                    title={viewToggle.mode === 'card' ? 'Switch to table view' : 'Switch to card view'}
+                >
+                    {viewToggle.mode === 'card' ? <Table size={14} /> : <Grid2x2 size={14} />}
+                    <span className="hidden sm:inline">{viewToggle.mode === 'card' ? 'Table' : 'Card'}</span>
+                </button>
             )}
         </div>
     );

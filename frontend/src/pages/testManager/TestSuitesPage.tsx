@@ -14,7 +14,7 @@ const TestSuitesPage: React.FC = () => {
     const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchTestCasesByProject, fetchProjects, deleteTestSuite, setActiveProject } = useTestManagerStore();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    
+
     // Track processed projectId to prevent double loading
     const processedProjectIdRef = useRef<string | null>(null);
 
@@ -23,6 +23,20 @@ const TestSuitesPage: React.FC = () => {
     const [suiteToEdit, setSuiteToEdit] = useState<TestSuite | null>(null);
     const [suiteToDelete, setSuiteToDelete] = useState<TestSuite | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    const [viewMode, setViewMode] = useState<'card' | 'table'>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('suiteViewMode');
+            return saved === 'table' ? 'table' : 'card';
+        }
+        return 'card';
+    });
+
+    const handleViewModeToggle = () => {
+        const newMode = viewMode === 'card' ? 'table' : 'card';
+        setViewMode(newMode);
+        localStorage.setItem('suiteViewMode', newMode);
+    };
 
     // Ensure projects are loaded when this page is visited directly (only if not already loaded)
     useEffect(() => {
@@ -147,7 +161,10 @@ const TestSuitesPage: React.FC = () => {
         return (
             <div className="flex flex-col h-auto sm:h-full">
                 <div className="bg-white sm:sticky sm:top-0 sm:z-20">
-                    <ContextBreadcrumb showSuiteSelector={false} />
+                    <ContextBreadcrumb
+                        showSuiteSelector={false}
+                        viewToggle={{ mode: viewMode, onToggle: handleViewModeToggle }}
+                    />
                 </div>
                 <div className="flex-1 flex items-center justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -160,19 +177,22 @@ const TestSuitesPage: React.FC = () => {
         <div className="flex flex-col h-auto sm:h-full">
             {/* Context Breadcrumb - project only, no suite selector */}
             <div className="bg-white sm:sticky sm:top-0 sm:z-20">
-                <ContextBreadcrumb showSuiteSelector={false} />
+                <ContextBreadcrumb
+                    showSuiteSelector={false}
+                    viewToggle={{ mode: viewMode, onToggle: handleViewModeToggle }}
+                />
             </div>
-            
+
             <div className="flex-1 sm:overflow-auto">
                 <TestSuiteCreateModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} projectId={activeProject} />
-                
-                <TestSuiteEditModal 
-                    isOpen={!!suiteToEdit} 
-                    onClose={() => setSuiteToEdit(null)} 
+
+                <TestSuiteEditModal
+                    isOpen={!!suiteToEdit}
+                    onClose={() => setSuiteToEdit(null)}
                     suite={suiteToEdit}
                     projectId={activeProject}
                 />
-                
+
                 <ConfirmationModal
                     isOpen={!!suiteToDelete}
                     onClose={() => setSuiteToDelete(null)}
@@ -183,7 +203,7 @@ const TestSuitesPage: React.FC = () => {
                     isDestructive={true}
                     isLoading={isDeleting}
                 />
-                
+
                 <TestSuiteList
                     testCases={projectTestCases}
                     testSuites={testSuites}
@@ -191,6 +211,8 @@ const TestSuitesPage: React.FC = () => {
                     onCreate={handleCreateSuite}
                     onEdit={handleEditSuite}
                     onDelete={handleDeleteSuite}
+                    viewMode={viewMode}
+                    onViewModeToggle={handleViewModeToggle}
                 />
             </div>
         </div>
