@@ -115,12 +115,12 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
                     {/* Create New Project Card */}
                     <div
                         onClick={onCreate}
-                        className="group flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-system-blue hover:bg-system-blue/5 dark:hover:bg-system-blue/10 transition-all cursor-pointer min-h-[220px]"
+                        className="group flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-all cursor-pointer min-h-[220px]"
                     >
                         <div className="h-14 w-14 rounded-2xl bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                            <Plus className="h-7 w-7 text-blue-500 dark:text-system-blue" />
+                            <Plus className="h-7 w-7 text-blue-500 dark:text-blue-400" />
                         </div>
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">New Project</h3>
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white">New Project</h3>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">Start a new testing workspace</p>
                     </div>
 
@@ -128,7 +128,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
                         <div
                             key={project.id}
                             onClick={() => onProjectClick(project.id)}
-                            className="group bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)] hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[220px]"
+                            className="group bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:hover:shadow-none hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[220px]"
                         >
                             <div>
                                 <div className="flex justify-between items-start mb-4">
@@ -138,7 +138,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
                                     <div className="flex items-center gap-1">
                                         <button
                                             onClick={(e) => handleShareClick(e, project.id)}
-                                            className="p-2 text-gray-300 dark:text-gray-600 hover:text-system-blue dark:hover:text-system-blue rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100 md:opacity-0 opacity-100"
+                                            className="p-2 text-gray-300 dark:text-gray-600 hover:text-blue-500 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors opacity-0 group-hover:opacity-100 md:opacity-0 opacity-100"
                                             title="Share Project"
                                         >
                                             <Share2 className="h-4 w-4" />
@@ -152,7 +152,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
                                     </div>
                                 </div>
 
-                                <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-xl tracking-tight mb-2">{project.name}</h3>
+                                <h3 className="font-semibold text-gray-900 dark:text-white text-xl tracking-tight mb-2">{project.name}</h3>
                                 <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-6 leading-relaxed">{project.description}</p>
                             </div>
 

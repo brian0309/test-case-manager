@@ -66,7 +66,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
     };
 
     return (
-        <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-2 sm:px-6 sm:py-4 gap-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 sticky top-0 z-20">
+        <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-2 sm:px-6 sm:py-4 gap-3 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-20">
             <div className="w-full sm:w-auto flex items-center gap-3 min-w-0 mb-2 sm:mb-0">
                 {viewMode === 'cases' && activeSuite && (
                     <Layers size={16} className="text-purple-500 flex-shrink-0" />
@@ -137,7 +137,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
 
                 <button
                     onClick={() => toggleFilterModal(true)}
-                    className={`p-1 rounded-md transition-colors ${hasActiveFilters ? 'text-system-blue bg-system-blue/10 dark:bg-system-blue/20 hover:bg-system-blue/20 dark:hover:bg-system-blue/30' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                    className={`p-1 rounded-md transition-colors ${hasActiveFilters ? 'text-blue-500 bg-blue-500/10 dark:bg-blue-500/20 hover:bg-blue-500/20 dark:hover:bg-blue-500/30' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                 >
                     <Filter className="h-4 w-4" strokeWidth={1.5} />
                 </button>
@@ -163,7 +163,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
                 {viewMode !== 'reports' && (
                     <button
                         onClick={onNew}
-                        className="mac-button ml-2 flex items-center gap-2 bg-[#007AFF] hover:bg-[#0062cc] dark:bg-system-darkBlue dark:hover:bg-[#0056b3] text-white px-3 py-1 rounded-md shadow-sm active:scale-95 text-sm font-medium"
+                        className="mac-button ml-2 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-3 py-1 rounded-md shadow-sm active:scale-95 text-sm font-medium"
                     >
                         <Plus className="h-4 w-4" strokeWidth={2.5} />
                         <span className="inline">New {getNewButtonText()}</span>

@@ -88,7 +88,7 @@ const ProjectsPage: React.FC = () => {
     );
 
     return (
-        <>
+        <div className="flex flex-col h-auto sm:h-full bg-white dark:bg-gray-900">
             <ProjectCreateModal isOpen={isCreateOpen} onClose={() => setIsCreateOpen(false)} />
             
             <ProjectEditModal 
@@ -123,7 +123,7 @@ const ProjectsPage: React.FC = () => {
                 onSettings={handleProjectSettings}
                 onDelete={handleDeleteProject}
             />
-        </>
+        </div>
     );
 };
 

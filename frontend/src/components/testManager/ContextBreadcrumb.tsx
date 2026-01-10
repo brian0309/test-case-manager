@@ -107,11 +107,11 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
     const uniqueAreas = Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort();
 
     return (
-        <div className="min-h-16 flex flex-wrap items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+        <div className="min-h-16 flex flex-wrap items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
             {/* Home / Projects link */}
             <button
                 onClick={goToProjects}
-                className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-300 hover:text-system-blue dark:hover:text-system-blue transition-colors flex-shrink-0"
+                className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-500 transition-colors flex-shrink-0"
             >
                 <Home size={14} />
                 <span className="hidden sm:inline">Projects</span>
@@ -125,9 +125,9 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                         <button
                             onClick={() => setIsProjectOpen(!isProjectOpen)}
                             title={currentProject?.name || 'Project'}
-                            className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm dark:hover:shadow-md rounded-md transition-all"
+                            className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:shadow-sm dark:hover:shadow-md rounded-md transition-all"
                         >
-                            <Folder size={14} className="text-system-blue flex-shrink-0" />
+                            <Folder size={14} className="text-blue-500 flex-shrink-0" />
                             <span className="max-w-[80px] sm:max-w-[120px] truncate">{currentProject?.name || 'Project'}</span>
                             <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform flex-shrink-0 ${isProjectOpen ? 'rotate-180' : ''}`} />
                         </button>
@@ -143,9 +143,9 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                                             key={project.id}
                                             onClick={() => handleProjectChange(project.id)}
                                             title={project.name}
-                                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${activeProject === project.id ? 'text-system-blue dark:text-system-darkBlue bg-system-blue/10 dark:bg-system-darkBlue/20' : 'text-gray-700 dark:text-gray-300'}`}
+                                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${activeProject === project.id ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
                                         >
-                                            <Folder size={14} className={activeProject === project.id ? 'text-system-blue dark:text-system-darkBlue' : 'text-gray-400 dark:text-gray-500'} />
+                                            <Folder size={14} className={activeProject === project.id ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'} />
                                             <span className="truncate flex-1">{project.name}</span>
                                             {activeProject === project.id && <Check size={14} />}
                                         </button>
@@ -186,9 +186,9 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                                 {/* All Suites Option */}
                                 <button
                                     onClick={handleShowAllCases}
-                                    className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${!activeSuiteId ? 'text-system-blue dark:text-system-darkBlue bg-system-blue/10 dark:bg-system-darkBlue/20' : 'text-gray-700 dark:text-gray-300'}`}
+                                    className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${!activeSuiteId ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
                                 >
-                                    <Layers size={14} className={!activeSuiteId ? 'text-system-blue dark:text-system-darkBlue' : 'text-gray-400 dark:text-gray-500'} />
+                                    <Layers size={14} className={!activeSuiteId ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'} />
                                     <span className="flex-1">All Suites</span>
                                     {!activeSuiteId && <Check size={14} />}
                                 </button>
@@ -201,7 +201,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                                             key={suite.id}
                                             onClick={() => handleSuiteChange(suite.id, suite.name)}
                                             title={suite.name}
-                                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${activeSuiteId === suite.id ? 'text-system-blue dark:text-system-darkBlue bg-system-blue/10 dark:bg-system-darkBlue/20' : 'text-gray-700 dark:text-gray-300'}`}
+                                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${activeSuiteId === suite.id ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
                                         >
                                             <Layers size={14} className={activeSuiteId === suite.id ? 'text-purple-500 dark:text-purple-400' : 'text-gray-400 dark:text-gray-500'} />
                                             <span className="truncate flex-1">{suite.name}</span>
@@ -218,7 +218,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                                 <div className="border-t border-gray-50 dark:border-gray-700 mt-1 pt-1">
                                     <button
                                         onClick={goToSuites}
-                                        className="w-full text-left px-3 py-2 text-sm text-system-blue dark:text-system-darkBlue hover:bg-system-blue/10 dark:hover:bg-system-darkBlue/20 flex items-center gap-2 transition-colors"
+                                        className="w-full text-left px-3 py-2 text-sm text-blue-500 dark:text-blue-400 hover:bg-blue-500/10 dark:hover:bg-blue-400/20 flex items-center gap-2 transition-colors"
                                     >
                                         <Layers size={14} />
                                         Manage Suites
@@ -259,9 +259,9 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                                 {/* All Areas Option */}
                                 <button
                                     onClick={() => handleAreaChange(null)}
-                                    className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${!activeArea ? 'text-system-blue dark:text-system-darkBlue bg-system-blue/10 dark:bg-system-darkBlue/20' : 'text-gray-700 dark:text-gray-300'}`}
+                                    className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${!activeArea ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
                                 >
-                                    <Map size={14} className={!activeArea ? 'text-system-blue dark:text-system-darkBlue' : 'text-gray-400 dark:text-gray-500'} />
+                                    <Map size={14} className={!activeArea ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'} />
                                     <span className="flex-1">All Areas</span>
                                     {!activeArea && <Check size={14} />}
                                 </button>
@@ -274,7 +274,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                                             key={area}
                                             onClick={() => handleAreaChange(area)}
                                             title={area}
-                                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${activeArea === area ? 'text-system-blue dark:text-system-darkBlue bg-system-blue/10 dark:bg-system-darkBlue/20' : 'text-gray-700 dark:text-gray-300'}`}
+                                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${activeArea === area ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
                                         >
                                             <Map size={14} className={activeArea === area ? 'text-green-500 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'} />
                                             <span className="truncate flex-1">{area}</span>

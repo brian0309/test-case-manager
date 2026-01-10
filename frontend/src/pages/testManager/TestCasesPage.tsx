@@ -490,9 +490,9 @@ const TestCasesPage: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col h-auto sm:h-full">
+        <div className="flex flex-col h-auto sm:h-full bg-white dark:bg-gray-900">
             {/* Context Breadcrumb with Project & Suite selectors */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 sm:justify-between px-4 sm:px-6 bg-gray-50 dark:bg-gray-800 sm:sticky sm:top-0 sm:z-20">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 sm:justify-between px-4 sm:px-6 bg-white dark:bg-gray-900 sm:sticky sm:top-0 sm:z-20">
                 <ContextBreadcrumb showSuiteSelector={true} />
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                     {/* Sorting controls - Desktop only, next to Generate AI button */}
