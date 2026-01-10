@@ -79,8 +79,8 @@ const IdCell: React.FC<{ id: string }> = ({ id }) => {
             <button
                 onClick={handleCopy}
                 className={`p-1 rounded transition-all ${copied
-                    ? 'text-green-600 bg-green-50 opacity-100'
-                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 opacity-0 group-hover/id:opacity-100'
+                    ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 opacity-100'
+                    : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 opacity-0 group-hover/id:opacity-100'
                     }`}
                 title="Copy ID"
             >
@@ -172,7 +172,7 @@ const SortableRow: React.FC<SortableRowProps> = ({
                     onRowClick(item);
                 }
             }}
-            className={`group transition-colors ${isEditMode ? '' : 'cursor-pointer'} ${isSelected ? 'bg-blue-50/50' : 'hover:bg-gray-50/80'} ${isDragging ? 'shadow-lg' : ''}`}
+            className={`group transition-colors ${isEditMode ? '' : 'cursor-pointer'} ${isSelected ? 'bg-blue-50/50 dark:bg-blue-900/20' : 'hover:bg-gray-50/80 dark:hover:bg-gray-800/50'} ${isDragging ? 'shadow-lg' : ''}`}
         >
             {enableReorder && (
                 <td className="py-4 pl-3 pr-1 w-10">
@@ -180,7 +180,7 @@ const SortableRow: React.FC<SortableRowProps> = ({
                         {...attributes}
                         {...listeners}
                         onClick={(e) => e.stopPropagation()}
-                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded cursor-grab active:cursor-grabbing touch-none"
+                        className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-grab active:cursor-grabbing touch-none"
                         title="Drag to reorder"
                     >
                         <GripVertical className="h-4 w-4" />
@@ -201,7 +201,7 @@ const SortableRow: React.FC<SortableRowProps> = ({
             )}
             {/* ID Column */}
             {!hiddenColumns.id && (
-                <td className={`py-4 ${isSelectionMode ? 'pl-2' : enableReorder ? 'pl-2' : 'pl-6'} pr-4 text-sm font-medium text-gray-500 font-mono tracking-tight group-hover:text-gray-900`}>
+                <td className={`py-4 ${isSelectionMode ? 'pl-2' : enableReorder ? 'pl-2' : 'pl-6'} pr-4 text-sm font-medium text-gray-500 dark:text-gray-400 font-mono tracking-tight group-hover:text-gray-900 dark:group-hover:text-gray-200`}>
                     <IdCell id={item.id} />
                 </td>
             )}
@@ -215,19 +215,19 @@ const SortableRow: React.FC<SortableRowProps> = ({
                                 type="text"
                                 value={item.title}
                                 onChange={(e) => onUpdate?.(item.id, 'title', e.target.value)}
-                                className="w-full bg-white border border-blue-300 rounded px-2 py-1 text-sm text-gray-900 focus:ring-2 focus:ring-blue-100 outline-none"
+                                className="w-full bg-white dark:bg-gray-700 border border-blue-300 dark:border-gray-600 rounded px-2 py-1 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 outline-none"
                             />
                             {getContextInfo() && (
-                                <div className="text-xs text-gray-400 mt-1">
+                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                                     {getContextInfo()}
                                 </div>
                             )}
                         </div>
                     ) : (
                         <>
-                            <div className="text-[15px] font-medium text-gray-900">{item.title}</div>
+                            <div className="text-[15px] font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
                             {getContextInfo() && (
-                                <div className="text-xs text-gray-400 mt-0.5">
+                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                                     {getContextInfo()}
                                 </div>
                             )}
@@ -244,7 +244,7 @@ const SortableRow: React.FC<SortableRowProps> = ({
                             <select
                                 value={item.priority}
                                 onChange={(e) => onUpdate?.(item.id, 'priority', e.target.value)}
-                                className="w-full bg-white border border-gray-200 rounded px-2 py-1 text-xs text-gray-700 outline-none focus:border-blue-300"
+                                className="w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded px-2 py-1 text-xs text-gray-700 dark:text-gray-300 outline-none focus:border-blue-300 dark:focus:border-blue-500"
                             >
                                 {Object.values(Priority).map(p => (
                                     <option key={p} value={p}>{p}</option>
@@ -280,14 +280,14 @@ const SortableRow: React.FC<SortableRowProps> = ({
             {/* Last Modified */}
             {!hiddenColumns.lastModified && (
                 <td className="py-4 px-4">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
                         {new Date(item.lastModified).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
                             year: 'numeric'
                         })}
                     </div>
-                    <div className="text-xs text-gray-400 mt-0.5">
+                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                         {new Date(item.lastModified).toLocaleTimeString('en-US', {
                             hour: 'numeric',
                             minute: '2-digit',
@@ -301,11 +301,11 @@ const SortableRow: React.FC<SortableRowProps> = ({
             {!hiddenColumns.assignedTester && (
                 <td className="py-4 px-4 text-right pr-6">
                     <div className="flex items-center justify-end gap-2">
-                        <span className="text-sm text-gray-600 truncate max-w-[100px]">{item.assignedTester.name}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[100px]">{item.assignedTester.name}</span>
                         <img
                             src={item.assignedTester.avatar}
                             alt={item.assignedTester.name}
-                            className="h-6 w-6 rounded-full border border-gray-200"
+                            className="h-6 w-6 rounded-full border border-gray-200 dark:border-gray-600"
                         />
                     </div>
                 </td>
@@ -327,7 +327,7 @@ const SortableRow: React.FC<SortableRowProps> = ({
                 
                 return (
                     <td key={fieldId} className="py-4 px-4">
-                        <div className="text-sm text-gray-900">{displayValue || '-'}</div>
+                        <div className="text-sm text-gray-900 dark:text-gray-100">{displayValue || '-'}</div>
                     </td>
                 );
             })}
@@ -340,7 +340,7 @@ const SortableRow: React.FC<SortableRowProps> = ({
                             e.stopPropagation();
                             onCloneClick?.(item);
                         }}
-                        className="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                        className="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                         title="Clone Test Case"
                     >
                         <Copy className="h-3.5 w-3.5" />
@@ -351,7 +351,7 @@ const SortableRow: React.FC<SortableRowProps> = ({
                             e.stopPropagation();
                             onViewClick?.(item);
                         }}
-                        className="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                        className="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
                         title="Edit Test Case"
                     >
                         <Edit className="h-3.5 w-3.5" />
@@ -419,13 +419,13 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
 
     const getStatusColor = (status: Status) => {
         switch (status) {
-            case Status.Passed: return 'bg-green-100 text-green-700 border-green-200';
-            case Status.PassFixed: return 'bg-teal-100 text-teal-700 border-teal-200';
-            case Status.Failed: return 'bg-red-100 text-red-700 border-red-200';
-            case Status.Retest: return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-            case Status.Skipped: return 'bg-gray-50 text-gray-400 border-gray-200';
-            case Status.Draft: return 'bg-gray-50 text-gray-500 border-gray-200';
-            default: return 'bg-gray-50 text-gray-400 border-transparent';
+            case Status.Passed: return 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700';
+            case Status.PassFixed: return 'bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-700';
+            case Status.Failed: return 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700';
+            case Status.Retest: return 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700';
+            case Status.Skipped: return 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-400 border-gray-200 dark:border-gray-600';
+            case Status.Draft: return 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600';
+            default: return 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-400 border-transparent dark:border-gray-600';
         }
     };
 
@@ -516,26 +516,26 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
 
     const SortIcon: React.FC<{ field: SortField }> = ({ field }) => {
         if (sortMode === 'custom' || sortField !== field) {
-            return <ArrowUpDown className="h-3.5 w-3.5 text-gray-400" />;
+            return <ArrowUpDown className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />;
         }
         return sortOrder === 'asc' 
-            ? <ArrowUp className="h-3.5 w-3.5 text-blue-600" />
-            : <ArrowDown className="h-3.5 w-3.5 text-blue-600" />;
+            ? <ArrowUp className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+            : <ArrowDown className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />;
     };
 
     return (
-        <div className="flex-1 bg-white flex flex-col">
+        <div className="flex-1 bg-gray-50 dark:bg-gray-900 flex flex-col">
             {/* Sort Controls Bar - Show on mobile, hide on desktop if showSortControlsInHeader */}
             {enableReorder && (
-                <div className={`flex items-center justify-between px-6 py-2 border-b border-gray-200 bg-gray-50/50 ${showSortControlsInHeader ? 'sm:hidden' : ''}`}>
+                <div className={`flex items-center justify-between px-6 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 ${showSortControlsInHeader ? 'sm:hidden' : ''}`}>
                     <div className="flex items-center gap-2">
                         {sortMode === 'custom' ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded-full border border-blue-200">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 rounded-full border border-blue-200 dark:border-blue-800">
                                 <GripVertical className="h-3 w-3" />
                                 Custom Order
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-purple-700 bg-purple-50 rounded-full border border-purple-200">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 rounded-full border border-purple-200 dark:border-purple-800">
                                 {sortOrder === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
                                 Sorted by {sortField.charAt(0).toUpperCase() + sortField.slice(1)}
                             </span>
@@ -544,7 +544,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                     {sortMode === 'standard' && (
                         <button
                             onClick={resetToCustomOrder}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 hover:text-gray-900 bg-white hover:bg-gray-50 rounded-md border border-gray-300 transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-md border border-gray-300 dark:border-gray-600 transition-colors"
                         >
                             <RotateCcw className="h-3.5 w-3.5" />
                             Reset to Custom Order
@@ -561,7 +561,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                     onDragEnd={handleDragEnd}
                 >
                     <table className="w-full text-left border-collapse">
-                        <thead className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                        <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-none">
                             <tr>
                                 {enableReorder && sortMode === 'custom' && (
                                     <th className="py-3 pl-2 pr-0 w-8"></th>
@@ -578,20 +578,20 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                                     }
                                                 }}
                                                 onChange={(e) => onSelectAll?.(e.target.checked)}
-                                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                className="w-4 h-4 text-system-blue border-gray-300 dark:border-gray-600 rounded focus:ring-system-blue bg-white dark:bg-gray-800"
                                             />
                                         </div>
                                     </th>
                                 )}
                                 {/* ID Header */}
                                 {!hiddenColumns?.id && (
-                                    <th className={`py-3 ${isSelectionMode ? 'pl-2' : (enableReorder && sortMode === 'custom') ? 'pl-2' : 'pl-6'} pr-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32`}>ID</th>
+                                    <th className={`py-3 ${isSelectionMode ? 'pl-2' : (enableReorder && sortMode === 'custom') ? 'pl-2' : 'pl-6'} pr-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32`}>ID</th>
                                 )}
                                 
                                 {/* Title Header */}
                                 {!hiddenColumns?.title && (
                                     <th 
-                                        className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-1/3 cursor-pointer hover:bg-gray-50 select-none"
+                                        className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-1/3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
                                         onClick={() => handleColumnSort('title')}
                                     >
                                         <div className="flex items-center gap-1.5">
@@ -604,7 +604,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                 {/* Priority Header */}
                                 {!hiddenColumns?.priority && (
                                     <th 
-                                        className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32 cursor-pointer hover:bg-gray-50 select-none"
+                                        className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
                                         onClick={() => handleColumnSort('priority')}
                                     >
                                         <div className="flex items-center gap-1.5">
@@ -617,7 +617,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                 {/* Status Header */}
                                 {!hiddenColumns?.status && (
                                     <th 
-                                        className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 select-none"
+                                        className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
                                         onClick={() => handleColumnSort('status')}
                                     >
                                         <div className="flex items-center gap-1.5">
@@ -630,7 +630,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                 {/* Last Modified Header */}
                                 {!hiddenColumns?.lastModified && (
                                     <th 
-                                        className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 select-none"
+                                        className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
                                         onClick={() => handleColumnSort('lastModified')}
                                     >
                                         <div className="flex items-center gap-1.5">
@@ -643,7 +643,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                 {/* Assignee Header */}
                                 {!hiddenColumns?.assignedTester && (
                                     <th 
-                                        className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32 text-right pr-6 cursor-pointer hover:bg-gray-50 select-none"
+                                        className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32 text-right pr-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
                                         onClick={() => handleColumnSort('assignedTester')}
                                     >
                                         <div className="flex items-center justify-end gap-1.5">
@@ -661,7 +661,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                     return (
                                         <th 
                                             key={fieldId}
-                                            className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-32"
+                                            className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32"
                                         >
                                             {fieldDef.label}
                                         </th>
@@ -669,10 +669,10 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                 })}
                                 
                                 {/* Actions Header */}
-                                <th className="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wider w-24"></th>
+                                <th className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-24"></th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-900">
                             <SortableContext
                                 items={sortedData.map((item) => item.id)}
                                 strategy={verticalListSortingStrategy}
@@ -708,7 +708,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
             {/* Mobile list */}
             <div className="block sm:hidden p-2 flex-1 overflow-auto">
                 {sortedData.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-40 text-gray-400">
+                    <div className="flex flex-col items-center justify-center h-40 text-gray-400 dark:text-gray-500">
                         <p>No test cases found</p>
                     </div>
                 ) : (
@@ -723,7 +723,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         onRowClick(item);
                                     }
                                 }}
-                                className={`mac-card p-3 flex flex-col gap-2 cursor-pointer transition-colors ${selectedIds.includes(item.id) ? 'bg-blue-50/50 border-blue-200' : 'hover:bg-gray-50'}`}
+                                className={`mac-card p-3 flex flex-col gap-2 cursor-pointer transition-colors ${selectedIds.includes(item.id) ? 'bg-blue-50/50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                             >
                                 <div className="flex items-start gap-3">
                                     {isSelectionMode && (
@@ -732,16 +732,16 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                                 type="checkbox"
                                                 checked={selectedIds.includes(item.id)}
                                                 onChange={() => onToggleSelection?.(item.id)}
-                                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                                className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 bg-white dark:bg-gray-700"
                                             />
                                         </div>
                                     )}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1 min-w-0">
-                                                <div className="text-sm font-medium text-gray-900">{item.title}</div>
+                                                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
                                                 {getContextInfo(item) && (
-                                                    <div className="text-xs text-gray-400 mt-1 truncate">
+                                                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate">
                                                         {getContextInfo(item)}
                                                     </div>
                                                 )}
@@ -752,14 +752,14 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         </div>
 
                                         <div className="flex items-center justify-between mt-2">
-                                            <div className="text-xs font-mono text-gray-500 break-words max-w-[40%]">{item.id}</div>
+                                            <div className="text-xs font-mono text-gray-500 dark:text-gray-400 break-words max-w-[40%]">{item.id}</div>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm text-gray-600 truncate max-w-[120px]">{item.assignedTester.name}</span>
-                                                <img src={item.assignedTester.avatar} alt={item.assignedTester.name} className="h-6 w-6 rounded-full border border-gray-200" />
+                                                <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[120px]">{item.assignedTester.name}</span>
+                                                <img src={item.assignedTester.avatar} alt={item.assignedTester.name} className="h-6 w-6 rounded-full border border-gray-200 dark:border-gray-600" />
                                                 {!isSelectionMode && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); onViewClick?.(item); }}
-                                                        className="ml-2 inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition-colors"
+                                                        className="ml-2 inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
                                                     >
                                                         View
                                                     </button>

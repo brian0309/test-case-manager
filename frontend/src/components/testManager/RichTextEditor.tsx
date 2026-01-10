@@ -45,7 +45,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
         },
         editorProps: {
             attributes: {
-                class: 'prose prose-sm sm:prose-base focus:outline-none min-h-[200px] text-gray-700 leading-relaxed max-w-none [&_img[src^="blob:"]]:opacity-50 [&_img[src^="blob:"]]:grayscale [&_img[src^="blob:"]]:blur-[1px] transition-all',
+                class: 'prose prose-sm sm:prose-base focus:outline-none min-h-[200px] text-gray-700 dark:text-gray-300 leading-relaxed max-w-none dark:prose-invert [&_img[src^="blob:"]]:opacity-50 [&_img[src^="blob:"]]:grayscale [&_img[src^="blob:"]]:blur-[1px] transition-all dark:[&_p]:text-gray-300 dark:[&_ul]:text-gray-300 dark:[&_ol]:text-gray-300 dark:[&_blockquote]:text-gray-300 dark:[&_h1]:text-gray-100 dark:[&_h2]:text-gray-100 dark:[&_h3]:text-gray-100 dark:[&_strong]:text-gray-100 dark:[&_em]:text-gray-300 dark:[&_strike]:text-gray-300 dark:[&_code]:text-gray-300 dark:prose-headings:text-gray-100 dark:prose-strong:text-gray-100 dark:prose-code:text-gray-300 dark:prose-blockquote:text-gray-300',
             },
             handleDrop: (_view: any, event: any, _slice: any, moved: any) => {
                 if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
@@ -172,8 +172,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
             onClick={onClick}
             onMouseDown={(e) => e.preventDefault()}
             className={`p-1.5 rounded-md transition-colors ${isActive
-                ? 'bg-blue-100 text-blue-600'
-                : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
+                : 'text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
         >
             <Icon className="h-4 w-4" strokeWidth={2.5} />
@@ -181,9 +181,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
     );
 
     return (
-        <div className="border border-gray-200 rounded-xl overflow-hidden bg-white focus-within:ring-2 focus-within:ring-blue-100 focus-within:border-blue-300 transition-all">
+        <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-white dark:bg-gray-800 focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/50 focus-within:border-blue-300 dark:focus-within:border-blue-600 transition-all">
             {editable && (
-                <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-100 bg-gray-50/50">
+                <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
                     <MenuButton
                         onClick={() => editor.chain().focus().toggleBold().run()}
                         isActive={editor.isActive('bold')}
@@ -199,7 +199,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
                         isActive={editor.isActive('strike')}
                         icon={Strikethrough}
                     />
-                    <div className="w-px h-4 bg-gray-200 mx-1" />
+                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
                     <MenuButton
                         onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
                         isActive={editor.isActive('heading', { level: 1 })}
@@ -210,7 +210,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
                         isActive={editor.isActive('heading', { level: 2 })}
                         icon={Heading2}
                     />
-                    <div className="w-px h-4 bg-gray-200 mx-1" />
+                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
                     <MenuButton
                         onClick={() => editor.chain().focus().toggleBulletList().run()}
                         isActive={editor.isActive('bulletList')}
@@ -226,13 +226,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
                         isActive={editor.isActive('blockquote')}
                         icon={Quote}
                     />
-                    <div className="w-px h-4 bg-gray-200 mx-1" />
+                    <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
                     <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isUploading}
                         className={`p-1.5 rounded-md transition-colors ${isUploading
-                            ? 'text-gray-300 cursor-not-allowed'
-                            : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                            : 'text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                             }`}
                         title="Insert image"
                     >
@@ -252,7 +252,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
                 </div>
             )}
             <div
-                className="p-4 bg-white cursor-text"
+                className="p-4 bg-white dark:bg-gray-800 cursor-text"
                 onClick={(e) => {
                     // If not editable, check if an image was clicked to zoom
                     if (!editable) {

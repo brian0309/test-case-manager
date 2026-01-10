@@ -143,35 +143,35 @@ const ProjectActionSheet: React.FC<Props> = ({
         <div className="fixed inset-0 z-50">
             {/* Backdrop */}
             <div 
-                className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
+                className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]"
                 onClick={onClose}
             />
 
             {/* Sheet */}
             <div 
                 ref={sheetRef}
-                className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl animate-[slideUp_0.25s_ease-out] touch-pan-y"
+                className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-2xl shadow-2xl animate-[slideUp_0.25s_ease-out] touch-pan-y"
             >
                 {/* Drag handle */}
                 <div className="flex justify-center pt-3 pb-2">
-                    <div className="w-10 h-1 bg-gray-300 rounded-full" />
+                    <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
                 </div>
 
                 {/* Header */}
-                <div className="px-4 pb-3 border-b border-gray-100">
+                <div className="px-4 pb-3 border-b border-gray-100 dark:border-gray-700">
                     <div className="flex items-center gap-3">
                         <div className={`h-10 w-10 rounded-xl ${project.color} flex items-center justify-center text-white font-medium`}>
                             {project.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 truncate">{project.name}</h3>
-                            <p className="text-xs text-gray-500">
+                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{project.name}</h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
                                 {project.stats.members} member{project.stats.members !== 1 ? 's' : ''}
                             </p>
                         </div>
                         <button 
                             onClick={onClose}
-                            className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                            className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
                             <X className="h-5 w-5" />
                         </button>
@@ -186,11 +186,11 @@ const ProjectActionSheet: React.FC<Props> = ({
                             onClick={option.onClick}
                             className={`w-full flex items-center gap-4 px-5 py-4 text-left transition-colors ${
                                 option.variant === 'danger' 
-                                    ? 'text-red-600 hover:bg-red-50 active:bg-red-100' 
-                                    : 'text-gray-700 hover:bg-gray-50 active:bg-gray-100'
+                                    ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 active:bg-red-100 dark:active:bg-red-900/30' 
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 active:bg-gray-100 dark:active:bg-gray-600'
                             }`}
                         >
-                            <span className={option.variant === 'danger' ? 'text-red-500' : 'text-gray-400'}>
+                            <span className={option.variant === 'danger' ? 'text-red-500 dark:text-red-400' : 'text-gray-400 dark:text-gray-500'}>
                                 {option.icon}
                             </span>
                             <span className="font-medium">{option.label}</span>
@@ -202,7 +202,7 @@ const ProjectActionSheet: React.FC<Props> = ({
                 <div className="p-4 pt-2 pb-8">
                     <button
                         onClick={onClose}
-                        className="w-full py-3.5 rounded-xl bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 active:bg-gray-300 transition-colors"
+                        className="w-full py-3.5 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-200 dark:hover:bg-gray-600 active:bg-gray-300 dark:active:bg-gray-500 transition-colors"
                     >
                         Cancel
                     </button>

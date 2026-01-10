@@ -73,9 +73,9 @@ const RedirectAuthenticatedUser: React.FC<RedirectAuthenticatedUserProps> = ({ c
 
 // Public route layout
 const PublicRoute: React.FC = () => (
-  <div className='min-h-screen bg-background flex items-center justify-center p-4'>
-    <Outlet />
-  </div>
+	<div className='min-h-screen bg-background dark:bg-background-dark flex items-center justify-center p-4'>
+		<Outlet />
+	</div>
 );
 
 function App() {

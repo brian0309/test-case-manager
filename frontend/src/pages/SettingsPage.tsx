@@ -2,8 +2,9 @@ import React from "react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useAuthStore } from "../store/authStore";
+import { useThemeStore } from "../store/themeStore";
 import Input from "../components/Input";
-import { Lock } from "lucide-react";
+import { Lock, Moon, Sun } from "lucide-react";
 import toast from "react-hot-toast";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
 import { User } from "../types";
@@ -40,24 +41,24 @@ const SettingsPage: React.FC = () => {
                 <div className="px-6 lg:px-8">
                     {/* Header */}
                     <div className="mb-8">
-                        <h1 className="text-2xl font-bold text-gray-900">
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                             {user?.name || "User"}
                         </h1>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
                             Manage your teams and preferences here.
                         </p>
                     </div>
 
                     {/* Tabs */}
-                    <div className="mb-6 border-b border-gray-200">
+                    <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
                         <div className="flex space-x-8 overflow-x-auto">
                             {tabs.map((tab) => (
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={`py-3 px-1 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeTab === tab.id
-                                        ? "border-blue-600 text-blue-600"
-                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                                        ? "border-system-blue text-system-blue dark:text-system-darkBlue"
+                                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-600"
                                         }`}
                                 >
                                     {tab.label}
@@ -86,16 +87,18 @@ const SettingsPage: React.FC = () => {
 
 // General Tab Component
 const GeneralTab: React.FC<GeneralTabProps> = ({ user }) => {
+    const { isDarkMode, toggleTheme } = useThemeStore();
+
     return (
         <div className="mac-card">
             <div className="p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-6">Basics</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">Basics</h2>
 
                 {/* Photo Section */}
                 <div className="mb-8">
                     <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium text-gray-700">Photo</label>
-                        <button className="text-sm text-blue-600 hover:text-blue-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Photo</label>
+                        <button className="text-sm text-system-blue hover:text-system-darkBlue dark:text-system-darkBlue">
                             Edit
                         </button>
                     </div>
@@ -109,30 +112,30 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ user }) => {
                 {/* Name Section */}
                 <div className="mb-8">
                     <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium text-gray-700">Name</label>
-                        <button className="text-sm text-blue-600 hover:text-blue-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+                        <button className="text-sm text-system-blue hover:text-system-darkBlue dark:text-system-darkBlue">
                             Edit
                         </button>
                     </div>
-                    <p className="text-sm text-gray-900">{user?.name || "Not set"}</p>
+                    <p className="text-sm text-gray-900 dark:text-gray-100">{user?.name || "Not set"}</p>
                 </div>
 
                 {/* Email Section */}
                 <div className="mb-8">
                     <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium text-gray-700">Email address</label>
-                        <button className="text-sm text-blue-600 hover:text-blue-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email address</label>
+                        <button className="text-sm text-system-blue hover:text-system-darkBlue dark:text-system-darkBlue">
                             Edit
                         </button>
                     </div>
-                    <p className="text-sm text-gray-900">{user?.email || "Not set"}</p>
+                    <p className="text-sm text-gray-900 dark:text-gray-100">{user?.email || "Not set"}</p>
                 </div>
 
                 {/* Linked Team Account Section */}
                 <div className="mb-8">
                     <div className="mb-4">
-                        <label className="text-sm font-medium text-gray-700">Linked team account</label>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Linked team account</label>
+                        <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
                             Easily switch between teams and access both team and any service.
                         </p>
                     </div>
@@ -140,27 +143,27 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ user }) => {
                     {/* Account Cards */}
                     <div className="space-y-3">
                         {/* OpenVoid Account */}
-                        <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                        <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg dark:border-gray-700">
                             <div className="flex items-center space-x-3">
-                                <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                    <span className="text-sm font-medium text-gray-600">OV</span>
+                                <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">OV</span>
                                 </div>
-                                <span className="text-sm font-medium text-gray-900">OpenVoid</span>
+                                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">OpenVoid</span>
                             </div>
-                            <button className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 border border-gray-300 rounded-md">
+                            <button className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md">
                                 Manage team
                             </button>
                         </div>
 
                         {/* Simplias Ventures Account */}
-                        <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                        <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg dark:border-gray-700">
                             <div className="flex items-center space-x-3">
                                 <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
                                     <span className="text-sm font-medium text-white">S</span>
                                 </div>
-                                <span className="text-sm font-medium text-gray-900">Simplias Ventures</span>
+                                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Simplias Ventures</span>
                             </div>
-                            <button className="text-sm text-gray-600 hover:text-gray-900 px-4 py-2 border border-gray-300 rounded-md">
+                            <button className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md">
                                 Manage team
                             </button>
                         </div>
@@ -169,20 +172,45 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ user }) => {
             </div>
 
             {/* Preferences Section */}
-            <div className="border-t border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-6">Preferences</h2>
+            <div className="border-t border-gray-200 p-6 dark:border-gray-700">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">Preferences</h2>
+
+                {/* Dark Mode Toggle */}
+                <div className="mb-6">
+                    <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Dark Mode</label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <button
+                                onClick={() => !isDarkMode && toggleTheme()}
+                                className={`p-2 rounded-lg transition-colors ${!isDarkMode ? 'bg-system-blue/10 text-system-blue' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
+                                title="Light mode"
+                            >
+                                <Sun size={20} />
+                            </button>
+                            <button
+                                onClick={() => isDarkMode && toggleTheme()}
+                                className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'bg-system-blue/10 text-system-blue dark:text-system-darkBlue' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'}`}
+                                title="Dark mode"
+                            >
+                                <Moon size={20} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                 {/* Automatic Time Zone */}
                 <div className="mb-6">
                     <div className="flex items-center justify-between">
                         <div className="flex-1">
-                            <label className="text-sm font-medium text-gray-700">Automatic time zone</label>
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Automatic time zone</label>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <span className="text-sm text-gray-600">GMT +07:00</span>
+                            <span className="text-sm text-gray-600 dark:text-gray-400">GMT +07:00</span>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" className="sr-only peer" defaultChecked />
-                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-system-blue"></div>
                             </label>
                         </div>
                     </div>
@@ -190,8 +218,8 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ user }) => {
 
                 {/* Language */}
                 <div className="mb-6">
-                    <label className="text-sm font-medium text-gray-700 block mb-2">Language</label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Language</label>
+                    <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                         <option>🇬🇧 English UK</option>
                         <option>🇺🇸 English US</option>
                         <option>🇪🇸 Spanish</option>
@@ -201,8 +229,8 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ user }) => {
 
                 {/* Date Format */}
                 <div className="mb-6">
-                    <label className="text-sm font-medium text-gray-700 block mb-2">Date format</label>
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">Date format</label>
+                    <select className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                         <option>DD/MM/YYYY</option>
                         <option>MM/DD/YYYY</option>
                         <option>YYYY-MM-DD</option>
@@ -251,18 +279,18 @@ const SecurityTab = () => {
     return (
         <div className="mac-card p-6">
             <div className="max-w-2xl">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Change Password</h2>
-                <p className="text-sm text-gray-500 mb-6">Update your account password</p>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Change Password</h2>
+                <p className="text-sm text-gray-500 mb-6 dark:text-gray-400">Update your account password</p>
 
                 {(formError || error) && (
-                    <div className="mb-4 p-3 bg-red-50 text-red-700 text-sm rounded-md">
+                    <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 text-sm rounded-md">
                         {formError || error}
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div>
-                        <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                        <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Current Password
                         </label>
                         <Input
@@ -278,7 +306,7 @@ const SecurityTab = () => {
                     </div>
 
                     <div>
-                        <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                        <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             New Password
                         </label>
                         <Input
@@ -297,7 +325,7 @@ const SecurityTab = () => {
                     </div>
 
                     <div>
-                        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Confirm New Password
                         </label>
                         <Input
@@ -319,9 +347,9 @@ const SecurityTab = () => {
                             type="submit"
                             disabled={isLoading}
                             className={`px-6 py-2.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${isLoading
-                                ? 'bg-blue-400'
-                                : 'bg-blue-600 hover:bg-blue-700'
-                                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+                                ? 'bg-gray-400 dark:bg-gray-600'
+                                : 'bg-system-blue hover:bg-system-darkBlue'
+                                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-system-blue`}
                         >
                             {isLoading ? (
                                 <>
@@ -346,8 +374,8 @@ const SecurityTab = () => {
 const PlaceholderTab: React.FC<PlaceholderTabProps> = ({ title }) => {
     return (
         <div className="mac-card p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">{title}</h2>
-            <p className="text-sm text-gray-500">This section is coming soon...</p>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{title}</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">This section is coming soon...</p>
         </div>
     );
 };
@@ -422,19 +450,19 @@ const GeminiTab = () => {
     return (
         <div className="mac-card p-6">
             <div className="max-w-2xl">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Gemini API Configuration</h2>
-                <p className="text-sm text-gray-500 mb-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Gemini API Configuration</h2>
+                <p className="text-sm text-gray-500 mb-6 dark:text-gray-400">
                     Configure your Google Gemini API key to enable AI-powered test case generation.
                     Your key is encrypted before being stored.
                 </p>
 
                 <form onSubmit={handleSave} className="space-y-6">
                     <div>
-                        <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 mb-2">
+                        <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             API Key {hasExistingKey ? "(Optional - Update)" : ""}
                         </label>
                         {hasExistingKey && (
-                            <div className="mb-3 p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-md flex items-start gap-2">
+                            <div className="mb-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm rounded-md flex items-start gap-2">
                                 <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                 </svg>
@@ -457,21 +485,21 @@ const GeminiTab = () => {
                             />
                         </div>
                         {!hasExistingKey && (
-                            <p className="mt-2 text-xs text-gray-500">
-                                You can generate an API key from the <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google AI Studio</a>.
+                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                You can generate an API key from the <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-system-blue hover:text-system-darkBlue dark:text-system-darkBlue">Google AI Studio</a>.
                             </p>
                         )}
                     </div>
 
                     <div>
-                        <label htmlFor="geminiModel" className="block text-sm font-medium text-gray-700 mb-2">
+                        <label htmlFor="geminiModel" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Gemini Model
                         </label>
                         <select
                             id="geminiModel"
                             value={selectedModel}
                             onChange={(e) => setSelectedModel(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                         >
                             {geminiModels.map((model) => (
                                 <option key={model.value} value={model.value}>
@@ -479,9 +507,9 @@ const GeminiTab = () => {
                                 </option>
                             ))}
                         </select>
-                        <p className="mt-2 text-xs text-gray-500">
-                            {geminiModels.find(m => m.value === selectedModel)?.description}. 
-                            See <a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">pricing details</a>.
+                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            {geminiModels.find(m => m.value === selectedModel)?.description}.
+                            See <a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank" rel="noopener noreferrer" className="text-system-blue hover:text-system-darkBlue dark:text-system-darkBlue">pricing details</a>.
                         </p>
                     </div>
 
@@ -492,9 +520,9 @@ const GeminiTab = () => {
                             type="submit"
                             disabled={isLoading}
                             className={`px-6 py-2.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${isLoading
-                                ? 'bg-blue-400'
-                                : 'bg-blue-600 hover:bg-blue-700'
-                                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+                                ? 'bg-gray-400 dark:bg-gray-600'
+                                : 'bg-system-blue hover:bg-system-darkBlue'
+                                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-system-blue`}
                         >
                             {isLoading ? 'Saving...' : hasExistingKey ? 'Update Settings' : 'Save API Settings'}
                         </motion.button>

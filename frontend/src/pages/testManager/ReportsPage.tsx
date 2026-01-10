@@ -174,27 +174,27 @@ const ReportsPage: React.FC = () => {
     if (isLoading || !summaryReport) {
         return (
             <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
             </div>
         );
     }
 
     return (
-        <div className="flex flex-col h-auto sm:h-full bg-gray-50">
+        <div className="flex flex-col h-auto sm:h-full bg-gray-50 dark:bg-gray-900">
             {/* Header */}
-            <div className="bg-white border-b border-gray-200 px-4 py-3 sm:sticky sm:top-0 sm:z-20">
+            <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:sticky sm:top-0 sm:z-20">
                 <div className="flex items-center justify-between mb-3">
                     <ContextBreadcrumb showSuiteSelector={false} />
                     <div className="flex items-center gap-2">
                         <button
                             onClick={fetchReports}
-                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                             title="Refresh"
                         >
                             <Activity className="w-5 h-5" />
                         </button>
                         <button
-                            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                             title="Export Report"
                         >
                             <Download className="w-5 h-5" />
@@ -204,15 +204,15 @@ const ReportsPage: React.FC = () => {
 
                 {/* Filters */}
                 <div className="flex items-center gap-3 flex-wrap">
-                    <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                    <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                         {(['7d', '30d', '90d', 'all', 'custom'] as const).map((range) => (
                             <button
                                 key={range}
                                 onClick={() => setDateRange(range)}
                                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                                     dateRange === range
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
+                                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
+                                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                                 }`}
                             >
                                 {range === '7d' && '7d'}
@@ -232,7 +232,7 @@ const ReportsPage: React.FC = () => {
                                     value={customRange.start}
                                     max={customRange.end}
                                     onChange={(e) => setCustomRange({ ...customRange, start: e.target.value })}
-                                    className="text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                                    className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                                 />
                             </div>
                             <span className="text-gray-400 font-medium">to</span>
@@ -243,22 +243,22 @@ const ReportsPage: React.FC = () => {
                                     min={customRange.start}
                                     max={new Date().toISOString().split('T')[0]}
                                     onChange={(e) => setCustomRange({ ...customRange, end: e.target.value })}
-                                    className="text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                                    className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                                 />
                             </div>
                         </div>
                     )}
 
                     {activeTab === 'trends' && (
-                        <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                    <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                             {(['day', 'week', 'month'] as const).map((group) => (
                                 <button
                                     key={group}
                                     onClick={() => setGroupBy(group)}
                                     className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                                         groupBy === group
-                                            ? 'bg-white text-gray-900 shadow-sm'
-                                            : 'text-gray-600 hover:text-gray-900'
+                                            ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
+                                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                                     }`}
                                 >
                                     {group.charAt(0).toUpperCase() + group.slice(1)}
@@ -270,7 +270,7 @@ const ReportsPage: React.FC = () => {
             </div>
 
             {/* Tabs */}
-            <div className="bg-white border-b border-gray-200 px-4">
+            <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4">
                 <div className="flex gap-4">
                     {[
                         { id: 'overview' as const, label: 'Overview', icon: BarChart3 },
@@ -284,7 +284,7 @@ const ReportsPage: React.FC = () => {
                             className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                                 activeTab === tab.id
                                     ? 'border-blue-600 text-blue-600'
-                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                             }`}
                         >
                             <tab.icon className="w-4 h-4" />
@@ -364,8 +364,8 @@ const OverviewTab: React.FC<{ summaryReport: ProjectSummaryReport; trendReport: 
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Pass Rate Distribution */}
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Test Results Distribution</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Test Results Distribution</h3>
                     <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
                             <Pie
@@ -389,11 +389,11 @@ const OverviewTab: React.FC<{ summaryReport: ProjectSummaryReport; trendReport: 
 
                 {/* Recent Pass Rate Trend */}
                 {trendReport && trendReport.dataPoints.length > 0 && (
-                    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Pass Rate Trend</h3>
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Pass Rate Trend</h3>
                         <ResponsiveContainer width="100%" height={300}>
                             <LineChart data={trendReport.dataPoints}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
                                 <XAxis
                                     dataKey="periodLabel"
                                     stroke="#6B7280"
@@ -421,37 +421,37 @@ const OverviewTab: React.FC<{ summaryReport: ProjectSummaryReport; trendReport: 
 
             {/* Suite Breakdown */}
             {summaryReport.suiteBreakdown.length > 0 && (
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Suite Performance</h3>
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Suite Performance</h3>
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-gray-200">
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Suite</th>
-                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Runs</th>
-                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Tests</th>
-                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Pass Rate</th>
-                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Avg Duration</th>
+                                <tr className="border-b border-gray-200 dark:border-gray-700">
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Suite</th>
+                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Runs</th>
+                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Tests</th>
+                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Pass Rate</th>
+                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Avg Duration</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {summaryReport.suiteBreakdown.map((suite) => (
-                                    <tr key={suite.suiteId} className="border-b border-gray-100 hover:bg-gray-50">
-                                        <td className="py-3 px-4 text-sm text-gray-900">{suite.suiteName}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-600 text-right">{suite.totalRuns}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-600 text-right">{suite.totalTests}</td>
+                                    <tr key={suite.suiteId} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100">{suite.suiteName}</td>
+                                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{suite.totalRuns}</td>
+                                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{suite.totalTests}</td>
                                         <td className="py-3 px-4 text-right">
                                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                                 suite.averagePassRate >= 80
-                                                    ? 'bg-green-100 text-green-700'
+                                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                                                     : suite.averagePassRate >= 60
-                                                    ? 'bg-yellow-100 text-yellow-700'
-                                                    : 'bg-red-100 text-red-700'
+                                                    ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                                                    : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                                             }`}>
                                                 {suite.averagePassRate.toFixed(1)}%
                                             </span>
                                         </td>
-                                        <td className="py-3 px-4 text-sm text-gray-600 text-right">
+                                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">
                                             {formatDuration(suite.averageDuration)}
                                         </td>
                                     </tr>
@@ -470,31 +470,31 @@ const TrendsTab: React.FC<{ trendReport: TrendReport }> = ({ trendReport }) => {
     return (
         <div className="space-y-6">
             {/* Trend Summary */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <div className="text-sm text-gray-500 mb-1">Total Runs</div>
-                        <div className="text-2xl font-bold text-gray-900">{trendReport.summary.totalRuns}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Runs</div>
+                        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{trendReport.summary.totalRuns}</div>
                     </div>
                     <div>
-                        <div className="text-sm text-gray-500 mb-1">Average Pass Rate</div>
-                        <div className="text-2xl font-bold text-gray-900">{trendReport.summary.averagePassRate}%</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Average Pass Rate</div>
+                        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{trendReport.summary.averagePassRate}%</div>
                     </div>
                     <div>
-                        <div className="text-sm text-gray-500 mb-1">Trend</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Trend</div>
                         <div className="flex items-center gap-2">
                             <span className={`text-2xl font-bold ${
                                 trendReport.summary.trendDirection === 'improving'
-                                    ? 'text-green-600'
+                                    ? 'text-green-600 dark:text-green-400'
                                     : trendReport.summary.trendDirection === 'declining'
-                                    ? 'text-red-600'
-                                    : 'text-gray-600'
+                                    ? 'text-red-600 dark:text-red-400'
+                                    : 'text-gray-600 dark:text-gray-400'
                             }`}>
                                 {trendReport.summary.trendDirection === 'improving' && <TrendingUp className="w-6 h-6" />}
                                 {trendReport.summary.trendDirection === 'declining' && <TrendingDown className="w-6 h-6" />}
                                 {trendReport.summary.trendDirection === 'stable' && <Minus className="w-6 h-6" />}
                             </span>
-                            <span className="text-lg font-medium text-gray-700">
+                            <span className="text-lg font-medium text-gray-700 dark:text-gray-300">
                                 {Math.abs(trendReport.summary.changePercentage).toFixed(1)}%
                             </span>
                         </div>
@@ -503,8 +503,8 @@ const TrendsTab: React.FC<{ trendReport: TrendReport }> = ({ trendReport }) => {
             </div>
 
             {/* Pass Rate Over Time */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Pass Rate Over Time</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Pass Rate Over Time</h3>
                 <ResponsiveContainer width="100%" height={400}>
                     <LineChart data={trendReport.dataPoints}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -534,8 +534,8 @@ const TrendsTab: React.FC<{ trendReport: TrendReport }> = ({ trendReport }) => {
             </div>
 
             {/* Test Execution Volume */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Test Execution Volume</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Test Execution Volume</h3>
                 <ResponsiveContainer width="100%" height={400}>
                     <BarChart data={trendReport.dataPoints}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -572,8 +572,8 @@ const SuitesTab: React.FC<{ suiteReport: SuiteComparisonReport }> = ({ suiteRepo
     return (
         <div className="space-y-6">
             {/* Suite Comparison Chart */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Suite Pass Rates</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Suite Pass Rates</h3>
                 <ResponsiveContainer width="100%" height={400}>
                     <BarChart data={chartData} layout="vertical">
                         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -587,45 +587,45 @@ const SuitesTab: React.FC<{ suiteReport: SuiteComparisonReport }> = ({ suiteRepo
             </div>
 
             {/* Detailed Suite Table */}
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Detailed Suite Metrics</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Detailed Suite Metrics</h3>
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
-                            <tr className="border-b border-gray-200">
-                                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Suite</th>
-                                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Runs</th>
-                                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Tests</th>
-                                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Pass Rate</th>
-                                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Fail Rate</th>
-                                <th className="text-center py-3 px-4 text-sm font-medium text-gray-700">Trend</th>
-                                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Avg Duration</th>
+                            <tr className="border-b border-gray-200 dark:border-gray-700">
+                                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Suite</th>
+                                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Runs</th>
+                                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Tests</th>
+                                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Pass Rate</th>
+                                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Fail Rate</th>
+                                <th className="text-center py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Trend</th>
+                                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Avg Duration</th>
                             </tr>
                         </thead>
                         <tbody>
                             {suiteReport.suites.map((suite) => (
-                                <tr key={suite.suiteId} className="border-b border-gray-100 hover:bg-gray-50">
-                                    <td className="py-3 px-4 text-sm font-medium text-gray-900">{suite.suiteName}</td>
-                                    <td className="py-3 px-4 text-sm text-gray-600 text-right">{suite.totalRuns}</td>
-                                    <td className="py-3 px-4 text-sm text-gray-600 text-right">{suite.totalTests}</td>
+                                <tr key={suite.suiteId} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                    <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-gray-100">{suite.suiteName}</td>
+                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{suite.totalRuns}</td>
+                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{suite.totalTests}</td>
                                     <td className="py-3 px-4 text-right">
                                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                             suite.passRate >= 80
-                                                ? 'bg-green-100 text-green-700'
+                                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                                                 : suite.passRate >= 60
-                                                ? 'bg-yellow-100 text-yellow-700'
-                                                : 'bg-red-100 text-red-700'
+                                                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+                                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                                         }`}>
                                             {suite.passRate.toFixed(1)}%
                                         </span>
                                     </td>
-                                    <td className="py-3 px-4 text-sm text-gray-600 text-right">{suite.failureRate.toFixed(1)}%</td>
+                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{suite.failureRate.toFixed(1)}%</td>
                                     <td className="py-3 px-4 text-center">
-                                        {suite.trend === 'improving' && <TrendingUp className="w-4 h-4 text-green-600 mx-auto" />}
-                                        {suite.trend === 'declining' && <TrendingDown className="w-4 h-4 text-red-600 mx-auto" />}
-                                        {suite.trend === 'stable' && <Minus className="w-4 h-4 text-gray-400 mx-auto" />}
+                                        {suite.trend === 'improving' && <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400 mx-auto" />}
+                                        {suite.trend === 'declining' && <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400 mx-auto" />}
+                                        {suite.trend === 'stable' && <Minus className="w-4 h-4 text-gray-400 dark:text-gray-500 mx-auto" />}
                                     </td>
-                                    <td className="py-3 px-4 text-sm text-gray-600 text-right">
+                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">
                                         {formatDuration(suite.averageDuration)}
                                     </td>
                                 </tr>
@@ -644,50 +644,50 @@ const HealthTab: React.FC<{ healthReport: TestCaseHealthReport }> = ({ healthRep
         <div className="space-y-6">
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                    <div className="text-sm text-gray-500 mb-1">Total Test Cases</div>
-                    <div className="text-2xl font-bold text-gray-900">{healthReport.summary.totalUniqueCases}</div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Test Cases</div>
+                    <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{healthReport.summary.totalUniqueCases}</div>
                 </div>
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                    <div className="text-sm text-gray-500 mb-1">Flaky Tests</div>
-                    <div className="text-2xl font-bold text-orange-600">{healthReport.summary.flakyCount}</div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Flaky Tests</div>
+                    <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{healthReport.summary.flakyCount}</div>
                 </div>
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                    <div className="text-sm text-gray-500 mb-1">Never Executed</div>
-                    <div className="text-2xl font-bold text-gray-600">{healthReport.summary.neverExecutedCount}</div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Never Executed</div>
+                    <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">{healthReport.summary.neverExecutedCount}</div>
                 </div>
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                    <div className="text-sm text-gray-500 mb-1">High Failure Rate</div>
-                    <div className="text-2xl font-bold text-red-600">{healthReport.summary.highFailureCount}</div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">High Failure Rate</div>
+                    <div className="text-2xl font-bold text-red-600 dark:text-red-400">{healthReport.summary.highFailureCount}</div>
                 </div>
             </div>
 
             {/* Flaky Tests */}
             {healthReport.flakyTests.length > 0 && (
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <AlertCircle className="w-5 h-5 text-orange-600" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                         Flaky Tests
                     </h3>
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-gray-200">
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Test Case</th>
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Suite</th>
-                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Executions</th>
-                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Flaky Score</th>
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Recent Results</th>
+                                <tr className="border-b border-gray-200 dark:border-gray-700">
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Test Case</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Suite</th>
+                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Executions</th>
+                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Flaky Score</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Recent Results</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {healthReport.flakyTests.slice(0, 10).map((test) => (
-                                    <tr key={test.caseId} className="border-b border-gray-100 hover:bg-gray-50">
-                                        <td className="py-3 px-4 text-sm text-gray-900">{test.title}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-600">{test.suite}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-600 text-right">{test.executionCount}</td>
+                                    <tr key={test.caseId} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100">{test.title}</td>
+                                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{test.suite}</td>
+                                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{test.executionCount}</td>
                                         <td className="py-3 px-4 text-right">
-                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400">
                                                 {test.flakyScore}
                                             </span>
                                         </td>
@@ -718,31 +718,31 @@ const HealthTab: React.FC<{ healthReport: TestCaseHealthReport }> = ({ healthRep
 
             {/* Most Failing Tests */}
             {healthReport.mostFailingTests.length > 0 && (
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <XCircle className="w-5 h-5 text-red-600" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                        <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
                         Most Failing Tests
                     </h3>
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-gray-200">
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Test Case</th>
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Suite</th>
-                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Executions</th>
-                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Failures</th>
-                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Failure Rate</th>
+                                <tr className="border-b border-gray-200 dark:border-gray-700">
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Test Case</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Suite</th>
+                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Executions</th>
+                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Failures</th>
+                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Failure Rate</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {healthReport.mostFailingTests.slice(0, 10).map((test) => (
-                                    <tr key={test.caseId} className="border-b border-gray-100 hover:bg-gray-50">
-                                        <td className="py-3 px-4 text-sm text-gray-900">{test.title}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-600">{test.suite}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-600 text-right">{test.executionCount}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-600 text-right">{test.failCount}</td>
+                                    <tr key={test.caseId} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100">{test.title}</td>
+                                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{test.suite}</td>
+                                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{test.executionCount}</td>
+                                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{test.failCount}</td>
                                         <td className="py-3 px-4 text-right">
-                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
                                                 {test.failureRate.toFixed(1)}%
                                             </span>
                                         </td>
@@ -756,26 +756,26 @@ const HealthTab: React.FC<{ healthReport: TestCaseHealthReport }> = ({ healthRep
 
             {/* Never Executed Tests */}
             {healthReport.neverExecutedTests.length > 0 && (
-                <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-gray-600" />
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                         Never Executed Tests
                     </h3>
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-gray-200">
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Test Case</th>
-                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700">Suite</th>
-                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700">Days Since Creation</th>
+                                <tr className="border-b border-gray-200 dark:border-gray-700">
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Test Case</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Suite</th>
+                                    <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Days Since Creation</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {healthReport.neverExecutedTests.slice(0, 10).map((test) => (
-                                    <tr key={test.caseId} className="border-b border-gray-100 hover:bg-gray-50">
-                                        <td className="py-3 px-4 text-sm text-gray-900">{test.title}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-600">{test.suite}</td>
-                                        <td className="py-3 px-4 text-sm text-gray-600 text-right">{test.daysSinceCreation}</td>
+                                    <tr key={test.caseId} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                        <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100">{test.title}</td>
+                                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{test.suite}</td>
+                                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{test.daysSinceCreation}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -802,32 +802,32 @@ interface KPICardProps {
 
 const KPICard: React.FC<KPICardProps> = ({ title, value, subtitle, icon, color, trend }) => {
     const colorClasses = {
-        blue: 'bg-blue-50 text-blue-600',
-        green: 'bg-green-50 text-green-600',
-        purple: 'bg-purple-50 text-purple-600',
-        orange: 'bg-orange-50 text-orange-600',
-        red: 'bg-red-50 text-red-600',
+        blue: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+        green: 'bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400',
+        purple: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
+        orange: 'bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400',
+        red: 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400',
     };
 
     return (
-        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-2">
-                <div className="text-sm text-gray-500">{title}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">{title}</div>
                 <div className={`p-2 rounded-lg ${colorClasses[color]}`}>{icon}</div>
             </div>
-            <div className="text-2xl font-bold text-gray-900 mb-1">{value}</div>
-            {subtitle && <div className="text-xs text-gray-500">{subtitle}</div>}
+            <div className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">{value}</div>
+            {subtitle && <div className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</div>}
             {trend && (
                 <div className="flex items-center gap-1 mt-2">
-                    {trend.direction === 'improving' && <TrendingUp className="w-3 h-3 text-green-600" />}
-                    {trend.direction === 'declining' && <TrendingDown className="w-3 h-3 text-red-600" />}
-                    {trend.direction === 'stable' && <Minus className="w-3 h-3 text-gray-400" />}
+                    {trend.direction === 'improving' && <TrendingUp className="w-3 h-3 text-green-600 dark:text-green-400" />}
+                    {trend.direction === 'declining' && <TrendingDown className="w-3 h-3 text-red-600 dark:text-red-400" />}
+                    {trend.direction === 'stable' && <Minus className="w-3 h-3 text-gray-400 dark:text-gray-500" />}
                     <span className={`text-xs font-medium ${
                         trend.direction === 'improving'
-                            ? 'text-green-600'
+                            ? 'text-green-600 dark:text-green-400'
                             : trend.direction === 'declining'
-                            ? 'text-red-600'
-                            : 'text-gray-500'
+                            ? 'text-red-600 dark:text-red-400'
+                            : 'text-gray-500 dark:text-gray-400'
                     }`}>
                         {trend.value}
                     </span>

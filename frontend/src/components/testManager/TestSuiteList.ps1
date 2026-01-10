@@ -165,18 +165,18 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
 
     return (
         <>
-        <div className={viewMode === 'card' ? 'p-6 md:p-8' : ''}>
             {viewMode === 'card' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="pt-6 px-6 md:px-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {/* Create New Suite Card */}
                 <div
                     onClick={onCreate}
-                    className="group flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-all cursor-pointer min-h-[200px]"
+                    className="group flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-system-blue hover:bg-system-blue/5 dark:hover:bg-system-blue/10 transition-all cursor-pointer min-h-[200px]"
                 >
                     <div className="h-12 w-12 rounded-full bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                        <Plus className="h-6 w-6 text-blue-500 dark:text-blue-400" />
+                        <Plus className="h-6 w-6 text-blue-500 dark:text-system-blue" />
                     </div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Create New Suite</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Create New Suite</h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">Organize your cases</p>
                 </div>
 
@@ -187,23 +187,23 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                         <div
                             key={suite.id || suite.name}
                             onClick={() => onSuiteClick(suite.name, suite.id)}
-                            className="group bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:hover:shadow-none hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between"
+                            className="group bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)] hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between"
                         >
                             <div>
                                 <div className="flex justify-between items-start mb-6">
                                     <div className="flex items-center gap-3">
-                                        <div className="h-10 w-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-500 dark:text-blue-400">
-                                            <Folder className="h-5 w-5 fill-blue-100 dark:fill-blue-900/50" strokeWidth={2} />
+                                        <div className="h-10 w-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-system-blue dark:text-system-darkBlue">
+                                            <Folder className="h-5 w-5 fill-blue-100 dark:fill-blue-900/30" strokeWidth={2} />
                                         </div>
                                         <div>
-                                            <h3 className="font-semibold text-gray-900 dark:text-white text-lg tracking-tight">{suite.name}</h3>
+                                            <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg tracking-tight">{suite.name}</h3>
                                             <span className="text-xs text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider">{stats.total} Cases</span>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <button
                                             onClick={(e) => handleShareClick(e, suite.id)}
-                                            className="p-2 text-gray-300 dark:text-gray-600 hover:text-blue-500 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors opacity-0 group-hover:opacity-100"
+                                            className="p-2 text-gray-300 dark:text-gray-600 hover:text-system-blue dark:hover:text-system-blue rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100"
                                             title="Share Suite"
                                         >
                                             <Share2 className="h-4 w-4" />
@@ -220,7 +220,7 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                 <div className="space-y-4 mb-2">
                                     <div className="flex items-center justify-between text-sm">
                                         <span className="font-medium text-gray-700 dark:text-gray-300">Progress</span>
-                                        <span className={`font-semibold ${stats.progress === 100 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}`}>{stats.progress}%</span>
+                                        <span className={`font-semibold ${stats.progress === 100 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-gray-100'}`}>{stats.progress}%</span>
                                     </div>
 
                                     <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden flex">
@@ -267,7 +267,7 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                 {stats.passed > 0 && (
                                     <button
                                         onClick={(e) => handleStatusClick(e, suite, Status.Passed)}
-                                        className="flex items-center gap-1.5 text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2.5 py-1.5 rounded-full hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors cursor-pointer"
+                                        className="flex items-center gap-1.5 text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2.5 py-1.5 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors cursor-pointer"
                                     >
                                         <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
                                         {stats.passed} Passed
@@ -276,7 +276,7 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                 {stats.failed > 0 && (
                                     <button
                                         onClick={(e) => handleStatusClick(e, suite, Status.Failed)}
-                                        className="flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-2.5 py-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors cursor-pointer"
+                                        className="flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2.5 py-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors cursor-pointer"
                                     >
                                         <AlertCircle className="h-3.5 w-3.5" />
                                         {stats.failed} Failed
@@ -285,7 +285,7 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                 {stats.retest > 0 && (
                                     <button
                                         onClick={(e) => handleStatusClick(e, suite, Status.Retest)}
-                                        className="flex items-center gap-1.5 text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2.5 py-1.5 rounded-full hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors cursor-pointer"
+                                        className="flex items-center gap-1.5 text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2.5 py-1.5 rounded-full hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors cursor-pointer"
                                     >
                                         <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
                                         {stats.retest} Retest
@@ -296,14 +296,14 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                         onClick={(e) => handleStatusClick(e, suite, Status.Draft)}
                                         className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2.5 py-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
                                     >
-                                        <div className="h-1.5 w-1.5 rounded-full bg-gray-400" />
+                                        <div className="h-1.5 w-1.5 rounded-full bg-gray-400 dark:bg-gray-500" />
                                         {stats.draft} Draft
                                     </button>
                                 )}
                                 {stats.skipped > 0 && (
                                     <button
                                         onClick={(e) => handleStatusClick(e, suite, Status.Skipped)}
-                                        className="flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
+                                        className="flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors cursor-pointer"
                                     >
                                         <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
                                         {stats.skipped} Skipped
@@ -321,12 +321,12 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                 })}
             </div>
             ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-auto flex-1">
                     <table className="w-full text-left border-collapse">
-                        <thead className="sticky top-0 z-10 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                        <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-none">
                             <tr>
                                 <th
-                                    className="py-3 pl-4 pr-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
+                                    className="py-3 pl-6 pr-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
                                     onClick={() => handleSort('name')}
                                 >
                                     <div className="flex items-center gap-1.5">
@@ -370,32 +370,32 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                         )}
                                     </div>
                                 </th>
-                                <th className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                                <th className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider text-right pr-6">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-900">
                             {sortedSuites.map(suite => {
                                 const stats = getSuiteStats(suite.name);
                                 return (
                                     <tr
                                         key={suite.id || suite.name}
-                                        className="group hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                                        className="group hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors cursor-pointer"
                                         onClick={() => onSuiteClick(suite.name, suite.id)}
                                     >
-                                        <td className="py-4 pl-4 pr-4">
+                                        <td className="py-4 pl-6 pr-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-500 dark:text-blue-400">
-                                                    <Folder className="h-4 w-4 fill-blue-100 dark:fill-blue-900/50" strokeWidth={2} />
+                                                    <Folder className="h-4 w-4 fill-blue-100 dark:fill-blue-900/30" strokeWidth={2} />
                                                 </div>
-                                                <span className="text-sm font-medium text-gray-900 dark:text-white">{suite.name}</span>
+                                                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{suite.name}</span>
                                             </div>
                                         </td>
                                         <td className="py-4 px-4">
-                                            <span className="text-sm text-gray-600 dark:text-gray-300">{stats.total}</span>
+                                            <span className="text-sm text-gray-600 dark:text-gray-400">{stats.total}</span>
                                         </td>
                                         <td className="py-4 px-4">
                                             <div className="flex items-center gap-2">
-                                                <span className={`text-sm font-semibold ${stats.progress === 100 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}`}>{stats.progress}%</span>
+                                                <span className={`text-sm font-semibold ${stats.progress === 100 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-gray-100'}`}>{stats.progress}%</span>
                                                 <div className="w-16 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden flex">
                                                     {stats.passed > 0 && (
                                                         <div
@@ -435,7 +435,7 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                                 {stats.passed > 0 && (
                                                     <button
                                                         onClick={(e) => handleStatusClick(e, suite, Status.Passed)}
-                                                        className="flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors cursor-pointer"
+                                                        className="flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors cursor-pointer"
                                                     >
                                                         <div className="h-1 w-1 rounded-full bg-green-500" />
                                                         {stats.passed} Passed
@@ -444,7 +444,7 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                                 {stats.failed > 0 && (
                                                     <button
                                                         onClick={(e) => handleStatusClick(e, suite, Status.Failed)}
-                                                        className="flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-2 py-1 rounded hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors cursor-pointer"
+                                                        className="flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors cursor-pointer"
                                                     >
                                                         <AlertCircle className="h-3 w-3" />
                                                         {stats.failed} Failed
@@ -453,7 +453,7 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                                 {stats.retest > 0 && (
                                                     <button
                                                         onClick={(e) => handleStatusClick(e, suite, Status.Retest)}
-                                                        className="flex items-center gap-1 text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2 py-1 rounded hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors cursor-pointer"
+                                                        className="flex items-center gap-1 text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors cursor-pointer"
                                                     >
                                                         <div className="h-1 w-1 rounded-full bg-orange-500" />
                                                         {stats.retest} Retest
@@ -464,14 +464,14 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                                         onClick={(e) => handleStatusClick(e, suite, Status.Draft)}
                                                         className="flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
                                                     >
-                                                        <div className="h-1 w-1 rounded-full bg-gray-400" />
+                                                        <div className="h-1 w-1 rounded-full bg-gray-400 dark:bg-gray-500" />
                                                         {stats.draft} Draft
                                                     </button>
                                                 )}
                                                 {stats.skipped > 0 && (
                                                     <button
                                                         onClick={(e) => handleStatusClick(e, suite, Status.Skipped)}
-                                                        className="flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
+                                                        className="flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors cursor-pointer"
                                                     >
                                                         <div className="h-1 w-1 rounded-full bg-blue-500" />
                                                         {stats.skipped} Skipped
@@ -486,7 +486,7 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                             </div>
                                         </td>
                                         <td className="py-4 px-4">
-                                            <div className="text-sm text-gray-600 dark:text-gray-300">
+                                            <div className="text-sm text-gray-600 dark:text-gray-400">
                                                 {new Date(suite.updatedAt).toLocaleDateString('en-US', {
                                                     month: 'short',
                                                     day: 'numeric',
@@ -494,14 +494,14 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                                 })}
                                             </div>
                                         </td>
-                                        <td className="py-4 px-4 text-right">
+                                        <td className="py-4 px-4 text-right pr-6">
                                             <div className="flex items-center justify-end gap-1">
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         handleShareClick(e, suite.id);
                                                     }}
-                                                    className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
+                                                    className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-gray-700 rounded transition-colors"
                                                     title="Share Suite"
                                                 >
                                                     <Share2 className="h-4 w-4" />
@@ -511,28 +511,12 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                                         e.stopPropagation();
                                                         setSelectedSuite(suite);
                                                         setDropdownPosition(null);
-                                                        if (onEdit) {
-                                                            onEdit(suite);
-                                                        }
+                                                        handleMenuClick(e, suite);
                                                     }}
-                                                    className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                                                    title="Edit Suite"
+                                                    className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                                                    title="More actions"
                                                 >
-                                                    <Pencil className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSelectedSuite(suite);
-                                                        setDropdownPosition(null);
-                                                        if (onDelete) {
-                                                            onDelete(suite);
-                                                        }
-                                                    }}
-                                                    className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
-                                                    title="Delete Suite"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <MoreHorizontal className="h-4 w-4" />
                                                 </button>
                                             </div>
                                         </td>
@@ -543,7 +527,6 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                     </table>
                 </div>
             )}
-        </div>
 
         {/* Dropdown Menu */}
         {dropdownPosition && (
@@ -557,7 +540,7 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
             >
                 <button
                     onClick={handleEdit}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
                     <Pencil className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                     Edit Suite
@@ -565,13 +548,12 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                 <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
                 <button
                     onClick={handleDelete}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                 >
                     <Trash2 className="h-4 w-4" />
                     Delete Suite
                 </button>
             </div>
-        )}
         </>
     );
 };

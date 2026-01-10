@@ -8,8 +8,13 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #ffffff;
-  /* Apple system gray background */
   color: #1d1d1f;
+}
+
+/* Dark mode body styles */
+.dark body {
+  background-color: #1a1a1a;
+  color: #f5f5f5;
 }
 
 /* Glassmorphism Utilities */
@@ -21,11 +26,22 @@ body {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
+.dark .glass-panel {
+  background: rgba(42, 42, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
 .glass-sidebar {
   background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(25px) saturate(180%);
   -webkit-backdrop-filter: blur(25px) saturate(180%);
   border-right: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.dark .glass-sidebar {
+  background: rgba(42, 42, 42, 0.8);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* Card Styles */
@@ -36,11 +52,21 @@ body {
   border-radius: 16px;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.6);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.dark .mac-card {
+  background: rgba(45, 45, 45, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 .mac-card:hover {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+}
+
+.dark .mac-card:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 /* Button Styles */
@@ -63,8 +89,6 @@ body {
   background: #0062CC;
 }
 
-/* Input Styles */
-
 /* Enhanced Search Bar Styles */
 .searchbar-input {
   background: rgba(255, 255, 255, 0.7);
@@ -75,6 +99,13 @@ body {
   height: 2.5rem;
   box-shadow: 0 1px 6px 0 rgba(60, 60, 60, 0.06);
   transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+  color: #000000;
+}
+
+.dark .searchbar-input {
+  background: rgba(60, 60, 60, 0.7);
+  border: 1.5px solid #404040;
+  color: #f5f5f5;
 }
 
 .searchbar-input:focus {
@@ -84,10 +115,27 @@ body {
   background: #fff;
 }
 
+.dark .searchbar-input:focus {
+  background: #3a3a3a;
+  box-shadow: 0 2px 12px 0 rgba(0, 122, 255, 0.20);
+}
+
+.searchbar-input::placeholder {
+  color: #9ca3af;
+}
+
+.dark .searchbar-input::placeholder {
+  color: #6b7280;
+}
+
 /* Custom scrollbar for Webkit to match macOS minimal style */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1a1a1a;
 }
 
 ::-webkit-scrollbar-track {
@@ -102,15 +150,22 @@ body {
   transition: background 0.3s ease;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(0, 0, 0, 0.25);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.25);
 }
 
 /* Custom scrollbar class for specific elements */
 .custom-scrollbar {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  /* Smooth momentum scrolling on iOS */
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -127,14 +182,27 @@ body {
   border-radius: 3px;
 }
 
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.3);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 /* Tiptap Editor Styles */
 .ProseMirror {
   outline: none;
   min-height: 150px;
+  color: #000000;
+}
+
+.dark .ProseMirror {
+  color: #f5f5f5;
 }
 
 .ProseMirror p.is-editor-empty:first-child::before {
@@ -143,6 +211,10 @@ body {
   color: #9ca3af;
   pointer-events: none;
   height: 0;
+}
+
+.dark .ProseMirror p.is-editor-empty:first-child::before {
+  color: #6b7280;
 }
 
 .ProseMirror ul {
@@ -173,6 +245,10 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+.dark .ProseMirror img {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
 .ProseMirror img.ProseMirror-selectednode {
   outline: 3px solid #007AFF;
   outline-offset: 2px;
@@ -187,44 +263,222 @@ body {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+.dark .ProseMirror .image-uploading {
+  background: #3a3a3a;
+}
+
 @keyframes pulse {
-
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.5;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 /* Action Sheet Animations */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 @keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Form input dark mode styles */
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark input[type="search"],
+.dark input[type="number"],
+.dark input[type="tel"],
+.dark input[type="url"],
+.dark select,
+.dark textarea {
+  background-color: rgba(60, 60, 60, 0.7);
+  border-color: #404040;
+  color: #f5f5f5;
+}
+
+.dark input[type="text"]:focus,
+.dark input[type="email"]:focus,
+.dark input[type="password"]:focus,
+.dark input[type="search"]:focus,
+.dark input[type="number"]:focus,
+.dark input[type="tel"]:focus,
+.dark input[type="url"]:focus,
+.dark select:focus,
+.dark textarea:focus {
+  background-color: rgba(75, 75, 75, 0.8);
+  border-color: #007AFF;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+}
+
+/* Dark mode table styles */
+.dark table {
+  color: #f5f5f5;
+}
+
+.dark thead {
+  border-bottom-color: #404040;
+}
+
+.dark tbody tr {
+  border-bottom-color: #333333;
+}
+
+.dark tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Dark mode badge styles */
+.dark .badge {
+  background-color: rgba(75, 75, 75, 0.8);
+  color: #f5f5f5;
+}
+
+.dark .badge-success {
+  background-color: rgba(129, 199, 132, 0.2);
+  color: #81c784;
+}
+
+.dark .badge-warning {
+  background-color: rgba(255, 183, 77, 0.2);
+  color: #ffb74d;
+}
+
+.dark .badge-error {
+  background-color: rgba(239, 83, 80, 0.2);
+  color: #ef5350;
+}
+
+.dark .badge-info {
+  background-color: rgba(79, 195, 247, 0.2);
+  color: #4fc3f7;
+}
+
+/* Toast styles for dark mode */
+.dark .toast {
+  background-color: #2d2d2d;
+  color: #f5f5f5;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+.dark .toast-success {
+  border-left: 4px solid #81c784;
+}
+
+.dark .toast-error {
+  border-left: 4px solid #ef5350;
+}
+
+.dark .toast-warning {
+  border-left: 4px solid #ffb74d;
+}
+
+.dark .toast-info {
+  border-left: 4px solid #4fc3f7;
+}
+
+/* Modal dark mode styles */
+.dark .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px) saturate(150%);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
+}
+
+.dark .modal-content {
+  background-color: rgba(36, 36, 36, 0.95);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.dark .modal-header {
+  border-bottom-color: #404040;
+  background-color: rgba(60, 60, 60, 0.3);
+}
+
+.dark .modal-footer {
+  border-top-color: #404040;
+  background-color: rgba(60, 60, 60, 0.3);
+}
+
+/* Enhanced glassmorphism for modals in dark mode */
+.glass-modal-overlay {
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+}
+
+.dark .glass-modal-overlay {
+  background-color: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+.glass-modal-content {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass-modal-content {
+  background: rgba(36, 36, 36, 0.9);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Dropdown dark mode styles */
+.dark .dropdown-menu {
+  background-color: #242424;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+.dark .dropdown-item {
+  color: #f5f5f5;
+}
+
+.dark .dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .dropdown-divider {
+  border-top-color: #404040;
+}
+
+/* Transition for theme switching */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0ms;
   }
 }
+
+/* Dark mode specific utility classes */
+.bg-dark { background-color: #1a1a1a; }
+.bg-dark-paper { background-color: #242424; }
+.bg-dark-elevated { background-color: #2d2d2d; }
+
+.text-dark { color: #f5f5f5; }
+.text-dark-secondary { color: #a0a0a0; }
+.text-dark-muted { color: #6b6b6b; }
+
+.border-dark { border-color: #333333; }
+.border-dark-subtle { border-color: #404040; }

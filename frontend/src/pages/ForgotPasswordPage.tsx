@@ -23,16 +23,16 @@ const ForgotPasswordPage: React.FC = () => {
 			initial={{ opacity: 0, y: 20 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.5 }}
-			className="max-w-md w-full bg-background-paper border border-gray-200 rounded-2xl shadow-lg overflow-hidden"
+			className="max-w-md w-full bg-background-paper dark:bg-background-darkPaper border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg overflow-hidden"
 		>
 			<div className="p-8">
-				<h2 className="text-3xl font-bold mb-6 text-center text-primary">
+				<h2 className="text-3xl font-bold mb-6 text-center text-primary dark:text-darkPrimary">
 					Forgot Password
 				</h2>
 
 				{!isSubmitted ? (
 					<form onSubmit={handleSubmit}>
-						<p className="text-text-secondary mb-6 text-center">
+						<p className="text-text-secondary dark:text-text-darkSecondary mb-6 text-center">
 							Enter your email address and we'll send you a link to reset your password.
 						</p>
 						<Input
@@ -49,7 +49,7 @@ const ForgotPasswordPage: React.FC = () => {
 						<motion.button
 							whileHover={{ scale: 1.02 }}
 							whileTap={{ scale: 0.98 }}
-							className="w-full py-3 px-4 bg-primary text-text-contrast font-bold rounded-lg shadow hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition duration-200"
+							className="w-full py-3 px-4 bg-primary dark:bg-primary-darkMode text-text-contrast dark:text-primary-darkModeContrast font-bold rounded-lg shadow hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition duration-200"
 							type="submit"
 							disabled={isLoading}
 						>
@@ -62,19 +62,19 @@ const ForgotPasswordPage: React.FC = () => {
 							initial={{ scale: 0 }}
 							animate={{ scale: 1 }}
 							transition={{ type: "spring", stiffness: 500, damping: 30 }}
-							className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4"
+							className="w-16 h-16 bg-primary dark:bg-primary-darkMode rounded-full flex items-center justify-center mx-auto mb-4"
 						>
-							<Mail className="h-8 w-8 text-white" />
+							<Mail className="h-8 w-8 text-white dark:text-gray-100" />
 						</motion.div>
-						<p className="text-text-secondary mb-6">
+						<p className="text-text-secondary dark:text-text-darkSecondary mb-6">
 							If an account exists for {email}, you will receive a password reset link shortly.
 						</p>
 					</div>
 				)}
 			</div>
-			<div className="px-8 py-4 bg-background-paper border-t border-gray-200 flex justify-center">
-				<p className="text-sm text-text-secondary">
-					<Link to="/login" className="text-primary hover:underline">
+			<div className="px-8 py-4 bg-background-paper dark:bg-background-darkPaper border-t border-gray-200 dark:border-gray-700 flex justify-center">
+				<p className="text-sm text-text-secondary dark:text-text-darkSecondary">
+					<Link to="/login" className="text-primary dark:text-darkPrimary hover:underline">
 						Back to Login
 					</Link>
 				</p>

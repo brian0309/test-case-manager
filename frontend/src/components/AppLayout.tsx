@@ -70,7 +70,7 @@ const AppLayout: React.FC = () => {
 
           {/* Backdrop for mobile when sidebar is open */}
           <div
-            className={`fixed inset-0 bg-black bg-opacity-40 z-40 transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+            className={`fixed inset-0 bg-black/40 dark:bg-black/60 z-40 transition-opacity duration-300 ${isSidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
             onClick={() => setIsSidebarOpen(false)}
             aria-hidden={!isSidebarOpen}
           />
@@ -90,7 +90,7 @@ const AppLayout: React.FC = () => {
         <Header toggleSidebar={toggleSidebar} />
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-background dark:bg-background-dark">
           <div className="h-full">
             <Outlet />
           </div>

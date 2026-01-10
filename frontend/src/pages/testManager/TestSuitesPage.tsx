@@ -160,7 +160,7 @@ const TestSuitesPage: React.FC = () => {
     if (isSuitesLoading) {
         return (
             <div className="flex flex-col h-auto sm:h-full">
-                <div className="bg-white sm:sticky sm:top-0 sm:z-20">
+                <div className="bg-gray-50 dark:bg-gray-800 sm:sticky sm:top-0 sm:z-20">
                     <ContextBreadcrumb
                         showSuiteSelector={false}
                         viewToggle={{ mode: viewMode, onToggle: handleViewModeToggle }}
@@ -174,9 +174,9 @@ const TestSuitesPage: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col h-auto sm:h-full">
+        <div className="flex flex-col h-auto sm:h-full bg-white dark:bg-gray-900">
             {/* Context Breadcrumb - project only, no suite selector */}
-            <div className="bg-white sm:sticky sm:top-0 sm:z-20">
+            <div className="bg-gray-50 dark:bg-gray-800 sm:sticky sm:top-0 sm:z-20">
                 <ContextBreadcrumb
                     showSuiteSelector={false}
                     viewToggle={{ mode: viewMode, onToggle: handleViewModeToggle }}

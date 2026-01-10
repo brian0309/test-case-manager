@@ -56,36 +56,38 @@ const TestSuiteCreateModal: React.FC<Props> = ({ isOpen, onClose, projectId }) =
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-2">
-            <div className="absolute inset-0 bg-white/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-md transition-opacity" onClick={onClose} />
 
-            <div className="relative w-full h-full sm:h-auto sm:max-w-xl bg-white sm:rounded-2xl shadow-2xl overflow-y-auto">
-                <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-gray-50">
-                    <h3 className="text-lg font-semibold">Create New Suite</h3>
-                    <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100">
-                        <X className="h-5 w-5 text-gray-600" />
+            <div className="relative w-full h-full sm:h-auto sm:max-w-xl bg-white dark:bg-[#2a2a2a]/95 backdrop-blur-xl sm:rounded-2xl shadow-2xl overflow-y-auto animate-[scaleIn_0.12s_ease-out]">
+                <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-[#333]/50">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Create New Suite</h3>
+                    <button onClick={onClose} className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <X className="h-5 w-5 text-gray-600 dark:text-gray-400" />
                     </button>
                 </div>
 
                 <div className="p-6 space-y-4">
-                    {error && <div className="text-sm text-red-600 bg-red-50 p-3 rounded">{error}</div>}
+                    {error && (
+                        <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 p-3 rounded">{error}</div>
+                    )}
 
                     <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Suite Name</label>
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Suite Name</label>
                         <input
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full p-3 rounded-lg border border-gray-200 focus:ring-0 outline-none text-sm"
+                            className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 focus:ring-0 outline-none text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                             placeholder="e.g. Regression Tests"
                             maxLength={200}
                         />
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Description (optional)</label>
+                        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Description (optional)</label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            className="w-full p-3 rounded-lg border border-gray-200 focus:ring-0 outline-none text-sm resize-none"
+                            className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 focus:ring-0 outline-none text-sm resize-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                             rows={3}
                             maxLength={500}
                             placeholder="Short description of this suite"
@@ -93,12 +95,12 @@ const TestSuiteCreateModal: React.FC<Props> = ({ isOpen, onClose, projectId }) =
                     </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50">
-                    <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100">Cancel</button>
+                <div className="flex items-center justify-end gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-[#333]/50">
+                    <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">Cancel</button>
                     <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className={`px-4 py-2 rounded-lg text-sm text-white bg-blue-500 hover:bg-blue-600 flex items-center gap-2 ${isSaving ? 'opacity-80 cursor-wait' : ''}`}
+                        className={`px-4 py-2 rounded-lg text-sm text-white bg-blue-500 hover:bg-blue-600 flex items-center gap-2 transition-colors ${isSaving ? 'opacity-80 cursor-wait' : ''}`}
                     >
                         <Plus className="h-4 w-4" />
                         {isSaving ? 'Creating...' : 'Create Suite'}

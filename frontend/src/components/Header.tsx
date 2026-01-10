@@ -1,7 +1,8 @@
 import React from "react";
 import { useAuthStore } from "../store/authStore";
 import { useTestManagerStore } from "../store/testManagerStore";
-import { Bell, Search, Menu } from 'lucide-react';
+import { useThemeStore } from "../store/themeStore";
+import { Bell, Search, Menu, Moon, Sun } from 'lucide-react';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -10,6 +11,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   const { user } = useAuthStore();
   const { searchQuery, setSearchQuery, clearSearchQuery } = useTestManagerStore();
+  const { isDarkMode, toggleTheme } = useThemeStore();
 
   return (
     <header className="glass-panel sticky top-0 z-10 border-b border-white/20">
@@ -18,7 +20,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
         <div className="flex items-center flex-1 min-w-0">
           <button
             onClick={toggleSidebar}
-            className="mr-3 text-gray-500 hover:text-gray-700 lg:hidden flex-shrink-0"
+            className="mr-3 text-gray-500 hover:text-gray-700 lg:hidden flex-shrink-0 dark:text-gray-400 dark:hover:text-gray-200"
           >
             <Menu size={20} />
           </button>
@@ -28,14 +30,14 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="searchbar-input w-full min-w-0 pl-4 pr-12 py-2 text-base bg-white/70 focus:bg-white border border-gray-200 focus:border-system-blue shadow-sm focus:shadow-md rounded-xl transition-all duration-200"
+              className="searchbar-input w-full min-w-0 pl-4 pr-12 py-2 text-base"
               aria-label="Search"
             />
 
             {searchQuery && (
               <button
                 onClick={clearSearchQuery}
-                className="absolute right-9 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute right-9 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
               >
                 <span className="sr-only">Clear search</span>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -50,16 +52,26 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
           </div>
         </div>
 
-        <div className="flex items-center space-x-4 flex-shrink-0">
-          <button className="p-2 text-gray-500 hover:text-gray-700 relative transition-colors rounded-full hover:bg-black/5">
-            <Bell size={20} />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-system-red rounded-full border-2 border-white"></span>
+        <div className="flex items-center space-x-3 flex-shrink-0">
+          {/* Dark mode toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors rounded-full hover:bg-black/5 dark:hover:bg-white/10"
+            aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+            title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
 
-          <div className="flex items-center space-x-3 pl-2 border-l border-gray-200/50">
+          <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 relative transition-colors rounded-full hover:bg-black/5 dark:hover:bg-white/10">
+            <Bell size={20} />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-system-red rounded-full border-2 border-white dark:border-[#242424]"></span>
+          </button>
+
+          <div className="flex items-center space-x-3 pl-2 border-l border-gray-200/50 dark:border-gray-700/50">
             <div className="hidden md:block text-right">
-              <p className="text-sm font-medium text-gray-900 leading-none">{user?.name || 'User'}</p>
-              <p className="text-xs text-gray-500 mt-1">Admin</p>
+              <p className="text-sm font-medium text-gray-900 leading-none dark:text-gray-100">{user?.name || 'User'}</p>
+              <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">Admin</p>
             </div>
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-system-blue to-system-indigo flex items-center justify-center text-white font-semibold shadow-sm text-sm">
               {user?.name?.charAt(0).toUpperCase() || 'U'}

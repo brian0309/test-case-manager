@@ -115,20 +115,20 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
                     {/* Create New Project Card */}
                     <div
                         onClick={onCreate}
-                        className="group flex flex-col items-center justify-center p-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 hover:border-blue-400 hover:bg-blue-50/30 transition-all cursor-pointer min-h-[220px]"
+                        className="group flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-system-blue hover:bg-system-blue/5 dark:hover:bg-system-blue/10 transition-all cursor-pointer min-h-[220px]"
                     >
-                        <div className="h-14 w-14 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                            <Plus className="h-7 w-7 text-blue-500" />
+                        <div className="h-14 w-14 rounded-2xl bg-white dark:bg-gray-700 shadow-sm flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                            <Plus className="h-7 w-7 text-blue-500 dark:text-system-blue" />
                         </div>
-                        <h3 className="text-sm font-semibold text-gray-900">New Project</h3>
-                        <p className="text-xs text-gray-500 mt-1 text-center">Start a new testing workspace</p>
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">New Project</h3>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">Start a new testing workspace</p>
                     </div>
 
                     {projects.map(project => (
                         <div
                             key={project.id}
                             onClick={() => onProjectClick(project.id)}
-                            className="group bg-white rounded-2xl border border-gray-100 p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[220px]"
+                            className="group bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.4)] hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[220px]"
                         >
                             <div>
                                 <div className="flex justify-between items-start mb-4">
@@ -138,41 +138,41 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
                                     <div className="flex items-center gap-1">
                                         <button
                                             onClick={(e) => handleShareClick(e, project.id)}
-                                            className="p-2 text-gray-300 hover:text-blue-500 rounded-full hover:bg-blue-50 transition-colors opacity-0 group-hover:opacity-100 md:opacity-0 opacity-100"
+                                            className="p-2 text-gray-300 dark:text-gray-600 hover:text-system-blue dark:hover:text-system-blue rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100 md:opacity-0 opacity-100"
                                             title="Share Project"
                                         >
                                             <Share2 className="h-4 w-4" />
                                         </button>
                                         <button
                                             onClick={(e) => handleMenuClick(e, project)}
-                                            className="p-2 text-gray-300 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors opacity-0 group-hover:opacity-100 md:opacity-0 opacity-100"
+                                            className="p-2 text-gray-300 dark:text-gray-600 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors opacity-0 group-hover:opacity-100 md:opacity-0 opacity-100"
                                         >
                                             <MoreHorizontal className="h-5 w-5" />
                                         </button>
                                     </div>
                                 </div>
 
-                                <h3 className="font-semibold text-gray-900 text-xl tracking-tight mb-2">{project.name}</h3>
-                                <p className="text-sm text-gray-500 line-clamp-2 mb-6 leading-relaxed">{project.description}</p>
+                                <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-xl tracking-tight mb-2">{project.name}</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-6 leading-relaxed">{project.description}</p>
                             </div>
 
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                                <div className="flex gap-4 text-xs font-medium text-gray-500">
-                                    <div className="flex items-center gap-1.5 hover:text-gray-700 transition-colors">
+                            <div className="flex items-center justify-between pt-4 border-t border-gray-50 dark:border-gray-700">
+                                <div className="flex gap-4 text-xs font-medium text-gray-500 dark:text-gray-400">
+                                    <div className="flex items-center gap-1.5 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
                                         <Layers className="h-3.5 w-3.5" />
                                         {project.stats.suites} Suites
                                     </div>
-                                    <div className="flex items-center gap-1.5 hover:text-gray-700 transition-colors">
+                                    <div className="flex items-center gap-1.5 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
                                         <FileText className="h-3.5 w-3.5" />
                                         {project.stats.cases} Cases
                                     </div>
-                                    <div className="flex items-center gap-1.5 hover:text-gray-700 transition-colors">
+                                    <div className="flex items-center gap-1.5 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
                                         <Users className="h-3.5 w-3.5" />
                                         {project.stats.members}
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                                <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500">
                                     <Calendar className="h-3 w-3" />
                                     <span>{new Date(project.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                                 </div>
@@ -186,7 +186,7 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
             {dropdownPosition && !isMobile && (
                 <div
                     ref={dropdownRef}
-                    className="fixed z-50 bg-white rounded-xl shadow-lg border border-gray-100 py-1 w-48 animate-[scaleIn_0.1s_ease-out]"
+                    className="fixed z-50 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-1 w-48 animate-[scaleIn_0.1s_ease-out]"
                     style={{
                         top: dropdownPosition.top,
                         right: dropdownPosition.right,
@@ -194,36 +194,36 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
                 >
                     <button
                         onClick={(e) => handleShareClick(e, selectedProject!.id)}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                        <Share2 className="h-4 w-4 text-gray-400" />
+                        <Share2 className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                         Share Project
                     </button>
                     <button
                         onClick={handleSettings}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                        <Settings className="h-4 w-4 text-gray-400" />
+                        <Settings className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                         Project Settings
                     </button>
                     <button
                         onClick={handleManageMembers}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                        <Users className="h-4 w-4 text-gray-400" />
+                        <Users className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                         Manage Members
                     </button>
                     <button
                         onClick={handleEdit}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
-                        <Pencil className="h-4 w-4 text-gray-400" />
+                        <Pencil className="h-4 w-4 text-gray-400 dark:text-gray-500" />
                         Edit Project
                     </button>
-                    <div className="h-px bg-gray-100 my-1" />
+                    <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
                     <button
                         onClick={handleDelete}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     >
                         <Trash2 className="h-4 w-4" />
                         Delete Project

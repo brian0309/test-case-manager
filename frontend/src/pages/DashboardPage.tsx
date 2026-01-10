@@ -69,9 +69,9 @@ const DashboardPage: React.FC = () => {
   return (
     <div className="mx-2 my-6 space-y-6">
       {/* Welcome Header */}
-      <div className="mac-card p-4 sm:p-6 bg-gradient-to-br from-white to-gray-50/50">
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Welcome back, {user?.name || 'User'}! 👋</h1>
-        <p className="text-gray-500 mt-1">Here's what's happening with your dashboard today.</p>
+      <div className="mac-card p-4 sm:p-6 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50">
+        <h1 className="text-2xl font-bold text-gray-900 tracking-tight dark:text-gray-100">Welcome back, {user?.name || 'User'}! 👋</h1>
+        <p className="text-gray-500 mt-1 dark:text-gray-400">Here's what's happening with your dashboard today.</p>
       </div>
 
       {/* Stats Grid */}
@@ -79,7 +79,7 @@ const DashboardPage: React.FC = () => {
         {loading ? (
           // Loading skeletons
           Array(3).fill(0).map((_, i) => (
-            <div key={i} className="mac-card p-4 sm:p-6 h-32 animate-pulse bg-gray-100"></div>
+            <div key={i} className="mac-card p-4 sm:p-6 h-32 animate-pulse bg-gray-200 dark:bg-gray-700"></div>
           ))
         ) : (
           stats.map((stat, index) => (
@@ -92,10 +92,10 @@ const DashboardPage: React.FC = () => {
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-500">{stat.name}</p>
-                  <p className="text-2xl font-semibold text-gray-900 mt-1 tracking-tight">{stat.value}</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{stat.name}</p>
+                  <p className="text-2xl font-semibold text-gray-900 mt-1 tracking-tight dark:text-gray-100">{stat.value}</p>
                   <div className={`flex items-center mt-2 text-sm ${stat.changeType === 'increase' ? 'text-system-green' :
-                    stat.changeType === 'decrease' ? 'text-system-red' : 'text-gray-500'
+                    stat.changeType === 'decrease' ? 'text-system-red' : 'text-gray-500 dark:text-gray-400'
                     }`}>
                     {stat.changeType === 'increase' ? (
                       <ArrowUp className="w-4 h-4 mr-1" />
@@ -107,7 +107,7 @@ const DashboardPage: React.FC = () => {
                     <span className="font-medium">{stat.change}</span>
                   </div>
                 </div>
-                <div className="p-3 rounded-xl bg-system-blue/10 text-system-blue flex-shrink-0">
+                <div className="p-3 rounded-xl bg-system-blue/10 text-system-blue dark:bg-system-blue/20 flex-shrink-0">
                   <stat.icon className="w-6 h-6" />
                 </div>
               </div>
@@ -125,33 +125,35 @@ const DashboardPage: React.FC = () => {
           className="lg:col-span-2 mac-card p-4 sm:p-6"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
-            <h2 className="text-lg font-semibold text-gray-900 tracking-tight">Activity Overview</h2>
-            <div className="text-sm text-gray-500">Test Cases Modified (Last 14 Days)</div>
+            <h2 className="text-lg font-semibold text-gray-900 tracking-tight dark:text-gray-100">Activity Overview</h2>
+            <div className="text-sm text-gray-500 dark:text-gray-400">Test Cases Modified (Last 14 Days)</div>
           </div>
           <div className="h-80 w-full overflow-x-auto">
             <div className="min-w-[300px] h-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={statsData?.chartData || []} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={document.documentElement.classList.contains('dark') ? '#404040' : '#E5E7EB'} />
                   <XAxis
                     dataKey="name"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
+                    tick={{ fill: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6B7280', fontSize: 12 }}
                     dy={10}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#6B7280', fontSize: 12 }}
+                    tick={{ fill: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6B7280', fontSize: 12 }}
                   />
                   <Tooltip
-                    cursor={{ stroke: '#E5E7EB', strokeWidth: 2 }}
+                    cursor={{ stroke: document.documentElement.classList.contains('dark') ? '#404040' : '#E5E7EB', strokeWidth: 2 }}
                     contentStyle={{
                       borderRadius: '12px',
                       border: 'none',
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                      fontFamily: 'inherit'
+                      fontFamily: 'inherit',
+                      backgroundColor: document.documentElement.classList.contains('dark') ? '#242424' : '#ffffff',
+                      color: document.documentElement.classList.contains('dark') ? '#f5f5f5' : '#1f2937'
                     }}
                   />
                   <Line
@@ -159,8 +161,8 @@ const DashboardPage: React.FC = () => {
                     dataKey="value"
                     stroke="#007AFF"
                     strokeWidth={3}
-                    dot={{ r: 4, fill: "#007AFF", strokeWidth: 2, stroke: "#fff" }}
-                    activeDot={{ r: 6, fill: "#007AFF", strokeWidth: 2, stroke: "#fff" }}
+                    dot={{ r: 4, fill: "#007AFF", strokeWidth: 2, stroke: document.documentElement.classList.contains('dark') ? '#242424' : '#fff' }}
+                    activeDot={{ r: 6, fill: "#007AFF", strokeWidth: 2, stroke: document.documentElement.classList.contains('dark') ? '#242424' : '#fff' }}
                   />
                 </LineChart>
               </ResponsiveContainer>
@@ -175,12 +177,12 @@ const DashboardPage: React.FC = () => {
           transition={{ delay: 0.3 }}
           className="mac-card overflow-hidden flex flex-col"
         >
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900 tracking-tight">Recent Activity</h2>
+          <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+            <h2 className="text-lg font-semibold text-gray-900 tracking-tight dark:text-gray-100">Recent Activity</h2>
           </div>
-          <div className="divide-y divide-gray-100 overflow-y-auto flex-1 max-h-[400px]">
+          <div className="divide-y divide-gray-100 dark:divide-gray-700 overflow-y-auto flex-1 max-h-[400px]">
             {statsData?.recentActivity?.map((activity) => (
-              <div key={activity.id} className="p-4 hover:bg-gray-50/50 transition-colors">
+              <div key={activity.id} className="p-4 hover:bg-gray-50/50 transition-colors dark:hover:bg-gray-700/50">
                 <div className="flex items-start">
                   <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-system-blue to-system-indigo flex items-center justify-center text-white font-medium text-sm shadow-sm overflow-hidden">
                     {activity.avatar.startsWith('http') ? (
@@ -190,17 +192,17 @@ const DashboardPage: React.FC = () => {
                     )}
                   </div>
                   <div className="ml-4 flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {activity.user} <span className="text-gray-500 font-normal">{activity.action.replace(activity.user, '')}</span>
+                    <p className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">
+                      {activity.user} <span className="text-gray-500 font-normal dark:text-gray-400">{activity.action.replace(activity.user, '')}</span>
                     </p>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-gray-400 mt-1 dark:text-gray-500">
                       {new Date(activity.time).toLocaleDateString()} {new Date(activity.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
                 </div>
               </div>
             )) || (
-                <div className="p-6 text-center text-gray-500">No recent activity</div>
+                <div className="p-6 text-center text-gray-500 dark:text-gray-400">No recent activity</div>
               )}
           </div>
 

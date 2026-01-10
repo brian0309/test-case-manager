@@ -31,10 +31,10 @@ const SignUpPage: React.FC = () => {
 			initial={{ opacity: 0, y: 20 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.5 }}
-			className='max-w-md w-full bg-background-paper border border-gray-200 rounded-2xl shadow-lg overflow-hidden'
+			className='max-w-md w-full bg-background-paper dark:bg-background-darkPaper border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg overflow-hidden'
 		>
 			<div className='p-8'>
-				<h2 className='text-3xl font-bold mb-6 text-center text-primary'>
+				<h2 className='text-3xl font-bold mb-6 text-center text-primary dark:text-darkPrimary'>
 					Create Account
 				</h2>
 
@@ -66,7 +66,7 @@ const SignUpPage: React.FC = () => {
 					<PasswordStrengthMeter password={password} />
 
 										<motion.button
-											className="mt-5 w-full py-3 px-4 bg-primary text-text-contrast font-bold rounded-lg shadow hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition duration-200"
+											className="mt-5 w-full py-3 px-4 bg-primary dark:bg-primary-darkMode text-text-contrast dark:text-primary-darkModeContrast font-bold rounded-lg shadow hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition duration-200"
 											whileHover={{ scale: 1.02 }}
 											whileTap={{ scale: 0.98 }}
 											type="submit"
@@ -78,16 +78,16 @@ const SignUpPage: React.FC = () => {
 
 					{/* Divider and Google Login Button */}
 					<div className="flex items-center my-6 w-full">
-						<div className="flex-grow border-t border-gray-300"></div>
-						<span className="px-2 text-text-secondary bg-background-paper z-10">Or continue with</span>
-						<div className="flex-grow border-t border-gray-300"></div>
+						<div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+						<span className="px-2 text-text-secondary dark:text-text-darkSecondary bg-background-paper dark:bg-background-darkPaper z-10">Or continue with</span>
+						<div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
 					</div>
 					<GoogleLoginButton />
 				</div>
-				<div className='px-8 py-4 bg-background-paper border-t border-gray-200 flex justify-center'>
-					<p className='text-sm text-text-secondary'>
+				<div className='px-8 py-4 bg-background-paper dark:bg-background-darkPaper border-t border-gray-200 dark:border-gray-700 flex justify-center'>
+					<p className='text-sm text-text-secondary dark:text-text-darkSecondary'>
 						Already have an account?{" "}
-						<Link to={"/login"} className='text-primary hover:underline'>
+						<Link to={"/login"} className='text-primary dark:text-darkPrimary hover:underline'>
 							Login
 						</Link>
 					</p>

@@ -107,8 +107,8 @@ const TestManagerLayout: React.FC = () => {
     };
 
     return (
-        <div className="flex flex-col h-full font-sans text-gray-900">
-            <main className="mac-card flex-1 flex flex-col min-w-0 overflow-hidden relative mx-2 my-2">
+        <div className="flex flex-col h-full font-sans text-gray-900 dark:text-gray-100">
+            <main className="mac-card flex-1 flex flex-col min-w-0 overflow-hidden relative">
                 <Toolbar
                     viewMode={viewMode}
                     setViewMode={handleViewChange}

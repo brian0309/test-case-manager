@@ -107,11 +107,11 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
     const uniqueAreas = Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort();
 
     return (
-        <div className="min-h-16 flex flex-wrap items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 bg-gray-50/50 border-b border-gray-100">
+        <div className="min-h-16 flex flex-wrap items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
             {/* Home / Projects link */}
             <button
                 onClick={goToProjects}
-                className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600 transition-colors flex-shrink-0"
+                className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-300 hover:text-system-blue dark:hover:text-system-blue transition-colors flex-shrink-0"
             >
                 <Home size={14} />
                 <span className="hidden sm:inline">Projects</span>
@@ -120,22 +120,22 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
             {/* Project Selector */}
             {activeProject && (
                 <>
-                    <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
+                    <ChevronRight size={14} className="text-gray-300 dark:text-gray-400 flex-shrink-0" />
                     <div className="relative" ref={projectRef}>
                         <button
                             onClick={() => setIsProjectOpen(!isProjectOpen)}
                             title={currentProject?.name || 'Project'}
-                            className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-gray-700 hover:bg-white hover:shadow-sm rounded-md transition-all"
+                            className="flex items-center gap-1.5 px-2 py-1 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm dark:hover:shadow-md rounded-md transition-all"
                         >
-                            <Folder size={14} className="text-blue-500 flex-shrink-0" />
+                            <Folder size={14} className="text-system-blue flex-shrink-0" />
                             <span className="max-w-[80px] sm:max-w-[120px] truncate">{currentProject?.name || 'Project'}</span>
-                            <ChevronDown size={14} className={`text-gray-400 transition-transform flex-shrink-0 ${isProjectOpen ? 'rotate-180' : ''}`} />
+                            <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform flex-shrink-0 ${isProjectOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isProjectOpen && (
-                            <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-                                <div className="px-3 py-2 border-b border-gray-50">
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Switch Project</p>
+                            <div className="absolute top-full left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                                <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
+                                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Switch Project</p>
                                 </div>
                                 <div className="max-h-64 overflow-y-auto">
                                     {projects.map(project => (
@@ -143,9 +143,9 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                                             key={project.id}
                                             onClick={() => handleProjectChange(project.id)}
                                             title={project.name}
-                                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 transition-colors ${activeProject === project.id ? 'text-blue-600 bg-blue-50/50' : 'text-gray-700'}`}
+                                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${activeProject === project.id ? 'text-system-blue dark:text-system-darkBlue bg-system-blue/10 dark:bg-system-darkBlue/20' : 'text-gray-700 dark:text-gray-300'}`}
                                         >
-                                            <Folder size={14} className={activeProject === project.id ? 'text-blue-500' : 'text-gray-400'} />
+                                            <Folder size={14} className={activeProject === project.id ? 'text-system-blue dark:text-system-darkBlue' : 'text-gray-400 dark:text-gray-500'} />
                                             <span className="truncate flex-1">{project.name}</span>
                                             {activeProject === project.id && <Check size={14} />}
                                         </button>
@@ -160,40 +160,40 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
             {/* Suite Selector - only show if we have a project selected */}
             {showSuiteSelector && activeProject && (
                 <>
-                    <ChevronRight size={14} className="text-gray-300" />
+                    <ChevronRight size={14} className="text-gray-300 dark:text-gray-400" />
                     <div className="relative" ref={suiteRef}>
                         <button
                             onClick={() => setIsSuiteOpen(!isSuiteOpen)}
                             title={currentSuite?.name || activeSuite || 'All Suites'}
                             className={`flex items-center gap-1 px-2 py-0.5 text-sm font-medium rounded-md transition-all ${activeSuiteId
-                                ? 'text-gray-700 hover:bg-white hover:shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700 hover:bg-white hover:shadow-sm'
+                                ? 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm dark:hover:shadow-md'
+                                : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm dark:hover:shadow-md'
                                 }`}
                         >
-                            <Layers size={14} className={activeSuiteId ? 'text-purple-500 flex-shrink-0' : 'text-gray-400 flex-shrink-0'} />
+                            <Layers size={14} className={activeSuiteId ? 'text-purple-500 dark:text-purple-400 flex-shrink-0' : 'text-gray-400 dark:text-gray-500 flex-shrink-0'} />
                             <span className="max-w-[80px] sm:max-w-[120px] truncate">
                                 {currentSuite?.name || activeSuite || 'All Suites'}
                             </span>
-                            <ChevronDown size={14} className={`text-gray-400 transition-transform flex-shrink-0 ${isSuiteOpen ? 'rotate-180' : ''}`} />
+                            <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform flex-shrink-0 ${isSuiteOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isSuiteOpen && (
-                            <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-                                <div className="px-3 py-2 border-b border-gray-50">
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Filter by Suite</p>
+                            <div className="absolute top-full left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                                <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
+                                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter by Suite</p>
                                 </div>
 
                                 {/* All Suites Option */}
                                 <button
                                     onClick={handleShowAllCases}
-                                    className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 transition-colors ${!activeSuiteId ? 'text-blue-600 bg-blue-50/50' : 'text-gray-700'}`}
+                                    className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${!activeSuiteId ? 'text-system-blue dark:text-system-darkBlue bg-system-blue/10 dark:bg-system-darkBlue/20' : 'text-gray-700 dark:text-gray-300'}`}
                                 >
-                                    <Layers size={14} className={!activeSuiteId ? 'text-blue-500' : 'text-gray-400'} />
+                                    <Layers size={14} className={!activeSuiteId ? 'text-system-blue dark:text-system-darkBlue' : 'text-gray-400 dark:text-gray-500'} />
                                     <span className="flex-1">All Suites</span>
                                     {!activeSuiteId && <Check size={14} />}
                                 </button>
 
-                                <div className="h-px bg-gray-100 my-1" />
+                                <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
 
                                 <div className="max-h-64 overflow-y-auto">
                                     {testSuites.map(suite => (
@@ -201,24 +201,24 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                                             key={suite.id}
                                             onClick={() => handleSuiteChange(suite.id, suite.name)}
                                             title={suite.name}
-                                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 transition-colors ${activeSuiteId === suite.id ? 'text-blue-600 bg-blue-50/50' : 'text-gray-700'}`}
+                                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${activeSuiteId === suite.id ? 'text-system-blue dark:text-system-darkBlue bg-system-blue/10 dark:bg-system-darkBlue/20' : 'text-gray-700 dark:text-gray-300'}`}
                                         >
-                                            <Layers size={14} className={activeSuiteId === suite.id ? 'text-purple-500' : 'text-gray-400'} />
+                                            <Layers size={14} className={activeSuiteId === suite.id ? 'text-purple-500 dark:text-purple-400' : 'text-gray-400 dark:text-gray-500'} />
                                             <span className="truncate flex-1">{suite.name}</span>
                                             {activeSuiteId === suite.id && <Check size={14} />}
                                         </button>
                                     ))}
                                     {testSuites.length === 0 && (
-                                        <div className="px-3 py-4 text-sm text-gray-400 text-center">
+                                        <div className="px-3 py-4 text-sm text-gray-400 dark:text-gray-500 text-center">
                                             No test suites yet
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="border-t border-gray-50 mt-1 pt-1">
+                                <div className="border-t border-gray-50 dark:border-gray-700 mt-1 pt-1">
                                     <button
                                         onClick={goToSuites}
-                                        className="w-full text-left px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-2 transition-colors"
+                                        className="w-full text-left px-3 py-2 text-sm text-system-blue dark:text-system-darkBlue hover:bg-system-blue/10 dark:hover:bg-system-darkBlue/20 flex items-center gap-2 transition-colors"
                                     >
                                         <Layers size={14} />
                                         Manage Suites
@@ -233,40 +233,40 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
             {/* Area Selector - only show if we have a suite selected or at least project selected */}
             {showSuiteSelector && activeProject && (
                 <>
-                    <ChevronRight size={14} className="text-gray-300 flex-shrink-0" />
+                    <ChevronRight size={14} className="text-gray-300 dark:text-gray-400 flex-shrink-0" />
                     <div className="relative" ref={areaRef}>
                         <button
                             onClick={() => setIsAreaOpen(!isAreaOpen)}
                             title={activeArea || 'All Areas'}
                             className={`flex items-center gap-1 px-2 py-0.5 text-sm font-medium rounded-md transition-all ${activeArea
-                                ? 'text-gray-700 hover:bg-white hover:shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700 hover:bg-white hover:shadow-sm'
+                                ? 'text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm dark:hover:shadow-md'
+                                : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm dark:hover:shadow-md'
                                 }`}
                         >
-                            <Map size={14} className={activeArea ? 'text-green-500 flex-shrink-0' : 'text-gray-400 flex-shrink-0'} />
+                            <Map size={14} className={activeArea ? 'text-green-500 dark:text-green-400 flex-shrink-0' : 'text-gray-400 dark:text-gray-500 flex-shrink-0'} />
                             <span className="max-w-[80px] sm:max-w-[120px] truncate">
                                 {activeArea || 'All Areas'}
                             </span>
-                            <ChevronDown size={14} className={`text-gray-400 transition-transform flex-shrink-0 ${isAreaOpen ? 'rotate-180' : ''}`} />
+                            <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform flex-shrink-0 ${isAreaOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {isAreaOpen && (
-                            <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-                                <div className="px-3 py-2 border-b border-gray-50">
-                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Filter by Area</p>
+                            <div className="absolute top-full left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                                <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
+                                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter by Area</p>
                                 </div>
 
                                 {/* All Areas Option */}
                                 <button
                                     onClick={() => handleAreaChange(null)}
-                                    className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 transition-colors ${!activeArea ? 'text-blue-600 bg-blue-50/50' : 'text-gray-700'}`}
+                                    className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${!activeArea ? 'text-system-blue dark:text-system-darkBlue bg-system-blue/10 dark:bg-system-darkBlue/20' : 'text-gray-700 dark:text-gray-300'}`}
                                 >
-                                    <Map size={14} className={!activeArea ? 'text-blue-500' : 'text-gray-400'} />
+                                    <Map size={14} className={!activeArea ? 'text-system-blue dark:text-system-darkBlue' : 'text-gray-400 dark:text-gray-500'} />
                                     <span className="flex-1">All Areas</span>
                                     {!activeArea && <Check size={14} />}
                                 </button>
 
-                                <div className="h-px bg-gray-100 my-1" />
+                                <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
 
                                 <div className="max-h-64 overflow-y-auto">
                                     {uniqueAreas.map(area => (
@@ -274,15 +274,15 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                                             key={area}
                                             onClick={() => handleAreaChange(area)}
                                             title={area}
-                                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 transition-colors ${activeArea === area ? 'text-blue-600 bg-blue-50/50' : 'text-gray-700'}`}
+                                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${activeArea === area ? 'text-system-blue dark:text-system-darkBlue bg-system-blue/10 dark:bg-system-darkBlue/20' : 'text-gray-700 dark:text-gray-300'}`}
                                         >
-                                            <Map size={14} className={activeArea === area ? 'text-green-500' : 'text-gray-400'} />
+                                            <Map size={14} className={activeArea === area ? 'text-green-500 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'} />
                                             <span className="truncate flex-1">{area}</span>
                                             {activeArea === area && <Check size={14} />}
                                         </button>
                                     ))}
                                     {uniqueAreas.length === 0 && (
-                                        <div className="px-3 py-4 text-sm text-gray-400 text-center">
+                                        <div className="px-3 py-4 text-sm text-gray-400 dark:text-gray-500 text-center">
                                             No areas found
                                         </div>
                                     )}
@@ -297,7 +297,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
             {viewToggle && (
                 <button
                     onClick={viewToggle.onToggle}
-                    className="ml-auto flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm"
+                    className="ml-auto flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-gray-200 transition-colors shadow-sm dark:shadow-none"
                     title={viewToggle.mode === 'card' ? 'Switch to table view' : 'Switch to card view'}
                 >
                     {viewToggle.mode === 'card' ? <Table size={14} /> : <Grid2x2 size={14} />}
