@@ -36,9 +36,9 @@ const SettingsPage: React.FC = () => {
     ];
 
     return (
-        <div className="mx-2 my-6 space-y-6">
+        <div className="bg-white dark:bg-gray-900 min-h-full p-4 sm:p-6 space-y-6">
             <div className="space-y-6">
-                <div className="px-6 lg:px-8">
+                <div className="px-2 lg:px-0">
                     {/* Header */}
                     <div className="mb-8">
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -50,7 +50,7 @@ const SettingsPage: React.FC = () => {
                     </div>
 
                     {/* Tabs */}
-                    <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
+                    <div className="mb-6 border-b border-gray-100 dark:border-gray-700">
                         <div className="flex space-x-8 overflow-x-auto">
                             {tabs.map((tab) => (
                                 <button
@@ -90,7 +90,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ user }) => {
     const { isDarkMode, toggleTheme } = useThemeStore();
 
     return (
-        <div className="mac-card">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none">
             <div className="p-6">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">Basics</h2>
 
@@ -172,7 +172,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ user }) => {
             </div>
 
             {/* Preferences Section */}
-            <div className="border-t border-gray-200 p-6 dark:border-gray-700">
+            <div className="border-t border-gray-100 p-6 dark:border-gray-700">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-6">Preferences</h2>
 
                 {/* Dark Mode Toggle */}
@@ -277,7 +277,7 @@ const SecurityTab = () => {
     };
 
     return (
-        <div className="mac-card p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none p-6">
             <div className="max-w-2xl">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Change Password</h2>
                 <p className="text-sm text-gray-500 mb-6 dark:text-gray-400">Update your account password</p>
@@ -373,7 +373,7 @@ const SecurityTab = () => {
 // Placeholder Tab Component
 const PlaceholderTab: React.FC<PlaceholderTabProps> = ({ title }) => {
     return (
-        <div className="mac-card p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{title}</h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">This section is coming soon...</p>
         </div>
@@ -448,7 +448,7 @@ const GeminiTab = () => {
     };
 
     return (
-        <div className="mac-card p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none p-6">
             <div className="max-w-2xl">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Gemini API Configuration</h2>
                 <p className="text-sm text-gray-500 mb-6 dark:text-gray-400">

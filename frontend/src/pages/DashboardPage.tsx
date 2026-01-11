@@ -67,9 +67,9 @@ const DashboardPage: React.FC = () => {
   ] : [];
 
   return (
-    <div className="mx-2 my-6 space-y-6">
+    <div className="bg-white dark:bg-gray-900 min-h-full p-4 sm:p-6 space-y-6">
       {/* Welcome Header */}
-      <div className="mac-card p-4 sm:p-6 bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50">
+      <div className="p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight dark:text-gray-100">Welcome back, {user?.name || 'User'}! 👋</h1>
         <p className="text-gray-500 mt-1 dark:text-gray-400">Here's what's happening with your dashboard today.</p>
       </div>
@@ -79,7 +79,7 @@ const DashboardPage: React.FC = () => {
         {loading ? (
           // Loading skeletons
           Array(3).fill(0).map((_, i) => (
-            <div key={i} className="mac-card p-4 sm:p-6 h-32 animate-pulse bg-gray-200 dark:bg-gray-700"></div>
+            <div key={i} className="bg-gray-200 dark:bg-gray-700 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none p-4 sm:p-6 h-32 animate-pulse"></div>
           ))
         ) : (
           stats.map((stat, index) => (
@@ -88,7 +88,7 @@ const DashboardPage: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="mac-card p-4 sm:p-6 hover:translate-y-[-2px] transition-transform duration-300"
+              className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none p-4 sm:p-6 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:hover:shadow-none hover:-translate-y-1 transition-all duration-300"
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0">
@@ -107,7 +107,7 @@ const DashboardPage: React.FC = () => {
                     <span className="font-medium">{stat.change}</span>
                   </div>
                 </div>
-                <div className="p-3 rounded-xl bg-system-blue/10 text-system-blue dark:bg-system-blue/20 flex-shrink-0">
+                <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-500 dark:text-blue-400 flex-shrink-0">
                   <stat.icon className="w-6 h-6" />
                 </div>
               </div>
@@ -122,7 +122,7 @@ const DashboardPage: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="lg:col-span-2 mac-card p-4 sm:p-6"
+          className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none p-4 sm:p-6"
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3 sm:gap-0">
             <h2 className="text-lg font-semibold text-gray-900 tracking-tight dark:text-gray-100">Activity Overview</h2>
@@ -175,7 +175,7 @@ const DashboardPage: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="mac-card overflow-hidden flex flex-col"
+          className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none overflow-hidden flex flex-col"
         >
           <div className="p-6 border-b border-gray-100 dark:border-gray-700">
             <h2 className="text-lg font-semibold text-gray-900 tracking-tight dark:text-gray-100">Recent Activity</h2>
