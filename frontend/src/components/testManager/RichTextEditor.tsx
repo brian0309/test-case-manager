@@ -2,10 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
+import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Bold, Italic, List, ListOrdered, Strikethrough, Heading1, Heading2, Quote, ImagePlus, Loader2, X } from 'lucide-react';
+import { Bold, Italic, List, ListOrdered, Strikethrough, Heading1, Heading2, Quote, ImagePlus, Link as LinkIcon, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { uploadImage, validateImageFile } from '../../utils/imageUpload';
+import LinkModal from './LinkModal';
 
 interface RichTextEditorProps {
     content: string;
@@ -18,6 +20,7 @@ interface RichTextEditorProps {
 const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBlur, placeholder = 'Write something...', editable = true }) => {
     const [isUploading, setIsUploading] = useState(false);
     const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+    const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const editorRef = useRef<any>(null);
 
@@ -29,6 +32,15 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
                 allowBase64: false,
                 HTMLAttributes: {
                     class: 'rounded-lg max-w-[400px] max-h-[400px] w-auto h-auto cursor-pointer hover:opacity-90 transition-opacity',
+                },
+            }),
+            Link.configure({
+                openOnClick: true,
+                linkOnPaste: true,
+                autolink: true,
+                HTMLAttributes: {
+                    class: 'text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer',
+                    rel: 'noopener noreferrer',
                 },
             }),
             Placeholder.configure({
@@ -227,6 +239,11 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
                         icon={Quote}
                     />
                     <div className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
+                    <MenuButton
+                        onClick={() => setIsLinkModalOpen(true)}
+                        isActive={editor.isActive('link')}
+                        icon={LinkIcon}
+                    />
                     <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isUploading}
@@ -291,6 +308,25 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
                     />
                 </div>
             )}
+
+            {/* Link Modal */}
+            <LinkModal
+                isOpen={isLinkModalOpen}
+                onClose={() => setIsLinkModalOpen(false)}
+                onConfirm={(url, openInNewTab) => {
+                    editor
+                        .chain()
+                        .focus()
+                        .extendMarkRange('link')
+                        .setLink({
+                            href: url,
+                            target: openInNewTab ? '_blank' : null,
+                        })
+                        .run();
+                }}
+                initialUrl={editor.getAttributes('link').href || ''}
+                initialOpenInNewTab={editor.getAttributes('link').target === '_blank'}
+            />
         </div>
     );
 };
