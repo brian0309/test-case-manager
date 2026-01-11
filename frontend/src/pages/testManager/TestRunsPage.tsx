@@ -142,43 +142,43 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div 
-                className="absolute inset-0 bg-white/40 backdrop-blur-sm transition-opacity"
+                className="absolute inset-0 bg-white/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
-            <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-                <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-xl font-semibold text-gray-900">Create Test Run</h2>
+            <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-gray-100 dark:border-gray-700">
+                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Create Test Run</h2>
                 </div>
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title *</label>
                         <input
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="e.g., Sprint 23 Regression"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Optional description..."
                             rows={2}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                         />
                     </div>
 
                     {/* Test Run Group & Suite Filter - Same Row */}
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Group (Optional)</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Group (Optional)</label>
                             <select
                                 value={selectedGroupId}
                                 onChange={(e) => setSelectedGroupId(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100"
                             >
                                 <option value="">No Group</option>
                                 {testRunGroups.map((group) => (
@@ -189,11 +189,11 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Suite</label>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Suite</label>
                             <select
                                 value={selectedSuiteFilter}
                                 onChange={(e) => setSelectedSuiteFilter(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100"
                             >
                                 <option value="all">All Suites</option>
                                 {testSuites.map((suite) => (
@@ -207,36 +207,36 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
 
                     <div>
                         <div className="flex items-center justify-between mb-2">
-                            <label className="block text-sm font-medium text-gray-700">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Select Test Cases ({selectedCases.length} selected)
                             </label>
                             <button
                                 onClick={() => onSelectAll(!allFilteredSelected, filteredTestCases)}
-                                className="text-sm text-blue-600 hover:text-blue-700"
+                                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                             >
                                 {allFilteredSelected ? 'Deselect All' : 'Select All'}
                             </button>
                         </div>
-                        <div className="border border-gray-200 rounded-lg max-h-64 overflow-y-auto">
+                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg max-h-64 overflow-y-auto bg-gray-50 dark:bg-gray-800/50">
                             {filteredTestCases.length === 0 ? (
-                                <div className="p-4 text-center text-gray-500">
+                                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                                     No test cases available
                                 </div>
                             ) : (
                                 filteredTestCases.map((tc) => (
                                     <label
                                         key={tc.id}
-                                        className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                        className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700/50 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors"
                                     >
                                         <input
                                             type="checkbox"
                                             checked={selectedCases.includes(tc.id)}
                                             onChange={() => onToggleCase(tc.id)}
-                                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700"
                                         />
                                         <div className="flex-1 min-w-0">
-                                            <div className="text-sm font-medium text-gray-900 truncate">{tc.title}</div>
-                                            <div className="text-xs text-gray-500">{tc.suite}</div>
+                                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tc.title}</div>
+                                            <div className="text-xs text-gray-500 dark:text-gray-400">{tc.suite}</div>
                                         </div>
                                     </label>
                                 ))
@@ -244,17 +244,17 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
                         </div>
                     </div>
                 </div>
-                <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+                <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={isSubmitting}
-                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
                     >
                         {isSubmitting ? 'Creating...' : 'Create Run'}
                     </button>
@@ -315,29 +315,29 @@ const EditTestRunModal: React.FC<EditTestRunModalProps> = ({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div 
-                className="absolute inset-0 bg-white/40 backdrop-blur-sm transition-opacity"
+                className="absolute inset-0 bg-white/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
-            <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md">
-                <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-lg font-semibold text-gray-900">Edit Test Run</h2>
+            <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md border border-gray-100 dark:border-gray-700">
+                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Edit Test Run</h2>
                 </div>
                 <div className="p-6 space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title *</label>
                         <input
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100"
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Run Group</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Run Group</label>
                         <select
                             value={selectedGroupId}
                             onChange={(e) => setSelectedGroupId(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100"
                         >
                             <option value="">No Group (Ungrouped)</option>
                             {testRunGroups.map((group) => (
@@ -348,17 +348,17 @@ const EditTestRunModal: React.FC<EditTestRunModalProps> = ({
                         </select>
                     </div>
                 </div>
-                <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+                <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={isSubmitting}
-                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
                     >
                         {isSubmitting ? 'Saving...' : 'Save Changes'}
                     </button>
@@ -429,25 +429,25 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
             <div 
-                className="absolute inset-0 bg-white/40 backdrop-blur-sm transition-opacity"
+                className="absolute inset-0 bg-white/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
-            <div className="relative bg-white rounded-lg sm:rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col">
+            <div className="relative bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-2xl w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col border border-gray-100 dark:border-gray-700">
                 {/* Header */}
-                <div className="px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-200 flex items-center justify-between">
+                <div className="px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                     <div className="flex-1 min-w-0 pr-2">
-                        <h2 className="text-base sm:text-xl font-semibold text-gray-900 truncate">{testRun.title}</h2>
-                        <div className="text-xs sm:text-sm text-gray-500 mt-1">
+                        <h2 className="text-base sm:text-xl font-semibold text-gray-900 dark:text-gray-100 truncate">{testRun.title}</h2>
+                        <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
                             Progress: {executedCount} / {totalItems} ({Math.round((executedCount / totalItems) * 100)}%)
                         </div>
                     </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 flex-shrink-0">
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0">
                         <XCircle className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
                 </div>
 
                 {/* Progress bar */}
-                <div className="h-2 bg-gray-100 flex">
+                <div className="h-2 bg-gray-100 dark:bg-gray-700 flex">
                     {testRun.items.map((item, idx) => (
                         <div
                             key={item.id}
@@ -462,7 +462,7 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                 <div className="flex-1 overflow-y-auto p-3 sm:p-6">
                     <div className="flex items-center justify-between mb-3 sm:mb-4">
                         <div className="flex items-center gap-1.5 sm:gap-2">
-                            <span className="text-xs sm:text-sm text-gray-500">
+                            <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                                 Case {currentIndex + 1} of {totalItems}
                             </span>
                             <span className={`px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium rounded ${getItemStatusColor(currentItem.status)} text-white`}>
@@ -473,36 +473,36 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                             <button
                                 onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
                                 disabled={currentIndex === 0}
-                                className="p-1.5 sm:p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50 active:bg-gray-100 rounded"
+                                className="p-1.5 sm:p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50 active:bg-gray-100 dark:active:bg-gray-700 rounded"
                             >
                                 <ChevronLeft className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => setCurrentIndex(Math.min(totalItems - 1, currentIndex + 1))}
                                 disabled={currentIndex === totalItems - 1}
-                                className="p-1.5 sm:p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50 active:bg-gray-100 rounded"
+                                className="p-1.5 sm:p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50 active:bg-gray-100 dark:active:bg-gray-700 rounded"
                             >
                                 <ChevronRight className="w-5 h-5" />
                             </button>
                         </div>
                     </div>
 
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
                         {currentItem.caseSnapshot.title}
                     </h3>
 
                     {currentItem.caseSnapshot.testDescription && (
                         <div className="mb-5 sm:mb-6">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Description</h4>
-                            <p className="text-sm text-gray-600 leading-relaxed">{currentItem.caseSnapshot.testDescription}</p>
+                            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{currentItem.caseSnapshot.testDescription}</p>
                         </div>
                     )}
 
                     {currentItem.caseSnapshot.stepsContent && (
                         <div className="mb-5 sm:mb-6">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Steps</h4>
+                            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Steps</h4>
                             <div
-                                className="prose prose-sm max-w-none text-gray-600"
+                                className="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-400"
                                 dangerouslySetInnerHTML={{ __html: currentItem.caseSnapshot.stepsContent }}
                             />
                         </div>
@@ -510,13 +510,13 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
 
                     {currentItem.caseSnapshot.expectedResult && (
                         <div className="mb-5 sm:mb-6">
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">Expected Result</h4>
-                            <p className="text-sm text-gray-600 leading-relaxed">{currentItem.caseSnapshot.expectedResult}</p>
+                            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Expected Result</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{currentItem.caseSnapshot.expectedResult}</p>
                         </div>
                     )}
 
                     <div className="mb-0">
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">Actual Result / Notes</h4>
+                        <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Actual Result / Notes</h4>
                         <RichTextEditor
                             content={actualResult}
                             onChange={setActualResult}
@@ -527,7 +527,7 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                 </div>
 
                 {/* Action buttons */}
-                <div className="px-3 sm:px-6 py-4 sm:py-5 border-t border-gray-200">
+                <div className="px-3 sm:px-6 py-4 sm:py-5 border-t border-gray-100 dark:border-gray-700">
                     {/* Mobile: Stacked layout */}
                     <div className="sm:hidden flex flex-col gap-3">
                         {/* Status buttons grid */}
@@ -559,7 +559,7 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                             <button
                                 onClick={() => handleStatusUpdate(RunItemStatus.Skipped)}
                                 disabled={isUpdating}
-                                className="flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg active:bg-gray-300 disabled:opacity-50"
+                                className="flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg active:bg-gray-300 dark:active:bg-gray-600 disabled:opacity-50"
                             >
                                 Skip
                             </button>
@@ -567,7 +567,7 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                         {/* Complete button */}
                         <button
                             onClick={handleComplete}
-                            className="w-full px-4 py-3 text-sm font-medium text-blue-600 border border-blue-600 rounded-lg active:bg-blue-50"
+                            className="w-full px-4 py-3 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-lg active:bg-blue-50 dark:active:bg-blue-900/30"
                         >
                             Complete Run
                         </button>
@@ -603,14 +603,14 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                             <button
                                 onClick={() => handleStatusUpdate(RunItemStatus.Skipped)}
                                 disabled={isUpdating}
-                                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
                             >
                                 Skip
                             </button>
                         </div>
                         <button
                             onClick={handleComplete}
-                            className="px-4 py-2 text-sm font-medium text-blue-600 border border-blue-600 rounded-lg hover:bg-blue-50"
+                            className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30"
                         >
                             Complete Run
                         </button>
@@ -847,7 +847,7 @@ const TestRunsPage: React.FC = () => {
     return (
         <div className="flex flex-col h-auto sm:h-full bg-white dark:bg-gray-900">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 sm:sticky sm:top-0 sm:z-20">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 sm:sticky sm:top-0 sm:z-20">
                 <div className="flex items-center gap-2">
                     {/* Mobile Menu Toggle */}
                         <button
@@ -870,7 +870,7 @@ const TestRunsPage: React.FC = () => {
                         onClick={() => setIsMobileSidebarOpen(false)}
                     />
                     {/* Drawer */}
-                    <div className="absolute left-0 top-0 h-full w-72 max-w-[85vw] bg-white shadow-xl transform transition-transform">
+                    <div className="absolute left-0 top-0 h-full w-72 max-w-[85vw] bg-white dark:bg-gray-900 shadow-xl transform transition-transform">
                         <RunGroupsSidebar
                             groups={testRunGroups}
                             selectedFilter={selectedGroupFilter}
@@ -894,7 +894,7 @@ const TestRunsPage: React.FC = () => {
             {/* Main Content with Sidebar */}
             <div className="flex-1 flex sm:overflow-hidden">
                 {/* Desktop Groups Sidebar */}
-                <div className="hidden md:block">
+                <div className="hidden md:block h-full">
                     <RunGroupsSidebar
                         groups={testRunGroups}
                         selectedFilter={selectedGroupFilter}
@@ -912,15 +912,15 @@ const TestRunsPage: React.FC = () => {
                 </div>
 
                 {/* Test Runs List */}
-                <div className="flex-1 sm:overflow-auto p-4 bg-gray-50/50">
+                <div className="flex-1 sm:overflow-auto p-4 bg-gray-50/50 dark:bg-gray-900">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-full">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                         </div>
                     ) : filteredRuns.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                            <Play className="w-12 h-12 mb-4 text-gray-300" />
-                            <h3 className="text-lg font-medium text-gray-900 mb-1">No Test Runs Found</h3>
+                        <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
+                            <Play className="w-12 h-12 mb-4 text-gray-300 dark:text-gray-600" />
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No Test Runs Found</h3>
                             <p className="text-sm">
                                 {selectedGroupFilter !== 'all'
                                     ? "No test runs in this group."
@@ -932,23 +932,23 @@ const TestRunsPage: React.FC = () => {
                             {filteredRuns.map((run) => (
                                 <div
                                     key={run.id}
-                                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                                    className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-4 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] dark:hover:shadow-none transition-shadow cursor-pointer"
                                     onClick={() => handleExecuteRun(run.id)}
                                 >
                                     <div className="flex items-start justify-between mb-3">
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
-                                                <h3 className="text-base font-medium text-gray-900">{run.title}</h3>
+                                                <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">{run.title}</h3>
                                                 <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getRunStatusColor(run.status)}`}>
                                                     {run.status}
                                                 </span>
                                                 {run.groupId && (
-                                                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                                                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
                                                         {testRunGroups.find(g => g.id === run.groupId)?.name || 'Group'}
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-4 text-sm text-gray-500">
+                                            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                                                 <span className="flex items-center gap-1">
                                                     <Clock className="w-3.5 h-3.5" />
                                                     {new Date(run.createdAt).toLocaleDateString()}
@@ -971,7 +971,7 @@ const TestRunsPage: React.FC = () => {
                                                     e.stopPropagation();
                                                     handleEditRun(run);
                                                 }}
-                                                className="p-2 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                                                className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
                                                 title="Edit Run"
                                             >
                                                 <Edit2 className="w-4 h-4" />
@@ -981,7 +981,7 @@ const TestRunsPage: React.FC = () => {
                                                     e.stopPropagation();
                                                     handleCloneRun(run.id);
                                                 }}
-                                                className="p-2 text-gray-400 hover:text-blue-600 rounded-full hover:bg-blue-50"
+                                                className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
                                                 title="Clone Run"
                                             >
                                                 <Copy className="w-4 h-4" />
@@ -991,17 +991,17 @@ const TestRunsPage: React.FC = () => {
                                                     e.stopPropagation();
                                                     handleDeleteRun(run.id);
                                                 }}
-                                                className="p-2 text-gray-400 hover:text-red-600 rounded-full hover:bg-red-50"
+                                                className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30"
                                                 title="Delete Run"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
-                                            <ChevronRight className="w-5 h-5 text-gray-300" />
+                                            <ChevronRight className="w-5 h-5 text-gray-300 dark:text-gray-600" />
                                         </div>
                                     </div>
 
                                     {/* Progress Bar */}
-                                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden flex">
+                                    <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden flex">
                                         {run.resultsSummary.passed > 0 && (
                                             <div
                                                 className="bg-green-500"
@@ -1028,7 +1028,7 @@ const TestRunsPage: React.FC = () => {
                                         )}
                                         {run.resultsSummary.skipped > 0 && (
                                             <div
-                                                className="bg-gray-400"
+                                                className="bg-gray-400 dark:bg-gray-500"
                                                 style={{
                                                     width: `${(run.resultsSummary.skipped / run.resultsSummary.total) * 100}%`,
                                                 }}
