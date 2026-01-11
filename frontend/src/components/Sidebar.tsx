@@ -106,9 +106,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
   ];
 
   return (
-    <div className={`glass-sidebar h-screen flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
+    <div className={`bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-700 h-screen flex flex-col transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
       {/* Logo */}
-      <div className="h-14 flex items-center justify-between px-4 border-b border-gray-200/50 dark:border-gray-700/50">
+      <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-700">
         {!isCollapsed && <h1 className="text-sm font-semibold text-gray-900 tracking-tight dark:text-gray-100">Test Case Manager</h1>}
         <button
           onClick={toggleSidebar}
@@ -123,7 +123,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
         {/* Active Project Indicator */}
         {!isCollapsed && activeProject && currentProject && (
           <div className="mb-4">
-            <div className="bg-white/50 backdrop-blur-sm rounded-lg p-3 border border-gray-200/50 shadow-sm dark:bg-gray-800/50 dark:border-gray-700/50">
+            <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:bg-gray-800 dark:border-gray-700 dark:shadow-none">
               <div className="flex items-center gap-3">
                 <div className={`h-8 w-8 rounded-md ${currentProject.color || 'bg-system-blue'} flex items-center justify-center shadow-sm`}>
                   <Folder size={14} className="text-white" />
@@ -212,7 +212,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
       </nav>
 
       {/* User Profile & Settings */}
-      <div className="p-3 border-t border-gray-200/50 bg-white/30 backdrop-blur-sm dark:border-gray-700/50 dark:bg-gray-800/30">
+      <div className="p-3 border-t border-gray-100 bg-white dark:border-gray-700 dark:bg-gray-900">
         <NavLink
           to="/settings"
           className={({ isActive }) =>

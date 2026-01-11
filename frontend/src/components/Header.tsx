@@ -14,7 +14,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   const { isDarkMode, toggleTheme } = useThemeStore();
 
   return (
-    <header className="glass-panel sticky top-0 z-10 border-b border-white/20">
+    <header className="bg-white dark:bg-gray-900 sticky top-0 z-10 border-b border-gray-100 dark:border-gray-700">
       <div className="px-4 sm:px-6 py-3 flex items-center justify-between">
         {/* Left: menu + search - allow this region to shrink so right-side icons are never cropped */}
         <div className="flex items-center flex-1 min-w-0">
@@ -68,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-system-red rounded-full border-2 border-white dark:border-[#242424]"></span>
           </button>
 
-          <div className="flex items-center space-x-3 pl-2 border-l border-gray-200/50 dark:border-gray-700/50">
+          <div className="flex items-center space-x-3 pl-2 border-l border-gray-100 dark:border-gray-700">
             <div className="hidden md:block text-right">
               <p className="text-sm font-medium text-gray-900 leading-none dark:text-gray-100">{user?.name || 'User'}</p>
               <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">Admin</p>
