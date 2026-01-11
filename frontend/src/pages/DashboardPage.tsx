@@ -131,21 +131,22 @@ const DashboardPage: React.FC = () => {
           <div className="h-48 sm:h-80 w-full overflow-hidden sm:overflow-x-auto">
             <div className="h-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={statsData?.chartData || []} margin={{ top: 10, right: 15, left: -20, bottom: 0 }}>
+                <LineChart data={statsData?.chartData || []} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={document.documentElement.classList.contains('dark') ? '#404040' : '#E5E7EB'} />
                   <XAxis
                     dataKey="name"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6B7280', fontSize: window.innerWidth < 640 ? 10 : 12 }}
+                    tick={{ fill: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6B7280', fontSize: window.innerWidth < 640 ? 11 : 12 }}
                     dy={5}
                     interval={window.innerWidth < 640 ? 'preserveStartEnd' : 0}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6B7280', fontSize: window.innerWidth < 640 ? 10 : 12 }}
-                    width={window.innerWidth < 640 ? 30 : 40}
+                    tick={{ fill: document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6B7280', fontSize: window.innerWidth < 640 ? 11 : 12 }}
+                    width={window.innerWidth < 640 ? 35 : 40}
+                    allowDecimals={false}
                   />
                   <Tooltip
                     cursor={{ stroke: document.documentElement.classList.contains('dark') ? '#404040' : '#E5E7EB', strokeWidth: 2 }}
