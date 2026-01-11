@@ -61,6 +61,7 @@ const TestCasesPage: React.FC = () => {
     const [sortInfo, setSortInfo] = useState<SortInfo | null>(null);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [isGeminiModalOpen, setIsGeminiModalOpen] = useState(false);
     
     // Track if we've already processed the testCaseId URL parameter
     const processedTestCaseIdRef = useRef<string | null>(null);
@@ -397,8 +398,6 @@ const TestCasesPage: React.FC = () => {
             (tc.area && tc.area.toLowerCase().includes(query))
         );
     }
-
-    const [isGeminiModalOpen, setIsGeminiModalOpen] = useState(false);
 
     // Handle drag-and-drop reordering of test cases
     const handleReorder = async (reorderedCases: TestCase[]) => {
