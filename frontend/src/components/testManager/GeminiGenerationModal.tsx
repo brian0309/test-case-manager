@@ -38,6 +38,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
     existingTestCases
 }) => {
     const [generationType, setGenerationType] = useState<GenerationType>('new_case');
+    const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash');
     const [selectedFields, setSelectedFields] = useState({
         area: true,
         steps: true,
@@ -56,6 +57,27 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
     const streamingTextRef = useRef('');
     const livePreviewRef = useRef<HTMLPreElement>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
+
+    // Fetch user's default model preference on mount
+    useEffect(() => {
+        const fetchModelPreference = async () => {
+            try {
+                const response = await fetch(`${API_URL}/gemini/settings`, {
+                    credentials: 'include',
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.model) {
+                        setSelectedModel(data.model);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch model preference:', error);
+                // Keep default 'gemini-2.5-flash'
+            }
+        };
+        fetchModelPreference();
+    }, []);
 
     // Auto-scroll live preview to bottom
     useEffect(() => {
@@ -131,7 +153,8 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                     type: generationType,
                     selectedFields,
                     existingTestCases,
-                    imageUrls: contextImages
+                    imageUrls: contextImages,
+                    model: selectedModel
                 }),
                 signal: abortControllerRef.current.signal
             });
@@ -306,6 +329,27 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                     <div className="flex-1 overflow-y-auto p-6 space-y-6">
                         {/* Configuration */}
                         <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    AI Model
+                                </label>
+                                <select
+                                    value={selectedModel}
+                                    onChange={(e) => setSelectedModel(e.target.value)}
+                                    disabled={isGenerating}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
+                                    <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                                    <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+                                    <option value="gemini-2.5-flash-preview-09-2025">Gemini 2.5 Flash Preview</option>
+                                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended)</option>
+                                    <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                                    <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+                                    <option value="gemini-3-pro-preview">Gemini 3 Pro Preview</option>
+                                </select>
+                            </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Generation Type

@@ -87,7 +87,7 @@ export const generateTestCases = async (req: Request, res: Response) => {
  */
 export const generateTestCasesStream = async (req: Request, res: Response) => {
     try {
-        const { context, type = 'new_case', selectedFields, existingTestCases = [], imageUrls = [] } = req.body;
+        const { context, type = 'new_case', selectedFields, existingTestCases = [], imageUrls = [], model } = req.body;
         const userId = req.userId;
 
         const user = await User.findById(userId).select('+geminiApiKey');
@@ -96,7 +96,8 @@ export const generateTestCasesStream = async (req: Request, res: Response) => {
         }
 
         const decryptedKey = decryptApiKey(user.geminiApiKey);
-        const model = user.geminiModel || 'gemini-2.5-flash';
+        // Use model from request, fallback to user's saved preference, then default
+        const selectedModel = model || user.geminiModel || 'gemini-2.5-flash';
 
         // Set SSE headers
         res.setHeader('Content-Type', 'text/event-stream');
@@ -118,7 +119,7 @@ export const generateTestCasesStream = async (req: Request, res: Response) => {
             selectedFields,
             existingTestCases,
             imageUrls,
-            model,
+            selectedModel,
             res
         );
 
