@@ -400,24 +400,24 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
     const hasDuplicateMappings = duplicateMappings.length > 0;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
             <div
-                className="absolute inset-0 bg-white/40 backdrop-blur-sm transition-opacity"
+                className="absolute inset-0 bg-white/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
                 onClick={handleClose}
             />
 
             <div
-                className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-4xl border border-white/20 overflow-hidden transform transition-all scale-100 relative"
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-4xl border border-gray-200 dark:border-gray-700 overflow-hidden transform transition-all scale-100 relative"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200/50">
+                <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                            <Upload className="h-6 w-6 text-blue-600" />
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                            <Upload className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                             Import Test Cases
                         </h2>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                             {step === 1 && 'Upload a CSV file to import test cases'}
                             {step === 2 && `Map columns from your CSV (${csvData.length} rows detected)`}
                             {step === 3 && 'Review validation results before importing'}
@@ -426,9 +426,9 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
                     </div>
                     <button
                         onClick={handleClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-lg hover:bg-gray-100"
+                        className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >
-                        <X className="h-6 w-6" />
+                        <X className="h-5 w-5" />
                     </button>
                 </div>
 

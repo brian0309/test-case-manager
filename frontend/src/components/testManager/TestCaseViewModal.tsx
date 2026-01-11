@@ -110,13 +110,13 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
             <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-md transition-opacity"
+                className="absolute inset-0 bg-white/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
 
-            <div className="relative w-full h-full sm:h-auto sm:max-w-6xl bg-white dark:bg-[#2a2a2a]/95 backdrop-blur-xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-[scaleIn_0.2s_ease-out]">
+            <div className="relative w-full h-full sm:h-auto sm:max-w-6xl bg-white dark:bg-gray-800 sm:rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-[scaleIn_0.2s_ease-out]">
                 {/* Modal Header */}
-                <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-[#333]/50">
+                <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                     <div className="flex items-center gap-3">
                         <span className="font-mono text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">{testCase.id}</span>
                         <span className="text-xs text-gray-400 dark:text-gray-500">View Mode</span>
@@ -203,7 +203,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                     {testCase.area && (
                         <div className="mb-8">
                             <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Page / Area</label>
-                            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 py-2 border-b border-gray-200 dark:border-gray-700">
+                            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 py-2 border-b border-gray-200 dark:border-gray-700/80">
                                 {testCase.area}
                             </div>
                         </div>
@@ -213,7 +213,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                     {testCase.testDescription && (
                         <div className="mb-8">
                             <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Test Description</label>
-                            <div className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 whitespace-pre-wrap">
+                            <div className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700/80 whitespace-pre-wrap">
                                 {testCase.testDescription}
                             </div>
                         </div>
@@ -253,7 +253,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                     {testCase.expectedResult && (
                         <div className="mb-8">
                             <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Expected Result (Summary)</label>
-                            <div className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 whitespace-pre-wrap">
+                            <div className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700/80 whitespace-pre-wrap">
                                 {testCase.expectedResult}
                             </div>
                         </div>
@@ -329,11 +329,11 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                 </div>
 
                 {/* Modal Footer */}
-                <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-[#333]/50">
+                <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                     <div>
                         <button
                             onClick={() => onNavigate && onNavigate(currentIndex - 1)}
-                            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                             disabled={currentIndex <= 0}
                         >
                             Previous
@@ -342,7 +342,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                     <div>
                         <button
                             onClick={() => onNavigate && onNavigate(currentIndex + 1)}
-                            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                             disabled={currentIndex === -1 || currentIndex >= testCases.length - 1}
                         >
                             Next

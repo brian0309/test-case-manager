@@ -80,20 +80,20 @@ const FilterModal: React.FC = () => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
             <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-md transition-opacity"
+                className="absolute inset-0 bg-white/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
                 onClick={() => toggleFilterModal(false)}
             />
-            <div className="relative bg-white dark:bg-[#2a2a2a]/95 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-white/20 dark:border-white/10 animate-in zoom-in-95 duration-200">
+            <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-200 dark:border-gray-700 animate-in zoom-in-95 duration-200">
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/50 dark:bg-[#333]/50">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Filter Test Cases</h2>
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Filter Test Cases</h2>
                     <button
                         onClick={() => toggleFilterModal(false)}
-                        className="p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                        className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >
-                        <X size={18} />
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
 
@@ -110,7 +110,7 @@ const FilterModal: React.FC = () => {
                                         onClick={() => handleStatusToggle(status)}
                                         className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${isSelected
                                                 ? 'ring-2 ring-offset-1 ring-blue-500 ' + getStatusColor(status)
-                                                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-600'
                                             }`}
                                     >
                                         {status}
@@ -139,7 +139,7 @@ const FilterModal: React.FC = () => {
                                         onClick={() => handlePriorityToggle(priority)}
                                         className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${isSelected
                                                 ? 'ring-2 ring-offset-1 ' + colorClass
-                                                : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                                : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:bg-gray-50 dark:hover:bg-gray-600'
                                             }`}
                                     >
                                         {priority}
@@ -161,7 +161,7 @@ const FilterModal: React.FC = () => {
                                         type="date"
                                         value={localFilters.dateRange.start || ''}
                                         onChange={(e) => handleDateChange('start', e.target.value)}
-                                        className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                        className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                                     />
                                 </div>
                             </div>
@@ -173,7 +173,7 @@ const FilterModal: React.FC = () => {
                                         type="date"
                                         value={localFilters.dateRange.end || ''}
                                         onChange={(e) => handleDateChange('end', e.target.value)}
-                                        className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                                        className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                                     />
                                 </div>
                             </div>
@@ -182,10 +182,10 @@ const FilterModal: React.FC = () => {
                 </div>
 
                 {/* Footer */}
-                <div className="px-6 py-4 bg-gray-50 dark:bg-[#333]/50 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                <div className="px-6 py-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
                     <button
                         onClick={handleReset}
-                        className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors px-2 py-1 rounded-md hover:bg-gray-200/50 dark:hover:bg-gray-700/50"
+                        className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors px-2 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
                     >
                         <RotateCcw size={14} />
                         Reset Defaults
@@ -199,7 +199,7 @@ const FilterModal: React.FC = () => {
                         </button>
                         <button
                             onClick={handleApply}
-                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-lg shadow-sm transition-all"
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg shadow-sm transition-all"
                         >
                             <Check size={16} />
                             Apply Filters

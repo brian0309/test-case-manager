@@ -233,15 +233,15 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
     return (
         <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4">
             <div
-                className="absolute inset-0 bg-black/40 backdrop-blur-md transition-opacity"
+                className="absolute inset-0 bg-white/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
 
-            <div className="relative w-full h-full sm:h-auto sm:max-w-6xl bg-white dark:bg-[#2a2a2a]/95 backdrop-blur-xl sm:rounded-2xl shadow-2xl flex flex-col sm:flex-row sm:max-h-[90vh] animate-[scaleIn_0.2s_ease-out]">
+            <div className="relative w-full h-full sm:h-auto sm:max-w-6xl bg-white dark:bg-gray-800 sm:rounded-2xl shadow-2xl flex flex-col sm:flex-row sm:max-h-[90vh] animate-[scaleIn_0.2s_ease-out]">
                 {/* Main Content Wrapper */}
                 <div className="flex-1 flex flex-col min-w-0 min-h-0">
                     {/* Modal Header */}
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-[#333]/50 flex-shrink-0">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0">
                         <div className="flex items-center gap-3">
                             {localCase.id.startsWith('new-') ? (
                                 <span className="text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 rounded-md">New Case</span>
@@ -420,7 +420,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                                 }, 150);
                                             }}
                                             placeholder="Select or type..."
-                                            className="w-full text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg py-2 pl-3 pr-8 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-300 dark:placeholder:text-gray-600 bg-white dark:bg-gray-800 outline-none transition-all"
+                                            className="w-full text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700/80 rounded-lg py-2 pl-3 pr-8 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-300 dark:placeholder:text-gray-600 bg-white dark:bg-gray-800 outline-none transition-all"
                                         />
                                         <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none group-hover:text-gray-500 dark:group-hover:text-gray-500 transition-colors" />
                                     </div>
@@ -475,7 +475,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                 value={localCase.testDescription || ''}
                                 onChange={handleTestDescriptionChange}
                                 onBlur={handleFieldBlur}
-                                className="w-full text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border-transparent rounded-lg focus:border-blue-300 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-gray-700 focus:ring-0 p-3 transition-colors resize-none"
+                                className="w-full text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border-transparent dark:border-gray-700/80 border rounded-lg focus:border-blue-300 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-gray-700 focus:ring-0 p-3 transition-colors resize-none"
                                 rows={3}
                                 placeholder="Short description of what this test verifies"
                             />
@@ -511,7 +511,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                 value={localCase.expectedResult || ''}
                                 onChange={handleExpectedResultChange}
                                 onBlur={handleFieldBlur}
-                                className="w-full text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border-transparent rounded-lg focus:border-blue-300 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-gray-700 focus:ring-0 p-3 transition-colors resize-none"
+                                className="w-full text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border-transparent dark:border-gray-700/80 border rounded-lg focus:border-blue-300 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-gray-700 focus:ring-0 p-3 transition-colors resize-none"
                                 rows={3}
                                 placeholder="What is the high-level expected outcome of this test case?"
                             />
@@ -615,7 +615,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                     </div>
 
                     {/* Modal Footer */}
-                    <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-[#333]/50 flex-shrink-0">
+                    <div className="flex items-center justify-between px-6 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0">
                         <p className="text-xs text-gray-400 dark:text-gray-500">
                             Changes are saved automatically
                         </p>
@@ -628,7 +628,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                     onClose();
                                 }
                             }}
-                            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
                             Back
                         </button>
@@ -638,8 +638,8 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
 
                 {/* History Panel */}
                 {showHistory && (
-                    <div className="hidden sm:flex w-80 border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#2a2a2a] flex-col overflow-hidden">
-                        <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-[#333]/50">
+                    <div className="hidden sm:flex w-80 border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex-col overflow-hidden">
+                        <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                             <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Edit History</h3>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">View and restore previous versions</p>
                         </div>
