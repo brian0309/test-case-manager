@@ -281,22 +281,22 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
         <AnimatePresence>
             <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-0 sm:p-4">
                 <div
-                    className="absolute inset-0 bg-white/40 backdrop-blur-sm transition-opacity"
+                    className="absolute inset-0 bg-white/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
                     onClick={onClose}
                 />
                 <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="relative w-full max-w-2xl bg-white sm:rounded-xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden"
+                    className="relative w-full max-w-2xl bg-white dark:bg-gray-800 sm:rounded-xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden"
                 >
                     {/* Header */}
-                    <div className="flex items-center justify-between p-4 border-b border-gray-100">
+                    <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
                         <div className="flex items-center space-x-2">
-                            <Sparkles className="w-5 h-5 text-blue-600" />
-                            <h2 className="text-lg font-semibold text-gray-900">Generate with AI</h2>
+                            <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Generate with AI</h2>
                         </div>
-                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
                             <X className="w-5 h-5" />
                         </button>
                     </div>
@@ -306,13 +306,13 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                         {/* Configuration */}
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Generation Type
                                 </label>
                                 <select
                                     value={generationType}
                                     onChange={(e) => setGenerationType(e.target.value as GenerationType)}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400"
                                 >
                                     <option value="new_case">New Test Cases</option>
                                     {/* Other options disabled for now as per requirement focus */}
@@ -321,7 +321,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     Context
                                 </label>
                                 <div className="space-y-3">
@@ -335,14 +335,14 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                         value={context}
                                         onChange={(e) => setContext(e.target.value)}
                                         rows={4}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400"
                                         placeholder="Describe what you want to test..."
                                     />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                     Include Fields
                                 </label>
                                 <div className="flex flex-wrap gap-4">
@@ -351,27 +351,27 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                             type="checkbox"
                                             checked={selectedFields.area}
                                             onChange={(e) => setSelectedFields(prev => ({ ...prev, area: e.target.checked }))}
-                                            className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                            className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:bg-gray-700"
                                         />
-                                        <span className="text-sm text-gray-700">Page / Area</span>
+                                        <span className="text-sm text-gray-700 dark:text-gray-300">Page / Area</span>
                                     </label>
                                     <label className="flex items-center space-x-2 cursor-pointer">
                                         <input
                                             type="checkbox"
                                             checked={selectedFields.steps}
                                             onChange={(e) => setSelectedFields(prev => ({ ...prev, steps: e.target.checked }))}
-                                            className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                            className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:bg-gray-700"
                                         />
-                                        <span className="text-sm text-gray-700">Test Steps</span>
+                                        <span className="text-sm text-gray-700 dark:text-gray-300">Test Steps</span>
                                     </label>
                                     <label className="flex items-center space-x-2 cursor-pointer">
                                         <input
                                             type="checkbox"
                                             checked={selectedFields.expected}
                                             onChange={(e) => setSelectedFields(prev => ({ ...prev, expected: e.target.checked }))}
-                                            className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                            className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:bg-gray-700"
                                         />
-                                        <span className="text-sm text-gray-700">Expected Result (Summary)</span>
+                                        <span className="text-sm text-gray-700 dark:text-gray-300">Expected Result (Summary)</span>
                                     </label>
                                     {/* Test Description is required and always included; no checkbox */}
                                 </div>
@@ -381,7 +381,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                 <button
                                     onClick={handleGenerate}
                                     disabled={isGenerating}
-                                    className="flex-1 flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2.5 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50"
+                                    className="flex-1 flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-500 dark:to-purple-500 text-white py-2.5 rounded-lg hover:from-blue-700 hover:to-purple-700 dark:hover:from-blue-600 dark:hover:to-purple-600 transition-all disabled:opacity-50"
                                 >
                                     {isGenerating ? (
                                         <>
@@ -398,7 +398,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                 {isGenerating && (
                                     <button
                                         onClick={handleCancel}
-                                        className="px-4 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all"
+                                        className="px-4 py-2.5 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 dark:hover:bg-red-700 transition-all"
                                     >
                                         Cancel
                                     </button>
@@ -408,12 +408,12 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
 
                         {/* Live Preview - Streaming Output */}
                         {(isGenerating || streamingText) && (
-                            <div className="space-y-2 pt-4 border-t border-gray-100">
+                            <div className="space-y-2 pt-4 border-t border-gray-100 dark:border-gray-700">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center space-x-2">
-                                        <h3 className="text-sm font-medium text-gray-900">Live Preview</h3>
+                                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">Live Preview</h3>
                                         {isGenerating && (
-                                            <span className="flex items-center space-x-1 text-xs text-blue-600">
+                                            <span className="flex items-center space-x-1 text-xs text-blue-600 dark:text-blue-400">
                                                 <span className="relative flex h-2 w-2">
                                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
@@ -424,7 +424,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                     </div>
                                     <button
                                         onClick={() => setShowLivePreview(!showLivePreview)}
-                                        className="flex items-center space-x-1 text-xs text-gray-500 hover:text-gray-700"
+                                        className="flex items-center space-x-1 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                                     >
                                         {showLivePreview ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                                         <span>{showLivePreview ? 'Hide' : 'Show'}</span>
@@ -444,12 +444,12 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
 
                         {/* Results */}
                         {generatedCases.length > 0 && (
-                            <div className="space-y-4 pt-4 border-t border-gray-100">
-                                <h3 className="text-sm font-medium text-gray-900">Generated Results</h3>
+                            <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                <h3 className="text-sm font-medium text-gray-900 dark:text-white">Generated Results</h3>
                                 <div className="space-y-3">
                                     {generatedCases.map((testCase, index) => (
-                                        <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
-                                            <div className="flex items-center justify-between p-3 bg-gray-50">
+                                        <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                                            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700">
                                                 <div className="flex items-center space-x-3">
                                                     <input
                                                         type="checkbox"
@@ -459,31 +459,31 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                                             newCases[index].selected = e.target.checked;
                                                             setGeneratedCases(newCases);
                                                         }}
-                                                        className="h-4 w-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                                        className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:bg-gray-700"
                                                     />
-                                                    <span className="font-medium text-gray-900">{testCase.title}</span>
+                                                    <span className="font-medium text-gray-900 dark:text-white">{testCase.title}</span>
                                                 </div>
                                                 <button
                                                     onClick={() => setExpandedCaseIndex(expandedCaseIndex === index ? null : index)}
-                                                    className="text-gray-500 hover:text-gray-700"
+                                                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
                                                 >
                                                     {expandedCaseIndex === index ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                                                 </button>
                                             </div>
 
                                             {expandedCaseIndex === index && (
-                                                <div className="p-4 bg-white border-t border-gray-200 space-y-3">
-                                                    <p className="text-sm text-gray-600">{testCase.description}</p>
+                                                <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">{testCase.description}</p>
                                                     {testCase.steps && testCase.steps.length > 0 && (
                                                         <div>
-                                                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Steps</h4>
+                                                            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Steps</h4>
                                                             <div className="space-y-2">
                                                                 {testCase.steps.map((step, i) => (
                                                                     <div key={i} className="flex text-sm">
-                                                                        <span className="w-6 text-gray-400">{i + 1}.</span>
+                                                                        <span className="w-6 text-gray-400 dark:text-gray-500">{i + 1}.</span>
                                                                         <div className="flex-1 grid grid-cols-2 gap-4">
-                                                                            <span className="text-gray-900">{step.action}</span>
-                                                                            <span className="text-gray-600 italic">{step.expectedResult}</span>
+                                                                            <span className="text-gray-900 dark:text-white">{step.action}</span>
+                                                                            <span className="text-gray-600 dark:text-gray-400 italic">{step.expectedResult}</span>
                                                                         </div>
                                                                     </div>
                                                                 ))}
@@ -492,14 +492,14 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                                     )}
                                                     {testCase.area && (
                                                         <div className="mt-2">
-                                                            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Area: </span>
-                                                            <span className="text-sm text-gray-700">{testCase.area}</span>
+                                                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Area: </span>
+                                                            <span className="text-sm text-gray-700 dark:text-gray-300">{testCase.area}</span>
                                                         </div>
                                                     )}
                                                     {testCase.expectedResult && (
                                                         <div className="mt-2">
-                                                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Expected Result</h4>
-                                                            <p className="text-sm text-gray-700">{testCase.expectedResult}</p>
+                                                            <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Expected Result</h4>
+                                                            <p className="text-sm text-gray-700 dark:text-gray-300">{testCase.expectedResult}</p>
                                                         </div>
                                                     )}
                                                 </div>
@@ -512,17 +512,17 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                     </div>
 
                     {/* Footer */}
-                    <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end space-x-3">
+                    <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end space-x-3">
                         <button
                             onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={handleAddSelected}
                             disabled={generatedCases.filter(c => c.selected).length === 0}
-                            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             Add Selected Cases
                         </button>
