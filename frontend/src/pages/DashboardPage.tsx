@@ -128,8 +128,8 @@ const DashboardPage: React.FC = () => {
             <h2 className="text-lg font-semibold text-gray-900 tracking-tight dark:text-gray-100">Activity Overview</h2>
             <div className="text-sm text-gray-500 dark:text-gray-400">Test Cases Modified (Last 14 Days)</div>
           </div>
-          <div className="h-80 w-full overflow-x-auto">
-            <div className="min-w-[300px] h-full">
+          <div className="h-80 w-full overflow-hidden sm:overflow-x-auto">
+            <div className="h-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={statsData?.chartData || []} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={document.documentElement.classList.contains('dark') ? '#404040' : '#E5E7EB'} />
