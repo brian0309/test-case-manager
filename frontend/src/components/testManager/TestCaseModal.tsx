@@ -237,7 +237,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                 onClick={onClose}
             />
 
-            <div className="relative w-full h-full sm:h-auto sm:max-w-6xl bg-white dark:bg-gray-800 sm:rounded-2xl shadow-2xl flex flex-col sm:flex-row sm:max-h-[90vh] animate-[scaleIn_0.2s_ease-out]">
+            <div className="relative w-full h-full sm:h-auto sm:max-w-6xl bg-white dark:bg-gray-800 sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col sm:flex-row sm:max-h-[90vh] animate-[scaleIn_0.2s_ease-out]">
                 {/* Main Content Wrapper */}
                 <div className="flex-1 flex flex-col min-w-0 min-h-0">
                     {/* Modal Header */}
