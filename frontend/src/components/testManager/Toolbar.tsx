@@ -128,12 +128,14 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
                     </>
                 )}
 
-                <button
-                    onClick={() => toggleFilterModal(true)}
-                    className={`p-1 rounded-md transition-colors ${hasActiveFilters ? 'text-blue-500 bg-blue-500/10 dark:bg-blue-500/20 hover:bg-blue-500/20 dark:hover:bg-blue-500/30' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-                >
-                    <Filter className="h-4 w-4" strokeWidth={1.5} />
-                </button>
+                {viewMode === 'cases' && !activeSuite && (
+                    <button
+                        onClick={() => toggleFilterModal(true)}
+                        className={`p-1 rounded-md transition-colors ${hasActiveFilters ? 'text-blue-500 bg-blue-500/10 dark:bg-blue-500/20 hover:bg-blue-500/20 dark:hover:bg-blue-500/30' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                    >
+                        <Filter className="h-4 w-4" strokeWidth={1.5} />
+                    </button>
+                )}
                 {viewMode === 'cases' && onUpload && (
                     <button
                         onClick={onUpload}
