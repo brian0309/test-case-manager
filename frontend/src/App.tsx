@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, Outlet, useLocation } from "react-router-dom";
+import { Moon, Sun } from "lucide-react";
 
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
@@ -23,6 +24,7 @@ import TestSuitesPage from "./pages/testManager/TestSuitesPage";
 import TestRunsPage from "./pages/testManager/TestRunsPage";
 
 import { Toaster } from "react-hot-toast";
+import { useThemeStore } from "./store/themeStore";
 import { useAuthStore } from "./store/authStore";
 import { useEffect } from "react";
 
@@ -69,11 +71,23 @@ const RedirectAuthenticatedUser: React.FC<RedirectAuthenticatedUserProps> = ({ c
 };
 
 // Public route layout
-const PublicRoute: React.FC = () => (
-	<div className='min-h-screen bg-background dark:bg-background-dark flex items-center justify-center p-4'>
+const PublicRoute: React.FC = () => {
+  const { isDarkMode, toggleTheme } = useThemeStore();
+  
+  return (
+	<div className='min-h-screen bg-background dark:bg-background-dark flex items-center justify-center p-4 relative'>
+		<button
+			onClick={toggleTheme}
+			className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors rounded-full hover:bg-black/5 dark:hover:bg-white/10"
+			aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+			title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
+		>
+			{isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+		</button>
 		<Outlet />
 	</div>
-);
+  );
+};
 
 function App() {
   const { isCheckingAuth, checkAuth } = useAuthStore();

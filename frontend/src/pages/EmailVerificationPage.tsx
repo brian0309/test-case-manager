@@ -76,17 +76,17 @@ const EmailVerificationPage: React.FC = () => {
 	}, [code]);
 
 	return (
-		<div className='max-w-md w-full bg-background-paper dark:bg-background-darkPaper border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden'>
+		<div className='max-w-md w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden'>
 			<motion.div
 				initial={{ opacity: 0, y: -50 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ duration: 0.5 }}
-				className='bg-background-paper dark:bg-background-darkPaper rounded-2xl shadow-2xl p-8 w-full max-w-md'
+				className='bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-md'
 			>
-				<h2 className='text-3xl font-bold mb-6 text-center text-primary dark:text-darkPrimary'>
+				<h2 className='text-3xl font-bold mb-6 text-center text-gray-900 dark:text-gray-100'>
 					Verify Your Email
 				</h2>
-				<p className='text-center text-text-secondary dark:text-text-darkSecondary mb-6'>Enter the 6-digit code sent to your email address.</p>
+				<p className='text-center text-gray-600 dark:text-gray-400 mb-6'>Enter the 6-digit code sent to your email address.</p>
 
 				<form onSubmit={handleSubmit} className='space-y-6'>
 					<div className='flex justify-between'>

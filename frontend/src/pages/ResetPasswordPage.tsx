@@ -40,14 +40,14 @@ const ResetPasswordPage: React.FC = () => {
 			initial={{ opacity: 0, y: 20 }}
 			animate={{ opacity: 1, y: 0 }}
 			transition={{ duration: 0.5 }}
-			className='max-w-md w-full bg-background-paper dark:bg-background-darkPaper border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden'
+			className='max-w-md w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden'
 		>
 			<div className='p-8'>
-				<h2 className='text-3xl font-bold mb-6 text-center text-primary dark:text-darkPrimary'>
+				<h2 className='text-3xl font-bold mb-6 text-center text-gray-900 dark:text-gray-100'>
 					Reset Password
 				</h2>
-				{error && <p className='text-error text-sm mb-4'>{error}</p>}
-				{message && <p className='text-success text-sm mb-4 dark:text-system-green'>{message}</p>}
+				{error && <p className='text-red-600 dark:text-red-400 text-sm mb-4'>{error}</p>}
+				{message && <p className='text-green-600 dark:text-green-400 text-sm mb-4'>{message}</p>}
 
 				<form onSubmit={handleSubmit}>
 					<Input
@@ -71,7 +71,7 @@ const ResetPasswordPage: React.FC = () => {
 					<motion.button
 						whileHover={{ scale: 1.02 }}
 						whileTap={{ scale: 0.98 }}
-						className='w-full py-3 px-4 bg-primary dark:bg-primary-darkMode text-text-contrast dark:text-primary-darkModeContrast font-bold rounded-lg shadow hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition duration-200'
+					className='w-full py-3 px-4 bg-blue-600 dark:bg-blue-600 text-white dark:text-white font-bold rounded-lg shadow hover:bg-blue-700 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition duration-200'
 						type='submit'
 						disabled={isLoading}
 					>
