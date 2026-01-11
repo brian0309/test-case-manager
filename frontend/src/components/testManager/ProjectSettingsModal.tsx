@@ -82,25 +82,25 @@ const ProjectSettingsModal: React.FC<Props> = ({ isOpen, onClose, project }) => 
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
-            <div className="absolute inset-0 bg-white/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
+            <div className="absolute inset-0 bg-white/40 dark:bg-black/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
 
-            <div className="relative bg-white w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="relative bg-white dark:bg-gray-800 w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-4xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                     <div className="flex items-center gap-3">
-                        <Settings2 className="w-6 h-6 text-gray-600" />
-                        <h2 className="text-xl font-semibold text-gray-900">Project Settings</h2>
+                        <Settings2 className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Project Settings</h2>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 {/* Tab Navigation */}
-                <div className="border-b border-gray-200 bg-white px-6">
+                <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-6">
                     <div className="flex gap-8">
                         {tabs.map((tab) => (
                             <button
@@ -108,8 +108,8 @@ const ProjectSettingsModal: React.FC<Props> = ({ isOpen, onClose, project }) => 
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
                                     activeTab === tab.id
-                                        ? 'border-blue-600 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                        ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
                                 }`}
                             >
                                 {tab.label}
@@ -119,10 +119,10 @@ const ProjectSettingsModal: React.FC<Props> = ({ isOpen, onClose, project }) => 
                 </div>
 
                 {/* Tab Content */}
-                <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+                <div className="flex-1 overflow-y-auto p-6 bg-gray-50 dark:bg-gray-900/50">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-64">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
                         </div>
                     ) : (
                         <>
@@ -140,10 +140,10 @@ const ProjectSettingsModal: React.FC<Props> = ({ isOpen, onClose, project }) => 
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-white">
+                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                         disabled={isSaving}
                     >
                         Cancel
@@ -151,7 +151,7 @@ const ProjectSettingsModal: React.FC<Props> = ({ isOpen, onClose, project }) => 
                     <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         <Save className="w-4 h-4" />
                         {isSaving ? 'Saving...' : 'Save Changes'}
@@ -165,20 +165,20 @@ const ProjectSettingsModal: React.FC<Props> = ({ isOpen, onClose, project }) => 
 // General Tab Component
 const GeneralTab: React.FC<{ project: Project }> = ({ project }) => {
     return (
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Project Information</h3>
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Project Information</h3>
             <div className="space-y-4">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Project Name</label>
-                    <p className="text-gray-900">{project.name}</p>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Project Name</label>
+                    <p className="text-gray-900 dark:text-white">{project.name}</p>
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                    <p className="text-gray-600">{project.description || 'No description'}</p>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                    <p className="text-gray-600 dark:text-gray-400">{project.description || 'No description'}</p>
                 </div>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Members</label>
-                    <p className="text-gray-600">{project.stats.members} member(s)</p>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Members</label>
+                    <p className="text-gray-600 dark:text-gray-400">{project.stats.members} member(s)</p>
                 </div>
             </div>
         </div>
@@ -242,42 +242,42 @@ const TestCasesTab: React.FC<{
     return (
         <div className="space-y-6">
             {/* Hidden Form Fields */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Form Fields</h3>
-                <p className="text-sm text-gray-600 mb-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Form Fields</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                     Hide fields from the test case create/edit form. Note: Title, Project, and Test Suite cannot be hidden.
                 </p>
                 <div className="space-y-2">
                     {defaultFields.map((field) => (
-                        <label key={field.key} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
+                        <label key={field.key} className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg cursor-pointer transition-colors">
                             <input
                                 type="checkbox"
                                 checked={settings.testCases?.hiddenDefaultFields?.[field.key as keyof typeof settings.testCases.hiddenDefaultFields] || false}
                                 onChange={() => toggleHiddenField(field.key)}
-                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                className="w-4 h-4 text-blue-600 dark:text-blue-500 rounded focus:ring-blue-500 dark:focus:ring-blue-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
                             />
-                            <span className="text-sm text-gray-700">{field.label}</span>
+                            <span className="text-sm text-gray-700 dark:text-gray-300">{field.label}</span>
                         </label>
                     ))}
                 </div>
             </div>
 
             {/* Hidden Table Columns */}
-            <div className="bg-white rounded-lg p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Table Columns</h3>
-                <p className="text-sm text-gray-600 mb-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Table Columns</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                     Hide columns from the test case table view.
                 </p>
                 <div className="space-y-2">
                     {defaultColumns.map((column) => (
-                        <label key={column.key} className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
+                        <label key={column.key} className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg cursor-pointer transition-colors">
                             <input
                                 type="checkbox"
                                 checked={settings.testCases?.table?.hiddenDefaultColumns?.[column.key as keyof typeof settings.testCases.table.hiddenDefaultColumns] || false}
                                 onChange={() => toggleHiddenColumn(column.key)}
-                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                className="w-4 h-4 text-blue-600 dark:text-blue-500 rounded focus:ring-blue-500 dark:focus:ring-blue-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
                             />
-                            <span className="text-sm text-gray-700">{column.label}</span>
+                            <span className="text-sm text-gray-700 dark:text-gray-300">{column.label}</span>
                         </label>
                     ))}
                 </div>
@@ -422,17 +422,17 @@ const CustomFieldsTab: React.FC<{
 
     return (
         <div className="space-y-6">
-            <div className="bg-white rounded-lg p-6 shadow-sm">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900">Custom Fields</h3>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Custom Fields</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                             Add custom fields to test cases. These will appear in the form and can be shown in the table.
                         </p>
                     </div>
                     <button
                         onClick={addCustomField}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-colors"
                     >
                         <Plus className="w-4 h-4" />
                         Add Field
@@ -443,40 +443,40 @@ const CustomFieldsTab: React.FC<{
                 {settings.testCases?.customFields && settings.testCases.customFields.filter(f => !f.deleted).length > 0 ? (
                     <div className="space-y-3">
                         {settings.testCases.customFields.filter(f => !f.deleted).map((field) => (
-                            <div key={field.id} className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
-                                <GripVertical className="w-5 h-5 text-gray-400" />
+                            <div key={field.id} className="flex items-center gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-gray-300 dark:hover:border-gray-600 transition-colors bg-white dark:bg-gray-800">
+                                <GripVertical className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2">
-                                        <span className="font-medium text-gray-900">{field.label}</span>
-                                        <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                                        <span className="font-medium text-gray-900 dark:text-white">{field.label}</span>
+                                        <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
                                             {field.type.replace('_', ' ')}
                                         </span>
                                         {field.required && (
-                                            <span className="text-xs px-2 py-1 bg-red-100 text-red-600 rounded">Required</span>
+                                            <span className="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded">Required</span>
                                         )}
                                     </div>
                                     {field.key && (
-                                        <p className="text-sm text-gray-500 mt-1">Key: {field.key}</p>
+                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Key: {field.key}</p>
                                     )}
                                 </div>
-                                <label className="flex items-center gap-2 text-sm text-gray-600">
+                                <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer">
                                     <input
                                         type="checkbox"
                                         checked={settings.testCases?.table?.visibleCustomFieldIds?.includes(field.id) || false}
                                         onChange={() => toggleFieldVisibility(field.id)}
-                                        className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                        className="w-4 h-4 text-blue-600 dark:text-blue-500 rounded focus:ring-blue-500 dark:focus:ring-blue-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
                                     />
                                     Show in table
                                 </label>
                                 <button
                                     onClick={() => setEditingField(field)}
-                                    className="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                                    className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                                 >
                                     Edit
                                 </button>
                                 <button
                                     onClick={() => softDeleteField(field.id)}
-                                    className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                    className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                                     title="Move to deleted fields"
                                 >
                                     <Trash2 className="w-4 h-4" />
@@ -485,7 +485,7 @@ const CustomFieldsTab: React.FC<{
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-12 text-gray-500">
+                    <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                         <p>No custom fields defined yet.</p>
                         <p className="text-sm mt-1">Click "Add Field" to create your first custom field.</p>
                     </div>
@@ -493,39 +493,39 @@ const CustomFieldsTab: React.FC<{
 
                 {/* Deleted Fields Section */}
                 {settings.testCases?.customFields && settings.testCases.customFields.filter(f => f.deleted).length > 0 && (
-                    <div className="mt-8 pt-6 border-t border-gray-200">
-                        <h3 className="text-base font-semibold text-gray-700 mb-4">Deleted Fields</h3>
-                        <p className="text-sm text-gray-500 mb-4">
+                    <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-4">Deleted Fields</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                             These fields are hidden but their data is preserved. You can restore them or permanently delete them.
                         </p>
                         <div className="space-y-3">
                             {settings.testCases.customFields.filter(f => f.deleted).map((field) => (
-                                <div key={field.id} className="flex items-center gap-3 p-4 border border-red-200 bg-red-50 rounded-lg">
+                                <div key={field.id} className="flex items-center gap-3 p-4 border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 rounded-lg">
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2">
-                                            <span className="font-medium text-gray-900">{field.label}</span>
-                                            <span className="text-xs px-2 py-1 bg-gray-200 text-gray-600 rounded">
+                                            <span className="font-medium text-gray-900 dark:text-white">{field.label}</span>
+                                            <span className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
                                                 {field.type.replace('_', ' ')}
                                             </span>
                                             {field.deletedAt && (
-                                                <span className="text-xs text-gray-500">
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">
                                                     Deleted {new Date(field.deletedAt).toLocaleDateString()}
                                                 </span>
                                             )}
                                         </div>
                                         {field.key && (
-                                            <p className="text-sm text-gray-500 mt-1">Key: {field.key}</p>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Key: {field.key}</p>
                                         )}
                                     </div>
                                     <button
                                         onClick={() => restoreField(field.id)}
-                                        className="px-3 py-1.5 text-sm text-green-700 bg-green-100 hover:bg-green-200 rounded transition-colors"
+                                        className="px-3 py-1.5 text-sm text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 hover:bg-green-200 dark:hover:bg-green-900/50 rounded transition-colors"
                                     >
                                         Restore
                                     </button>
                                     <button
                                         onClick={() => permanentlyDeleteField(field.id)}
-                                        className="px-3 py-1.5 text-sm text-red-700 bg-red-200 hover:bg-red-300 rounded transition-colors"
+                                        className="px-3 py-1.5 text-sm text-red-700 dark:text-red-400 bg-red-200 dark:bg-red-900/30 hover:bg-red-300 dark:hover:bg-red-900/50 rounded transition-colors"
                                     >
                                         Delete Forever
                                     </button>
@@ -597,41 +597,41 @@ const CustomFieldEditor: React.FC<{
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onCancel} />
             
-            <div className="relative bg-white max-w-2xl w-full rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
-                <h3 className="text-xl font-semibold text-gray-900 mb-6">
+            <div className="relative bg-white dark:bg-gray-800 max-w-2xl w-full rounded-2xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
                     {initialField.label === 'New Field' ? 'Add Custom Field' : 'Edit Custom Field'}
                 </h3>
 
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Field Label *</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Field Label *</label>
                         <input
                             type="text"
                             value={field.label}
                             onChange={(e) => setField({ ...field, label: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                             placeholder="Enter field label"
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Key (optional)</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Key (optional)</label>
                         <input
                             type="text"
                             value={field.key || ''}
                             onChange={(e) => setField({ ...field, key: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                             placeholder="field_key"
                         />
-                        <p className="text-xs text-gray-500 mt-1">Used for API/exports. Auto-generated if not provided.</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Used for API/exports. Auto-generated if not provided.</p>
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Field Type *</label>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Field Type *</label>
                         <select
                             value={field.type}
                             onChange={(e) => setField({ ...field, type: e.target.value as CustomFieldDefinition['type'] })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                         >
                             <option value="text">Text (single line)</option>
                             <option value="long_text">Long Text (multi-line)</option>
@@ -643,10 +643,10 @@ const CustomFieldEditor: React.FC<{
                     {field.type === 'dropdown' && (
                         <div>
                             <div className="flex items-center justify-between mb-2">
-                                <label className="block text-sm font-medium text-gray-700">Options *</label>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Options *</label>
                                 <button
                                     onClick={addOption}
-                                    className="text-sm text-blue-600 hover:text-blue-700"
+                                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                                 >
                                     + Add Option
                                 </button>
@@ -658,12 +658,12 @@ const CustomFieldEditor: React.FC<{
                                             type="text"
                                             value={option.label}
                                             onChange={(e) => updateOption(option.id, e.target.value)}
-                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500"
                                             placeholder="Option label"
                                         />
                                         <button
                                             onClick={() => deleteOption(option.id)}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                            className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
@@ -679,32 +679,32 @@ const CustomFieldEditor: React.FC<{
                                 type="checkbox"
                                 checked={field.required || false}
                                 onChange={(e) => setField({ ...field, required: e.target.checked })}
-                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                className="w-4 h-4 text-blue-600 dark:text-blue-500 rounded focus:ring-blue-500 dark:focus:ring-blue-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
                             />
-                            <span className="text-sm text-gray-700">Required field</span>
+                            <span className="text-sm text-gray-700 dark:text-gray-300">Required field</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input
                                 type="checkbox"
                                 checked={field.showOnTableByDefault || false}
                                 onChange={(e) => setField({ ...field, showOnTableByDefault: e.target.checked })}
-                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                className="w-4 h-4 text-blue-600 dark:text-blue-500 rounded focus:ring-blue-500 dark:focus:ring-blue-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
                             />
-                            <span className="text-sm text-gray-700">Show on table by default</span>
+                            <span className="text-sm text-gray-700 dark:text-gray-300">Show on table by default</span>
                         </label>
                     </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-3 mt-6 pt-6 border-t border-gray-200">
+                <div className="flex items-center justify-end gap-3 mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                     <button
                         onClick={onCancel}
-                        className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSave}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-lg transition-colors"
                     >
                         Save Field
                     </button>

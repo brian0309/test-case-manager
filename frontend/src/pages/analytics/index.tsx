@@ -182,19 +182,19 @@ const AnalyticsPage: React.FC = () => {
     return (
         <div className="flex flex-col h-auto sm:h-full bg-gray-50 dark:bg-gray-900">
             {/* Header */}
-            <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 sm:sticky sm:top-0 sm:z-20">
+            <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3 sm:sticky sm:top-0 sm:z-20">
                 <div className="flex items-center justify-between mb-3">
                     <ContextBreadcrumb showSuiteSelector={false} />
                     <div className="flex items-center gap-2">
                         <button
                             onClick={fetchReports}
-                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                             title="Refresh"
                         >
                             <Activity className="w-5 h-5" />
                         </button>
                         <button
-                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
                             title="Export Report"
                         >
                             <Download className="w-5 h-5" />
@@ -204,14 +204,14 @@ const AnalyticsPage: React.FC = () => {
 
                 {/* Filters */}
                 <div className="flex items-center gap-3 flex-wrap">
-                    <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                    <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                         {(['7d', '30d', '90d', 'all', 'custom'] as const).map((range) => (
                             <button
                                 key={range}
                                 onClick={() => setDateRange(range)}
                                 className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                                     dateRange === range
-                                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
+                                        ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
                                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                                 }`}
                             >
@@ -232,7 +232,7 @@ const AnalyticsPage: React.FC = () => {
                                     value={customRange.start}
                                     max={customRange.end}
                                     onChange={(e) => setCustomRange({ ...customRange, start: e.target.value })}
-                                    className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                    className="text-sm border border-gray-300 dark:border-gray-700 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                                 />
                             </div>
                             <span className="text-gray-400 font-medium">to</span>
@@ -243,21 +243,21 @@ const AnalyticsPage: React.FC = () => {
                                     min={customRange.start}
                                     max={new Date().toISOString().split('T')[0]}
                                     onChange={(e) => setCustomRange({ ...customRange, end: e.target.value })}
-                                    className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                                    className="text-sm border border-gray-300 dark:border-gray-700 rounded-md px-2 py-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                                 />
                             </div>
                         </div>
                     )}
 
                     {activeTab === 'trends' && (
-                    <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                    <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                             {(['day', 'week', 'month'] as const).map((group) => (
                                 <button
                                     key={group}
                                     onClick={() => setGroupBy(group)}
                                     className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                                         groupBy === group
-                                            ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm'
+                                            ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
                                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                                     }`}
                                 >
@@ -270,7 +270,7 @@ const AnalyticsPage: React.FC = () => {
             </div>
 
             {/* Tabs */}
-            <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4">
+            <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4">
                 <div className="flex gap-4">
                     {[
                         { id: 'overview' as const, label: 'Overview', icon: BarChart3 },
