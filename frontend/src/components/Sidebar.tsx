@@ -6,14 +6,12 @@ import {
   LayoutDashboard,
   Settings,
   LogOut,
-  Calendar,
   PieChart,
   ChevronLeft,
   ChevronRight,
   Folder,
   List,
   Layers,
-  ClipboardList,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -83,19 +81,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
       to: '/test-manager/cases',
       subItems: [],
       requiresProject: true
-    },
-    {
-      icon: <ClipboardList size={18} />,
-      label: 'Plans',
-      to: '/test-manager/plans',
-      subItems: [],
-      requiresProject: true
-    },
-    {
-      icon: <Calendar size={18} />,
-      label: 'Calendar',
-      to: '/calendar',
-      subItems: []
     },
     {
       icon: <PieChart size={18} />,

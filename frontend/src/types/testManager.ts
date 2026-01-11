@@ -459,4 +459,4 @@ export interface RunTimelineEntry {
     details: string;
 }
 
-export type ViewMode = 'projects' | 'cases' | 'suites' | 'plans' | 'runs' | 'reports';
+export type ViewMode = 'projects' | 'cases' | 'suites' | 'runs';

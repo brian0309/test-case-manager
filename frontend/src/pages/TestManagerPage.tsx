@@ -313,12 +313,6 @@ const TestManagerPage: React.FC = () => {
                             onViewModeToggle={handleSuiteViewModeToggle}
                         />
                     )}
-
-                    {viewMode === 'plans' && (
-                        <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                            <p>Test Plans view coming soon...</p>
-                        </div>
-                    )}
                 </div>
             </main>
 

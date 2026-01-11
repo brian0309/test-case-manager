@@ -13,7 +13,6 @@ import LoadingSpinner from "./components/LoadingSpinner";
 
 // Import the new page components
 
-import CalendarPage from "./pages/calendar";
 import AnalyticsPage from "./pages/analytics";
 
 // Test Manager Pages
@@ -21,9 +20,7 @@ import TestManagerLayout from "./pages/testManager/TestManagerLayout";
 import ProjectsPage from "./pages/testManager/ProjectsPage";
 import TestCasesPage from "./pages/testManager/TestCasesPage";
 import TestSuitesPage from "./pages/testManager/TestSuitesPage";
-import TestPlansPage from "./pages/testManager/TestPlansPage";
 import TestRunsPage from "./pages/testManager/TestRunsPage";
-import ReportsPage from "./pages/testManager/ReportsPage";
 
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
@@ -151,7 +148,6 @@ function App() {
           <Route index element={<DashboardPage />} />
           <Route path='dashboard' element={<DashboardPage />} />
 
-          <Route path='calendar' element={<CalendarPage />} />
           <Route path='analytics' element={<AnalyticsPage />} />
 
           <Route path='settings' element={<SettingsPage />} />
@@ -162,9 +158,7 @@ function App() {
             <Route path='projects' element={<ProjectsPage />} />
             <Route path='cases' element={<TestCasesPage />} />
             <Route path='suites' element={<TestSuitesPage />} />
-            <Route path='plans' element={<TestPlansPage />} />
             <Route path='runs' element={<TestRunsPage />} />
-            <Route path='reports' element={<ReportsPage />} />
           </Route>
         </Route>
 
