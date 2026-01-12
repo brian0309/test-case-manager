@@ -128,7 +128,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
                     </>
                 )}
 
-                {viewMode === 'cases' && !activeSuite && (
+                {viewMode === 'cases' && (
                     <button
                         onClick={() => toggleFilterModal(true)}
                         className={`p-1 rounded-md transition-colors ${hasActiveFilters ? 'text-blue-500 bg-blue-500/10 dark:bg-blue-500/20 hover:bg-blue-500/20 dark:hover:bg-blue-500/30' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
