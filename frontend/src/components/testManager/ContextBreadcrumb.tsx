@@ -28,6 +28,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
         fetchTestCases,
         fetchTestCasesByProject,
         testCases,
+        clearFilters,
     } = useTestManagerStore();
     const navigate = useNavigate();
 
@@ -73,6 +74,8 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
 
     const handleSuiteChange = async (suiteId: string, suiteName: string) => {
         setActiveSuiteWithId(suiteId, suiteName);
+        // Reset filters when selecting a suite
+        clearFilters();
         // Fetch test cases for this suite
         await fetchTestCases(suiteId);
         setActiveArea(null);

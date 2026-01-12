@@ -11,7 +11,7 @@ import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import { TestSuite } from '../../types/testManager';
 
 const TestSuitesPage: React.FC = () => {
-    const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchTestCasesByProject, fetchProjects, deleteTestSuite, setActiveProject } = useTestManagerStore();
+    const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchTestCasesByProject, fetchProjects, deleteTestSuite, setActiveProject, clearFilters } = useTestManagerStore();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -92,6 +92,8 @@ const TestSuitesPage: React.FC = () => {
         if (suiteId) {
             // Set both suite id and name in the store for proper context
             setActiveSuiteWithId(suiteId, suiteName);
+            // Reset filters when selecting a suite
+            clearFilters();
             // Fetch test cases for this suite before navigating
             fetchTestCases(suiteId);
         }
