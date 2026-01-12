@@ -46,9 +46,9 @@ const TestManagerPage: React.FC = () => {
     const [suiteViewMode, setSuiteViewMode] = useState<'card' | 'table'>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('suiteViewMode');
-            return saved === 'table' ? 'table' : 'card';
+            return saved === 'card' ? 'card' : 'table';
         }
-        return 'card';
+        return 'table';
     });
 
     const handleSuiteViewModeToggle = () => {
