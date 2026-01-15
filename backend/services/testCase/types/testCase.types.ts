@@ -306,4 +306,5 @@ export interface BulkImportResult {
   failed: number;
   errors: BulkImportError[];
   duplicates?: string[];
+  createdTestCases?: any[]; // For socket event emission
 }

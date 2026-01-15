@@ -1,89 +1,91 @@
-<h1 align="center">Advanced MERN Auth Application 🔒</h1>
+<h1 align="center">Test Case Manager 🧪</h1>
 
 <p align="center">
    <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.3.3-blue?logo=typescript" />
    <img alt="Backend" src="https://img.shields.io/badge/Backend-100%25%20TypeScript-blueviolet" />
    <img alt="Frontend" src="https://img.shields.io/badge/Frontend-100%25%20TypeScript-blueviolet" />
-   <img alt="Status" src="https://img.shields.io/badge/Migration-Complete-brightgreen" />
+   <img alt="Real-Time" src="https://img.shields.io/badge/Real--Time-Socket.io-brightgreen" />
 </p>
 
 ![Demo App](/frontend/public/screenshot-for-readme.png)
 
-A full-stack authentication system built with the MERN stack (MongoDB, Express, React, Node.js) featuring advanced authentication methods including email/password and Google OAuth, complete with email verification, password reset, and a modern dashboard UI.
+A full-stack **test case management system** built with the MERN stack (MongoDB, Express, React, Node.js). Organize your QA workflow with projects, test suites, test cases, and test runs—featuring real-time collaborative editing, AI-powered test generation, comprehensive reporting, and a modern dashboard UI.
 
-> **🟦 Now fully migrated to TypeScript!**
-> - Backend and frontend are 100% TypeScript
-> - All scripts, types, and configs updated
-> - See [`migrate-to-typescript.md`](./Documentation/Migration/migrate-to-typescript.md) for migration details
+## ✨ Key Highlights
+
+- 📁 **Projects & Test Suites** – Organize test cases into projects with customizable fields and nested test suites
+- 📝 **Test Cases** – Create, edit, clone, and bulk-manage test cases with priority, status, steps, and expected results
+- 🚀 **Test Runs** – Execute test cases, track results (Pass/Fail/Blocked/Skipped), and record actual outcomes
+- 📊 **Reports & Analytics** – Visual dashboards with execution statistics, pass rates, and trend analysis
+- 👥 **Real-Time Collaboration** – Google Docs-style live editing with presence indicators via Socket.io
+- 🤖 **AI-Powered Generation** – Generate test cases automatically using Gemini AI
+- 🔐 **Secure Authentication** – JWT-based auth with email/password and Google OAuth 2.0
+
 ### Installation
 
 See the "Getting Started" section below for a consolidated, full installation and running guide.
-## 📘 TypeScript & Learning Resources
+## 📘 Documentation & Resources
 
 This project covers:
-- Full-stack MERN development
-- JWT authentication
-- OAuth 2.0 implementation
-- Email verification systems
-- Password reset flows
-- Modern React patterns
-- State management with Zustand
+- Full-stack MERN development with TypeScript
+- Test case management best practices
+- Real-time collaboration with Socket.io
+- JWT authentication & OAuth 2.0
+- AI integration (Gemini) for test generation
+- Modern React patterns with Zustand
 - Tailwind CSS styling
-- API design and security
-   - **TypeScript best practices (see [`migrate-to-typescript.md`](./Documentation/Migration/migrate-to-typescript.md))**
+- Comprehensive API design
+
+**TypeScript Migration:** See [`migrate-to-typescript.md`](./Documentation/Migration/migrate-to-typescript.md) for migration details.
 
 **Recommended:**
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
 - [React TypeScript Cheatsheet](https://react-typescript-cheatsheet.netlify.app/)
-- [TypeScript with Express](https://blog.logrocket.com/how-to-set-up-node-typescript-express/)
+- [Socket.io Documentation](https://socket.io/docs/v4/)
 
 ## 🌟 Features Implemented
 
-### Backend Features
+### Test Management Features
 
--   🔧 **Backend Setup** - Express.js server with MongoDB integration
--   🗄️ **Database Setup** - MongoDB with Mongoose ODM
--   🔐 **Signup Endpoint** - User registration with password hashing
--   📧 **Email Verification System** - Mailtrap integration for email verification
--   🔍 **Verify Email Endpoint** - Token-based email verification
--   📄 **Welcome Email Template** - Professional HTML email templates
--   🚪 **Logout Endpoint** - Secure session termination
--   🔑 **Login Endpoint** - JWT-based authentication
--   🔄 **Forgot Password Flow** - Password reset via email
--   🔁 **Reset Password Endpoint** - Secure password reset with tokens
--   ✔️ **Check Auth Endpoint** - Protected route middleware
--   🔒 **Change Password Endpoint** - Update password for logged-in users
--   � **Google OAuth 2.0 Integration** - Sign in with Google
+-   📁 **Projects** – Create and manage testing projects with custom fields and member collaboration
+-   📂 **Test Suites** – Organize test cases into logical groupings within projects
+-   📝 **Test Cases** – Full CRUD with priority, status, steps, expected results, and custom fields
+-   🔄 **Bulk Operations** – Clone, move, delete, and reorder multiple test cases at once
+-   🚀 **Test Runs** – Execute test cases and record Pass/Fail/Blocked/Skipped results
+-   📊 **Reports & Analytics** – Visual dashboards with execution statistics and trends
+-   🤖 **AI Generation** – Generate test cases automatically using Gemini AI
+-   📜 **History Tracking** – Full audit trail of test case changes with snapshots
+
+### Real-Time Collaboration
+
+-   📡 **WebSocket Integration** – Socket.io for instant updates across all clients
+-   👥 **Live Presence** – See who's viewing and editing in real-time
+-   ✏️ **Collaborative Editing** – Google Docs-style field-level live editing
+-   🔄 **Automatic Sync** – UI updates instantly when team members make changes
+
+### Authentication Features
+
+-   � **Email/Password Auth** - User registration with password hashing and JWT
+-   📧 **Email Verification** - Mailtrap integration with OTP-style verification
+-   🔄 **Password Reset Flow** - Secure forgot/reset password via email
+-   🔒 **Change Password** - Update password for logged-in users
+-   🌐 **Google OAuth 2.0** - One-click sign in with Google
 -   🛡️ **CSRF Protection** - State parameter validation for OAuth
--   🔗 **Account Linking** - Link Google account to existing email/password account
+-   🔗 **Account Linking** - Link Google to existing email/password account
 -   🍪 **HTTP-Only Cookies** - Secure token storage
--   🏗️ **Feature-Based Architecture** - Modular backend structure with example implementation
 
 ### Frontend Features
 
--   🌐 **React + Vite Setup** - Fast development environment
--   🎨 **Tailwind CSS** - Modern, responsive UI design
--   ✨ **Framer Motion** - Smooth animations and transitions
--   � **Signup Page UI** - Clean registration interface
--   🔓 **Login Page UI** - User-friendly login form
--   � **Google Login Button** - One-click Google authentication
--   ✅ **Email Verification Page** - OTP-style verification code input
--   � **Password Strength Meter** - Real-time password strength indicator
--   � **Protected Routes** - Client-side route protection
--   🏠 **Dashboard Page** - Feature-rich user dashboard with:
-    -   � Analytics section
-    -   📅 Calendar integration
-    -   👥 Users management
-    -   📝 Posts management
-    -   💬 Messages section
--   ⚙️ **Settings Page** - Comprehensive user settings with tabs:
-    -   General settings (profile, language, timezone)
-    -   Security settings (password change)
-    -   Additional sections (billing, notifications, apps, etc.)
--   🔐 **Change Password Page** - Dedicated password update interface
--   🔄 **OAuth Redirect Handler** - Seamless Google OAuth callback handling
--   💡 **Example Feature Page** - Demonstrates feature-based architecture integration
--   📱 **Responsive Design** - Mobile-friendly interface
+-   🧪 **Test Manager UI** - Full-featured test case management interface
+-   📁 **Projects Page** - Create and manage testing projects
+-   📂 **Test Suites Page** - Organize test cases into suites
+-   📝 **Test Cases Page** - Table view with inline editing and bulk operations
+-   🚀 **Test Runs Page** - Execute tests and record results
+-   📊 **Reports Page** - Analytics dashboards and execution statistics
+-   🏠 **Dashboard** - Overview with quick actions and recent activity
+-   ⚙️ **Settings Page** - Profile, security, and preferences
+-   🎨 **Modern UI** - Tailwind CSS with Framer Motion animations
+-   📱 **Responsive Design** - Works on desktop and mobile
 -   🎯 **State Management** - Zustand for global state
 -   🔔 **Toast Notifications** - User feedback with react-hot-toast
 
@@ -93,6 +95,7 @@ This project covers:
 -   🧪 **Testing Setup** - Jest with unit and integration test examples
 -   🔍 **Type Safety** - Full TypeScript coverage on frontend and backend
 -   📖 **Feature Guide** - Step-by-step instructions in `Documentation/ADDING_FEATURES.md`
+-   📡 **Real-Time Architecture** - Socket.io patterns documented in `Documentation/REALTIME_ARCHITECTURE.md`
 
 ## 🚀 Getting Started
 

@@ -10,7 +10,10 @@ import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import GeminiGenerationModal from '../../components/testManager/GeminiGenerationModal';
 import ExportTestCasesModal from '../../components/testManager/ExportTestCasesModal';
 import ImportTestCasesModal from '../../components/testManager/ImportTestCasesModal';
+import ProjectPresenceIndicator from '../../components/testManager/ProjectPresenceIndicator';
 import { useTestManagerStore } from '../../store/testManagerStore';
+import { useRealtimeTestCases } from '../../hooks/useRealtimeTestCases';
+import { useProjectPresence } from '../../hooks/useProjectPresence';
 import { TestCase, Status, Priority, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
 import { reorderTestCases, getTestCase, getTestSuite, bulkImportTestCases } from '../../services/testManagerApi';
 import { exportTestCasesToCSV, ExportColumn } from '../../utils/exportTestCases';
@@ -55,6 +58,18 @@ const TestCasesPage: React.FC = () => {
         // Import callback
         setImportTestCasesCallback,
     } = useTestManagerStore();
+
+    // Enable real-time updates for test cases
+    useRealtimeTestCases({
+        projectId: activeProject,
+        suiteId: activeSuiteId,
+    });
+
+    // Track users present in the same project
+    const { projectUsers } = useProjectPresence({
+        projectId: activeProject,
+    });
+
     const [selectedCase, setSelectedCase] = useState<TestCase | null>(null);
     const [viewCase, setViewCase] = useState<TestCase | null>(null);
     const [isListEditMode] = useState(false);
@@ -491,9 +506,16 @@ const TestCasesPage: React.FC = () => {
     return (
         <div className="flex flex-col h-auto sm:h-full bg-white dark:bg-gray-900">
             {/* Context Breadcrumb with Project & Suite selectors */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 sm:justify-between px-4 sm:px-6 bg-white dark:bg-gray-900 sm:sticky sm:top-0 sm:z-20">
-                <ContextBreadcrumb showSuiteSelector={true} />
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 sm:justify-between bg-white dark:bg-gray-900 sm:sticky sm:top-0 sm:z-20">
+                <ContextBreadcrumb 
+                    showSuiteSelector={true} 
+                    rightContent={
+                        activeProject && projectUsers.length > 0 ? (
+                            <ProjectPresenceIndicator users={projectUsers} maxDisplay={4} />
+                        ) : null
+                    }
+                />
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto px-4 sm:px-6">
                     {/* Sorting controls - Desktop only, next to Generate AI button */}
                     {activeProject && activeSuiteId && sortInfo && (
                         <div className="hidden sm:flex items-center gap-2">

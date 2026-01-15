@@ -1,6 +1,6 @@
-# Backend - MERN Advanced Auth
+# Backend - Test Case Manager
 
-This is the backend API for the MERN Advanced Auth application.
+This is the backend API for the Test Case Manager application, providing test case management, real-time collaboration, and authentication services.
 
 ## Development
 
@@ -251,6 +251,38 @@ Key dependencies:
 - **cors** - CORS support
 - **mailtrap** - Email service
 - **google-auth-library** - Google OAuth
+- **socket.io** - Real-time WebSocket communication
+
+## Real-Time / WebSocket Support
+
+The backend includes Socket.io for real-time features:
+
+### Socket Manager (`backend/socket/socketManager.ts`)
+
+Central class managing WebSocket connections with:
+- **Cookie-based JWT authentication** - Same auth as REST API
+- **Room-based broadcasting** - Scoped event delivery (project, suite, testcase rooms)
+- **Collaborative editing support** - Live field updates between users
+
+### Usage in Controllers
+
+```typescript
+import { socketManager } from '../../socket/socketManager.js';
+
+// After any CRUD operation, emit the event
+socketManager.emitToProject(projectId, 'testcase:created', { testCase, suiteId });
+socketManager.emitToSuite(suiteId, 'testcase:updated', { testCase });
+```
+
+### Available Methods
+
+| Method | Description |
+|--------|-------------|
+| `emitToProject(projectId, event, data)` | Broadcast to all users viewing a project |
+| `emitToSuite(suiteId, event, data)` | Broadcast to users viewing a specific suite |
+| `emitToTestCase(testCaseId, event, data)` | Broadcast to users editing a test case |
+
+For detailed documentation, see [REALTIME_ARCHITECTURE.md](../Documentation/REALTIME_ARCHITECTURE.md).
 
 ## Development Tips
 

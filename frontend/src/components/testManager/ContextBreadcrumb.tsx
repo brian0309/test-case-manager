@@ -9,9 +9,10 @@ interface ContextBreadcrumbProps {
         mode: 'card' | 'table';
         onToggle: () => void;
     };
+    rightContent?: React.ReactNode;
 }
 
-const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector = true, viewToggle }) => {
+const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector = true, viewToggle, rightContent }) => {
     const {
         projects,
         testSuites,
@@ -110,7 +111,8 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
     const uniqueAreas = Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort();
 
     return (
-        <div className="min-h-16 flex flex-wrap items-center gap-2 sm:gap-3 px-4 sm:px-6 py-2 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
+        <div className="min-h-16 flex flex-wrap items-center justify-between gap-2 sm:gap-3 px-4 sm:px-6 py-2 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {/* Home / Projects link */}
             <button
                 onClick={goToProjects}
@@ -306,6 +308,14 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                     {viewToggle.mode === 'card' ? <Table size={14} /> : <Grid2x2 size={14} />}
                     <span className="hidden sm:inline">{viewToggle.mode === 'card' ? 'Table' : 'Card'}</span>
                 </button>
+            )}
+            </div>
+            
+            {/* Right content (e.g., presence indicator) */}
+            {rightContent && (
+                <div className="flex-shrink-0">
+                    {rightContent}
+                </div>
             )}
         </div>
     );

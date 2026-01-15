@@ -84,6 +84,7 @@ interface TestManagerStore {
     activeSuiteId: string | null;
     activeProject: string | null;
     activeArea: string | null;
+    activeTestCaseId: string | null;
     testCases: TestCase[];
     projects: Project[];
     testSuites: TestSuite[];
@@ -99,6 +100,7 @@ interface TestManagerStore {
     setViewMode: (mode: ViewMode) => void;
     setActiveSuite: (suite: string | null) => void;
     setActiveSuiteId: (suiteId: string | null) => void;
+    setActiveTestCaseId: (testCaseId: string | null) => void;
     setActiveProject: (projectId: string | null) => void;
     setActiveArea: (area: string | null) => void;
     setActiveSuiteWithId: (suiteId: string, suiteName: string) => void;
@@ -164,6 +166,7 @@ interface TestManagerStore {
 
     // Legacy local state actions (for optimistic updates)
     setTestCases: (cases: TestCase[]) => void;
+    setTestSuites: (suites: TestSuite[]) => void;
     addTestCase: (testCase: TestCase) => void;
     updateTestCaseLocal: (testCase: TestCase) => void;
     deleteTestCaseLocal: (id: string) => void;
@@ -180,6 +183,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
             activeSuiteId: null as string | null,
             activeProject: null as string | null,
             activeArea: null as string | null,
+            activeTestCaseId: null as string | null,
             testCases: [] as TestCase[],
             projects: [] as Project[],
             testSuites: [] as TestSuite[],
@@ -195,10 +199,11 @@ export const useTestManagerStore = create<TestManagerStore>()(
             setViewMode: (mode) => set({ viewMode: mode }),
             setActiveSuite: (suite) => set({ activeSuite: suite }),
             setActiveSuiteId: (suiteId) => set({ activeSuiteId: suiteId }),
+            setActiveTestCaseId: (testCaseId) => set({ activeTestCaseId: testCaseId }),
             setActiveProject: (projectId) => set({ activeProject: projectId, testSuites: [], testCases: [], activeArea: null }),
             setActiveArea: (area) => set({ activeArea: area }),
             setActiveSuiteWithId: (suiteId, suiteName) => set({ activeSuiteId: suiteId, activeSuite: suiteName }),
-            clearActiveContext: () => set({ activeSuite: null, activeSuiteId: null, activeProject: null, activeArea: null }),
+            clearActiveContext: () => set({ activeSuite: null, activeSuiteId: null, activeProject: null, activeArea: null, activeTestCaseId: null }),
             clearError: () => set({ error: null }),
 
             // Filter Actions
@@ -551,6 +556,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
             // LOCAL STATE ACTIONS (for optimistic updates and legacy support)
             // =========================================================================
             setTestCases: (cases: any) => set({ testCases: cases }),
+            setTestSuites: (suites: any) => set({ testSuites: suites }),
             addTestCase: (testCase: any) => set((state) => ({ testCases: [testCase, ...state.testCases] })),
             updateTestCaseLocal: (updatedCase: any) => set((state) => ({
                 testCases: state.testCases.map((c) => (c.id === updatedCase.id ? updatedCase : c)),

@@ -1,6 +1,6 @@
-# Frontend - MERN Advanced Auth
+# Frontend - Test Case Manager
 
-This is the frontend application for the MERN Advanced Auth application, built with React, TypeScript, Vite, and Tailwind CSS.
+This is the frontend application for the Test Case Manager, built with React, TypeScript, Vite, and Tailwind CSS. Features real-time collaborative editing, comprehensive test management UI, and analytics dashboards.
 
 ## Development
 
@@ -88,6 +88,17 @@ Builds the app for production to the `dist` folder.
 - Zustand for global auth state
 - Persistent authentication
 - Automatic token refresh
+
+### Real-Time Collaboration
+- 📡 **Socket.io Client** - WebSocket connection for live updates
+- 👥 **Collaborative Editing** - Google Docs-style live field editing
+- 🟢 **Presence Indicators** - See who else is viewing/editing
+- 🔄 **Live Sync** - Automatic UI updates when others make changes
+
+Key real-time files:
+- `src/services/socket.ts` - Socket.io client singleton
+- `src/hooks/useRealtimeTestCases.ts` - List-level live updates
+- `src/hooks/useCollaborativeEditing.ts` - Field-level collaboration
 
 ## Project Structure
 

@@ -2,18 +2,31 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTestManagerStore } from '../../store/testManagerStore';
+import { useRealtimeTestCases } from '../../hooks/useRealtimeTestCases';
 import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import TestSuiteList from '../../components/testManager/TestSuiteList';
 import TestSuiteCreateModal from '../../components/testManager/TestSuiteCreateModal';
 import TestSuiteEditModal from '../../components/testManager/TestSuiteEditModal';
 import ConfirmationModal from '../../components/testManager/ConfirmationModal';
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
+import ProjectPresenceIndicator from '../../components/testManager/ProjectPresenceIndicator';
 import { TestSuite } from '../../types/testManager';
+import { useProjectPresence } from '../../hooks/useProjectPresence';
 
 const TestSuitesPage: React.FC = () => {
     const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchTestCasesByProject, fetchProjects, deleteTestSuite, setActiveProject, clearFilters } = useTestManagerStore();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
+
+    // Enable real-time updates for test suites
+    useRealtimeTestCases({
+        projectId: activeProject,
+    });
+
+    // Track users present in the same project
+    const { projectUsers } = useProjectPresence({
+        projectId: activeProject,
+    });
 
     // Track processed projectId to prevent double loading
     const processedProjectIdRef = useRef<string | null>(null);
@@ -179,10 +192,16 @@ const TestSuitesPage: React.FC = () => {
         <div className="flex flex-col h-auto sm:h-full bg-white dark:bg-gray-900">
             {/* Context Breadcrumb - project only, no suite selector */}
             <div className="bg-white dark:bg-gray-900 sm:sticky sm:top-0 sm:z-20">
-                <ContextBreadcrumb
-                    showSuiteSelector={false}
-                    viewToggle={{ mode: viewMode, onToggle: handleViewModeToggle }}
-                />
+                <div className="flex items-center gap-3 px-4 sm:px-6">
+                    <ContextBreadcrumb
+                        showSuiteSelector={false}
+                        viewToggle={{ mode: viewMode, onToggle: handleViewModeToggle }}
+                    />
+                    {/* Project presence indicator */}
+                    {activeProject && (
+                        <ProjectPresenceIndicator users={projectUsers} maxDisplay={4} />
+                    )}
+                </div>
             </div>
 
             <div className="flex-1 sm:overflow-auto">

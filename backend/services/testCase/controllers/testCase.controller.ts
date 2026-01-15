@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import * as testCaseService from "../services/testCase.service.js";
 import * as projectService from "../services/project.service.js";
+import * as testSuiteService from "../services/testSuite.service.js";
 import {
   CreateTestCaseRequest,
   UpdateTestCaseRequest,
@@ -8,6 +9,16 @@ import {
   ReorderTestCasesRequest,
   BulkImportTestCasesRequest,
 } from "../types/testCase.types.js";
+import {
+  emitTestCaseCreated,
+  emitTestCaseUpdated,
+  emitTestCaseDeleted,
+  emitTestCasesReordered,
+  emitTestCasesBulkDeleted,
+  emitTestCasesBulkStatusUpdated,
+  emitTestCaseCloned,
+  emitTestCasesBulkImported,
+} from "../../../socket/socketManager.js";
 
 /**
  * POST /api/suites/:suiteId/cases
@@ -46,6 +57,12 @@ export const createTestCase = async (req: Request, res: Response): Promise<void>
       userId
     );
     const response = testCaseService.formatTestCaseResponse(populatedTestCase);
+
+    // Emit socket event for real-time updates
+    const projectId = populatedTestCase?.projectId?.toString();
+    if (projectId) {
+      emitTestCaseCreated(projectId, suiteId, response);
+    }
 
     res.status(201).json({ success: true, data: response });
   } catch (error) {
@@ -163,6 +180,14 @@ export const updateTestCase = async (req: Request, res: Response): Promise<void>
     }
 
     const response = testCaseService.formatTestCaseResponse(testCase);
+
+    // Emit socket event for real-time updates
+    const projectId = testCase.projectId?.toString();
+    const suiteId = testCase.suiteId?.toString();
+    if (projectId && suiteId) {
+      emitTestCaseUpdated(projectId, suiteId, response);
+    }
+
     res.status(200).json({ success: true, data: response });
   } catch (error) {
     console.error("Error in updateTestCase:", error);
@@ -201,6 +226,13 @@ export const cloneTestCase = async (req: Request, res: Response): Promise<void> 
     );
     const response = testCaseService.formatTestCaseResponse(populatedTestCase);
 
+    // Emit socket event for real-time updates
+    const projectId = populatedTestCase?.projectId?.toString();
+    const suiteId = populatedTestCase?.suiteId?.toString();
+    if (projectId && suiteId) {
+      emitTestCaseCloned(projectId, suiteId, response);
+    }
+
     res.status(201).json({ success: true, data: response });
   } catch (error) {
     console.error("Error in cloneTestCase:", error);
@@ -230,6 +262,9 @@ export const deleteTestCase = async (req: Request, res: Response): Promise<void>
       });
       return;
     }
+
+    // Emit socket event for real-time updates
+    emitTestCaseDeleted(deleted.projectId, deleted.suiteId, id);
 
     res.status(200).json({ success: true, message: "Test case deleted successfully" });
   } catch (error) {
@@ -268,6 +303,15 @@ export const bulkUpdateStatus = async (req: Request, res: Response): Promise<voi
       status
     );
 
+    // Emit socket events for real-time updates
+    // Get affected project IDs from the test cases
+    if (updatedCount > 0) {
+      const affectedProjectIds = await testCaseService.getProjectIdsFromTestCases(testCaseIds);
+      for (const projectId of affectedProjectIds) {
+        emitTestCasesBulkStatusUpdated(projectId, testCaseIds, status);
+      }
+    }
+
     res.status(200).json({
       success: true,
       message: `Updated ${updatedCount} of ${testCaseIds.length} test cases`,
@@ -298,7 +342,17 @@ export const deleteTestCasesBulk = async (req: Request, res: Response): Promise<
       return;
     }
 
+    // Get affected project/suite IDs before deletion for socket events
+    const affectedInfo = await testCaseService.getProjectSuiteInfoFromTestCases(ids);
+
     const deletedCount = await testCaseService.deleteTestCasesBulk(ids, userId);
+
+    // Emit socket events for real-time updates
+    if (deletedCount > 0) {
+      for (const info of affectedInfo) {
+        emitTestCasesBulkDeleted(info.projectId, info.suiteId, ids);
+      }
+    }
 
     res.status(200).json({
       success: true,
@@ -345,6 +399,12 @@ export const reorderTestCases = async (req: Request, res: Response): Promise<voi
     const testCases = await testCaseService.getTestCasesBySuite(suiteId, userId);
     const responses = testCases.map(testCaseService.formatTestCaseResponse);
 
+    // Emit socket event for real-time updates
+    const suite = await testSuiteService.getTestSuiteById(suiteId, userId);
+    if (suite?.projectId) {
+      emitTestCasesReordered(suite.projectId.toString(), suiteId, responses);
+    }
+
     res.status(200).json({
       success: true,
       message: "Test cases reordered successfully",
@@ -385,6 +445,18 @@ export const bulkImportTestCases = async (req: Request, res: Response): Promise<
       testCases,
       skipDuplicates
     );
+
+    // Emit socket event for real-time updates if test cases were created
+    if (result.created > 0 && result.createdTestCases) {
+      const suite = await testSuiteService.getTestSuiteById(suiteId, userId);
+      if (suite?.projectId) {
+        emitTestCasesBulkImported(
+          suite.projectId.toString(),
+          suiteId,
+          result.createdTestCases
+        );
+      }
+    }
 
     res.status(200).json({
       success: true,

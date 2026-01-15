@@ -5,6 +5,11 @@ import {
   CreateTestSuiteRequest,
   UpdateTestSuiteRequest,
 } from "../types/testCase.types.js";
+import {
+  emitTestSuiteCreated,
+  emitTestSuiteUpdated,
+  emitTestSuiteDeleted,
+} from "../../../socket/socketManager.js";
 
 /**
  * POST /api/projects/:projectId/suites
@@ -37,6 +42,10 @@ export const createTestSuite = async (req: Request, res: Response): Promise<void
     }
 
     const response = await testSuiteService.formatTestSuiteResponse(suite);
+    
+    // Emit socket event for real-time updates
+    emitTestSuiteCreated(projectId, response);
+
     res.status(201).json({ success: true, data: response });
   } catch (error) {
     console.error("Error in createTestSuite:", error);
@@ -131,6 +140,13 @@ export const updateTestSuite = async (req: Request, res: Response): Promise<void
     }
 
     const response = await testSuiteService.formatTestSuiteResponse(suite);
+    
+    // Emit socket event for real-time updates
+    const projectId = suite.projectId?.toString();
+    if (projectId) {
+      emitTestSuiteUpdated(projectId, response);
+    }
+
     res.status(200).json({ success: true, data: response });
   } catch (error) {
     console.error("Error in updateTestSuite:", error);
@@ -151,6 +167,11 @@ export const deleteTestSuite = async (req: Request, res: Response): Promise<void
     }
 
     const { id } = req.params;
+    
+    // Get suite info before deletion for socket event
+    const suiteBeforeDelete = await testSuiteService.getTestSuiteById(id, userId);
+    const projectId = suiteBeforeDelete?.projectId?.toString();
+
     const deleted = await testSuiteService.deleteTestSuite(id, userId);
 
     if (!deleted) {
@@ -159,6 +180,11 @@ export const deleteTestSuite = async (req: Request, res: Response): Promise<void
         message: "Test suite not found or you don't have permission to delete it",
       });
       return;
+    }
+
+    // Emit socket event for real-time updates
+    if (projectId) {
+      emitTestSuiteDeleted(projectId, id);
     }
 
     res.status(200).json({ success: true, message: "Test suite deleted successfully" });

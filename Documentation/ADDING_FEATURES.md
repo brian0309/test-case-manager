@@ -496,6 +496,69 @@ import { something } from "./path/to/file";
 - Check route path matches request URL
 - Ensure middleware order is correct
 
+## Adding Real-Time Support to Features
+
+If your feature needs live updates (e.g., when one user creates/updates data, others should see it immediately), follow this pattern:
+
+### Step 1: Emit Events from Controllers
+
+After any CRUD operation, emit a socket event:
+
+```typescript
+import { socketManager } from '../../socket/socketManager.js';
+
+// In your controller after successful operation
+export const createItem = async (req, res) => {
+    const item = await ItemService.create(req.body);
+    
+    // Emit to all users viewing this project
+    socketManager.emitToProject(item.projectId, 'myfeature:created', {
+        item,
+        projectId: item.projectId,
+    });
+    
+    res.status(201).json(item);
+};
+```
+
+### Step 2: Define Frontend Event Types
+
+Add event types in `frontend/src/services/socket.ts`:
+
+```typescript
+export interface SocketEvents {
+    // ... existing events
+    'myfeature:created': { item: MyItem; projectId: string };
+    'myfeature:updated': { item: MyItem };
+    'myfeature:deleted': { itemId: string; projectId: string };
+}
+```
+
+### Step 3: Subscribe in Components
+
+Use the socket service to listen for events:
+
+```typescript
+import { socketService } from '../services/socket';
+
+useEffect(() => {
+    const handleCreated = (data) => {
+        // Update your Zustand store or local state
+        useMyStore.getState().addItem(data.item);
+    };
+
+    socketService.on('myfeature:created', handleCreated);
+    
+    return () => {
+        socketService.off('myfeature:created', handleCreated);
+    };
+}, []);
+```
+
+### For Collaborative Editing
+
+If you need Google Docs-style live editing, adapt the `useCollaborativeEditing` hook pattern. See `Documentation/REALTIME_ARCHITECTURE.md` for full details.
+
 ## Additional Resources
 
 - [Express.js Documentation](https://expressjs.com/)
@@ -503,6 +566,8 @@ import { something } from "./path/to/file";
 - [Mongoose Documentation](https://mongoosejs.com/docs/guide.html)
 - [Jest Testing Documentation](https://jestjs.io/docs/getting-started)
 - [Supertest Documentation](https://github.com/visionmedia/supertest)
+- [Socket.io Documentation](https://socket.io/docs/v4/)
+- [Real-Time Architecture Guide](./REALTIME_ARCHITECTURE.md)
 
 ## Support
 
@@ -511,3 +576,4 @@ For questions or issues:
 2. Check existing features for similar patterns
 3. Review test files for usage examples
 4. Consult the main README for deployment and environment setup
+5. **For real-time features**: See `Documentation/REALTIME_ARCHITECTURE.md`

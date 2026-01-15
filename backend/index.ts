@@ -4,7 +4,9 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createServer } from 'http';
 import { connectDB } from "./db/connectDB.js";
+import { socketManager } from "./socket/socketManager.js";
 
 // Get the directory name in ES module
 const __filename: string = fileURLToPath(import.meta.url);
@@ -67,14 +69,31 @@ if (process.env.NODE_ENV === "production" && process.env.VERCEL !== '1') {
 	});
 }
 
+// Get allowed origins for Socket.io CORS
+const getAllowedOrigins = (): string[] => {
+	const envList = process.env.ALLOWED_ORIGINS || process.env.CLIENT_URL || "";
+	return envList.split(",").map((s) => s.trim()).filter(Boolean);
+};
+
+// Create HTTP server for Socket.io
+const httpServer = createServer(app);
+
+// Initialize Socket.io (only when not in serverless environment)
+if (process.env.VERCEL !== '1') {
+	const allowedOrigins = getAllowedOrigins();
+	socketManager.initialize(httpServer, allowedOrigins);
+	console.log("Socket.io initialized with origins:", allowedOrigins);
+}
+
 // For Vercel serverless deployment, export the app
 export default app;
 
 // Only listen when not in serverless environment (Vercel)
 if (process.env.VERCEL !== '1') {
-	app.listen(PORT, () => {
+	httpServer.listen(PORT, () => {
 		connectDB();
 		console.log("Server is running on port: ", PORT);
+		console.log("WebSocket server ready for connections");
 	});
 } else {
 	// Connect to DB in serverless environment

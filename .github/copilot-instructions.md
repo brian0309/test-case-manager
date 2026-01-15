@@ -6,12 +6,14 @@ This repo is a full-stack MERN authentication example (TypeScript). The goal of 
   - backend/ (Express + Mongoose, TypeScript, ES modules). Entry: `backend/index.ts` (exports app for Vercel when `VERCEL=1`, otherwise calls `app.listen`).
   - frontend/ (React + Vite + TypeScript). Entry: `frontend/src/main.tsx`. Frontend chooses API URL using `import.meta.env` and `VITE_API_URL`.
   - Monolithic vs separate deploys: backend can serve built frontend in production (see `backend/index.ts`) or be deployed separately to Vercel (backend sets `VERCEL=1`).
+  - **Real-time layer**: Socket.io for WebSocket communication. Backend: `backend/socket/socketManager.ts`. Frontend: `frontend/src/services/socket.ts`.
 
 - Important runtime contracts & examples (use these verbatim when editing/instrumenting code)
   - Auth token cookie name: `token` (set by `backend/utils/generateTokenAndSetCookie.ts`). Payload: `{ userId }` signed with `JWT_SECRET` and 7d expiry.
   - Protected routes expect cookie-based JWT: middleware `backend/middleware/verifyToken.ts` reads `req.cookies.token` and sets `req.userId`.
   - OAuth endpoints: `GET /api/auth/google/url` and `GET /api/auth/google/callback` (controllers in `backend/controllers/googleAuth.controller.ts`).
   - Email verification and password reset tokens are stored on the User model (see `backend/models/user.model.ts`) with expiry fields and indexes.
+  - **Socket authentication**: Uses same JWT cookie as REST API. Socket middleware in `socketManager.ts` parses cookie and verifies JWT.
 
 - Dev / test / build commands (from repo READMEs)
   - Dev (root): `npm run dev` (starts backend with hot reload). Frontend dev: `cd frontend && npm run dev`.
@@ -54,11 +56,40 @@ This repo is a full-stack MERN authentication example (TypeScript). The goal of 
   - OAuth flow + dynamic CORS: `backend/controllers/googleAuth.controller.ts` and `backend/config/dynamicCors.ts`
   - User schema & token indexes: `backend/models/user.model.ts`
   - Tests & helpers: `backend/__tests__/` (unit, integration, setup helpers)
+  - **Real-time socket manager**: `backend/socket/socketManager.ts` (server-side WebSocket handling)
+  - **Frontend socket service**: `frontend/src/services/socket.ts` (client-side WebSocket singleton)
+  - **Real-time hooks**: `frontend/src/hooks/useRealtimeTestCases.ts` (list updates), `frontend/src/hooks/useCollaborativeEditing.ts` (live field editing)
+
+- Real-time / WebSocket architecture (CRITICAL for features needing live updates)
+  - **Socket.io** is used for real-time communication. Backend initializes in `index.ts` with `socketManager.initialize(httpServer, allowedOrigins)`.
+  - **Room-based broadcasting**: Users join rooms like `project:{id}`, `suite:{id}`, `testcase:{id}` to receive scoped events.
+  - **Emitting events from controllers**: After CRUD operations, call `socketManager.emitToProject()`, `socketManager.emitToSuite()`, or `socketManager.emitToTestCase()`.
+  - **Frontend subscription**: Use `socketService.on('event-name', handler)` and `socketService.off('event-name', handler)` in useEffect hooks.
+  - **Collaborative editing pattern**: The `useCollaborativeEditing` hook handles field-level live updates with 300ms debounce.
+  - **Event naming convention**: `{entity}:{action}` format, e.g., `testcase:created`, `testcase:updated`, `testsuite:deleted`.
+  - **Key events**:
+    - `testcase:created`, `testcase:updated`, `testcase:deleted`, `testcase:cloned`, `testcase:reordered`
+    - `testcase:bulk-created`, `testcase:bulk-deleted`, `testcase:bulk-moved`
+    - `testsuite:created`, `testsuite:updated`, `testsuite:deleted`
+    - `testcase:editing` (field-level live edits), `testcase:user-joined`, `testcase:user-left`
+  - See `Documentation/REALTIME_ARCHITECTURE.md` for full documentation.
 
 - Quick checklist the agent should follow before submitting code
   1. Update/confirm environment variable names and README if behavior changed.
- 2. Run `npm run type-check` and `npm test` (or the subset affected) locally—use in-memory DB helpers for backend tests.
- 3. Preserve `.js`-style import paths in compiled/ESM server files.
- 4. Add or update tests for auth-sensitive changes (token/cookie, login flows, OAuth). Use `backend/__tests__` helpers.
+  2. Run `npm run type-check` and `npm test` (or the subset affected) locally—use in-memory DB helpers for backend tests.
+  3. Preserve `.js`-style import paths in compiled/ESM server files.
+  4. Add or update tests for auth-sensitive changes (token/cookie, login flows, OAuth). Use `backend/__tests__` helpers.
+  5. **For real-time features**: Emit socket events from controllers after CRUD operations, and subscribe in frontend components.
 
-If anything above is unclear or you want more examples from a specific file, tell me which area to expand (controllers, tests, deployment notes, or frontend API integration) and I will iterate. 
+- Editing guidance for real-time features
+  - When adding a new entity that needs live updates:
+    1. Add event emission in the controller using `socketManager.emitToProject()` or appropriate scope
+    2. Define event types in `frontend/src/services/socket.ts` (SocketEvents interface)
+    3. Subscribe to events in the relevant page component or create a custom hook
+    4. Update Zustand store with incoming data
+  - For collaborative editing on a new entity:
+    1. Adapt `useCollaborativeEditing.ts` pattern for the new entity type
+    2. Add room join/leave methods to socket service if needed
+    3. Emit field changes with debouncing to avoid flooding
+
+If anything above is unclear or you want more examples from a specific file, tell me which area to expand (controllers, tests, deployment notes, frontend API integration, or **real-time architecture**) and I will iterate. 

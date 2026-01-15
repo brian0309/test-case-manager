@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTestManagerStore } from '../../store/testManagerStore';
+import { useCollaborativeEditing } from '../../hooks/useCollaborativeEditing';
 import { TestCase, Priority, Status, HistoryEntry, CustomFieldDefinition } from '../../types/testManager';
 import { X, Plus, ChevronDown, History, Check, Loader2, Cloud } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
@@ -60,6 +61,26 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
     // Combobox state
     const [isAreaDropdownOpen, setIsAreaDropdownOpen] = useState(false);
     const areaRef = useRef<HTMLDivElement>(null);
+
+    // Collaborative editing - handle remote field updates
+    const handleRemoteFieldUpdate = useCallback((field: string, value: any) => {
+        setLocalCase(prev => {
+            if (!prev) return null;
+            return { ...prev, [field]: value };
+        });
+    }, []);
+
+    // Collaborative editing hook
+    const {
+        collaboratingUsers,
+        emitFieldChange,
+        remoteEditingField,
+        isCollaborating,
+    } = useCollaborativeEditing({
+        testCase: localCase,
+        onFieldUpdate: handleRemoteFieldUpdate,
+        debounceMs: 300,
+    });
 
     useEffect(() => {
         setLocalCase(testCase);
@@ -159,15 +180,21 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
     if (!testCase || !localCase) return null;
 
     const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setLocalCase(prev => prev ? ({ ...prev, title: e.target.value }) : null);
+        const value = e.target.value;
+        setLocalCase(prev => prev ? ({ ...prev, title: value }) : null);
+        emitFieldChange('title', value);
     };
 
     const handleExpectedResultChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setLocalCase(prev => prev ? ({ ...prev, expectedResult: e.target.value }) : null);
+        const value = e.target.value;
+        setLocalCase(prev => prev ? ({ ...prev, expectedResult: value }) : null);
+        emitFieldChange('expectedResult', value);
     };
 
     const handleTestDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setLocalCase(prev => prev ? ({ ...prev, testDescription: e.target.value }) : null);
+        const value = e.target.value;
+        setLocalCase(prev => prev ? ({ ...prev, testDescription: value }) : null);
+        emitFieldChange('testDescription', value);
     };
 
     const handleRestoreFromHistory = (historyEntry: HistoryEntry) => {
@@ -273,6 +300,38 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                     </span>
                                 )}
                             </div>
+                            {/* Collaborating users indicator */}
+                            {isCollaborating && collaboratingUsers.length > 0 && (
+                                <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
+                                    <div className="flex -space-x-2">
+                                        {collaboratingUsers.slice(0, 3).map((u) => (
+                                            <div
+                                                key={u.id}
+                                                className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-[10px] font-bold text-white border-2 border-white dark:border-gray-800"
+                                                title={u.name}
+                                            >
+                                                {u.name.charAt(0).toUpperCase()}
+                                            </div>
+                                        ))}
+                                        {collaboratingUsers.length > 3 && (
+                                            <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-600 dark:text-gray-400 border-2 border-white dark:border-gray-800">
+                                                +{collaboratingUsers.length - 3}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">
+                                        {collaboratingUsers.length === 1 
+                                            ? `${collaboratingUsers[0].name} is editing`
+                                            : `${collaboratingUsers.length} users editing`}
+                                    </span>
+                                </div>
+                            )}
+                            {/* Remote editing indicator */}
+                            {remoteEditingField && (
+                                <div className="ml-2 text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-full animate-pulse">
+                                    {remoteEditingField.userName} editing {remoteEditingField.field}
+                                </div>
+                            )}
                         </div>
                         <div className="flex items-center gap-2">
                             <button
@@ -364,7 +423,11 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                 <div className="relative">
                                     <select
                                         value={localCase.priority}
-                                        onChange={(e) => setLocalCase(prev => prev ? ({ ...prev, priority: e.target.value as Priority }) : null)}
+                                        onChange={(e) => {
+                                            const value = e.target.value as Priority;
+                                            setLocalCase(prev => prev ? ({ ...prev, priority: value }) : null);
+                                            emitFieldChange('priority', value);
+                                        }}
                                         onBlur={handleFieldBlur}
                                         className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getPriorityColor(localCase.priority)}`}
                                     >
@@ -384,7 +447,11 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                 <div className="relative">
                                     <select
                                         value={localCase.status}
-                                        onChange={(e) => setLocalCase(prev => prev ? ({ ...prev, status: e.target.value as Status }) : null)}
+                                        onChange={(e) => {
+                                            const value = e.target.value as Status;
+                                            setLocalCase(prev => prev ? ({ ...prev, status: value }) : null);
+                                            emitFieldChange('status', value);
+                                        }}
                                         onBlur={handleFieldBlur}
                                         className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getStatusColor(localCase.status)}`}
                                     >
@@ -409,8 +476,10 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                             type="text"
                                             value={localCase.area || ''}
                                             onChange={(e) => {
-                                                setLocalCase(prev => prev ? ({ ...prev, area: e.target.value }) : null);
+                                                const value = e.target.value;
+                                                setLocalCase(prev => prev ? ({ ...prev, area: value }) : null);
                                                 setIsAreaDropdownOpen(true);
+                                                emitFieldChange('area', value);
                                             }}
                                             onFocus={() => setIsAreaDropdownOpen(true)}
                                             onBlur={() => {
@@ -495,7 +564,10 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                 <div className="mb-8">
                                     <RichTextEditor
                                         content={localCase.stepsContent || ''}
-                                        onChange={(html) => setLocalCase(prev => prev ? ({ ...prev, stepsContent: html }) : null)}
+                                        onChange={(html) => {
+                                            setLocalCase(prev => prev ? ({ ...prev, stepsContent: html }) : null);
+                                            emitFieldChange('stepsContent', html);
+                                        }}
                                         onBlur={handleFieldBlur}
                                         placeholder="Describe the test steps here. You can use lists, bold text, etc."
                                     />
@@ -524,7 +596,10 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                             <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Comments</label>
                             <RichTextEditor
                                 content={localCase.comments || ''}
-                                onChange={(html) => setLocalCase(prev => prev ? ({ ...prev, comments: html }) : null)}
+                                onChange={(html) => {
+                                    setLocalCase(prev => prev ? ({ ...prev, comments: html }) : null);
+                                    emitFieldChange('comments', html);
+                                }}
                                 onBlur={handleFieldBlur}
                                 placeholder="Add comments, notes, or additional information about this test case..."
                             />
@@ -549,10 +624,12 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                                         type="text"
                                                         value={value}
                                                         onChange={(e) => {
+                                                            const newValue = e.target.value;
                                                             setLocalCase(prev => prev ? ({
                                                                 ...prev,
-                                                                customFields: { ...(prev.customFields || {}), [field.id]: e.target.value }
+                                                                customFields: { ...(prev.customFields || {}), [field.id]: newValue }
                                                             }) : null);
+                                                            emitFieldChange(`customFields.${field.id}`, newValue);
                                                         }}
                                                         onBlur={handleFieldBlur}
                                                         className="w-full text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border-transparent rounded-lg focus:border-blue-300 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-gray-700 focus:ring-0 p-3 transition-colors"
@@ -563,10 +640,12 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                                     <textarea
                                                         value={value}
                                                         onChange={(e) => {
+                                                            const newValue = e.target.value;
                                                             setLocalCase(prev => prev ? ({
                                                                 ...prev,
-                                                                customFields: { ...(prev.customFields || {}), [field.id]: e.target.value }
+                                                                customFields: { ...(prev.customFields || {}), [field.id]: newValue }
                                                             }) : null);
+                                                            emitFieldChange(`customFields.${field.id}`, newValue);
                                                         }}
                                                         onBlur={handleFieldBlur}
                                                         className="w-full text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border-transparent rounded-lg focus:border-blue-300 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-gray-700 focus:ring-0 p-3 transition-colors resize-none"
@@ -578,10 +657,12 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                                     <select
                                                         value={value}
                                                         onChange={(e) => {
+                                                            const newValue = e.target.value;
                                                             setLocalCase(prev => prev ? ({
                                                                 ...prev,
-                                                                customFields: { ...(prev.customFields || {}), [field.id]: e.target.value }
+                                                                customFields: { ...(prev.customFields || {}), [field.id]: newValue }
                                                             }) : null);
+                                                            emitFieldChange(`customFields.${field.id}`, newValue);
                                                         }}
                                                         onBlur={handleFieldBlur}
                                                         className="w-full rounded-lg py-2 px-3 text-sm font-medium border bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
@@ -600,6 +681,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                                                 ...prev,
                                                                 customFields: { ...(prev.customFields || {}), [field.id]: html }
                                                             }) : null);
+                                                            emitFieldChange(`customFields.${field.id}`, html);
                                                         }}
                                                         onBlur={handleFieldBlur}
                                                         placeholder={`Enter ${field.label.toLowerCase()}...`}

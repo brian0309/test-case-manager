@@ -322,14 +322,15 @@ export const cloneTestCase = async (
 
 /**
  * Delete a test case
+ * Returns the deleted test case info or null if not found/no access
  */
 export const deleteTestCase = async (
   testCaseId: string,
   userId: string
-): Promise<boolean> => {
+): Promise<{ projectId: string; suiteId: string } | null> => {
   const testCase = await TestCase.findById(testCaseId);
   if (!testCase) {
-    return false;
+    return null;
   }
 
   // Check if user has project access
@@ -338,11 +339,14 @@ export const deleteTestCase = async (
     userId
   );
   if (!hasAccess) {
-    return false;
+    return null;
   }
 
+  const projectId = testCase.projectId.toString();
+  const suiteId = testCase.suiteId.toString();
+
   await TestCase.deleteOne({ _id: new Types.ObjectId(testCaseId) });
-  return true;
+  return { projectId, suiteId };
 };
 
 /**
@@ -534,6 +538,7 @@ export const bulkImportTestCases = async (
   failed: number;
   errors: Array<{ index: number; title?: string; message: string }>;
   duplicates?: string[];
+  createdTestCases?: any[];
 }> => {
   // Get suite and check project access
   const suite = await TestSuite.findById(suiteId);
@@ -554,6 +559,7 @@ export const bulkImportTestCases = async (
     skipped: 0,
     failed: 0,
     errors: [] as Array<{ index: number; title?: string; message: string }>,
+    createdTestCases: [] as any[],
     duplicates: [] as string[],
   };
 
@@ -656,6 +662,12 @@ export const bulkImportTestCases = async (
 
       await testCase.save();
       result.created++;
+      
+      // Track created test case for socket events (format the response)
+      const populatedTestCase = await getTestCaseById(testCase._id.toString(), userId);
+      if (populatedTestCase) {
+        result.createdTestCases.push(formatTestCaseResponse(populatedTestCase));
+      }
 
       // Add to duplicate check set
       if (skipDuplicates) {
@@ -674,3 +686,50 @@ export const bulkImportTestCases = async (
   return result;
 };
 
+/**
+ * Get unique project IDs from a list of test case IDs
+ * Used for socket event emission
+ */
+export const getProjectIdsFromTestCases = async (
+  testCaseIds: string[]
+): Promise<string[]> => {
+  const testCases = await TestCase.find({
+    _id: { $in: testCaseIds.map((id) => new Types.ObjectId(id)) },
+  }).select("projectId");
+
+  const projectIds = new Set<string>();
+  for (const tc of testCases) {
+    if (tc.projectId) {
+      projectIds.add(tc.projectId.toString());
+    }
+  }
+
+  return Array.from(projectIds);
+};
+
+/**
+ * Get project and suite info from a list of test case IDs
+ * Used for socket event emission
+ */
+export const getProjectSuiteInfoFromTestCases = async (
+  testCaseIds: string[]
+): Promise<Array<{ projectId: string; suiteId: string }>> => {
+  const testCases = await TestCase.find({
+    _id: { $in: testCaseIds.map((id) => new Types.ObjectId(id)) },
+  }).select("projectId suiteId");
+
+  const infoMap = new Map<string, { projectId: string; suiteId: string }>();
+  for (const tc of testCases) {
+    if (tc.projectId && tc.suiteId) {
+      const key = `${tc.projectId}-${tc.suiteId}`;
+      if (!infoMap.has(key)) {
+        infoMap.set(key, {
+          projectId: tc.projectId.toString(),
+          suiteId: tc.suiteId.toString(),
+        });
+      }
+    }
+  }
+
+  return Array.from(infoMap.values());
+};

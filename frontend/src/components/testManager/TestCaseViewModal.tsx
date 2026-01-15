@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TestCase, Priority, Status, CustomFieldDefinition } from '../../types/testManager';
 import { X, Edit2, ChevronDown, Share2 } from 'lucide-react';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import RichTextEditor from './RichTextEditor';
 import toast from 'react-hot-toast';
+import { useCollaborativeEditing } from '../../hooks/useCollaborativeEditing';
 
 interface TestCaseViewModalProps {
     testCase: TestCase;
@@ -23,6 +24,28 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
     // Project settings for custom fields
     const { fetchProjectSettings, projectSettings } = useTestManagerStore();
     const [customFields, setCustomFields] = useState<CustomFieldDefinition[]>([]);
+    
+    // Handle remote field updates from collaborative editing
+    const handleRemoteFieldUpdate = useCallback((fieldName: string, value: string) => {
+        setLocalCase(prev => {
+            // Handle nested custom fields
+            if (fieldName.startsWith('customFields.')) {
+                const fieldId = fieldName.replace('customFields.', '');
+                return {
+                    ...prev,
+                    customFields: { ...(prev.customFields || {}), [fieldId]: value }
+                };
+            }
+            // Handle regular fields
+            return { ...prev, [fieldName]: value };
+        });
+    }, []);
+    
+    // Collaborative editing - receive real-time updates from other users
+    const { collaboratingUsers, remoteEditingField, isCollaborating } = useCollaborativeEditing({
+        testCase: testCase,
+        onFieldUpdate: handleRemoteFieldUpdate,
+    });
 
     // Update local state when testCase prop changes
     useEffect(() => {
@@ -120,6 +143,32 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                     <div className="flex items-center gap-3">
                         <span className="font-mono text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">{testCase.id}</span>
                         <span className="text-xs text-gray-400 dark:text-gray-500">View Mode</span>
+                        {/* Real-time editing indicator */}
+                        {isCollaborating && collaboratingUsers.length > 0 && (
+                            <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
+                                <div className="flex -space-x-2">
+                                    {collaboratingUsers.slice(0, 3).map((u) => (
+                                        <div
+                                            key={u.id}
+                                            className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-[10px] font-bold text-white border-2 border-white dark:border-gray-800"
+                                            title={u.name}
+                                        >
+                                            {u.name.charAt(0).toUpperCase()}
+                                        </div>
+                                    ))}
+                                </div>
+                                <span className="text-xs text-blue-600 dark:text-blue-400">
+                                    {remoteEditingField ? (
+                                        <span className="flex items-center gap-1">
+                                            <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                                            {remoteEditingField.userName} is editing
+                                        </span>
+                                    ) : (
+                                        `${collaboratingUsers.length} ${collaboratingUsers.length === 1 ? 'viewer' : 'viewers'}`
+                                    )}
+                                </span>
+                            </div>
+                        )}
                     </div>
                     <div className="flex items-center gap-2">
                         <button
@@ -151,7 +200,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                 <div className="flex-1 overflow-y-auto p-6 md:p-8">
                     <div className="mb-8">
                         <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Title</label>
-                        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{testCase.title}</h1>
+                        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{localCase.title}</h1>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
@@ -159,8 +208,8 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                         <div>
                             <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Assignee</label>
                             <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50/50 dark:bg-gray-800/50 border border-transparent">
-                                <img src={testCase.assignedTester.avatar} className="h-6 w-6 rounded-full" alt="avatar" />
-                                <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">{testCase.assignedTester.name}</span>
+                                <img src={localCase.assignedTester.avatar} className="h-6 w-6 rounded-full" alt="avatar" />
+                                <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">{localCase.assignedTester.name}</span>
                             </div>
                         </div>
 
@@ -200,21 +249,21 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                     </div>
 
                     {/* Page/Area */}
-                    {testCase.area && (
+                    {localCase.area && (
                         <div className="mb-8">
                             <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Page / Area</label>
                             <div className="text-sm font-medium text-gray-700 dark:text-gray-300 py-2 border-b border-gray-200 dark:border-gray-700/80">
-                                {testCase.area}
+                                {localCase.area}
                             </div>
                         </div>
                     )}
 
                     {/* Test Description */}
-                    {testCase.testDescription && (
+                    {localCase.testDescription && (
                         <div className="mb-8">
                             <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Test Description</label>
                             <div className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700/80 whitespace-pre-wrap">
-                                {testCase.testDescription}
+                                {localCase.testDescription}
                             </div>
                         </div>
                     )}
@@ -222,15 +271,15 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                     {/* Test Steps */}
                     <div className="mb-8">
                         <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Test Steps</label>
-                        {testCase.stepsContent ? (
+                        {localCase.stepsContent ? (
                             <RichTextEditor
-                                content={testCase.stepsContent}
+                                content={localCase.stepsContent}
                                 onChange={() => { }}
                                 editable={false}
                             />
-                        ) : testCase.steps.length > 0 ? (
+                        ) : localCase.steps.length > 0 ? (
                             <div className="space-y-3">
-                                {testCase.steps.map((step, idx) => (
+                                {localCase.steps.map((step, idx) => (
                                     <div key={idx} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                                         <div className="flex gap-3">
                                             <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-semibold">
@@ -250,21 +299,21 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                     </div>
 
                     {/* Expected Result */}
-                    {testCase.expectedResult && (
+                    {localCase.expectedResult && (
                         <div className="mb-8">
                             <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Expected Result (Summary)</label>
                             <div className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700/80 whitespace-pre-wrap">
-                                {testCase.expectedResult}
+                                {localCase.expectedResult}
                             </div>
                         </div>
                     )}
 
                     {/* Comments */}
-                    {testCase.comments && (
+                    {localCase.comments && (
                         <div className="mb-2">
                             <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Comments</label>
                             <RichTextEditor
-                                content={testCase.comments}
+                                content={localCase.comments}
                                 onChange={() => { }}
                                 editable={false}
                             />
@@ -312,10 +361,10 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                     )}
 
                     {/* Last Modified Info */}
-                    {testCase.lastModified && (
+                    {localCase.lastModified && (
                         <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                                Last modified: {new Date(testCase.lastModified).toLocaleString('en-US', {
+                                Last modified: {new Date(localCase.lastModified).toLocaleString('en-US', {
                                     month: 'long',
                                     day: 'numeric',
                                     year: 'numeric',
