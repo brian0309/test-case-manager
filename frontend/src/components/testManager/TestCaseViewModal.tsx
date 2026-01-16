@@ -6,6 +6,7 @@ import { useTestManagerStore } from '../../store/testManagerStore';
 import RichTextEditor from './RichTextEditor';
 import toast from 'react-hot-toast';
 import { useCollaborativeEditing } from '../../hooks/useCollaborativeEditing';
+import { socketService, SocketEvents } from '../../services/socket';
 
 interface TestCaseViewModalProps {
     testCase: TestCase;
@@ -20,11 +21,11 @@ interface TestCaseViewModalProps {
 const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCases, onClose, onEdit, onUpdate, onNavigate }) => {
     const [localCase, setLocalCase] = useState<TestCase>(testCase);
     const currentIndex = testCases.findIndex(tc => tc.id === testCase.id);
-    
+
     // Project settings for custom fields
     const { fetchProjectSettings, projectSettings } = useTestManagerStore();
     const [customFields, setCustomFields] = useState<CustomFieldDefinition[]>([]);
-    
+
     // Handle remote field updates from collaborative editing
     const handleRemoteFieldUpdate = useCallback((fieldName: string, value: string) => {
         setLocalCase(prev => {
@@ -40,18 +41,35 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
             return { ...prev, [fieldName]: value };
         });
     }, []);
-    
+
     // Collaborative editing - receive real-time updates from other users
-    const { collaboratingUsers, remoteEditingField, isCollaborating } = useCollaborativeEditing({
+    const { collaboratingUsers, emitFieldChange, remoteEditingField, isCollaborating } = useCollaborativeEditing({
         testCase: testCase,
         onFieldUpdate: handleRemoteFieldUpdate,
     });
+
+    // Subscribe to testcase:updated socket events for real-time sync
+    // This updates localCase when another user saves changes via API
+    useEffect(() => {
+        const handleTestCaseUpdated = (data: SocketEvents['testcase:updated']) => {
+            // Only update if it's for this specific test case
+            if (data.testCase?.id === testCase.id) {
+                setLocalCase(data.testCase);
+            }
+        };
+
+        socketService.on('testcase:updated', handleTestCaseUpdated);
+
+        return () => {
+            socketService.off('testcase:updated', handleTestCaseUpdated);
+        };
+    }, [testCase.id]);
 
     // Update local state when testCase prop changes
     useEffect(() => {
         setLocalCase(testCase);
     }, [testCase]);
-    
+
     // Load project settings when test case changes
     useEffect(() => {
         if (testCase?.projectId) {
@@ -69,7 +87,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
             loadSettings();
         }
     }, [testCase?.projectId, fetchProjectSettings]);
-    
+
     // Separate effect to update custom fields when projectSettings changes
     useEffect(() => {
         if (testCase?.projectId && projectSettings[testCase.projectId]?.testCases?.customFields) {
@@ -78,17 +96,21 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
         }
     }, [testCase?.projectId, projectSettings]);
 
-    // Auto-save changes
+    // Auto-save changes with real-time socket broadcast
     const handlePriorityChange = (priority: Priority) => {
         const updated = { ...localCase, priority };
         setLocalCase(updated);
         onUpdate?.(updated);
+        // Emit for immediate real-time sync to other users viewing this test case
+        emitFieldChange('priority', priority);
     };
 
     const handleStatusChange = (status: Status) => {
         const updated = { ...localCase, status, lastModified: new Date().toISOString() };
         setLocalCase(updated);
         onUpdate?.(updated);
+        // Emit for immediate real-time sync to other users viewing this test case
+        emitFieldChange('status', status);
     };
 
     const getStatusColor = (status: Status) => {
@@ -327,7 +349,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                                 <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Custom Fields</h3>
                                 {customFields.filter(f => !f.deleted).map((field) => {
                                     const value = localCase.customFields?.[field.id] || '';
-                                    
+
                                     return (
                                         <div key={field.id} className="mb-6">
                                             <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
@@ -335,7 +357,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                                             </label>
                                             {(field.type === 'text' || field.type === 'dropdown') && (
                                                 <div className="text-sm font-medium text-gray-700 dark:text-gray-300 py-2 border-b border-gray-200 dark:border-gray-700">
-                                                    {field.type === 'dropdown' 
+                                                    {field.type === 'dropdown'
                                                         ? (field.options?.find(opt => opt.id === value)?.label || value)
                                                         : value
                                                     }
