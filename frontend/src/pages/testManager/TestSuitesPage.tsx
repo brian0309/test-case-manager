@@ -14,7 +14,7 @@ import { TestSuite } from '../../types/testManager';
 import { useProjectPresence } from '../../hooks/useProjectPresence';
 
 const TestSuitesPage: React.FC = () => {
-    const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchTestCasesByProject, fetchProjects, deleteTestSuite, setActiveProject, clearFilters } = useTestManagerStore();
+    const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchTestCasesByProject, fetchProjects, deleteTestSuite, setActiveProject, clearFilters, searchQuery, clearSearchQuery } = useTestManagerStore();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -58,26 +58,32 @@ const TestSuitesPage: React.FC = () => {
         }
     }, [projects.length, fetchProjects]);
 
+    // Clear search query when entering and leaving the page
+    useEffect(() => {
+        clearSearchQuery(); // Clear search when entering the page
+        return () => clearSearchQuery(); // Clear search when leaving
+    }, [clearSearchQuery]);
+
     // Handle projectId URL parameter for direct links to a project
     useEffect(() => {
         const projectId = searchParams.get('projectId');
-        
+
         if (!projectId || processedProjectIdRef.current === projectId) {
             return;
         }
-        
+
         // Mark as processed immediately
         processedProjectIdRef.current = projectId;
-        
+
         // Use timeout to ensure store actions are processed correctly if needed
         setActiveProject(projectId);
-        
+
         // Clear the URL parameter
         setSearchParams({}, { replace: true });
-        
+
         // Show success toast (only once)
         toast.success('Project context loaded');
-        
+
     }, [searchParams, setSearchParams, setActiveProject]);
 
     // Fetch test suites and test cases when project is active
@@ -100,6 +106,12 @@ const TestSuitesPage: React.FC = () => {
     const projectTestCases = activeProject
         ? testCases.filter(tc => tc.projectId === activeProject)
         : [];
+
+    // Filter test suites based on search query
+    const filteredTestSuites = testSuites.filter(suite =>
+        suite.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (suite.description && suite.description.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
 
     const handleSuiteClick = (suiteName: string, suiteId?: string) => {
         if (suiteId) {
@@ -128,7 +140,7 @@ const TestSuitesPage: React.FC = () => {
 
     const confirmDeleteSuite = async () => {
         if (!suiteToDelete) return;
-        
+
         const suiteName = suiteToDelete.name;
         setIsDeleting(true);
         try {
@@ -227,7 +239,7 @@ const TestSuitesPage: React.FC = () => {
 
                 <TestSuiteList
                     testCases={projectTestCases}
-                    testSuites={testSuites}
+                    testSuites={filteredTestSuites}
                     onSuiteClick={handleSuiteClick}
                     onCreate={handleCreateSuite}
                     onEdit={handleEditSuite}
