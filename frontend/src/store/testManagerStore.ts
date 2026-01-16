@@ -165,8 +165,9 @@ interface TestManagerStore {
     bulkDeleteTestCases: (ids: string[]) => Promise<void>;
 
     // Legacy local state actions (for optimistic updates)
-    setTestCases: (cases: TestCase[]) => void;
-    setTestSuites: (suites: TestSuite[]) => void;
+    // Support both direct values and functional updaters for proper deduplication
+    setTestCases: (casesOrUpdater: TestCase[] | ((current: TestCase[]) => TestCase[])) => void;
+    setTestSuites: (suitesOrUpdater: TestSuite[] | ((current: TestSuite[]) => TestSuite[])) => void;
     addTestCase: (testCase: TestCase) => void;
     updateTestCaseLocal: (testCase: TestCase) => void;
     deleteTestCaseLocal: (id: string) => void;
@@ -555,8 +556,20 @@ export const useTestManagerStore = create<TestManagerStore>()(
             // =========================================================================
             // LOCAL STATE ACTIONS (for optimistic updates and legacy support)
             // =========================================================================
-            setTestCases: (cases: any) => set({ testCases: cases }),
-            setTestSuites: (suites: any) => set({ testSuites: suites }),
+            setTestCases: (casesOrUpdater: any) => {
+                if (typeof casesOrUpdater === 'function') {
+                    set((state) => ({ testCases: casesOrUpdater(state.testCases) }));
+                } else {
+                    set({ testCases: casesOrUpdater });
+                }
+            },
+            setTestSuites: (suitesOrUpdater: any) => {
+                if (typeof suitesOrUpdater === 'function') {
+                    set((state) => ({ testSuites: suitesOrUpdater(state.testSuites) }));
+                } else {
+                    set({ testSuites: suitesOrUpdater });
+                }
+            },
             addTestCase: (testCase: any) => set((state) => ({ testCases: [testCase, ...state.testCases] })),
             updateTestCaseLocal: (updatedCase: any) => set((state) => ({
                 testCases: state.testCases.map((c) => (c.id === updatedCase.id ? updatedCase : c)),

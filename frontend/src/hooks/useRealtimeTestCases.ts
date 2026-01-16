@@ -28,9 +28,7 @@ export function useRealtimeTestCases({
 }: UseRealtimeTestCasesOptions) {
   const {
     setTestCases,
-    testCases,
     setTestSuites,
-    testSuites,
     activeTestCaseId,
     setActiveTestCaseId,
     activeSuiteId,
@@ -44,54 +42,54 @@ export function useRealtimeTestCases({
   const handleTestCaseCreated = useCallback(
     (data: SocketEvents["testcase:created"]) => {
       console.log("[Realtime] Test case created:", data);
-      
+
       // Only update if it's for the current suite we're viewing
       if (activeSuiteId === data.suiteId) {
-        // Check if test case already exists to prevent duplicates
-        // (can happen when API response adds it before socket event arrives)
-        const exists = testCases.some((tc) => tc.id === data.testCase.id);
-        if (!exists) {
-          setTestCases([...testCases, data.testCase]);
-        }
+        // Use functional update to check against current state (not stale closure)
+        setTestCases((currentCases) => {
+          const exists = currentCases.some((tc) => tc.id === data.testCase.id);
+          if (exists) return currentCases; // No change if duplicate
+          return [...currentCases, data.testCase];
+        });
       }
     },
-    [activeSuiteId, testCases, setTestCases]
+    [activeSuiteId, setTestCases]
   );
 
   // Handler for test case updated
   const handleTestCaseUpdated = useCallback(
     (data: SocketEvents["testcase:updated"]) => {
       console.log("[Realtime] Test case updated:", data);
-      
-      setTestCases(
-        testCases.map((tc) =>
+
+      setTestCases((currentCases) =>
+        currentCases.map((tc) =>
           tc.id === data.testCase.id ? data.testCase : tc
         )
       );
     },
-    [testCases, setTestCases]
+    [setTestCases]
   );
 
   // Handler for test case deleted
   const handleTestCaseDeleted = useCallback(
     (data: SocketEvents["testcase:deleted"]) => {
       console.log("[Realtime] Test case deleted:", data);
-      
-      setTestCases(testCases.filter((tc) => tc.id !== data.testCaseId));
-      
+
+      setTestCases((currentCases) => currentCases.filter((tc) => tc.id !== data.testCaseId));
+
       // If the deleted test case was active, clear selection
       if (activeTestCaseId === data.testCaseId) {
         setActiveTestCaseId(null);
       }
     },
-    [testCases, setTestCases, activeTestCaseId, setActiveTestCaseId]
+    [setTestCases, activeTestCaseId, setActiveTestCaseId]
   );
 
   // Handler for test cases reordered
   const handleTestCasesReordered = useCallback(
     (data: SocketEvents["testcase:reordered"]) => {
       console.log("[Realtime] Test cases reordered:", data);
-      
+
       // Only update if it's for the current suite we're viewing
       if (activeSuiteId === data.suiteId) {
         setTestCases(data.testCases);
@@ -104,106 +102,106 @@ export function useRealtimeTestCases({
   const handleTestCasesBulkDeleted = useCallback(
     (data: SocketEvents["testcase:bulk-deleted"]) => {
       console.log("[Realtime] Test cases bulk deleted:", data);
-      
+
       const deletedSet = new Set(data.testCaseIds);
-      setTestCases(testCases.filter((tc) => !deletedSet.has(tc.id)));
-      
+      setTestCases((currentCases) => currentCases.filter((tc) => !deletedSet.has(tc.id)));
+
       // If the active test case was deleted, clear selection
       if (activeTestCaseId && deletedSet.has(activeTestCaseId)) {
         setActiveTestCaseId(null);
       }
     },
-    [testCases, setTestCases, activeTestCaseId, setActiveTestCaseId]
+    [setTestCases, activeTestCaseId, setActiveTestCaseId]
   );
 
   // Handler for bulk status updated
   const handleTestCasesBulkStatusUpdated = useCallback(
     (data: SocketEvents["testcase:bulk-status-updated"]) => {
       console.log("[Realtime] Test cases bulk status updated:", data);
-      
+
       const updatedSet = new Set(data.testCaseIds);
-      setTestCases(
-        testCases.map((tc) =>
+      setTestCases((currentCases) =>
+        currentCases.map((tc) =>
           updatedSet.has(tc.id) ? { ...tc, status: data.status as Status } : tc
         )
       );
     },
-    [testCases, setTestCases]
+    [setTestCases]
   );
 
   // Handler for test case cloned
   const handleTestCaseCloned = useCallback(
     (data: SocketEvents["testcase:cloned"]) => {
       console.log("[Realtime] Test case cloned:", data);
-      
+
       // Only update if it's for the current suite we're viewing
       if (activeSuiteId === data.suiteId) {
-        // Check if test case already exists to prevent duplicates
-        // (can happen when API response adds it before socket event arrives)
-        const exists = testCases.some((tc) => tc.id === data.testCase.id);
-        if (!exists) {
-          setTestCases([...testCases, data.testCase]);
-        }
+        // Use functional update to check against current state (not stale closure)
+        setTestCases((currentCases) => {
+          const exists = currentCases.some((tc) => tc.id === data.testCase.id);
+          if (exists) return currentCases; // No change if duplicate
+          return [...currentCases, data.testCase];
+        });
       }
     },
-    [activeSuiteId, testCases, setTestCases]
+    [activeSuiteId, setTestCases]
   );
 
   // Handler for bulk imported
   const handleTestCasesBulkImported = useCallback(
     (data: SocketEvents["testcase:bulk-imported"]) => {
       console.log("[Realtime] Test cases bulk imported:", data);
-      
+
       // Only update if it's for the current suite we're viewing
       if (activeSuiteId === data.suiteId) {
-        // Filter out test cases that already exist to prevent duplicates
-        // (can happen when API response adds them before socket event arrives)
-        const existingIds = new Set(testCases.map((tc) => tc.id));
-        const newTestCases = data.testCases.filter((tc) => !existingIds.has(tc.id));
-        if (newTestCases.length > 0) {
-          setTestCases([...testCases, ...newTestCases]);
-        }
+        // Use functional update to check against current state (not stale closure)
+        setTestCases((currentCases) => {
+          const existingIds = new Set(currentCases.map((tc) => tc.id));
+          const newTestCases = data.testCases.filter((tc) => !existingIds.has(tc.id));
+          if (newTestCases.length === 0) return currentCases; // No change
+          return [...currentCases, ...newTestCases];
+        });
       }
     },
-    [activeSuiteId, testCases, setTestCases]
+    [activeSuiteId, setTestCases]
   );
 
   // Handler for test suite created
   const handleTestSuiteCreated = useCallback(
     (data: SocketEvents["testsuite:created"]) => {
       console.log("[Realtime] Test suite created:", data);
-      
-      // Check if suite already exists to prevent duplicates
-      // (can happen when API response adds it before socket event arrives)
-      const exists = testSuites.some((s) => s.id === data.suite.id);
-      if (!exists) {
-        setTestSuites([...testSuites, data.suite]);
-      }
+
+      // Use functional update to check against current state (not stale closure)
+      setTestSuites((currentSuites) => {
+        const exists = currentSuites.some((s) => s.id === data.suite.id);
+        if (exists) return currentSuites; // No change if duplicate
+        return [...currentSuites, data.suite];
+      });
     },
-    [testSuites, setTestSuites]
+    [setTestSuites]
   );
 
   // Handler for test suite updated
   const handleTestSuiteUpdated = useCallback(
     (data: SocketEvents["testsuite:updated"]) => {
       console.log("[Realtime] Test suite updated:", data);
-      
-      setTestSuites(
-        testSuites.map((s) =>
+
+      setTestSuites((currentSuites) =>
+        currentSuites.map((s) =>
           s.id === data.suite.id ? data.suite : s
         )
       );
     },
-    [testSuites, setTestSuites]
+    [setTestSuites]
   );
 
   // Handler for test suite deleted
   const handleTestSuiteDeleted = useCallback(
     (data: SocketEvents["testsuite:deleted"]) => {
       console.log("[Realtime] Test suite deleted:", data);
-      
-      setTestSuites(testSuites.filter((s) => s.id !== data.suiteId));
-      
+
+      setTestSuites((currentSuites) => currentSuites.filter((s) => s.id !== data.suiteId));
+
       // If the deleted suite was active, clear selection
       if (activeSuiteId === data.suiteId) {
         setActiveSuiteId(null);
@@ -211,7 +209,7 @@ export function useRealtimeTestCases({
         setActiveTestCaseId(null);
       }
     },
-    [testSuites, setTestSuites, activeSuiteId, setActiveSuiteId, setTestCases, setActiveTestCaseId]
+    [setTestSuites, activeSuiteId, setActiveSuiteId, setTestCases, setActiveTestCaseId]
   );
 
   // Connect to socket and set up listeners
