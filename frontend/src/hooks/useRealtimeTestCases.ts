@@ -47,7 +47,12 @@ export function useRealtimeTestCases({
       
       // Only update if it's for the current suite we're viewing
       if (activeSuiteId === data.suiteId) {
-        setTestCases([...testCases, data.testCase]);
+        // Check if test case already exists to prevent duplicates
+        // (can happen when API response adds it before socket event arrives)
+        const exists = testCases.some((tc) => tc.id === data.testCase.id);
+        if (!exists) {
+          setTestCases([...testCases, data.testCase]);
+        }
       }
     },
     [activeSuiteId, testCases, setTestCases]
@@ -133,7 +138,12 @@ export function useRealtimeTestCases({
       
       // Only update if it's for the current suite we're viewing
       if (activeSuiteId === data.suiteId) {
-        setTestCases([...testCases, data.testCase]);
+        // Check if test case already exists to prevent duplicates
+        // (can happen when API response adds it before socket event arrives)
+        const exists = testCases.some((tc) => tc.id === data.testCase.id);
+        if (!exists) {
+          setTestCases([...testCases, data.testCase]);
+        }
       }
     },
     [activeSuiteId, testCases, setTestCases]
@@ -146,7 +156,13 @@ export function useRealtimeTestCases({
       
       // Only update if it's for the current suite we're viewing
       if (activeSuiteId === data.suiteId) {
-        setTestCases([...testCases, ...data.testCases]);
+        // Filter out test cases that already exist to prevent duplicates
+        // (can happen when API response adds them before socket event arrives)
+        const existingIds = new Set(testCases.map((tc) => tc.id));
+        const newTestCases = data.testCases.filter((tc) => !existingIds.has(tc.id));
+        if (newTestCases.length > 0) {
+          setTestCases([...testCases, ...newTestCases]);
+        }
       }
     },
     [activeSuiteId, testCases, setTestCases]
@@ -157,7 +173,12 @@ export function useRealtimeTestCases({
     (data: SocketEvents["testsuite:created"]) => {
       console.log("[Realtime] Test suite created:", data);
       
-      setTestSuites([...testSuites, data.suite]);
+      // Check if suite already exists to prevent duplicates
+      // (can happen when API response adds it before socket event arrives)
+      const exists = testSuites.some((s) => s.id === data.suite.id);
+      if (!exists) {
+        setTestSuites([...testSuites, data.suite]);
+      }
     },
     [testSuites, setTestSuites]
   );
