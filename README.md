@@ -1,8 +1,14 @@
 <h1 align="center">Test Case Manager 🧪</h1>
 
 <p align="center">
-   <a href="https://github.com/brian0309/test-case-manager/actions/workflows/ci.yml">
-      <img src="https://github.com/brian0309/test-case-manager/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
+   <a href="https://github.com/brian0309/test-case-manager/actions/workflows/tests.yml">
+      <img src="https://img.shields.io/github/actions/workflow/status/brian0309/test-case-manager/tests.yml?label=Tests&logo=github" alt="Tests Status" />
+   </a>
+   <a href="https://github.com/brian0309/test-case-manager/actions/workflows/lint.yml">
+      <img src="https://img.shields.io/github/actions/workflow/status/brian0309/test-case-manager/lint.yml?label=Lint&logo=github" alt="Lint Status" />
+   </a>
+   <a href="https://github.com/brian0309/test-case-manager/actions/workflows/typecheck.yml">
+      <img src="https://img.shields.io/github/actions/workflow/status/brian0309/test-case-manager/typecheck.yml?label=Type%20Check&logo=github" alt="Type Check Status" />
    </a>
 </p>
 
