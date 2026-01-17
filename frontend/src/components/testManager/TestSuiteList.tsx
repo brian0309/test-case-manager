@@ -156,7 +156,10 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
     const handleStatusClick = (e: React.MouseEvent, suite: TestSuite, status: Status) => {
         e.stopPropagation();
         setActiveSuiteWithId(suite.id, suite.name);
-        setFilters({ status: [status] });
+        const statusFilter = status === Status.Passed 
+            ? [Status.Passed, Status.PassFixed] 
+            : [status];
+        setFilters({ status: statusFilter });
         setActiveArea(null);
         navigate('/test-manager/cases');
     };
