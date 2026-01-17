@@ -2,13 +2,13 @@
 
 <p align="center">
    <a href="https://github.com/brian0309/test-case-manager/actions/workflows/tests.yml">
-      <img src="https://img.shields.io/github/actions/workflow/status/brian0309/test-case-manager/tests.yml?label=Tests&logo=github" alt="Tests Status" />
+      <img src="https://github.com/brian0309/test-case-manager/actions/workflows/tests.yml/badge.svg" alt="Tests Status" />
    </a>
    <a href="https://github.com/brian0309/test-case-manager/actions/workflows/lint.yml">
-      <img src="https://img.shields.io/github/actions/workflow/status/brian0309/test-case-manager/lint.yml?label=Lint&logo=github" alt="Lint Status" />
+      <img src="https://github.com/brian0309/test-case-manager/actions/workflows/lint.yml/badge.svg" alt="Lint Status" />
    </a>
    <a href="https://github.com/brian0309/test-case-manager/actions/workflows/typecheck.yml">
-      <img src="https://img.shields.io/github/actions/workflow/status/brian0309/test-case-manager/typecheck.yml?label=Type%20Check&logo=github" alt="Type Check Status" />
+      <img src="https://github.com/brian0309/test-case-manager/actions/workflows/typecheck.yml/badge.svg" alt="Type Check Status" />
    </a>
 </p>
 
