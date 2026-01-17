@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
@@ -22,7 +22,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
     const [zoomedImage, setZoomedImage] = useState<string | null>(null);
     const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const editorRef = useRef<any>(null);
+    const editorRef = useRef<Editor | null>(null);
 
     const editor = useEditor({
         extensions: [
@@ -59,7 +59,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
             attributes: {
                 class: 'prose prose-sm sm:prose-base focus:outline-none min-h-[200px] text-gray-700 dark:text-gray-300 leading-relaxed max-w-none dark:prose-invert [&_img[src^="blob:"]]:opacity-50 [&_img[src^="blob:"]]:grayscale [&_img[src^="blob:"]]:blur-[1px] transition-all dark:[&_p]:text-gray-300 dark:[&_ul]:text-gray-300 dark:[&_ol]:text-gray-300 dark:[&_blockquote]:text-gray-300 dark:[&_h1]:text-gray-100 dark:[&_h2]:text-gray-100 dark:[&_h3]:text-gray-100 dark:[&_strong]:text-gray-100 dark:[&_em]:text-gray-300 dark:[&_strike]:text-gray-300 dark:[&_code]:text-gray-300 dark:prose-headings:text-gray-100 dark:prose-strong:text-gray-100 dark:prose-code:text-gray-300 dark:prose-blockquote:text-gray-300',
             },
-            handleDrop: (_view: any, event: any, _slice: any, moved: any) => {
+            // ProseMirror handlers use complex internal types
+             
+            handleDrop: (_view: unknown, event: DragEvent, _slice: unknown, moved: boolean) => {
                 if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
                     const file = event.dataTransfer.files[0];
                     if (file.type.startsWith('image/')) {
@@ -70,7 +72,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
                 }
                 return false;
             },
-            handlePaste: (_view: any, event: any) => {
+             
+            handlePaste: (_view: unknown, event: ClipboardEvent) => {
                 const items = event.clipboardData?.items;
                 if (items) {
                     for (let i = 0; i < items.length; i++) {
@@ -124,7 +127,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
             const url = await uploadImage(file);
 
             // Find the image with the blobUrl and replace it with the real URL
-            currentEditor.view.state.doc.descendants((node: any, pos: number) => {
+             
+            currentEditor.view.state.doc.descendants((node: { type: { name: string }; attrs: Record<string, string>; nodeSize: number }, pos: number) => {
                 if (node.type.name === 'image' && node.attrs.src === blobUrl) {
                     const transaction = currentEditor.state.tr.setNodeMarkup(pos, undefined, {
                         ...node.attrs,
@@ -142,7 +146,8 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ content, onChange, onBl
             toast.error(error instanceof Error ? error.message : 'Failed to upload image');
 
             // Remove the temporary image on failure
-            currentEditor.view.state.doc.descendants((node: any, pos: number) => {
+             
+            currentEditor.view.state.doc.descendants((node: { type: { name: string }; attrs: Record<string, string>; nodeSize: number }, pos: number) => {
                 if (node.type.name === 'image' && node.attrs.src === blobUrl) {
                     const transaction = currentEditor.state.tr.delete(pos, pos + node.nodeSize);
                     currentEditor.view.dispatch(transaction);

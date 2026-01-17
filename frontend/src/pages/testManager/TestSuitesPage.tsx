@@ -163,7 +163,7 @@ const TestSuitesPage: React.FC = () => {
 
     useEffect(() => {
         try {
-            const open = (location.state as any)?.openNewSuite;
+            const open = (location.state as { openNewSuite?: boolean } | null)?.openNewSuite;
             if (open) {
                 setIsCreateOpen(true);
                 // clear navigation state

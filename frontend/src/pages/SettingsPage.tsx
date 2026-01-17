@@ -428,7 +428,7 @@ const GeminiTab = () => {
         try {
             console.log("Saving API Key and Model");
 
-            const payload: any = { model: selectedModel };
+            const payload: { model: string; apiKey?: string } = { model: selectedModel };
             if (apiKey) {
                 payload.apiKey = apiKey;
             }

@@ -40,7 +40,7 @@ interface TestCaseTableProps {
     onViewClick?: (item: TestCase) => void;
     onCloneClick?: (item: TestCase) => void;
     isEditMode?: boolean;
-    onUpdate?: (id: string, field: keyof TestCase, value: any) => void;
+    onUpdate?: (id: string, field: keyof TestCase, value: string | number | boolean | Status | Priority) => void;
     // Selection props
     isSelectionMode?: boolean;
     selectedIds?: string[];
@@ -74,7 +74,7 @@ interface SortableRowProps {
     onStatusChange?: (caseId: string, status: Status) => void;
     onViewClick?: (item: TestCase) => void;
     onCloneClick?: (item: TestCase) => void;
-    onUpdate?: (id: string, field: keyof TestCase, value: any) => void;
+    onUpdate?: (id: string, field: keyof TestCase, value: string | number | boolean | Status | Priority) => void;
     getStatusColor: (status: Status) => string;
     // Custom fields and visibility
     customFieldDefinitions?: CustomFieldDefinition[];

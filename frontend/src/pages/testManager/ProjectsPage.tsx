@@ -30,7 +30,7 @@ const ProjectsPage: React.FC = () => {
     // Open the create modal if navigation state requested it (from toolbar)
     useEffect(() => {
         try {
-            const open = (location.state as any)?.openNew;
+            const open = (location.state as { openNew?: boolean } | null)?.openNew;
             if (open) {
                 setIsCreateOpen(true);
                 // Clear the navigation state so it doesn't reopen on refresh/back

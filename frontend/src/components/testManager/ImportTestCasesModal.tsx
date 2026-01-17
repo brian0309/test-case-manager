@@ -300,7 +300,7 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
 
     const transformData = (): CreateTestCaseRequest[] => {
         return csvData.map((row) => {
-            const testCase: CreateTestCaseRequest & { assignedTesterName?: string } = {
+            const testCase: CreateTestCaseRequest & { assignedTesterName?: string; [key: string]: unknown } = {
                 title: '',
             };
 
@@ -318,30 +318,30 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
                         testCase.status = value as Status;
                     } else if (mapping.testCaseField === 'assignedTesterName') {
                         // Store name temporarily for lookup
-                        (testCase as any).assignedTesterName = value;
+                        testCase.assignedTesterName = value;
                     } else {
-                        (testCase as any)[mapping.testCaseField] = value;
+                        testCase[mapping.testCaseField] = value;
                     }
                 }
             });
 
             // Convert tester name to ID if provided
-            if ((testCase as any).assignedTesterName) {
-                const testerName = (testCase as any).assignedTesterName.toLowerCase();
+            if (testCase.assignedTesterName) {
+                const testerName = testCase.assignedTesterName.toLowerCase();
                 const matchedMember = projectMembers.find(
                     (member) => member.name.toLowerCase() === testerName
                 );
                 if (matchedMember) {
                     testCase.assignedTesterId = matchedMember.id;
                 }
-                delete (testCase as any).assignedTesterName;
+                delete testCase.assignedTesterName;
             }
 
             if (Object.keys(customFields).length > 0) {
                 testCase.customFields = customFields;
             }
 
-            return testCase;
+            return testCase as CreateTestCaseRequest;
         });
     };
 
