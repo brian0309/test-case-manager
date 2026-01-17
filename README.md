@@ -1,6 +1,12 @@
 <h1 align="center">Test Case Manager 🧪</h1>
 
 <p align="center">
+   <a href="https://github.com/brian0309/test-case-manager/actions/workflows/ci.yml">
+      <img src="https://github.com/brian0309/test-case-manager/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
+   </a>
+</p>
+
+<p align="center">
    <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.3.3-blue?logo=typescript" />
    <img alt="Backend" src="https://img.shields.io/badge/Backend-100%25%20TypeScript-blueviolet" />
    <img alt="Frontend" src="https://img.shields.io/badge/Frontend-100%25%20TypeScript-blueviolet" />
