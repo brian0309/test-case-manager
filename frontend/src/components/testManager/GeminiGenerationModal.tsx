@@ -63,9 +63,9 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                     credentials: 'include',
                 });
                 if (response.ok) {
-                    const data = await response.json();
-                    if (data.model) {
-                        setSelectedModel(data.model);
+                    const result = await response.json();
+                    if (result.success && result.data && result.data.model) {
+                        setSelectedModel(result.data.model);
                     }
                 }
             } catch (error) {
