@@ -38,7 +38,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
 
     // Project settings
     const [customFields, setCustomFields] = useState<CustomFieldDefinition[]>([]);
-    const [hiddenFields, setHiddenFields] = useState<any>({});
+    const [hiddenFields, setHiddenFields] = useState<Record<string, boolean>>({});
 
     // Load project settings when project changes
     useEffect(() => {
@@ -46,11 +46,6 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
             const loadSettings = async () => {
                 try {
                     await fetchProjectSettings(localCase.projectId);
-                    const settings = projectSettings[localCase.projectId];
-                    if (settings?.testCases) {
-                        setCustomFields(settings.testCases.customFields || []);
-                        setHiddenFields(settings.testCases.hiddenDefaultFields || {});
-                    }
                 } catch (err) {
                     console.error('Failed to load project settings:', err);
                 }
@@ -58,6 +53,15 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
             loadSettings();
         }
     }, [localCase?.projectId, fetchProjectSettings]);
+
+    // Separate effect to update custom fields when projectSettings changes
+    useEffect(() => {
+        if (localCase?.projectId && projectSettings[localCase.projectId]?.testCases) {
+            const settings = projectSettings[localCase.projectId];
+            setCustomFields(settings.testCases.customFields || []);
+            setHiddenFields(settings.testCases.hiddenDefaultFields || {});
+        }
+    }, [localCase?.projectId, projectSettings]);
 
     // Combobox state
     const [isAreaDropdownOpen, setIsAreaDropdownOpen] = useState(false);

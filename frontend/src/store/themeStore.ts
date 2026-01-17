@@ -44,7 +44,7 @@ export const useThemeStore = create<ThemeState>()(
               }
               return;
             }
-          } catch (e) {
+          } catch {
             console.error('Failed to parse theme from localStorage');
           }
         }

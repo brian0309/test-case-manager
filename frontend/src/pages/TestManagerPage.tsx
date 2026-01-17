@@ -133,22 +133,7 @@ const TestManagerPage: React.FC = () => {
             setActiveSuite(suite.name);
             setActiveSuiteId(suite.id);
             setViewMode('cases');
-        } catch (err) {
-            // Error is handled in store
-        }
-    };
-
-    const handleCreateProject = async () => {
-        const name = prompt("Enter Project Name:");
-        if (!name) return;
-
-        try {
-            await createProject({
-                name,
-                description: 'New project workspace',
-                color: 'bg-blue-500',
-            });
-        } catch (err) {
+        } catch {
             // Error is handled in store
         }
     };
@@ -232,7 +217,7 @@ const TestManagerPage: React.FC = () => {
         // API update
         try {
             await updateTestCase(caseId, { [field]: value });
-        } catch (err) {
+        } catch {
             // Revert on error - refetch
             if (activeSuiteId) {
                 fetchTestCases(activeSuiteId);

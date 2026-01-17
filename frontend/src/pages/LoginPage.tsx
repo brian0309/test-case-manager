@@ -12,7 +12,7 @@ const LoginPage: React.FC = () => {
 	const [password, setPassword] = useState<string>("");
 	const navigate = useNavigate();
 
-	const { login, isLoading, error } = useAuthStore();
+	const { login, isLoading } = useAuthStore();
 
 	const handleLogin = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
 		e.preventDefault();
@@ -22,7 +22,7 @@ const LoginPage: React.FC = () => {
 			if (user && !user.isVerified) {
 				navigate("/verify-email");
 			}
-		} catch (error) {
+		} catch {
 			// Error is already set in the store
 		}
 	};

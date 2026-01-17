@@ -77,10 +77,6 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
             const loadSettings = async () => {
                 try {
                     await fetchProjectSettings(testCase.projectId);
-                    const settings = projectSettings[testCase.projectId];
-                    if (settings?.testCases?.customFields) {
-                        setCustomFields(settings.testCases.customFields);
-                    }
                 } catch (err) {
                     console.error('Failed to load project settings:', err);
                 }
@@ -141,7 +137,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
         try {
             await navigator.clipboard.writeText(shareUrl);
             toast.success('Link copied to clipboard');
-        } catch (err) {
+        } catch {
             // Fallback for browsers that don't support clipboard API
             const textArea = document.createElement('textarea');
             textArea.value = shareUrl;

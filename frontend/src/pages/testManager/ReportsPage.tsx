@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { reportingApi } from '../../services/reportingApi';
@@ -56,14 +56,14 @@ const ReportsPage: React.FC = () => {
     
     // Initialize state from URL params or defaults
     const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | 'all' | 'custom'>(
-        (searchParams.get('range') as any) || '30d'
+        (searchParams.get('range') as '7d' | '30d' | '90d' | 'all' | 'custom') || '30d'
     );
     const [customRange, setCustomRange] = useState({
         start: searchParams.get('start') || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         end: searchParams.get('end') || new Date().toISOString().split('T')[0]
     });
     const [groupBy, setGroupBy] = useState<'day' | 'week' | 'month'>(
-        (searchParams.get('groupBy') as any) || 'day'
+        (searchParams.get('groupBy') as 'day' | 'week' | 'month') || 'day'
     );
     
     // Report data
@@ -74,7 +74,7 @@ const ReportsPage: React.FC = () => {
 
     // Sync URL params when state changes
     useEffect(() => {
-        const params: any = { range: dateRange, groupBy };
+        const params: Record<string, string> = { range: dateRange, groupBy };
         if (dateRange === 'custom') {
             params.start = customRange.start;
             params.end = customRange.end;
@@ -83,7 +83,7 @@ const ReportsPage: React.FC = () => {
     }, [dateRange, customRange, groupBy, setSearchParams]);
 
     // Calculate date range
-    const getDateRange = () => {
+    const getDateRange = useCallback(() => {
         if (dateRange === 'custom') {
             return {
                 startDate: new Date(customRange.start).toISOString(),
@@ -113,10 +113,10 @@ const ReportsPage: React.FC = () => {
             startDate: startDate.toISOString(),
             endDate: endDate.toISOString(),
         };
-    };
+    }, [dateRange, customRange]);
 
     // Fetch reports
-    const fetchReports = async () => {
+    const fetchReports = useCallback(async () => {
         if (!activeProject) return;
 
         const range = getDateRange();
@@ -148,19 +148,20 @@ const ReportsPage: React.FC = () => {
             setTrendReport(trends);
             setSuiteReport(suites);
             setHealthReport(health);
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to load reports');
+        } catch (error: unknown) {
+            const message = (error as { message?: string })?.message || 'Failed to load reports';
+            toast.error(message);
             console.error('Error fetching reports:', error);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [activeProject, dateRange, groupBy, getDateRange]);
 
     useEffect(() => {
         if (activeProject) {
             fetchReports();
         }
-    }, [activeProject, dateRange, groupBy, customRange]);
+    }, [activeProject, fetchReports]);
 
     if (!activeProject) {
         return (

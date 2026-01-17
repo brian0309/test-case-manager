@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X, Save, Plus, Trash2, GripVertical, Settings2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTestManagerStore } from '../../store/testManagerStore';
@@ -30,13 +30,7 @@ const ProjectSettingsModal: React.FC<Props> = ({ isOpen, onClose, project }) => 
     const [isLoading, setIsLoading] = useState(false);
 
     // Load settings when modal opens
-    useEffect(() => {
-        if (project && isOpen) {
-            loadSettings();
-        }
-    }, [project, isOpen]);
-
-    const loadSettings = async () => {
+    const loadSettings = useCallback(async () => {
         if (!project) return;
         setIsLoading(true);
         try {
@@ -51,12 +45,18 @@ const ProjectSettingsModal: React.FC<Props> = ({ isOpen, onClose, project }) => 
                     customFields: [],
                 },
             });
-        } catch (error: any) {
+        } catch {
             toast.error('Failed to load project settings');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [project, fetchProjectSettings]);
+
+    useEffect(() => {
+        if (project && isOpen) {
+            loadSettings();
+        }
+    }, [project, isOpen, loadSettings]);
 
     if (!isOpen || !project) return null;
 
@@ -67,8 +67,8 @@ const ProjectSettingsModal: React.FC<Props> = ({ isOpen, onClose, project }) => 
             await updateProjectSettings(project.id, settings);
             toast.success('Settings saved successfully');
             onClose();
-        } catch (error: any) {
-            toast.error(error?.message || 'Failed to save settings');
+        } catch (error: unknown) {
+            toast.error((error as { message?: string })?.message || 'Failed to save settings');
         } finally {
             setIsSaving(false);
         }
