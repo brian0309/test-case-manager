@@ -28,14 +28,14 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
     const [customFields, setCustomFields] = useState<CustomFieldDefinition[]>([]);
 
     // Handle remote field updates from collaborative editing
-    const handleRemoteFieldUpdate = useCallback((fieldName: string, value: string) => {
+    const handleRemoteFieldUpdate = useCallback((fieldName: string, value: string | number | boolean | null) => {
         setLocalCase(prev => {
             // Handle nested custom fields
             if (fieldName.startsWith('customFields.')) {
                 const fieldId = fieldName.replace('customFields.', '');
                 return {
                     ...prev,
-                    customFields: { ...(prev.customFields || {}), [fieldId]: value }
+                    customFields: { ...(prev.customFields || {}), [fieldId]: String(value ?? '') }
                 };
             }
             // Handle regular fields
@@ -77,11 +77,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
             const loadSettings = async () => {
                 try {
                     await fetchProjectSettings(testCase.projectId);
-                    const settings = projectSettings[testCase.projectId];
-                    if (settings?.testCases?.customFields) {
-                        setCustomFields(settings.testCases.customFields);
-                    }
-                } catch (err) {
+                } catch (err: unknown) {
                     console.error('Failed to load project settings:', err);
                 }
             };
@@ -91,9 +87,12 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
 
     // Separate effect to update custom fields when projectSettings changes
     useEffect(() => {
-        if (testCase?.projectId && projectSettings[testCase.projectId]?.testCases?.customFields) {
-            const fields = projectSettings[testCase.projectId].testCases.customFields;
-            setCustomFields(fields);
+        if (testCase?.projectId) {
+            const settings = projectSettings[testCase.projectId];
+            const fields = settings?.testCases?.customFields;
+            if (fields) {
+                setCustomFields(fields);
+            }
         }
     }, [testCase?.projectId, projectSettings]);
 
@@ -141,7 +140,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
         try {
             await navigator.clipboard.writeText(shareUrl);
             toast.success('Link copied to clipboard');
-        } catch (err) {
+        } catch {
             // Fallback for browsers that don't support clipboard API
             const textArea = document.createElement('textarea');
             textArea.value = shareUrl;

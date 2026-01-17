@@ -52,9 +52,9 @@ const ImagePreviewUploader: React.FC<ImagePreviewUploaderProps> = ({
             
             // Clean up local URL
             URL.revokeObjectURL(localPreviewUrl);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Upload failed:', error);
-            toast.error(error.message || 'Failed to upload image');
+            toast.error((error as Error).message || 'Failed to upload image');
             setUploadingImages(prev => prev.filter(img => img.id !== tempId));
             URL.revokeObjectURL(localPreviewUrl);
         }

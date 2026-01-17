@@ -151,9 +151,9 @@ const TestSuitesPage: React.FC = () => {
             if (activeProject) {
                 await fetchTestSuites(activeProject);
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to delete suite:', error);
-            toast.error(error?.message || 'Failed to delete test suite');
+            toast.error((error as Error)?.message || 'Failed to delete test suite');
         } finally {
             setIsDeleting(false);
         }
@@ -163,13 +163,13 @@ const TestSuitesPage: React.FC = () => {
 
     useEffect(() => {
         try {
-            const open = (location.state as any)?.openNewSuite;
+            const open = (location.state as { openNewSuite?: boolean } | null)?.openNewSuite;
             if (open) {
                 setIsCreateOpen(true);
                 // clear navigation state
                 navigate(location.pathname, { replace: true, state: {} });
             }
-        } catch (e) {
+        } catch {
             // ignore
         }
     }, [location, navigate]);

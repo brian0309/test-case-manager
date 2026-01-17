@@ -46,9 +46,10 @@ const TestSuiteCreateModal: React.FC<Props> = ({ isOpen, onClose, projectId }) =
             setActiveSuiteId(suite.id);
             toast.success('Test suite created successfully');
             onClose();
-        } catch (err: any) {
-            setError(err?.message || 'Could not create test suite');
-            toast.error(err?.message || 'Failed to create test suite');
+        } catch (err: unknown) {
+            const errorMessage = (err as Error)?.message || 'Could not create test suite';
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setIsSaving(false);
         }

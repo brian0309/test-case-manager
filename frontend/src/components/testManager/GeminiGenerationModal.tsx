@@ -105,7 +105,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
         
         try {
             const parsed = JSON.parse(cleanText);
-            return Array.isArray(parsed) ? parsed.map((c: any) => ({ ...c, selected: true })) : [];
+            return Array.isArray(parsed) ? parsed.map((c: GeneratedCase) => ({ ...c, selected: true })) : [];
         } catch {
             // Try to recover truncated JSON by finding the last complete object
             if (cleanText.startsWith('[')) {
@@ -122,7 +122,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                     const recovered = cleanText.substring(0, cutPos + 1) + ']';
                     try {
                         const parsed = JSON.parse(recovered);
-                        return Array.isArray(parsed) ? parsed.map((c: any) => ({ ...c, selected: true })) : [];
+                        return Array.isArray(parsed) ? parsed.map((c: GeneratedCase) => ({ ...c, selected: true })) : [];
                     } catch {
                         // Continue trying
                     }
@@ -229,8 +229,9 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                 setGeneratedCases(cases);
             }
 
-        } catch (error: any) {
-            if (error.name === 'AbortError') {
+        } catch (error: unknown) {
+            const errorObj = error as { name?: string; message?: string; error?: { message?: string } };
+            if (errorObj.name === 'AbortError') {
                 toast.error('Generation cancelled');
             } else {
                 console.error('Generation error:', error);
@@ -240,10 +241,10 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                 // Try to get the error message from various possible locations
                 if (typeof error === 'string') {
                     errorMessage = error;
-                } else if (error?.message) {
-                    errorMessage = error.message;
-                } else if (error?.error?.message) {
-                    errorMessage = error.error.message;
+                } else if (errorObj?.message) {
+                    errorMessage = errorObj.message;
+                } else if (errorObj?.error?.message) {
+                    errorMessage = errorObj.error.message;
                 }
                 
                 // Limit error message length for toasts
@@ -292,10 +293,10 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                 action: s.action,
                 expectedResult: s.expectedResult
             })) : [],
-            testDescription: c.description || (c as any).testDescription || '',
+            testDescription: c.description || '',
             preconditions: c.preconditions,
             expectedResult: c.expectedResult || ''
-        } as any)); // Type assertion as TestCase might have more fields
+        } as TestCase));
 
         onAddCases(newTestCases);
         onClose();

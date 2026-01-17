@@ -130,8 +130,8 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
             setSelectedSuiteFilter('all');
             setSelectedGroupId('');
             onClose();
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to create test run');
+        } catch (error: unknown) {
+            toast.error((error as Error).message || 'Failed to create test run');
         } finally {
             setIsSubmitting(false);
         }
@@ -305,7 +305,7 @@ const EditTestRunModal: React.FC<EditTestRunModalProps> = ({
                 groupId: selectedGroupId || null,
             });
             onClose();
-        } catch (error) {
+        } catch {
             // Error handled by parent
         } finally {
             setIsSubmitting(false);
@@ -409,8 +409,8 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                 setCurrentIndex(currentIndex + 1);
                 setActualResult('');
             }
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to update status');
+        } catch (error: unknown) {
+            toast.error((error as Error).message || 'Failed to update status');
         } finally {
             setIsUpdating(false);
         }
@@ -421,8 +421,8 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
             await onComplete();
             toast.success('Test run completed!');
             onClose();
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to complete run');
+        } catch (error: unknown) {
+            toast.error((error as Error).message || 'Failed to complete run');
         }
     };
 
@@ -657,8 +657,8 @@ const TestRunsPage: React.FC = () => {
         try {
             const runs = await testRunApi.getTestRuns(activeProject);
             setTestRuns(runs as unknown as TestRunListItem[]);
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to load test runs');
+        } catch (error: unknown) {
+            toast.error((error as Error).message || 'Failed to load test runs');
         } finally {
             setIsLoading(false);
         }
@@ -679,7 +679,7 @@ const TestRunsPage: React.FC = () => {
                 createdAt: g.createdAt,
                 updatedAt: g.updatedAt,
             })));
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to fetch groups:', error);
         }
     }, [activeProject]);
@@ -716,8 +716,8 @@ const TestRunsPage: React.FC = () => {
             await testRunApi.createTestRunGroup(activeProject, { name, description, color });
             toast.success('Group created!');
             fetchGroups();
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to create group');
+        } catch (error: unknown) {
+            toast.error((error as Error).message || 'Failed to create group');
             throw error;
         }
     };
@@ -730,8 +730,8 @@ const TestRunsPage: React.FC = () => {
             fetchGroups();
             setEditingGroup(undefined);
             setIsCreateGroupModalOpen(false);
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to update group');
+        } catch (error: unknown) {
+            toast.error((error as Error).message || 'Failed to update group');
             throw error;
         }
     };
@@ -750,8 +750,8 @@ const TestRunsPage: React.FC = () => {
                 setSelectedGroupFilter('all');
             }
             fetchGroups();
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to delete group');
+        } catch (error: unknown) {
+            toast.error((error as Error).message || 'Failed to delete group');
         } finally {
             setIsDeleteGroupModalOpen(false);
             setDeleteGroupId(null);
@@ -764,8 +764,8 @@ const TestRunsPage: React.FC = () => {
             await testRunApi.deleteTestRun(runId);
             toast.success('Test run deleted');
             fetchRuns();
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to delete');
+        } catch (error: unknown) {
+            toast.error((error as Error).message || 'Failed to delete');
         }
     };
 
@@ -774,8 +774,8 @@ const TestRunsPage: React.FC = () => {
             await testRunApi.cloneTestRun(runId);
             toast.success('Test run cloned');
             fetchRuns();
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to clone');
+        } catch (error: unknown) {
+            toast.error((error as Error).message || 'Failed to clone');
         }
     };
 
@@ -792,8 +792,8 @@ const TestRunsPage: React.FC = () => {
             });
             toast.success('Test run updated');
             fetchRuns();
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to update test run');
+        } catch (error: unknown) {
+            toast.error((error as Error).message || 'Failed to update test run');
             throw error;
         }
     };
@@ -803,8 +803,8 @@ const TestRunsPage: React.FC = () => {
             const run = await testRunApi.getTestRun(runId);
             setExecuteRun(run as unknown as TestRun);
             setIsExecuteModalOpen(true);
-        } catch (error: any) {
-            toast.error(error.message || 'Failed to load run');
+        } catch (error: unknown) {
+            toast.error((error as Error).message || 'Failed to load run');
         }
     };
 

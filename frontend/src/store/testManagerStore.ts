@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ViewMode, TestCase, Project, TestSuite, Priority, Status, Tester, HistoryEntry } from '../types/testManager';
+import { ViewMode, TestCase, Project, TestSuite, Priority, Status, Tester, HistoryEntry, ProjectSettings } from '../types/testManager';
 import * as testManagerApi from '../services/testManagerApi';
 import {
     ProjectResponse,
@@ -90,7 +90,7 @@ interface TestManagerStore {
     testSuites: TestSuite[];
     isLoading: boolean;
     error: string | null;
-    projectSettings: Record<string, any>;
+    projectSettings: Record<string, ProjectSettings>;
 
     // Filter State
     isFilterModalOpen: boolean;
@@ -134,9 +134,9 @@ interface TestManagerStore {
     removeProjectMember: (projectId: string, memberId: string) => Promise<Project>;
     
     // Project Settings actions
-    fetchProjectSettings: (projectId: string) => Promise<any>;
-    updateProjectSettings: (projectId: string, settings: any) => Promise<any>;
-    getProjectSettings: (projectId: string) => any;
+    fetchProjectSettings: (projectId: string) => Promise<ProjectSettings>;
+    updateProjectSettings: (projectId: string, settings: ProjectSettings) => Promise<ProjectSettings>;
+    getProjectSettings: (projectId: string) => ProjectSettings;
 
     // Test Suite actions
     fetchTestSuites: (projectId: string) => Promise<void>;
@@ -190,7 +190,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
             testSuites: [] as TestSuite[],
             isLoading: false,
             error: null as string | null,
-            projectSettings: {} as Record<string, any>,
+            projectSettings: {} as Record<string, ProjectSettings>,
 
             // Filter State
             isFilterModalOpen: false,
@@ -253,8 +253,8 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         isSelectionMode: false,
                         isLoading: false,
                     }));
-                } catch (error: any) {
-                    set({ error: error.message, isLoading: false });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
                     throw error;
                 }
             },
@@ -268,8 +268,8 @@ export const useTestManagerStore = create<TestManagerStore>()(
                     const response = await testManagerApi.getProjects();
                     const projects = response.map(mapProjectResponse);
                     set({ projects });
-                } catch (error: any) {
-                    set({ error: error.message });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message });
                 }
             },
 
@@ -283,8 +283,8 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         isLoading: false,
                     }));
                     return project;
-                } catch (error: any) {
-                    set({ error: error.message, isLoading: false });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
                     throw error;
                 }
             },
@@ -299,8 +299,8 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         isLoading: false,
                     }));
                     return project;
-                } catch (error: any) {
-                    set({ error: error.message, isLoading: false });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
                     throw error;
                 }
             },
@@ -313,8 +313,8 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         projects: state.projects.filter((p) => p.id !== id),
                         isLoading: false,
                     }));
-                } catch (error: any) {
-                    set({ error: error.message, isLoading: false });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
                     throw error;
                 }
             },
@@ -329,8 +329,8 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         isLoading: false,
                     }));
                     return project;
-                } catch (error: any) {
-                    set({ error: error.message, isLoading: false });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
                     throw error;
                 }
             },
@@ -345,8 +345,8 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         isLoading: false,
                     }));
                     return project;
-                } catch (error: any) {
-                    set({ error: error.message, isLoading: false });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
                     throw error;
                 }
             },
@@ -361,7 +361,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         projectSettings: { ...state.projectSettings, [projectId]: settings }
                     }));
                     return settings;
-                } catch (error: any) {
+                } catch (error: unknown) {
                     console.error('Error fetching project settings:', error);
                     throw error;
                 }
@@ -374,7 +374,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         projectSettings: { ...state.projectSettings, [projectId]: updatedSettings }
                     }));
                     return updatedSettings;
-                } catch (error: any) {
+                } catch (error: unknown) {
                     console.error('Error updating project settings:', error);
                     throw error;
                 }
@@ -394,12 +394,12 @@ export const useTestManagerStore = create<TestManagerStore>()(
                     const response = await testManagerApi.getTestSuites(projectId);
                     const testSuites = response.map(mapTestSuiteResponse);
                     set({ testSuites });
-                } catch (error: any) {
-                    set({ error: error.message });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message });
                 }
             },
 
-            createTestSuite: async (projectId: string, data: any) => {
+            createTestSuite: async (projectId: string, data: CreateTestSuiteRequest) => {
                 set({ isLoading: true, error: null });
                 try {
                     const response = await testManagerApi.createTestSuite(projectId, data);
@@ -409,13 +409,13 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         isLoading: false,
                     }));
                     return suite;
-                } catch (error: any) {
-                    set({ error: error.message, isLoading: false });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
                     throw error;
                 }
             },
 
-            updateTestSuite: async (id: string, data: any) => {
+            updateTestSuite: async (id: string, data: UpdateTestSuiteRequest) => {
                 set({ isLoading: true, error: null });
                 try {
                     const response = await testManagerApi.updateTestSuite(id, data);
@@ -425,8 +425,8 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         isLoading: false,
                     }));
                     return suite;
-                } catch (error: any) {
-                    set({ error: error.message, isLoading: false });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
                     throw error;
                 }
             },
@@ -439,8 +439,8 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         testSuites: state.testSuites.filter((s) => s.id !== id),
                         isLoading: false,
                     }));
-                } catch (error: any) {
-                    set({ error: error.message, isLoading: false });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
                     throw error;
                 }
             },
@@ -454,8 +454,8 @@ export const useTestManagerStore = create<TestManagerStore>()(
                     const response = await testManagerApi.getTestCases(suiteId);
                     const testCases = response.map(mapTestCaseResponse);
                     set({ testCases });
-                } catch (error: any) {
-                    set({ error: error.message });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message });
                 }
             },
 
@@ -465,12 +465,12 @@ export const useTestManagerStore = create<TestManagerStore>()(
                     const response = await testManagerApi.getTestCasesByProject(projectId);
                     const testCases = response.map(mapTestCaseResponse);
                     set({ testCases });
-                } catch (error: any) {
-                    set({ error: error.message });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message });
                 }
             },
 
-            createTestCase: async (suiteId: string, data: any) => {
+            createTestCase: async (suiteId: string, data: CreateTestCaseRequest) => {
                 set({ isLoading: true, error: null });
                 try {
                     const response = await testManagerApi.createTestCase(suiteId, data);
@@ -480,13 +480,13 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         isLoading: false,
                     }));
                     return testCase;
-                } catch (error: any) {
-                    set({ error: error.message, isLoading: false });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
                     throw error;
                 }
             },
 
-            updateTestCase: async (id: string, data: any) => {
+            updateTestCase: async (id: string, data: UpdateTestCaseRequest) => {
                 set({ isLoading: true, error: null });
                 try {
                     const response = await testManagerApi.updateTestCase(id, data);
@@ -496,8 +496,8 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         isLoading: false,
                     }));
                     return testCase;
-                } catch (error: any) {
-                    set({ error: error.message, isLoading: false });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
                     throw error;
                 }
             },
@@ -517,8 +517,8 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         };
                     });
                     return clonedTestCase;
-                } catch (error: any) {
-                    set({ error: error.message, isLoading: false });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
                     throw error;
                 }
             },
@@ -531,13 +531,13 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         testCases: state.testCases.filter((tc) => tc.id !== id),
                         isLoading: false,
                     }));
-                } catch (error: any) {
-                    set({ error: error.message, isLoading: false });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
                     throw error;
                 }
             },
 
-            bulkUpdateStatus: async (ids: string[], status: any) => {
+            bulkUpdateStatus: async (ids: string[], status: Status) => {
                 set({ isLoading: true, error: null });
                 try {
                     await testManagerApi.bulkUpdateStatus(ids, status);
@@ -547,8 +547,8 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         ),
                         isLoading: false,
                     }));
-                } catch (error: any) {
-                    set({ error: error.message, isLoading: false });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
                     throw error;
                 }
             },
@@ -556,29 +556,29 @@ export const useTestManagerStore = create<TestManagerStore>()(
             // =========================================================================
             // LOCAL STATE ACTIONS (for optimistic updates and legacy support)
             // =========================================================================
-            setTestCases: (casesOrUpdater: any) => {
+            setTestCases: (casesOrUpdater: TestCase[] | ((current: TestCase[]) => TestCase[])) => {
                 if (typeof casesOrUpdater === 'function') {
                     set((state) => ({ testCases: casesOrUpdater(state.testCases) }));
                 } else {
                     set({ testCases: casesOrUpdater });
                 }
             },
-            setTestSuites: (suitesOrUpdater: any) => {
+            setTestSuites: (suitesOrUpdater: TestSuite[] | ((current: TestSuite[]) => TestSuite[])) => {
                 if (typeof suitesOrUpdater === 'function') {
                     set((state) => ({ testSuites: suitesOrUpdater(state.testSuites) }));
                 } else {
                     set({ testSuites: suitesOrUpdater });
                 }
             },
-            addTestCase: (testCase: any) => set((state) => ({ testCases: [testCase, ...state.testCases] })),
-            updateTestCaseLocal: (updatedCase: any) => set((state) => ({
+            addTestCase: (testCase: TestCase) => set((state) => ({ testCases: [testCase, ...state.testCases] })),
+            updateTestCaseLocal: (updatedCase: TestCase) => set((state) => ({
                 testCases: state.testCases.map((c) => (c.id === updatedCase.id ? updatedCase : c)),
             })),
             deleteTestCaseLocal: (id: string) => set((state) => ({
                 testCases: state.testCases.filter((c) => c.id !== id),
             })),
-            setProjects: (projects: any) => set({ projects }),
-            addProject: (project: any) => set((state) => ({ projects: [project, ...state.projects] })),
+            setProjects: (projects: Project[]) => set({ projects }),
+            addProject: (project: Project) => set((state) => ({ projects: [project, ...state.projects] })),
         }),
         {
             name: 'test-manager-storage', // localStorage key

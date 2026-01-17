@@ -1,5 +1,5 @@
 import React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuthStore } from "../store/authStore";
@@ -45,25 +45,24 @@ const EmailVerificationPage: React.FC = () => {
 		}
 	};
 
-	const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+	const handleSubmit = useCallback(async (e: React.FormEvent): Promise<void> => {
 		e.preventDefault();
 		const verificationCode = code.join("");
 		try {
 			await verifyEmail(verificationCode);
 			navigate("/");
 			toast.success("Email verified successfully");
-		} catch (error) {
-			console.log(error);
+		} catch {
+			// Error is already handled by verifyEmail
 		}
-	};
+	}, [code, verifyEmail, navigate]);
 
 	const handleResendCode = async (): Promise<void> => {
 		try {
 			await resendVerificationCode();
 			toast.success("Verification code sent to your email");
-		} catch (error) {
+		} catch {
 			// Error is already set in the store
-			console.log(error);
 		}
 	};
 
@@ -73,7 +72,7 @@ const EmailVerificationPage: React.FC = () => {
 			const submitEvent = { preventDefault: () => {} } as React.FormEvent;
 			handleSubmit(submitEvent);
 		}
-	}, [code]);
+	}, [code, handleSubmit]);
 
 	return (
 		<div className='max-w-md w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl overflow-hidden'>

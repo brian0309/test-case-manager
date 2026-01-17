@@ -14,11 +14,14 @@ interface CollaboratingUser {
   avatar?: string;
 }
 
+// Define a union type for field values
+type FieldValue = string | number | boolean | null;
+
 interface UseCollaborativeEditingOptions {
   /** The test case being edited */
   testCase: TestCase | null;
   /** Callback to update the local test case state */
-  onFieldUpdate: (field: string, value: any) => void;
+  onFieldUpdate: (field: string, value: FieldValue) => void;
   /** Debounce delay in ms for emitting field changes (default: 300ms) */
   debounceMs?: number;
 }
@@ -27,7 +30,7 @@ interface UseCollaborativeEditingReturn {
   /** List of users currently editing this test case */
   collaboratingUsers: CollaboratingUser[];
   /** Emit a field change to other collaborators (debounced) */
-  emitFieldChange: (field: string, value: any) => void;
+  emitFieldChange: (field: string, value: FieldValue) => void;
   /** Field currently being edited by another user */
   remoteEditingField: { field: string; userName: string } | null;
   /** Whether collaborative editing is active */
@@ -47,7 +50,7 @@ export function useCollaborativeEditing({
   // Track debounce timers for each field
   const debounceTimers = useRef<Map<string, NodeJS.Timeout>>(new Map());
   // Track the last emitted value to avoid duplicate emissions
-  const lastEmittedValues = useRef<Map<string, any>>(new Map());
+  const lastEmittedValues = useRef<Map<string, FieldValue>>(new Map());
   // Clear remote editing indicator after a delay
   const remoteEditingTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -155,7 +158,7 @@ export function useCollaborativeEditing({
 
   // Debounced emit function for field changes
   const emitFieldChange = useCallback(
-    (field: string, value: any) => {
+    (field: string, value: FieldValue) => {
       if (!testCaseId || !projectId || !suiteId || !user || testCaseId.startsWith("new-")) {
         return;
       }
@@ -195,9 +198,10 @@ export function useCollaborativeEditing({
 
   // Cleanup all debounce timers on unmount
   useEffect(() => {
+    const timers = debounceTimers.current;
     return () => {
-      debounceTimers.current.forEach((timer) => clearTimeout(timer));
-      debounceTimers.current.clear();
+      timers.forEach((timer) => clearTimeout(timer));
+      timers.clear();
     };
   }, []);
 

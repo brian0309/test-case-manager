@@ -55,9 +55,10 @@ const TestSuiteEditModal: React.FC<Props> = ({ isOpen, onClose, suite, projectId
             }
             toast.success('Test suite updated successfully');
             onClose();
-        } catch (err: any) {
-            setError(err?.message || 'Could not update test suite');
-            toast.error(err?.message || 'Failed to update test suite');
+        } catch (err: unknown) {
+            const errorMessage = (err as Error)?.message || 'Could not update test suite';
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setIsSaving(false);
         }

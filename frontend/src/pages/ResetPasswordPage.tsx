@@ -29,9 +29,9 @@ const ResetPasswordPage: React.FC = () => {
 			setTimeout(() => {
 				navigate("/login");
 			}, 2000);
-		} catch (error: any) {
+		} catch (error: unknown) {
 			console.error(error);
-			toast.error(error?.message || "Error resetting password");
+			toast.error((error as Error)?.message || "Error resetting password");
 		}
 	};
 

@@ -17,7 +17,7 @@ export interface AuthStoreState {
   signup: (email: string, password: string, name: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  verifyEmail: (code: string) => Promise<any>;
+  verifyEmail: (code: string) => Promise<{ user: User; success: boolean }>;
   resendVerificationCode: () => Promise<void>;
   checkAuth: () => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;

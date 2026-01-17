@@ -54,9 +54,9 @@ const ProjectMembersModal: React.FC<Props> = ({ projectId, currentUserId, onClos
             setEmail('');
             setSuccessMessage('Member added successfully!');
             setTimeout(() => setSuccessMessage(null), 3000);
-        } catch (err: any) {
+        } catch (err: unknown) {
             // Backend returns specific error messages
-            const message = err?.message || 'Failed to add member';
+            const message = (err as Error)?.message || 'Failed to add member';
             if (message.includes('User not found')) {
                 setError('No user found with that email address');
             } else if (message.includes('already a member')) {
@@ -79,8 +79,8 @@ const ProjectMembersModal: React.FC<Props> = ({ projectId, currentUserId, onClos
             await fetchProjects(); // Refresh projects
             setSuccessMessage('Member removed');
             setTimeout(() => setSuccessMessage(null), 3000);
-        } catch (err: any) {
-            setError(err?.message || 'Failed to remove member');
+        } catch (err: unknown) {
+            setError((err as Error)?.message || 'Failed to remove member');
         } finally {
             setRemovingMemberId(null);
         }

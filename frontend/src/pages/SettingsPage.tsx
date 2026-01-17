@@ -266,12 +266,13 @@ const SecurityTab = () => {
             setCurrentPassword("");
             setNewPassword("");
             setConfirmNewPassword("");
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
-            if (error?.response && error.response.status === 400) {
+            const axiosError = error as { response?: { status?: number }; message?: string };
+            if (axiosError?.response && axiosError.response.status === 400) {
                 setFormError("Current password is incorrect");
             } else {
-                setFormError(error?.message || "Error changing password. Please try again.");
+                setFormError(axiosError?.message || "Error changing password. Please try again.");
             }
         }
     };
@@ -427,7 +428,7 @@ const GeminiTab = () => {
         try {
             console.log("Saving API Key and Model");
 
-            const payload: any = { model: selectedModel };
+            const payload: { model: string; apiKey?: string } = { model: selectedModel };
             if (apiKey) {
                 payload.apiKey = apiKey;
             }
@@ -439,9 +440,10 @@ const GeminiTab = () => {
                 setApiKey("");
                 setHasExistingKey(true);
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
-            toast.error(error.response?.data?.message || "Failed to save API settings");
+            const axiosError = error as { response?: { data?: { message?: string } } };
+            toast.error(axiosError.response?.data?.message || "Failed to save API settings");
         } finally {
             setIsLoading(false);
         }

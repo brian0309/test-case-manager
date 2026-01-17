@@ -6,6 +6,7 @@
 
 import axios, { AxiosError } from "axios";
 import { API_URL } from "../utils/api";
+import { ProjectSettings } from "../types/testManager";
 import {
   ApiResponse,
   ApiErrorResponse,
@@ -164,9 +165,9 @@ export const removeProjectMember = async (
 /**
  * Get project settings
  */
-export const getProjectSettings = async (projectId: string): Promise<any> => {
+export const getProjectSettings = async (projectId: string): Promise<ProjectSettings> => {
   try {
-    const response = await axios.get<ApiResponse<any>>(
+    const response = await axios.get<ApiResponse<ProjectSettings>>(
       `${API_URL}/projects/${projectId}/settings`
     );
     if (!response.data.data) {
@@ -183,10 +184,10 @@ export const getProjectSettings = async (projectId: string): Promise<any> => {
  */
 export const updateProjectSettings = async (
   projectId: string,
-  settings: any
-): Promise<any> => {
+  settings: ProjectSettings
+): Promise<ProjectSettings> => {
   try {
-    const response = await axios.put<ApiResponse<any>>(
+    const response = await axios.put<ApiResponse<ProjectSettings>>(
       `${API_URL}/projects/${projectId}/settings`,
       settings
     );

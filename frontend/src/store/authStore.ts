@@ -84,10 +84,10 @@ export const useAuthStore = create<AuthStoreState>((set) => ({
 		});
 	},
 
-	verifyEmail: async (code: string): Promise<any> => {
+	verifyEmail: async (code: string): Promise<{ user: User; success: boolean }> => {
 		set({ isLoading: true, error: null });
 		try {
-			const response = await axios.post<{ user: User }>(`${API_URL}/auth/verify-email`, { code });
+			const response = await axios.post<{ user: User; success: boolean }>(`${API_URL}/auth/verify-email`, { code });
 			set({ user: response.data.user, isAuthenticated: true, isLoading: false });
 			return response.data;
 		} catch (error) {
@@ -114,7 +114,7 @@ export const useAuthStore = create<AuthStoreState>((set) => ({
 		try {
 			const response = await axios.get<{ user: User }>(`${API_URL}/auth/check-auth`);
 			set({ user: response.data.user, isAuthenticated: true, isCheckingAuth: false });
-		} catch (error) {
+		} catch {
 			set({ error: null, isCheckingAuth: false, isAuthenticated: false });
 		}
 	},

@@ -17,7 +17,7 @@ import { useProjectPresence } from '../../hooks/useProjectPresence';
 import { TestCase, Status, Priority, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
 import { reorderTestCases, getTestCase, getTestSuite, bulkImportTestCases } from '../../services/testManagerApi';
 import { exportTestCasesToCSV, ExportColumn } from '../../utils/exportTestCases';
-import { CreateTestCaseRequest } from '../../types/api/testManager.api';
+import { CreateTestCaseRequest, UpdateTestCaseRequest } from '../../types/api/testManager.api';
 import { Sparkles, GripVertical, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
 
 const TestCasesPage: React.FC = () => {
@@ -263,7 +263,7 @@ const TestCasesPage: React.FC = () => {
     // Open modal if navigation state asked for it (from toolbar quick-add)
     useEffect(() => {
         try {
-            const open = (location.state as any)?.openNewCase;
+            const open = (location.state as { openNewCase?: boolean } | null)?.openNewCase;
             if (open) {
                 const newCase: TestCase = {
                     id: `new-${Date.now()}`,
@@ -287,7 +287,7 @@ const TestCasesPage: React.FC = () => {
                 // clear navigation state so it doesn't reopen on refresh/back
                 navigate(location.pathname, { replace: true, state: {} });
             }
-        } catch (e) {
+        } catch {
             // ignore
         }
     }, [location, navigate, activeProject, activeSuite, activeArea]);
@@ -319,12 +319,12 @@ const TestCasesPage: React.FC = () => {
         setSelectedCase(item);
     };
 
-    const handleInlineUpdate = (caseId: string, field: keyof TestCase, value: any) => {
-        updateTestCase(caseId, { [field]: value } as any);
+    const handleInlineUpdate = (caseId: string, field: keyof TestCase, value: string | boolean | number | Status | Priority) => {
+        updateTestCase(caseId, { [field]: value } as UpdateTestCaseRequest);
     };
 
     const handleStatusChange = (caseId: string, status: Status) => {
-        updateTestCase(caseId, { status: status, lastModified: new Date().toISOString() } as any);
+        updateTestCase(caseId, { status: status });
     };
 
     const handleSaveCase = async (updatedCase: TestCase): Promise<TestCase | void> => {
@@ -336,11 +336,11 @@ const TestCasesPage: React.FC = () => {
                 status: updatedCase.status,
                 area: updatedCase.area,
                 expectedResult: updatedCase.expectedResult,
-                testDescription: (updatedCase as any).testDescription,
-                stepsContent: (updatedCase as any).stepsContent,
+                testDescription: updatedCase.testDescription,
+                stepsContent: updatedCase.stepsContent,
                 comments: updatedCase.comments,
                 customFields: updatedCase.customFields,
-            } as any);
+            });
             // Don't close modal - auto-save should keep it open
             return;
         }
@@ -358,11 +358,11 @@ const TestCasesPage: React.FC = () => {
             status: updatedCase.status,
             area: updatedCase.area,
             expectedResult: updatedCase.expectedResult,
-            testDescription: (updatedCase as any).testDescription,
-            stepsContent: (updatedCase as any).stepsContent,
+            testDescription: updatedCase.testDescription,
+            stepsContent: updatedCase.stepsContent,
             comments: updatedCase.comments,
             customFields: updatedCase.customFields,
-        } as any);
+        });
 
         // Return the created case so the modal can update its state with the real ID
         return createdCase;
@@ -450,11 +450,10 @@ const TestCasesPage: React.FC = () => {
                 status: testCase.status,
                 area: testCase.area,
                 expectedResult: (testCase.steps && testCase.steps.length > 0) ? testCase.steps[testCase.steps.length - 1].expectedResult : '',
-                testDescription: (testCase as any).testDescription || '',
+                testDescription: testCase.testDescription || '',
                 stepsContent: stepsHtml,
-                steps: testCase.steps, // Also save structured steps if backend supports it
                 comments: '',
-            } as any);
+            });
         }
         toast.success(`Added ${cases.length} test cases`);
     };
@@ -600,10 +599,10 @@ const TestCasesPage: React.FC = () => {
                             status: updatedCase.status,
                             area: updatedCase.area,
                             expectedResult: updatedCase.expectedResult,
-                            stepsContent: (updatedCase as any).stepsContent,
+                            stepsContent: updatedCase.stepsContent,
                             comments: updatedCase.comments,
                             customFields: updatedCase.customFields,
-                        } as any);
+                        });
                         setViewCase(prev => prev ? { ...prev, ...updatedCase } : updatedCase); // Update local state to reflect changes
                     }}
                     onNavigate={idx => setViewCase(displayedCases[idx])}

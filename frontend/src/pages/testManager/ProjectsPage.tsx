@@ -30,13 +30,13 @@ const ProjectsPage: React.FC = () => {
     // Open the create modal if navigation state requested it (from toolbar)
     useEffect(() => {
         try {
-            const open = (location.state as any)?.openNew;
+            const open = (location.state as { openNew?: boolean } | null)?.openNew;
             if (open) {
                 setIsCreateOpen(true);
                 // Clear the navigation state so it doesn't reopen on refresh/back
                 navigate(location.pathname, { replace: true, state: {} });
             }
-        } catch (e) {
+        } catch {
             // ignore
         }
     }, [location, navigate]);
@@ -73,9 +73,9 @@ const ProjectsPage: React.FC = () => {
             await deleteProject(projectToDelete.id);
             setProjectToDelete(null);
             toast.success(`Project "${projectName}" deleted successfully`);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to delete project:', error);
-            toast.error(error?.message || 'Failed to delete project');
+            toast.error((error as Error)?.message || 'Failed to delete project');
         } finally {
             setIsDeleting(false);
         }

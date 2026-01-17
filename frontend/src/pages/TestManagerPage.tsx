@@ -5,7 +5,7 @@ import TestCaseTable from '../components/testManager/TestCaseTable';
 import TestCaseModal from '../components/testManager/TestCaseModal';
 import TestSuiteList from '../components/testManager/TestSuiteList';
 import ProjectList from '../components/testManager/ProjectList';
-import { TestCase, Priority, Status } from '../types/testManager';
+import { TestCase, Priority, Status, ViewMode } from '../types/testManager';
 import { useTestManagerStore } from '../store/testManagerStore';
 import { Loader } from 'lucide-react';
 
@@ -97,7 +97,7 @@ const TestManagerPage: React.FC = () => {
         setSelectedCase(item);
     };
 
-    const handleViewChange = (mode: any) => {
+    const handleViewChange = (mode: ViewMode) => {
         setViewMode(mode);
         if (mode === 'projects') {
             setActiveSuite(null);
@@ -133,7 +133,7 @@ const TestManagerPage: React.FC = () => {
             setActiveSuite(suite.name);
             setActiveSuiteId(suite.id);
             setViewMode('cases');
-        } catch (err) {
+        } catch {
             // Error is handled in store
         }
     };
@@ -148,7 +148,7 @@ const TestManagerPage: React.FC = () => {
                 description: 'New project workspace',
                 color: 'bg-blue-500',
             });
-        } catch (err) {
+        } catch {
             // Error is handled in store
         }
     };
@@ -201,7 +201,7 @@ const TestManagerPage: React.FC = () => {
                 status: updatedCase.status,
                 area: updatedCase.area,
                 expectedResult: updatedCase.expectedResult,
-                testDescription: (updatedCase as any).testDescription,
+                testDescription: updatedCase.testDescription,
                 stepsContent: updatedCase.stepsContent,
                 comments: updatedCase.comments,
             });
@@ -214,7 +214,7 @@ const TestManagerPage: React.FC = () => {
                 status: updatedCase.status,
                 area: updatedCase.area,
                     expectedResult: updatedCase.expectedResult,
-                    testDescription: (updatedCase as any).testDescription,
+                    testDescription: updatedCase.testDescription,
                     stepsContent: updatedCase.stepsContent,
                     comments: updatedCase.comments,
             });
@@ -222,7 +222,7 @@ const TestManagerPage: React.FC = () => {
     };
 
     // Inline update handler for the Table Edit Mode
-    const handleInlineUpdate = async (caseId: string, field: keyof TestCase, value: any) => {
+    const handleInlineUpdate = async (caseId: string, field: keyof TestCase, value: string | number | boolean | Status | Priority) => {
         // Optimistic update
         const testCase = testCases.find(tc => tc.id === caseId);
         if (testCase) {
@@ -232,7 +232,7 @@ const TestManagerPage: React.FC = () => {
         // API update
         try {
             await updateTestCase(caseId, { [field]: value });
-        } catch (err) {
+        } catch {
             // Revert on error - refetch
             if (activeSuiteId) {
                 fetchTestCases(activeSuiteId);

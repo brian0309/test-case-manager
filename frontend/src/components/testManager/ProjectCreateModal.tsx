@@ -52,9 +52,10 @@ const ProjectCreateModal: React.FC<Props> = ({ isOpen, onClose }) => {
             await fetchProjects();
             toast.success('Project created successfully');
             onClose();
-        } catch (err: any) {
-            setError(err?.message || 'Could not create project');
-            toast.error(err?.message || 'Failed to create project');
+        } catch (err: unknown) {
+            const errorMessage = (err as Error)?.message || 'Could not create project';
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setIsSaving(false);
         }

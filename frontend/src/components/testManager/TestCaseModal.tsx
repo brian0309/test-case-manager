@@ -38,7 +38,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
 
     // Project settings
     const [customFields, setCustomFields] = useState<CustomFieldDefinition[]>([]);
-    const [hiddenFields, setHiddenFields] = useState<any>({});
+    const [hiddenFields, setHiddenFields] = useState<Record<string, boolean>>({});
 
     // Load project settings when project changes
     useEffect(() => {
@@ -46,11 +46,6 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
             const loadSettings = async () => {
                 try {
                     await fetchProjectSettings(localCase.projectId);
-                    const settings = projectSettings[localCase.projectId];
-                    if (settings?.testCases) {
-                        setCustomFields(settings.testCases.customFields || []);
-                        setHiddenFields(settings.testCases.hiddenDefaultFields || {});
-                    }
                 } catch (err) {
                     console.error('Failed to load project settings:', err);
                 }
@@ -59,12 +54,21 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
         }
     }, [localCase?.projectId, fetchProjectSettings]);
 
+    // Separate effect to update custom fields when projectSettings changes
+    useEffect(() => {
+        if (localCase?.projectId && projectSettings[localCase.projectId]?.testCases) {
+            const settings = projectSettings[localCase.projectId];
+            setCustomFields(settings.testCases?.customFields || []);
+            setHiddenFields((settings.testCases?.hiddenDefaultFields as Record<string, boolean>) || {});
+        }
+    }, [localCase?.projectId, projectSettings]);
+
     // Combobox state
     const [isAreaDropdownOpen, setIsAreaDropdownOpen] = useState(false);
     const areaRef = useRef<HTMLDivElement>(null);
 
     // Collaborative editing - handle remote field updates
-    const handleRemoteFieldUpdate = useCallback((field: string, value: any) => {
+    const handleRemoteFieldUpdate = useCallback((field: string, value: string | number | boolean | null) => {
         setLocalCase(prev => {
             if (!prev) return null;
             return { ...prev, [field]: value };
@@ -117,9 +121,9 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
             savedTimeoutRef.current = setTimeout(() => {
                 setSaveStatus('idle');
             }, 2000);
-        } catch (err: any) {
+        } catch (err: unknown) {
             setSaveStatus('error');
-            setError(err?.message || 'Failed to save changes');
+            setError((err as Error)?.message || 'Failed to save changes');
         }
     }, [onSave]);
 
@@ -225,8 +229,8 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
             }
             return value || 'Empty';
         }
-        if (typeof value === 'object' && 'name' in value) {
-            return (value as any).name; // For Tester objects
+        if (typeof value === 'object' && value !== null && 'name' in value) {
+            return (value as { name: string }).name; // For Tester objects
         }
         return String(value);
     };
