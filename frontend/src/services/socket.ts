@@ -130,11 +130,11 @@ class SocketService {
       }
     });
 
-    this.socket.on("disconnect", (reason) => {
+    this.socket.on("disconnect", (_reason) => {
       this.isConnecting = false;
     });
 
-    this.socket.on("connect_error", (error) => {
+    this.socket.on("connect_error", (_error) => {
       this.isConnecting = false;
       this.reconnectAttempts++;
     });

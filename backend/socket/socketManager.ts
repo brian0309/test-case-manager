@@ -136,7 +136,7 @@ class SocketManager {
 
         socket.userId = decoded.userId;
         next();
-      } catch (error) {
+      } catch {
         next(new Error("Authentication failed"));
       }
     });
@@ -289,7 +289,7 @@ class SocketManager {
       });
 
       // Handle disconnect
-      socket.on("disconnect", (reason) => {
+      socket.on("disconnect", (_reason) => {
         // Clean up project presence
         const currentProjectId = socket.data.currentProjectId;
         if (currentProjectId) {

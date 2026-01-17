@@ -152,99 +152,73 @@ export const generateTestSteps = async (apiKey: string, testCaseTitle: string, c
     }
 };
 
-export const generateTestCaseDetails = async (
-    apiKey: string,
+/**
+ * Build prompt and schema for test case generation (shared between streaming and non-streaming)
+ */
+function buildPromptAndSchema(
     context: string,
-    selectedFields: { area: boolean; steps: boolean; expected: boolean } = { area: true, steps: true, expected: true },
+    selectedFields: { area: boolean; steps: boolean; expected: boolean; testDescription?: boolean },
     existingTestCases: string[] = [],
-    imageUrls: string[] = [],
-    model: string = 'gemini-2.5-flash'
-) => {
-    const ai = new GoogleGenAI({ apiKey });
-
+    imageUrls: string[] = []
+): { prompt: string; schema: any } {
     const fieldsRequest = [];
-        if (selectedFields.area) fieldsRequest.push("Page/Area");
-        if (selectedFields.steps) fieldsRequest.push("list of Steps (Action + Expected Result)");
-        if (selectedFields.expected) fieldsRequest.push("Expected Result Summary");
+    if (selectedFields.area) fieldsRequest.push("Page/Area");
+    if (selectedFields.steps) fieldsRequest.push("list of Steps (Action + Expected Result)");
+    if (selectedFields.expected) fieldsRequest.push("Expected Result Summary");
 
-        const existingCasesContext = existingTestCases.length > 0
-            ? `\n\nExisting test cases to avoid duplicating:\n${existingTestCases.map((title, i) => `${i + 1}. ${title}`).join('\n')}\n\nIMPORTANT: Generate NEW test cases that are different from the existing ones listed above. Do not create similar or duplicate test cases.`
-            : '';
+    const existingCasesContext = existingTestCases.length > 0
+        ? `\n\nExisting test cases to avoid duplicating:\n${existingTestCases.map((title, i) => `${i + 1}. ${title}`).join('\n')}\n\nIMPORTANT: Generate NEW test cases that are different from the existing ones listed above. Do not create similar or duplicate test cases.`
+        : '';
 
-        const imageContext = imageUrls.length > 0
-            ? `\n\nI have also provided ${imageUrls.length} image(s) as additional context. Please analyze the images carefully and use the visual information to generate comprehensive test cases that cover UI elements, interactions, and functionality visible in the images.`
-            : '';
+    const imageContext = imageUrls.length > 0
+        ? `\n\nI have also provided ${imageUrls.length} image(s) as additional context. Please analyze the images carefully and use the visual information to generate comprehensive test cases that cover UI elements, interactions, and functionality visible in the images.`
+        : '';
 
-        prompt = `Based on this context: "${context}"${imageContext}, generate a comprehensive set of test case scenarios covering all possible scenarios and edge cases.
-        Generate at least 10 test cases (or more if the context is highly complex), ensuring broad coverage across different categories:
+    const prompt = `Based on this context: "${context}"${imageContext}, generate a comprehensive set of test case scenarios covering all possible scenarios and edge cases.
+    Generate at least 10 test cases (or more if the context is highly complex), ensuring broad coverage across different categories:
 
-        - Positive Test Cases: Normal, expected workflows that should pass
-        - Negative Test Cases: Invalid inputs, error conditions, and failure scenarios
-        - Edge Cases: Boundary conditions, extreme values, and unusual but valid inputs
-        - Boundary Value Tests: Tests at the limits of acceptable input ranges
-        - Error Handling Tests: How the system responds to errors, exceptions, and unexpected conditions
-        - Security/Validation Tests: Input validation, sanitization, and security-related scenarios
-        - Performance/Stress Tests: High load, large data sets, or resource-intensive operations
-        - Integration Tests: Interactions between different components or systems
-        - Accessibility Tests: Usability for different user types or assistive technologies
-        - Cross-browser/Cross-platform Tests: If applicable to the context
+    - Positive Test Cases: Normal, expected workflows that should pass
+    - Negative Test Cases: Invalid inputs, error conditions, and failure scenarios
+    - Edge Cases: Boundary conditions, extreme values, and unusual but valid inputs
+    - Boundary Value Tests: Tests at the limits of acceptable input ranges
+    - Error Handling Tests: How the system responds to errors, exceptions, and unexpected conditions
+    - Security/Validation Tests: Input validation, sanitization, and security-related scenarios
+    - Performance/Stress Tests: High load, large data sets, or resource-intensive operations
+    - Integration Tests: Interactions between different components or systems
+    - Accessibility Tests: Usability for different user types or assistive technologies
+    - Cross-browser/Cross-platform Tests: If applicable to the context
 
-        For each test case, provide a Title, Description, Preconditions${fieldsRequest.length > 0 ? ", " + fieldsRequest.join(", ") : ""}.${existingCasesContext}`;
+    For each test case, provide a Title, Description, Preconditions${fieldsRequest.length > 0 ? ", " + fieldsRequest.join(", ") : ""}.${existingCasesContext}`;
 
-        const properties: any = {
-            title: { type: Type.STRING },
-            description: { type: Type.STRING },
-            preconditions: { type: Type.STRING }
-        };
+    const properties: any = {
+        title: { type: Type.STRING },
+        description: { type: Type.STRING },
+        preconditions: { type: Type.STRING }
+    };
 
-        const required = ["title", "description"];
+    const required = ["title", "description"];
 
-        if (selectedFields.area) {
-            properties.area = { type: Type.STRING };
-        }
-        if (selectedFields.expected) {
-            properties.expectedResult = { type: Type.STRING };
-        }
-        if (selectedFields.steps) {
-            properties.steps = {
-                type: Type.ARRAY,
-                items: {
-                    type: Type.OBJECT,
-                    properties: {
-                        action: { type: Type.STRING },
-                        expectedResult: { type: Type.STRING }
-                    }
-                }
-            };
-            required.push("steps");
-        }
-
-        schema = {
+    if (selectedFields.area) {
+        properties.area = { type: Type.STRING };
+    }
+    if (selectedFields.expected) {
+        properties.expectedResult = { type: Type.STRING };
+    }
+    if (selectedFields.steps) {
+        properties.steps = {
             type: Type.ARRAY,
             items: {
                 type: Type.OBJECT,
-                properties: properties,
-                required: required
+                properties: {
+                    action: { type: Type.STRING },
+                    expectedResult: { type: Type.STRING }
+                }
             }
         };
+        required.push("steps");
+    }
 
-    const prompt = `Based on this context: "${context}"${imageContext}, generate a comprehensive set of test case scenarios covering all possible scenarios and edge cases.
-        Generate at least 10 test cases (or more if the context is highly complex), ensuring broad coverage across different categories:
-
-        - Positive Test Cases: Normal, expected workflows that should pass
-        - Negative Test Cases: Invalid inputs, error conditions, and failure scenarios
-        - Edge Cases: Boundary conditions, extreme values, and unusual but valid inputs
-        - Boundary Value Tests: Tests at the limits of acceptable input ranges
-        - Error Handling Tests: How the system responds to errors, exceptions, and unexpected conditions
-        - Security/Validation Tests: Input validation, sanitization, and security-related scenarios
-        - Performance/Stress Tests: High load, large data sets, or resource-intensive operations
-        - Integration Tests: Interactions between different components or systems
-        - Accessibility Tests: Usability for different user types or assistive technologies
-        - Cross-browser/Cross-platform Tests: If applicable to the context
-
-        For each test case, provide a Title, Description, Preconditions${fieldsRequest.length > 0 ? ", " + fieldsRequest.join(", ") : ""}.${existingCasesContext}`;
-
-    const schema: any = {
+    const schema = {
         type: Type.ARRAY,
         items: {
             type: Type.OBJECT,
@@ -253,40 +227,93 @@ export const generateTestCaseDetails = async (
         }
     };
 
-    try {
-        // Build contents array - if we have images, we need to use multimodal input
-        let contents: any;
+    return { prompt, schema };
+}
+
+/**
+ * Build contents for Gemini API (handles images if present)
+ */
+async function buildContents(prompt: string, imageUrls: string[] = []): Promise<any> {
+    if (imageUrls.length > 0) {
+        const parts: any[] = [];
         
-        if (imageUrls.length > 0) {
-            // For images, we need to fetch and convert to base64
-            const parts: any[] = [];
-            
-            // Add images as inline data
-            for (const imageUrl of imageUrls) {
-                try {
-                    const imageData = await fetchImageAsBase64(imageUrl);
-                    if (imageData) {
-                        parts.push({
-                            inlineData: {
-                                mimeType: imageData.mimeType,
-                                data: imageData.base64
-                            }
-                        });
-                    }
-                } catch (imgError) {
-                    console.warn(`Failed to fetch image ${imageUrl}:`, imgError);
-                    // Continue without this image
+        for (const imageUrl of imageUrls) {
+            try {
+                const imageData = await fetchImageAsBase64(imageUrl);
+                if (imageData) {
+                    parts.push({
+                        inlineData: {
+                            mimeType: imageData.mimeType,
+                            data: imageData.base64
+                        }
+                    });
                 }
+            } catch (imgError) {
+                console.warn(`Failed to fetch image ${imageUrl}:`, imgError);
             }
-            
-            // Add the text prompt
-            parts.push({ text: prompt });
-            
-            contents = parts;
-        } else {
-            // No images, just use the text prompt
-            contents = prompt;
         }
+        
+        parts.push({ text: prompt });
+        return parts;
+    }
+    
+    return prompt;
+}
+
+/**
+ * Fetches an image from a URL and returns it as base64
+ */
+async function fetchImageAsBase64(imageUrl: string): Promise<{ base64: string; mimeType: string } | null> {
+    try {
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+            console.warn(`Failed to fetch image: ${response.status} ${response.statusText}`);
+            return null;
+        }
+        
+        const arrayBuffer = await response.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString('base64');
+        const contentType = response.headers.get('content-type') || getMimeTypeFromUrl(imageUrl);
+        
+        return {
+            base64,
+            mimeType: contentType
+        };
+    } catch (error) {
+        console.error(`Error fetching image from ${imageUrl}:`, error);
+        return null;
+    }
+}
+
+/**
+ * Helper function to get MIME type from URL based on file extension
+ */
+function getMimeTypeFromUrl(url: string): string {
+    const extension = url.split('.').pop()?.toLowerCase().split('?')[0];
+    const mimeTypes: Record<string, string> = {
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'webp': 'image/webp',
+    };
+    return mimeTypes[extension || ''] || 'image/jpeg';
+}
+
+export const generateTestCaseDetails = async (
+    apiKey: string,
+    context: string,
+    selectedFields: { area: boolean; steps: boolean; expected: boolean; testDescription?: boolean } = { area: true, steps: true, expected: true },
+    existingTestCases: string[] = [],
+    imageUrls: string[] = [],
+    model: string = 'gemini-2.5-flash'
+) => {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const { prompt, schema } = buildPromptAndSchema(context, selectedFields, existingTestCases, imageUrls);
+
+    try {
+        const contents = await buildContents(prompt, imageUrls);
 
         const response = await ai.models.generateContent({
             model: model,
@@ -341,154 +368,6 @@ export const generateTestCaseDetails = async (
         throw error;
     }
 };
-
-/**
- * Helper function to get MIME type from URL based on file extension
- */
-function getMimeTypeFromUrl(url: string): string {
-    const extension = url.split('.').pop()?.toLowerCase().split('?')[0];
-    const mimeTypes: Record<string, string> = {
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'png': 'image/png',
-        'gif': 'image/gif',
-        'webp': 'image/webp',
-    };
-    return mimeTypes[extension || ''] || 'image/jpeg';
-}
-
-/**
- * Fetches an image from a URL and returns it as base64
- */
-async function fetchImageAsBase64(imageUrl: string): Promise<{ base64: string; mimeType: string } | null> {
-    try {
-        const response = await fetch(imageUrl);
-        if (!response.ok) {
-            console.warn(`Failed to fetch image: ${response.status} ${response.statusText}`);
-            return null;
-        }
-        
-        const arrayBuffer = await response.arrayBuffer();
-        const base64 = Buffer.from(arrayBuffer).toString('base64');
-        const contentType = response.headers.get('content-type') || getMimeTypeFromUrl(imageUrl);
-        
-        return {
-            base64,
-            mimeType: contentType
-        };
-    } catch (error) {
-        console.error(`Error fetching image from ${imageUrl}:`, error);
-        return null;
-    }
-}
-
-/**
- * Build prompt and schema for test case generation (shared between streaming and non-streaming)
- */
-function buildPromptAndSchema(
-    context: string,
-    selectedFields: { area: boolean; steps: boolean; expected: boolean; testDescription?: boolean },
-    existingTestCases: string[] = [],
-    imageUrls: string[] = []
-): { prompt: string; schema: any } {
-    const fieldsRequest = [];
-        if (selectedFields.area) fieldsRequest.push("Page/Area");
-        if (selectedFields.steps) fieldsRequest.push("list of Steps (Action + Expected Result)");
-        if (selectedFields.expected) fieldsRequest.push("Expected Result Summary");
-
-        const existingCasesContext = existingTestCases.length > 0
-            ? `\n\nExisting test cases to avoid duplicating:\n${existingTestCases.map((title, i) => `${i + 1}. ${title}`).join('\n')}\n\nIMPORTANT: Generate NEW test cases that are different from the existing ones listed above. Do not create similar or duplicate test cases.`
-            : '';
-
-        const imageContext = imageUrls.length > 0
-            ? `\n\nI have also provided ${imageUrls.length} image(s) as additional context. Please analyze the images carefully and use the visual information to generate comprehensive test cases that cover UI elements, interactions, and functionality visible in the images.`
-            : '';
-
-        prompt = `Based on this context: "${context}"${imageContext}, generate a comprehensive set of test case scenarios covering all possible scenarios and edge cases.
-        Generate at least 10 test cases (or more if the context is highly complex), ensuring broad coverage across different categories:
-
-        - Positive Test Cases: Normal, expected workflows that should pass
-        - Negative Test Cases: Invalid inputs, error conditions, and failure scenarios
-        - Edge Cases: Boundary conditions, extreme values, and unusual but valid inputs
-        - Boundary Value Tests: Tests at the limits of acceptable input ranges
-        - Error Handling Tests: How the system responds to errors, exceptions, and unexpected conditions
-        - Security/Validation Tests: Input validation, sanitization, and security-related scenarios
-        - Performance/Stress Tests: High load, large data sets, or resource-intensive operations
-        - Integration Tests: Interactions between different components or systems
-        - Accessibility Tests: Usability for different user types or assistive technologies
-        - Cross-browser/Cross-platform Tests: If applicable to the context
-
-        For each test case, provide a Title, Description, Preconditions${fieldsRequest.length > 0 ? ", " + fieldsRequest.join(", ") : ""}.${existingCasesContext}`;
-
-        const properties: any = {
-            title: { type: Type.STRING },
-            description: { type: Type.STRING },
-            preconditions: { type: Type.STRING }
-        };
-
-        const required = ["title", "description"];
-
-        if (selectedFields.area) {
-            properties.area = { type: Type.STRING };
-        }
-        if (selectedFields.expected) {
-            properties.expectedResult = { type: Type.STRING };
-        }
-        if (selectedFields.steps) {
-            properties.steps = {
-                type: Type.ARRAY,
-                items: {
-                    type: Type.OBJECT,
-                    properties: {
-                        action: { type: Type.STRING },
-                        expectedResult: { type: Type.STRING }
-                    }
-                }
-            };
-            required.push("steps");
-        }
-
-        schema = {
-            type: Type.ARRAY,
-            items: {
-                type: Type.OBJECT,
-                properties: properties,
-                required: required
-            }
-        };
-
-    return { prompt, schema };
-}
-
-/**
- * Build contents for Gemini API (handles images if present)
- */
-async function buildContents(prompt: string, imageUrls: string[] = []): Promise<any> {
-    if (imageUrls.length > 0) {
-        const parts: any[] = [];
-        
-        for (const imageUrl of imageUrls) {
-            try {
-                const imageData = await fetchImageAsBase64(imageUrl);
-                if (imageData) {
-                    parts.push({
-                        inlineData: {
-                            mimeType: imageData.mimeType,
-                            data: imageData.base64
-                        }
-                    });
-                }
-            } catch (imgError) {
-                console.warn(`Failed to fetch image ${imageUrl}:`, imgError);
-            }
-        }
-        
-        parts.push({ text: prompt });
-        return parts;
-    }
-    
-    return prompt;
-}
 
 /**
  * Streaming version of generateTestCaseDetails
