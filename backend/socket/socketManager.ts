@@ -137,15 +137,12 @@ class SocketManager {
         socket.userId = decoded.userId;
         next();
       } catch (error) {
-        console.error("Socket authentication error:", error);
         next(new Error("Authentication failed"));
       }
     });
 
     // Handle connections
     this.io.on("connection", (socket: AuthenticatedSocket) => {
-      console.log(`Socket connected: ${socket.id}, User: ${socket.userId}`);
-
       // Join user-specific room for targeted updates
       if (socket.userId) {
         socket.join(`user:${socket.userId}`);
@@ -158,7 +155,6 @@ class SocketManager {
         
         if (projectId) {
           socket.join(`project:${projectId}`);
-          console.log(`Socket ${socket.id} joined project:${projectId}`);
           
           // Track user presence if user info provided
           if (user && user.id) {
@@ -201,7 +197,6 @@ class SocketManager {
       socket.on("leave:project", (projectId: string) => {
         if (projectId) {
           socket.leave(`project:${projectId}`);
-          console.log(`Socket ${socket.id} left project:${projectId}`);
           
           // Remove user from presence tracking
           const projectUsers = projectUsersMap.get(projectId);
@@ -232,7 +227,6 @@ class SocketManager {
       socket.on("join:suite", (suiteId: string) => {
         if (suiteId) {
           socket.join(`suite:${suiteId}`);
-          console.log(`Socket ${socket.id} joined suite:${suiteId}`);
         }
       });
 
@@ -240,7 +234,6 @@ class SocketManager {
       socket.on("leave:suite", (suiteId: string) => {
         if (suiteId) {
           socket.leave(`suite:${suiteId}`);
-          console.log(`Socket ${socket.id} left suite:${suiteId}`);
         }
       });
 
@@ -260,8 +253,6 @@ class SocketManager {
             projectId: data.projectId,
             user: data.user,
           });
-          
-          console.log(`Socket ${socket.id} joined testcase:${data.testCaseId} for editing`);
         }
       });
 
@@ -277,8 +268,6 @@ class SocketManager {
             projectId: data.projectId,
             userId: data.userId,
           });
-          
-          console.log(`Socket ${socket.id} left testcase:${data.testCaseId}`);
         }
       });
 
@@ -301,8 +290,6 @@ class SocketManager {
 
       // Handle disconnect
       socket.on("disconnect", (reason) => {
-        console.log(`Socket disconnected: ${socket.id}, Reason: ${reason}`);
-        
         // Clean up project presence
         const currentProjectId = socket.data.currentProjectId;
         if (currentProjectId) {

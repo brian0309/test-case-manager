@@ -82,7 +82,6 @@ const httpServer = createServer(app);
 if (process.env.VERCEL !== '1') {
 	const allowedOrigins = getAllowedOrigins();
 	socketManager.initialize(httpServer, allowedOrigins);
-	console.log("Socket.io initialized with origins:", allowedOrigins);
 }
 
 // For Vercel serverless deployment, export the app
@@ -93,7 +92,6 @@ if (process.env.VERCEL !== '1') {
 	httpServer.listen(PORT, () => {
 		connectDB();
 		console.log("Server is running on port: ", PORT);
-		console.log("WebSocket server ready for connections");
 	});
 } else {
 	// Connect to DB in serverless environment
