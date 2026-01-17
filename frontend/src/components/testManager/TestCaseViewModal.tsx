@@ -7,6 +7,7 @@ import RichTextEditor from './RichTextEditor';
 import toast from 'react-hot-toast';
 import { useCollaborativeEditing } from '../../hooks/useCollaborativeEditing';
 import { socketService, SocketEvents } from '../../services/socket';
+import IdDisplay from './IdDisplay';
 
 interface TestCaseViewModalProps {
     testCase: TestCase;
@@ -163,7 +164,10 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                 {/* Modal Header */}
                 <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                     <div className="flex items-center gap-3">
-                        <span className="font-mono text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">{testCase.id}</span>
+                        <IdDisplay
+                            id={testCase.id}
+                            className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md"
+                        />
                         <span className="text-xs text-gray-400 dark:text-gray-500">View Mode</span>
                         {/* Real-time editing indicator */}
                         {isCollaborating && collaboratingUsers.length > 0 && (

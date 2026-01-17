@@ -5,6 +5,7 @@ import { useCollaborativeEditing } from '../../hooks/useCollaborativeEditing';
 import { TestCase, Priority, Status, HistoryEntry, CustomFieldDefinition } from '../../types/testManager';
 import { X, Plus, ChevronDown, History, Check, Loader2, Cloud } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
+import IdDisplay from './IdDisplay';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -273,7 +274,10 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                             {localCase.id.startsWith('new-') ? (
                                 <span className="text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 rounded-md">New Case</span>
                             ) : (
-                                <span className="font-mono text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">{localCase.id}</span>
+                                <IdDisplay
+                                    id={localCase.id}
+                                    className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md"
+                                />
                             )}
                             {/* Auto-save status indicator */}
                             <div className="flex items-center gap-1.5 text-xs font-medium">
@@ -320,7 +324,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                         )}
                                     </div>
                                     <span className="text-xs text-gray-500 dark:text-gray-400 hidden sm:inline">
-                                        {collaboratingUsers.length === 1 
+                                        {collaboratingUsers.length === 1
                                             ? `${collaboratingUsers[0].name} is editing`
                                             : `${collaboratingUsers.length} users editing`}
                                     </span>
@@ -420,23 +424,23 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                             {!hiddenFields.priority && (
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Priority</label>
-                                <div className="relative">
-                                    <select
-                                        value={localCase.priority}
-                                        onChange={(e) => {
-                                            const value = e.target.value as Priority;
-                                            setLocalCase(prev => prev ? ({ ...prev, priority: value }) : null);
-                                            emitFieldChange('priority', value);
-                                        }}
-                                        onBlur={handleFieldBlur}
-                                        className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getPriorityColor(localCase.priority)}`}
-                                    >
-                                        {Object.values(Priority).map(p => (
-                                            <option key={p} value={p}>{p}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
-                                </div>
+                                    <div className="relative">
+                                        <select
+                                            value={localCase.priority}
+                                            onChange={(e) => {
+                                                const value = e.target.value as Priority;
+                                                setLocalCase(prev => prev ? ({ ...prev, priority: value }) : null);
+                                                emitFieldChange('priority', value);
+                                            }}
+                                            onBlur={handleFieldBlur}
+                                            className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getPriorityColor(localCase.priority)}`}
+                                        >
+                                            {Object.values(Priority).map(p => (
+                                                <option key={p} value={p}>{p}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                                    </div>
                                 </div>
                             )}
 
@@ -444,23 +448,23 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                             {!hiddenFields.status && (
                                 <div>
                                     <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Status</label>
-                                <div className="relative">
-                                    <select
-                                        value={localCase.status}
-                                        onChange={(e) => {
-                                            const value = e.target.value as Status;
-                                            setLocalCase(prev => prev ? ({ ...prev, status: value }) : null);
-                                            emitFieldChange('status', value);
-                                        }}
-                                        onBlur={handleFieldBlur}
-                                        className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getStatusColor(localCase.status)}`}
-                                    >
-                                        {Object.values(Status).map(s => (
-                                            <option key={s} value={s}>{s}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
-                                </div>
+                                    <div className="relative">
+                                        <select
+                                            value={localCase.status}
+                                            onChange={(e) => {
+                                                const value = e.target.value as Status;
+                                                setLocalCase(prev => prev ? ({ ...prev, status: value }) : null);
+                                                emitFieldChange('status', value);
+                                            }}
+                                            onBlur={handleFieldBlur}
+                                            className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getStatusColor(localCase.status)}`}
+                                        >
+                                            {Object.values(Status).map(s => (
+                                                <option key={s} value={s}>{s}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -468,86 +472,86 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                         {/* Searchable Page/Area Input - Moved below grid */}
                         {!hiddenFields.area && (
                             <div className="mb-8">
-                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Page / Area</label>
-                            <div className="relative" ref={areaRef}>
-                                <div className="flex items-center gap-2">
-                                    <div className="relative w-full group">
-                                        <input
-                                            type="text"
-                                            value={localCase.area || ''}
-                                            onChange={(e) => {
-                                                const value = e.target.value;
-                                                setLocalCase(prev => prev ? ({ ...prev, area: value }) : null);
-                                                setIsAreaDropdownOpen(true);
-                                                emitFieldChange('area', value);
-                                            }}
-                                            onFocus={() => setIsAreaDropdownOpen(true)}
-                                            onBlur={() => {
-                                                setTimeout(() => {
-                                                    setIsAreaDropdownOpen(false);
-                                                    handleFieldBlur();
-                                                }, 150);
-                                            }}
-                                            placeholder="Select or type..."
-                                            className="w-full text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700/80 rounded-lg py-2 pl-3 pr-8 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-300 dark:placeholder:text-gray-600 bg-white dark:bg-gray-800 outline-none transition-all"
-                                        />
-                                        <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none group-hover:text-gray-500 dark:group-hover:text-gray-500 transition-colors" />
-                                    </div>
-
-                                    <button
-                                        onClick={() => {
-                                            setLocalCase(prev => prev ? ({ ...prev, area: '' }) : null);
-                                            setIsAreaDropdownOpen(true);
-                                        }}
-                                        className="p-2 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                                        title="New / Clear"
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                    </button>
-                                </div>
-
-                                {/* Dropdown Menu */}
-                                {isAreaDropdownOpen && (
-                                    <div className="absolute z-50 left-0 right-0 top-full mt-2 bg-white dark:bg-[#2a2a2a] rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-                                        <div className="max-h-[200px] overflow-y-auto py-1 custom-scrollbar">
-                                            {filteredAreas.length === 0 ? (
-                                                <div className="px-4 py-3 text-xs text-gray-400 dark:text-gray-500 italic text-center">
-                                                    Type to create "{localCase.area}"
-                                                </div>
-                                            ) : (
-                                                filteredAreas.map(area => (
-                                                    <button
-                                                        key={area}
-                                                        onClick={() => {
-                                                            setLocalCase(prev => prev ? ({ ...prev, area: area }) : null);
-                                                            setIsAreaDropdownOpen(false);
-                                                        }}
-                                                        className="w-full text-left px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center justify-between group/item"
-                                                    >
-                                                        <span>{area}</span>
-                                                        {localCase.area === area && <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />}
-                                                    </button>
-                                                ))
-                                            )}
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Page / Area</label>
+                                <div className="relative" ref={areaRef}>
+                                    <div className="flex items-center gap-2">
+                                        <div className="relative w-full group">
+                                            <input
+                                                type="text"
+                                                value={localCase.area || ''}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+                                                    setLocalCase(prev => prev ? ({ ...prev, area: value }) : null);
+                                                    setIsAreaDropdownOpen(true);
+                                                    emitFieldChange('area', value);
+                                                }}
+                                                onFocus={() => setIsAreaDropdownOpen(true)}
+                                                onBlur={() => {
+                                                    setTimeout(() => {
+                                                        setIsAreaDropdownOpen(false);
+                                                        handleFieldBlur();
+                                                    }, 150);
+                                                }}
+                                                placeholder="Select or type..."
+                                                className="w-full text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700/80 rounded-lg py-2 pl-3 pr-8 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-300 dark:placeholder:text-gray-600 bg-white dark:bg-gray-800 outline-none transition-all"
+                                            />
+                                            <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none group-hover:text-gray-500 dark:group-hover:text-gray-500 transition-colors" />
                                         </div>
+
+                                        <button
+                                            onClick={() => {
+                                                setLocalCase(prev => prev ? ({ ...prev, area: '' }) : null);
+                                                setIsAreaDropdownOpen(true);
+                                            }}
+                                            className="p-2 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                            title="New / Clear"
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                        </button>
                                     </div>
-                                )}
-                            </div>
+
+                                    {/* Dropdown Menu */}
+                                    {isAreaDropdownOpen && (
+                                        <div className="absolute z-50 left-0 right-0 top-full mt-2 bg-white dark:bg-[#2a2a2a] rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.2)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                                            <div className="max-h-[200px] overflow-y-auto py-1 custom-scrollbar">
+                                                {filteredAreas.length === 0 ? (
+                                                    <div className="px-4 py-3 text-xs text-gray-400 dark:text-gray-500 italic text-center">
+                                                        Type to create "{localCase.area}"
+                                                    </div>
+                                                ) : (
+                                                    filteredAreas.map(area => (
+                                                        <button
+                                                            key={area}
+                                                            onClick={() => {
+                                                                setLocalCase(prev => prev ? ({ ...prev, area: area }) : null);
+                                                                setIsAreaDropdownOpen(false);
+                                                            }}
+                                                            className="w-full text-left px-4 py-2.5 text-sm text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-600 dark:hover:text-blue-400 transition-colors flex items-center justify-between group/item"
+                                                        >
+                                                            <span>{area}</span>
+                                                            {localCase.area === area && <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />}
+                                                        </button>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
-                        
+
                         {/* Test Description (between Page/Area and Steps) */}
                         {!hiddenFields.testDescription && (
                             <div className="mb-2">
-                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Test Description</label>
-                            <textarea
-                                value={localCase.testDescription || ''}
-                                onChange={handleTestDescriptionChange}
-                                onBlur={handleFieldBlur}
-                                className="w-full text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border-transparent dark:border-gray-700/80 border rounded-lg focus:border-blue-300 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-gray-700 focus:ring-0 p-3 transition-colors resize-none"
-                                rows={3}
-                                placeholder="Short description of what this test verifies"
-                            />
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Test Description</label>
+                                <textarea
+                                    value={localCase.testDescription || ''}
+                                    onChange={handleTestDescriptionChange}
+                                    onBlur={handleFieldBlur}
+                                    className="w-full text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border-transparent dark:border-gray-700/80 border rounded-lg focus:border-blue-300 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-gray-700 focus:ring-0 p-3 transition-colors resize-none"
+                                    rows={3}
+                                    placeholder="Short description of what this test verifies"
+                                />
                             </div>
                         )}
 
@@ -578,31 +582,31 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                         {/* Moved Expected Result to bottom */}
                         {!hiddenFields.expectedResult && (
                             <div className="mb-2">
-                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Expected Result (Summary)</label>
-                            <textarea
-                                value={localCase.expectedResult || ''}
-                                onChange={handleExpectedResultChange}
-                                onBlur={handleFieldBlur}
-                                className="w-full text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border-transparent dark:border-gray-700/80 border rounded-lg focus:border-blue-300 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-gray-700 focus:ring-0 p-3 transition-colors resize-none"
-                                rows={3}
-                                placeholder="What is the high-level expected outcome of this test case?"
-                            />
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Expected Result (Summary)</label>
+                                <textarea
+                                    value={localCase.expectedResult || ''}
+                                    onChange={handleExpectedResultChange}
+                                    onBlur={handleFieldBlur}
+                                    className="w-full text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border-transparent dark:border-gray-700/80 border rounded-lg focus:border-blue-300 dark:focus:border-blue-500 focus:bg-white dark:focus:bg-gray-700 focus:ring-0 p-3 transition-colors resize-none"
+                                    rows={3}
+                                    placeholder="What is the high-level expected outcome of this test case?"
+                                />
                             </div>
                         )}
 
                         {/* Comments Section */}
                         {!hiddenFields.comments && (
                             <div className="mb-2">
-                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Comments</label>
-                            <RichTextEditor
-                                content={localCase.comments || ''}
-                                onChange={(html) => {
-                                    setLocalCase(prev => prev ? ({ ...prev, comments: html }) : null);
-                                    emitFieldChange('comments', html);
-                                }}
-                                onBlur={handleFieldBlur}
-                                placeholder="Add comments, notes, or additional information about this test case..."
-                            />
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Comments</label>
+                                <RichTextEditor
+                                    content={localCase.comments || ''}
+                                    onChange={(html) => {
+                                        setLocalCase(prev => prev ? ({ ...prev, comments: html }) : null);
+                                        emitFieldChange('comments', html);
+                                    }}
+                                    onBlur={handleFieldBlur}
+                                    placeholder="Add comments, notes, or additional information about this test case..."
+                                />
                             </div>
                         )}
 

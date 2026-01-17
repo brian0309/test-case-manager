@@ -19,7 +19,9 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { TestCase, Priority, Status, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
 import StatusBadge from './StatusBadge';
-import { Edit, Copy, Check, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
+import { Edit, Copy, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, ChevronRight } from 'lucide-react';
+import IdDisplay from './IdDisplay';
+
 
 type SortField = 'title' | 'priority' | 'status' | 'lastModified' | 'assignedTester';
 type SortOrder = 'asc' | 'desc';
@@ -60,35 +62,6 @@ interface TestCaseTableProps {
     activeSuiteId?: string | null;
 }
 
-const IdCell: React.FC<{ id: string }> = ({ id }) => {
-    const [copied, setCopied] = useState(false);
-
-    const handleCopy = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        navigator.clipboard.writeText(id);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-
-    // Show last 10 chars, prefixed with ellipsis if longer
-    const displayId = id.length > 6 ? '..' + id.slice(-6) : id;
-
-    return (
-        <div className="flex items-center gap-2 group/id relative">
-            <span title={id}>{displayId}</span>
-            <button
-                onClick={handleCopy}
-                className={`p-1 rounded transition-all ${copied
-                    ? 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 opacity-100'
-                    : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 opacity-0 group-hover/id:opacity-100'
-                    }`}
-                title="Copy ID"
-            >
-                {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-            </button>
-        </div>
-    );
-};
 
 interface SortableRowProps {
     item: TestCase;
@@ -137,7 +110,7 @@ const SortableRow: React.FC<SortableRowProps> = ({
         transform,
         transition,
         isDragging,
-    } = useSortable({ 
+    } = useSortable({
         id: item.id,
         disabled: !enableReorder,
     });
@@ -202,7 +175,7 @@ const SortableRow: React.FC<SortableRowProps> = ({
             {/* ID Column */}
             {!hiddenColumns.id && (
                 <td className={`py-4 ${isSelectionMode ? 'pl-2' : enableReorder ? 'pl-2' : 'pl-6'} pr-4 text-sm font-medium text-gray-500 dark:text-gray-400 font-mono tracking-tight group-hover:text-gray-900 dark:group-hover:text-gray-200`}>
-                    <IdCell id={item.id} />
+                    <IdDisplay id={item.id} />
                 </td>
             )}
 
@@ -315,16 +288,16 @@ const SortableRow: React.FC<SortableRowProps> = ({
             {visibleCustomFieldIds.map((fieldId) => {
                 const fieldDef = customFieldDefinitions.find(f => f.id === fieldId);
                 if (!fieldDef) return null;
-                
+
                 const value = item.customFields?.[fieldId] || '';
-                
+
                 // For dropdown fields, look up the display label from the option ID
                 let displayValue = value;
                 if (fieldDef.type === 'dropdown' && value && fieldDef.options) {
                     const selectedOption = fieldDef.options.find(opt => opt.id === value);
                     displayValue = selectedOption?.label || value;
                 }
-                
+
                 return (
                     <td key={fieldId} className="py-4 px-4">
                         <div className="text-sm text-gray-900 dark:text-gray-100">{displayValue || '-'}</div>
@@ -503,13 +476,13 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
             const oldIndex = sortedData.findIndex((item) => item.id === active.id);
             const newIndex = sortedData.findIndex((item) => item.id === over.id);
             const newData = arrayMove(sortedData, oldIndex, newIndex);
-            
+
             // Update order values
             const reorderedData = newData.map((item, index) => ({
                 ...item,
                 order: index,
             }));
-            
+
             onReorder?.(reorderedData);
         }
     };
@@ -518,7 +491,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
         if (sortMode === 'custom' || sortField !== field) {
             return <ArrowUpDown className="h-3.5 w-3.5 text-gray-400 dark:text-gray-500" />;
         }
-        return sortOrder === 'asc' 
+        return sortOrder === 'asc'
             ? <ArrowUp className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
             : <ArrowDown className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />;
     };
@@ -587,10 +560,10 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                 {!hiddenColumns?.id && (
                                     <th className={`py-3 ${isSelectionMode ? 'pl-2' : (enableReorder && sortMode === 'custom') ? 'pl-2' : 'pl-6'} pr-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32`}>ID</th>
                                 )}
-                                
+
                                 {/* Title Header */}
                                 {!hiddenColumns?.title && (
-                                    <th 
+                                    <th
                                         className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-1/3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
                                         onClick={() => handleColumnSort('title')}
                                     >
@@ -600,10 +573,10 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         </div>
                                     </th>
                                 )}
-                                
+
                                 {/* Priority Header */}
                                 {!hiddenColumns?.priority && (
-                                    <th 
+                                    <th
                                         className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
                                         onClick={() => handleColumnSort('priority')}
                                     >
@@ -613,10 +586,10 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         </div>
                                     </th>
                                 )}
-                                
+
                                 {/* Status Header */}
                                 {!hiddenColumns?.status && (
-                                    <th 
+                                    <th
                                         className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
                                         onClick={() => handleColumnSort('status')}
                                     >
@@ -626,10 +599,10 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         </div>
                                     </th>
                                 )}
-                                
+
                                 {/* Last Modified Header */}
                                 {!hiddenColumns?.lastModified && (
-                                    <th 
+                                    <th
                                         className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
                                         onClick={() => handleColumnSort('lastModified')}
                                     >
@@ -639,10 +612,10 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         </div>
                                     </th>
                                 )}
-                                
+
                                 {/* Assignee Header */}
                                 {!hiddenColumns?.assignedTester && (
-                                    <th 
+                                    <th
                                         className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32 text-right pr-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
                                         onClick={() => handleColumnSort('assignedTester')}
                                     >
@@ -652,14 +625,14 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         </div>
                                     </th>
                                 )}
-                                
+
                                 {/* Custom Field Headers */}
                                 {visibleCustomFieldIds?.map((fieldId) => {
                                     const fieldDef = customFieldDefinitions?.find(f => f.id === fieldId);
                                     if (!fieldDef) return null;
-                                    
+
                                     return (
-                                        <th 
+                                        <th
                                             key={fieldId}
                                             className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32"
                                         >
@@ -667,7 +640,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         </th>
                                     );
                                 })}
-                                
+
                                 {/* Actions Header */}
                                 <th className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-24"></th>
                             </tr>
@@ -723,48 +696,76 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         onRowClick(item);
                                     }
                                 }}
-                                className={`mac-card p-3 flex flex-col gap-2 cursor-pointer transition-colors ${selectedIds.includes(item.id) ? 'bg-blue-50/50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                                className={`relative mac-card overflow-hidden cursor-pointer transition-all active:scale-[0.98] ${selectedIds.includes(item.id)
+                                    ? 'bg-blue-50/50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700'
+                                    : 'hover:bg-gray-50/80 dark:hover:bg-gray-800/80'
+                                    }`}
                             >
-                                <div className="flex items-start gap-3">
-                                    {isSelectionMode && (
-                                        <div className="pt-1" onClick={(e) => e.stopPropagation()}>
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedIds.includes(item.id)}
-                                                onChange={() => onToggleSelection?.(item.id)}
-                                                className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 bg-white dark:bg-gray-700"
-                                            />
-                                        </div>
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1 min-w-0">
-                                                <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
-                                                {getContextInfo(item) && (
-                                                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate">
-                                                        {getContextInfo(item)}
-                                                    </div>
-                                                )}
+                                {/* Priority Color Bar */}
+                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${item.priority === Priority.Critical ? 'bg-red-500' :
+                                    item.priority === Priority.High ? 'bg-orange-500' :
+                                        item.priority === Priority.Medium ? 'bg-yellow-500' :
+                                            item.priority === Priority.Low ? 'bg-blue-500' : 'bg-gray-400'
+                                    }`} />
+
+                                <div className="p-4 pl-5">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex-1 min-w-0">
+                                            {/* Top Row: Status & ID */}
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <StatusBadge type="status" value={item.status} />
+                                                <span className="text-[10px] font-mono text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                                                    #{item.id.slice(-6)}
+                                                </span>
                                             </div>
-                                            <div className="ml-3 flex-shrink-0">
-                                                <StatusBadge type="priority" value={item.priority} />
+
+                                            {/* Title */}
+                                            <h4 className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
+                                                {item.title}
+                                            </h4>
+
+                                            {/* Context Info (Suite/Area) */}
+                                            {getContextInfo(item) && (
+                                                <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 truncate">
+                                                    {getContextInfo(item)}
+                                                </div>
+                                            )}
+
+                                            {/* Footer: User & Date */}
+                                            <div className="mt-4 flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <img
+                                                        src={item.assignedTester.avatar}
+                                                        alt={item.assignedTester.name}
+                                                        className="h-5 w-5 rounded-full border border-gray-200 dark:border-gray-700"
+                                                    />
+                                                    <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                                                        {item.assignedTester.name}
+                                                    </span>
+                                                </div>
+                                                <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-tight">
+                                                    {new Date(item.lastModified).toLocaleDateString('en-US', {
+                                                        month: 'short',
+                                                        day: 'numeric'
+                                                    })}
+                                                </span>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center justify-between mt-2">
-                                            <div className="text-xs font-mono text-gray-500 dark:text-gray-400 break-words max-w-[40%]">{item.id}</div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[120px]">{item.assignedTester.name}</span>
-                                                <img src={item.assignedTester.avatar} alt={item.assignedTester.name} className="h-6 w-6 rounded-full border border-gray-200 dark:border-gray-600" />
-                                                {!isSelectionMode && (
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); onViewClick?.(item); }}
-                                                        className="ml-2 inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors"
-                                                    >
-                                                        View
-                                                    </button>
-                                                )}
-                                            </div>
+                                        {/* Selection Checkbox or Chevron */}
+                                        <div className="flex flex-col items-center justify-center pt-0.5">
+                                            {isSelectionMode ? (
+                                                <div className="p-1" onClick={(e) => e.stopPropagation()}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedIds.includes(item.id)}
+                                                        onChange={() => onToggleSelection?.(item.id)}
+                                                        className="w-5 h-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded-full focus:ring-blue-500 bg-white dark:bg-gray-700"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <ChevronRight className="h-5 w-5 text-gray-300 dark:text-gray-600" />
+                                            )}
                                         </div>
                                     </div>
                                 </div>
