@@ -66,9 +66,10 @@ const ProjectEditModal: React.FC<Props> = ({ isOpen, onClose, project }) => {
             await fetchProjects();
             toast.success('Project updated successfully');
             onClose();
-        } catch (err: any) {
-            setError(err?.message || 'Could not update project');
-            toast.error(err?.message || 'Failed to update project');
+        } catch (err: unknown) {
+            const errorMessage = (err as Error)?.message || 'Could not update project';
+            setError(errorMessage);
+            toast.error(errorMessage);
         } finally {
             setIsSaving(false);
         }

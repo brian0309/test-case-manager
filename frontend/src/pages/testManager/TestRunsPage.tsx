@@ -305,7 +305,7 @@ const EditTestRunModal: React.FC<EditTestRunModalProps> = ({
                 groupId: selectedGroupId || null,
             });
             onClose();
-        } catch (error) {
+        } catch {
             // Error handled by parent
         } finally {
             setIsSubmitting(false);

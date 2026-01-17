@@ -68,7 +68,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
     const areaRef = useRef<HTMLDivElement>(null);
 
     // Collaborative editing - handle remote field updates
-    const handleRemoteFieldUpdate = useCallback((field: string, value: any) => {
+    const handleRemoteFieldUpdate = useCallback((field: string, value: string | number | boolean | null) => {
         setLocalCase(prev => {
             if (!prev) return null;
             return { ...prev, [field]: value };
@@ -121,9 +121,9 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
             savedTimeoutRef.current = setTimeout(() => {
                 setSaveStatus('idle');
             }, 2000);
-        } catch (err: any) {
+        } catch (err: unknown) {
             setSaveStatus('error');
-            setError(err?.message || 'Failed to save changes');
+            setError((err as Error)?.message || 'Failed to save changes');
         }
     }, [onSave]);
 
@@ -229,8 +229,8 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
             }
             return value || 'Empty';
         }
-        if (typeof value === 'object' && 'name' in value) {
-            return (value as any).name; // For Tester objects
+        if (typeof value === 'object' && value !== null && 'name' in value) {
+            return (value as { name: string }).name; // For Tester objects
         }
         return String(value);
     };

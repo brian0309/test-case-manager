@@ -287,7 +287,7 @@ const TestCasesPage: React.FC = () => {
                 // clear navigation state so it doesn't reopen on refresh/back
                 navigate(location.pathname, { replace: true, state: {} });
             }
-        } catch (e) {
+        } catch {
             // ignore
         }
     }, [location, navigate, activeProject, activeSuite, activeArea]);

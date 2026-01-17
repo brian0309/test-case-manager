@@ -169,7 +169,7 @@ const TestSuitesPage: React.FC = () => {
                 // clear navigation state
                 navigate(location.pathname, { replace: true, state: {} });
             }
-        } catch (e) {
+        } catch {
             // ignore
         }
     }, [location, navigate]);

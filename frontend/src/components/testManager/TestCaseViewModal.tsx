@@ -28,14 +28,14 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
     const [customFields, setCustomFields] = useState<CustomFieldDefinition[]>([]);
 
     // Handle remote field updates from collaborative editing
-    const handleRemoteFieldUpdate = useCallback((fieldName: string, value: string) => {
+    const handleRemoteFieldUpdate = useCallback((fieldName: string, value: string | number | boolean | null) => {
         setLocalCase(prev => {
             // Handle nested custom fields
             if (fieldName.startsWith('customFields.')) {
                 const fieldId = fieldName.replace('customFields.', '');
                 return {
                     ...prev,
-                    customFields: { ...(prev.customFields || {}), [fieldId]: value }
+                    customFields: { ...(prev.customFields || {}), [fieldId]: String(value ?? '') }
                 };
             }
             // Handle regular fields
