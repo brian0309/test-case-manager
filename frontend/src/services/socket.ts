@@ -4,18 +4,19 @@
  */
 
 import { io, Socket } from "socket.io-client";
+import { TestCase, TestSuite, Project } from "../types/testManager";
 
 // Socket event types matching backend
 export interface SocketEvents {
   // Test Case Events
-  "testcase:created": { testCase: any; suiteId: string; projectId: string };
-  "testcase:updated": { testCase: any; suiteId: string; projectId: string };
+  "testcase:created": { testCase: TestCase; suiteId: string; projectId: string };
+  "testcase:updated": { testCase: TestCase; suiteId: string; projectId: string };
   "testcase:deleted": { testCaseId: string; suiteId: string; projectId: string };
-  "testcase:reordered": { testCases: any[]; suiteId: string; projectId: string };
+  "testcase:reordered": { testCases: TestCase[]; suiteId: string; projectId: string };
   "testcase:bulk-deleted": { testCaseIds: string[]; suiteId: string; projectId: string };
   "testcase:bulk-status-updated": { testCaseIds: string[]; status: string; projectId: string };
-  "testcase:cloned": { testCase: any; suiteId: string; projectId: string };
-  "testcase:bulk-imported": { testCases: any[]; suiteId: string; projectId: string };
+  "testcase:cloned": { testCase: TestCase; suiteId: string; projectId: string };
+  "testcase:bulk-imported": { testCases: TestCase[]; suiteId: string; projectId: string };
 
   // Collaborative Editing Events
   "testcase:editing": {
@@ -25,7 +26,7 @@ export interface SocketEvents {
     userId: string;
     userName: string;
     field: string;
-    value: any;
+    value: string | number | boolean | null;
   };
   "testcase:user-joined": {
     testCaseId: string;
@@ -39,12 +40,12 @@ export interface SocketEvents {
   };
 
   // Test Suite Events
-  "testsuite:created": { suite: any; projectId: string };
-  "testsuite:updated": { suite: any; projectId: string };
+  "testsuite:created": { suite: TestSuite; projectId: string };
+  "testsuite:updated": { suite: TestSuite; projectId: string };
   "testsuite:deleted": { suiteId: string; projectId: string };
 
   // Project Events
-  "project:updated": { project: any };
+  "project:updated": { project: Project };
   "project:deleted": { projectId: string };
   
   // Project Presence Events
@@ -264,7 +265,7 @@ class SocketService {
     userId: string;
     userName: string;
     field: string;
-    value: any;
+    value: string | number | boolean | null;
   }): void {
     if (this.socket?.connected) {
       this.socket.emit("testcase:editing", data);
@@ -279,6 +280,7 @@ class SocketService {
     callback: EventCallback<SocketEvents[K]>
   ): void {
     if (this.socket) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.socket.on(event, callback as any);
     }
   }
@@ -292,6 +294,7 @@ class SocketService {
   ): void {
     if (this.socket) {
       if (callback) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.socket.off(event, callback as any);
       } else {
         this.socket.off(event);

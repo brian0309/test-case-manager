@@ -151,9 +151,9 @@ const TestSuitesPage: React.FC = () => {
             if (activeProject) {
                 await fetchTestSuites(activeProject);
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to delete suite:', error);
-            toast.error(error?.message || 'Failed to delete test suite');
+            toast.error((error as Error)?.message || 'Failed to delete test suite');
         } finally {
             setIsDeleting(false);
         }

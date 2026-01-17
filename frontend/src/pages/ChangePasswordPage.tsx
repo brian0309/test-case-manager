@@ -40,12 +40,13 @@ const ChangePasswordPage: React.FC = () => {
             setTimeout(() => {
                 setIsSuccess(false);
             }, 3000);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error(error);
-            if (error.response && error.response.status === 400) {
+            const axiosError = error as { response?: { status?: number }; message?: string };
+            if (axiosError.response && axiosError.response.status === 400) {
                 setFormError("Current password is incorrect");
             } else {
-                setFormError(error.message || "Error changing password. Please try again.");
+                setFormError(axiosError.message || "Error changing password. Please try again.");
             }
         }
     };

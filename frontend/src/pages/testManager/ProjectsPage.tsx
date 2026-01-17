@@ -73,9 +73,9 @@ const ProjectsPage: React.FC = () => {
             await deleteProject(projectToDelete.id);
             setProjectToDelete(null);
             toast.success(`Project "${projectName}" deleted successfully`);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Failed to delete project:', error);
-            toast.error(error?.message || 'Failed to delete project');
+            toast.error((error as Error)?.message || 'Failed to delete project');
         } finally {
             setIsDeleting(false);
         }

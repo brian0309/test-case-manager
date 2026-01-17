@@ -395,8 +395,8 @@ const CustomFieldsTab: React.FC<{
             }));
             
             toast.success(`Field permanently deleted. ${result.deletedCount} test case(s) updated.`);
-        } catch (error: any) {
-            toast.error(error?.message || 'Failed to delete field');
+        } catch (error: unknown) {
+            toast.error((error as Error)?.message || 'Failed to delete field');
         }
     };
 

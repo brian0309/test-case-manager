@@ -229,8 +229,9 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                 setGeneratedCases(cases);
             }
 
-        } catch (error: any) {
-            if (error.name === 'AbortError') {
+        } catch (error: unknown) {
+            const errorObj = error as { name?: string; message?: string; error?: { message?: string } };
+            if (errorObj.name === 'AbortError') {
                 toast.error('Generation cancelled');
             } else {
                 console.error('Generation error:', error);
@@ -240,10 +241,10 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                 // Try to get the error message from various possible locations
                 if (typeof error === 'string') {
                     errorMessage = error;
-                } else if (error?.message) {
-                    errorMessage = error.message;
-                } else if (error?.error?.message) {
-                    errorMessage = error.error.message;
+                } else if (errorObj?.message) {
+                    errorMessage = errorObj.message;
+                } else if (errorObj?.error?.message) {
+                    errorMessage = errorObj.error.message;
                 }
                 
                 // Limit error message length for toasts

@@ -97,7 +97,7 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
                 setStep(2);
             },
             error: (error) => {
-                alert(`Error parsing CSV: ${error.message}`);
+                alert(`Error parsing CSV: ${(error as Error).message}`);
             },
         });
     };
@@ -353,8 +353,8 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
             const result = await onImport(testCases, skipDuplicates);
             setImportResult(result);
             setStep(4);
-        } catch (error: any) {
-            alert(`Import failed: ${error.message || 'Unknown error'}`);
+        } catch (error: unknown) {
+            alert(`Import failed: ${(error as Error).message || 'Unknown error'}`);
         } finally {
             setImporting(false);
         }
