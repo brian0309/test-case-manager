@@ -77,7 +77,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
             const loadSettings = async () => {
                 try {
                     await fetchProjectSettings(testCase.projectId);
-                } catch (err) {
+                } catch (err: unknown) {
                     console.error('Failed to load project settings:', err);
                 }
             };
