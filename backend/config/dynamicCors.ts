@@ -45,7 +45,7 @@ export const getCorsOptions = (): CorsOptions => {
           // If COOKIE_DOMAIN is .example.com and host is preview-123.vercel.app, this won't match
           // but if you use subdomains under the same parent (e.g., app.example.com), it can.
           if (host.endsWith(process.env.COOKIE_DOMAIN.replace(/^[*.]+/, ""))) return callback(null, true);
-        } catch (e) {
+        } catch {
           // ignore URL parse errors
         }
       }

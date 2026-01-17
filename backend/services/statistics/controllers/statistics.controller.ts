@@ -128,7 +128,14 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             .populate('history.userId', 'name email profilePicture')
             .lean();
 
-        let userActions: any[] = [];
+        interface UserAction {
+            id: string;
+            user: string;
+            avatar: string;
+            action: string;
+            time: Date;
+        }
+        const userActions: UserAction[] = [];
 
         userTestCases.forEach((testCase: any) => {
             // Check creation

@@ -35,7 +35,6 @@ export const validateFile = (
 export const generateFileKey = (filename: string): string => {
     const timestamp = Date.now();
     const uuid = uuidv4();
-    const extension = filename.split(".").pop() || "";
     const sanitizedFilename = filename
         .replace(/[^a-zA-Z0-9._-]/g, "_")
         .substring(0, 100);
