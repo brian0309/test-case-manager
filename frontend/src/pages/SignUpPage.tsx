@@ -34,6 +34,9 @@ const SignUpPage: React.FC = () => {
 			className='max-w-md w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-lg overflow-hidden'
 		>
 			<div className='p-8'>
+				<div className='flex justify-center mb-6'>
+					<img src="/logo.svg" alt="Logo" className="w-16 h-16" />
+				</div>
 				<h2 className='text-3xl font-bold mb-6 text-center text-gray-900 dark:text-gray-100'>
 					Create Account
 				</h2>
