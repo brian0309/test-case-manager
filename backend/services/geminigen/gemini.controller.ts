@@ -60,7 +60,7 @@ export const getGeminiSettings = async (req: Request, res: Response) => {
 
 export const generateTestCases = async (req: Request, res: Response) => {
     try {
-        const { context, type = 'new_case', selectedFields, existingTestCases = [], imageUrls = [] } = req.body;
+        const { context, selectedFields, existingTestCases = [], imageUrls = [] } = req.body;
         const userId = req.userId;
 
         const user = await User.findById(userId).select('+geminiApiKey');
@@ -71,7 +71,7 @@ export const generateTestCases = async (req: Request, res: Response) => {
         const decryptedKey = decryptApiKey(user.geminiApiKey);
         const model = user.geminiModel || 'gemini-2.5-flash';
 
-        const result = await generateTestCaseDetails(decryptedKey, context, type, selectedFields, existingTestCases, imageUrls, model);
+        const result = await generateTestCaseDetails(decryptedKey, context, selectedFields, existingTestCases, imageUrls, model);
 
         res.status(200).json({ success: true, data: result });
     } catch (error: any) {
@@ -87,7 +87,7 @@ export const generateTestCases = async (req: Request, res: Response) => {
  */
 export const generateTestCasesStream = async (req: Request, res: Response) => {
     try {
-        const { context, type = 'new_case', selectedFields, existingTestCases = [], imageUrls = [], model } = req.body;
+        const { context, selectedFields, existingTestCases = [], imageUrls = [], model } = req.body;
         const userId = req.userId;
 
         const user = await User.findById(userId).select('+geminiApiKey');
@@ -115,7 +115,6 @@ export const generateTestCasesStream = async (req: Request, res: Response) => {
         await generateTestCaseDetailsStream(
             decryptedKey,
             context,
-            type,
             selectedFields,
             existingTestCases,
             imageUrls,

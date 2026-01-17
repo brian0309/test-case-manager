@@ -155,7 +155,6 @@ export const generateTestSteps = async (apiKey: string, testCaseTitle: string, c
 export const generateTestCaseDetails = async (
     apiKey: string,
     context: string,
-    type: 'new_case' | 'steps' | 'area' | 'expected',
     selectedFields: { area: boolean; steps: boolean; expected: boolean } = { area: true, steps: true, expected: true },
     existingTestCases: string[] = [],
     imageUrls: string[] = [],
@@ -163,11 +162,7 @@ export const generateTestCaseDetails = async (
 ) => {
     const ai = new GoogleGenAI({ apiKey });
 
-    let prompt = "";
-    let schema: any = {};
-
-    if (type === 'new_case') {
-        const fieldsRequest = [];
+    const fieldsRequest = [];
         if (selectedFields.area) fieldsRequest.push("Page/Area");
         if (selectedFields.steps) fieldsRequest.push("list of Steps (Action + Expected Result)");
         if (selectedFields.expected) fieldsRequest.push("Expected Result Summary");
@@ -232,11 +227,31 @@ export const generateTestCaseDetails = async (
                 required: required
             }
         };
-    } else {
-        // Fallback or specific field generation
-        prompt = `Generate content for "${type}" based on: "${context}"`;
-        // ... define other schemas as needed
-    }
+
+    const prompt = `Based on this context: "${context}"${imageContext}, generate a comprehensive set of test case scenarios covering all possible scenarios and edge cases.
+        Generate at least 10 test cases (or more if the context is highly complex), ensuring broad coverage across different categories:
+
+        - Positive Test Cases: Normal, expected workflows that should pass
+        - Negative Test Cases: Invalid inputs, error conditions, and failure scenarios
+        - Edge Cases: Boundary conditions, extreme values, and unusual but valid inputs
+        - Boundary Value Tests: Tests at the limits of acceptable input ranges
+        - Error Handling Tests: How the system responds to errors, exceptions, and unexpected conditions
+        - Security/Validation Tests: Input validation, sanitization, and security-related scenarios
+        - Performance/Stress Tests: High load, large data sets, or resource-intensive operations
+        - Integration Tests: Interactions between different components or systems
+        - Accessibility Tests: Usability for different user types or assistive technologies
+        - Cross-browser/Cross-platform Tests: If applicable to the context
+
+        For each test case, provide a Title, Description, Preconditions${fieldsRequest.length > 0 ? ", " + fieldsRequest.join(", ") : ""}.${existingCasesContext}`;
+
+    const schema: any = {
+        type: Type.ARRAY,
+        items: {
+            type: Type.OBJECT,
+            properties: properties,
+            required: required
+        }
+    };
 
     try {
         // Build contents array - if we have images, we need to use multimodal input
@@ -372,16 +387,11 @@ async function fetchImageAsBase64(imageUrl: string): Promise<{ base64: string; m
  */
 function buildPromptAndSchema(
     context: string,
-    type: 'new_case' | 'steps' | 'area' | 'expected',
     selectedFields: { area: boolean; steps: boolean; expected: boolean; testDescription?: boolean },
     existingTestCases: string[] = [],
     imageUrls: string[] = []
 ): { prompt: string; schema: any } {
-    let prompt = "";
-    let schema: any = {};
-
-    if (type === 'new_case') {
-        const fieldsRequest = [];
+    const fieldsRequest = [];
         if (selectedFields.area) fieldsRequest.push("Page/Area");
         if (selectedFields.steps) fieldsRequest.push("list of Steps (Action + Expected Result)");
         if (selectedFields.expected) fieldsRequest.push("Expected Result Summary");
@@ -446,10 +456,6 @@ function buildPromptAndSchema(
                 required: required
             }
         };
-    } else {
-        // Fallback or specific field generation
-        prompt = `Generate content for "${type}" based on: "${context}"`;
-    }
 
     return { prompt, schema };
 }
@@ -491,7 +497,6 @@ async function buildContents(prompt: string, imageUrls: string[] = []): Promise<
 export const generateTestCaseDetailsStream = async (
     apiKey: string,
     context: string,
-    type: 'new_case' | 'steps' | 'area' | 'expected',
     selectedFields: { area: boolean; steps: boolean; expected: boolean; testDescription?: boolean },
     existingTestCases: string[],
     imageUrls: string[],
@@ -500,7 +505,7 @@ export const generateTestCaseDetailsStream = async (
 ): Promise<void> => {
     const ai = new GoogleGenAI({ apiKey });
     
-    const { prompt, schema } = buildPromptAndSchema(context, type, selectedFields, existingTestCases, imageUrls);
+    const { prompt, schema } = buildPromptAndSchema(context, selectedFields, existingTestCases, imageUrls);
     const contents = await buildContents(prompt, imageUrls);
 
     try {

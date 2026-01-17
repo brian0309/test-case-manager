@@ -16,8 +16,6 @@ interface GeminiGenerationModalProps {
     existingTestCases: string[];
 }
 
-type GenerationType = 'new_case' | 'steps' | 'area' | 'expected';
-
 interface GeneratedCase {
     title: string;
     description: string;
@@ -37,7 +35,6 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
     suiteId,
     existingTestCases
 }) => {
-    const [generationType, setGenerationType] = useState<GenerationType>('new_case');
     const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash');
     const [selectedFields, setSelectedFields] = useState({
         area: true,
@@ -150,7 +147,6 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                 credentials: 'include',
                 body: JSON.stringify({
                     context,
-                    type: generationType,
                     selectedFields,
                     existingTestCases,
                     imageUrls: contextImages,
@@ -348,21 +344,6 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                     <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
                                     <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
                                     <option value="gemini-3-pro-preview">Gemini 3 Pro Preview</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Generation Type
-                                </label>
-                                <select
-                                    value={generationType}
-                                    onChange={(e) => setGenerationType(e.target.value as GenerationType)}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400"
-                                >
-                                    <option value="new_case">New Test Cases</option>
-                                    {/* Other options disabled for now as per requirement focus */}
-                                    {/* <option value="steps">Test Steps Only</option> */}
                                 </select>
                             </div>
 
