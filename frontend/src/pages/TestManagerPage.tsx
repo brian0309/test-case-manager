@@ -138,6 +138,21 @@ const TestManagerPage: React.FC = () => {
         }
     };
 
+    const handleCreateProject = async () => {
+        const name = prompt("Enter Project Name:");
+        if (!name) return;
+
+        try {
+            await createProject({
+                name,
+                description: 'New project workspace',
+                color: 'bg-blue-500',
+            });
+        } catch {
+            // Error is handled in store
+        }
+    };
+
     const createNewTestCase = () => {
         if (!activeSuiteId) {
             alert("Please select a test suite first");

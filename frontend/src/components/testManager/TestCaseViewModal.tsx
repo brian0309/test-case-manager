@@ -87,9 +87,12 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
 
     // Separate effect to update custom fields when projectSettings changes
     useEffect(() => {
-        if (testCase?.projectId && projectSettings[testCase.projectId]?.testCases?.customFields) {
-            const fields = projectSettings[testCase.projectId].testCases.customFields;
-            setCustomFields(fields);
+        if (testCase?.projectId) {
+            const settings = projectSettings[testCase.projectId];
+            const fields = settings?.testCases?.customFields;
+            if (fields) {
+                setCustomFields(fields);
+            }
         }
     }, [testCase?.projectId, projectSettings]);
 

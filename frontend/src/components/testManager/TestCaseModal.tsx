@@ -58,8 +58,8 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
     useEffect(() => {
         if (localCase?.projectId && projectSettings[localCase.projectId]?.testCases) {
             const settings = projectSettings[localCase.projectId];
-            setCustomFields(settings.testCases.customFields || []);
-            setHiddenFields(settings.testCases.hiddenDefaultFields || {});
+            setCustomFields(settings.testCases?.customFields || []);
+            setHiddenFields((settings.testCases?.hiddenDefaultFields as Record<string, boolean>) || {});
         }
     }, [localCase?.projectId, projectSettings]);
 

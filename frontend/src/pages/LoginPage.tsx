@@ -12,7 +12,7 @@ const LoginPage: React.FC = () => {
 	const [password, setPassword] = useState<string>("");
 	const navigate = useNavigate();
 
-	const { login, isLoading } = useAuthStore();
+	const { login, isLoading, error } = useAuthStore();
 
 	const handleLogin = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
 		e.preventDefault();
