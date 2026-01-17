@@ -114,7 +114,7 @@ class ReportingApi {
      * Export report data to CSV
      * (Future enhancement - returns formatted CSV string)
      */
-    async exportToCSV(_reportType: string, _data: any): Promise<string> {
+    async exportToCSV(_reportType: string, _data: Record<string, unknown>): Promise<string> {
         // This is a placeholder for CSV export functionality
         // In a real implementation, you would format the data as CSV
         throw new Error('CSV export not yet implemented');
@@ -124,7 +124,7 @@ class ReportingApi {
      * Export report data to PDF
      * (Future enhancement - returns PDF blob)
      */
-    async exportToPDF(_reportType: string, _data: any): Promise<Blob> {
+    async exportToPDF(_reportType: string, _data: Record<string, unknown>): Promise<Blob> {
         // This is a placeholder for PDF export functionality
         // In a real implementation, you would generate a PDF using a library like jsPDF
         throw new Error('PDF export not yet implemented');
