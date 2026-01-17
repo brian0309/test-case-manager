@@ -1,7 +1,6 @@
 import { TestRun } from '../../../models/testRun.model.js';
 import { TestCase } from '../../../models/testCase.model.js';
 import { TestSuite } from '../../../models/testSuite.model.js';
-import { TestRunGroup } from '../../../models/testRunGroup.model.js';
 import { Types } from 'mongoose';
 import {
     ReportFilterParams,
@@ -308,13 +307,11 @@ export class ReportingService {
         };
 
         // Determine grouping format based on groupBy parameter
-        let dateFormat: any;
-        let periodFormat: string;
+        let dateFormat: unknown;
         
         switch (params.groupBy) {
             case 'day':
                 dateFormat = { $dateToString: { format: '%Y-%m-%d', date: '$completedAt' } };
-                periodFormat = '%b %-d';
                 break;
             case 'week':
                 dateFormat = {
@@ -323,15 +320,12 @@ export class ReportingService {
                         date: '$completedAt',
                     },
                 };
-                periodFormat = 'Week %V';
                 break;
             case 'month':
                 dateFormat = { $dateToString: { format: '%Y-%m', date: '$completedAt' } };
-                periodFormat = '%B %Y';
                 break;
             default:
                 dateFormat = { $dateToString: { format: '%Y-%m-%d', date: '$completedAt' } };
-                periodFormat = '%b %-d';
         }
 
         const aggregation = await TestRun.aggregate([
@@ -421,9 +415,10 @@ export class ReportingService {
         switch (groupBy) {
             case 'day':
                 return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            case 'week':
+            case 'week': {
                 const weekNum = this.getWeekNumber(d);
                 return `Week ${weekNum}`;
+            }
             case 'month':
                 return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
             default:

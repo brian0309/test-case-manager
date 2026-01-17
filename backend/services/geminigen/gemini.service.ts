@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import crypto from 'crypto';
 import { Response } from 'express';
 
@@ -137,7 +137,7 @@ export const generateTestSteps = async (apiKey: string, testCaseTitle: string, c
                         const parsed = JSON.parse(recovered);
                         console.log("JSON recovery successful for steps at position:", cutPos);
                         return parsed;
-                    } catch (e) {
+                    } catch {
                         // Continue trying
                     }
                 }
@@ -313,7 +313,7 @@ export const generateTestCaseDetails = async (
                         const parsed = JSON.parse(recovered);
                         console.log("JSON recovery successful at position:", cutPos);
                         return parsed;
-                    } catch (e) {
+                    } catch {
                         // Continue trying
                     }
                 }

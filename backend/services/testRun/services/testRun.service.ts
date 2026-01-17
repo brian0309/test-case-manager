@@ -1,7 +1,6 @@
 import { Types } from "mongoose";
 import { TestRun } from "../../../models/testRun.model.js";
 import { TestCase } from "../../../models/testCase.model.js";
-import { TestSuite } from "../../../models/testSuite.model.js";
 import * as projectService from "../../testCase/services/project.service.js";
 import {
   ITestRunDocument,
@@ -15,7 +14,6 @@ import {
   TestRunListResponse,
   RunItemResponse,
   TesterResponse,
-  ResultsSummaryResponse,
   ReorderRunItemsRequest,
 } from "../types/testRun.types.js";
 
