@@ -108,8 +108,6 @@ class SocketService {
     this.isConnecting = true;
     const socketUrl = this.getSocketUrl();
 
-    console.log("[Socket] Connecting to:", socketUrl || "same-origin");
-
     this.socket = io(socketUrl, {
       withCredentials: true, // Send cookies for authentication
       transports: ["websocket", "polling"],
@@ -120,7 +118,6 @@ class SocketService {
     });
 
     this.socket.on("connect", () => {
-      console.log("[Socket] Connected:", this.socket?.id);
       this.isConnecting = false;
       this.reconnectAttempts = 0;
 
@@ -134,18 +131,12 @@ class SocketService {
     });
 
     this.socket.on("disconnect", (reason) => {
-      console.log("[Socket] Disconnected:", reason);
       this.isConnecting = false;
     });
 
     this.socket.on("connect_error", (error) => {
-      console.error("[Socket] Connection error:", error.message);
       this.isConnecting = false;
       this.reconnectAttempts++;
-
-      if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        console.warn("[Socket] Max reconnection attempts reached");
-      }
     });
   }
 
@@ -180,7 +171,6 @@ class SocketService {
 
       this.socket.emit("join:project", { projectId, user });
       this.currentProjectId = projectId;
-      console.log("[Socket] Joined project:", projectId, user ? `as ${user.name}` : "");
     }
   }
 
@@ -193,7 +183,6 @@ class SocketService {
       if (this.currentProjectId === projectId) {
         this.currentProjectId = null;
       }
-      console.log("[Socket] Left project:", projectId);
     }
   }
 
@@ -209,7 +198,6 @@ class SocketService {
 
       this.socket.emit("join:suite", suiteId);
       this.currentSuiteId = suiteId;
-      console.log("[Socket] Joined suite:", suiteId);
     }
   }
 
@@ -222,7 +210,6 @@ class SocketService {
       if (this.currentSuiteId === suiteId) {
         this.currentSuiteId = null;
       }
-      console.log("[Socket] Left suite:", suiteId);
     }
   }
 
@@ -240,7 +227,6 @@ class SocketService {
   ): void {
     if (this.socket?.connected && testCaseId) {
       this.socket.emit("join:testcase", { testCaseId, projectId, user });
-      console.log("[Socket] Joined testcase for editing:", testCaseId);
     }
   }
 
@@ -250,7 +236,6 @@ class SocketService {
   leaveTestCase(testCaseId: string, projectId: string, userId: string): void {
     if (this.socket?.connected && testCaseId) {
       this.socket.emit("leave:testcase", { testCaseId, projectId, userId });
-      console.log("[Socket] Left testcase:", testCaseId);
     }
   }
 
