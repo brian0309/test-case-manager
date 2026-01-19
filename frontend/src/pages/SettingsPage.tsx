@@ -45,7 +45,7 @@ const SettingsPage: React.FC = () => {
                             {user?.name || "User"}
                         </h1>
                         <p className="text-sm text-gray-500 mt-1 dark:text-gray-400">
-                            Manage your teams and preferences here.
+                            Manage your preferences here.
                         </p>
                     </div>
 
@@ -129,45 +129,6 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ user }) => {
                         </button>
                     </div>
                     <p className="text-sm text-gray-900 dark:text-gray-100">{user?.email || "Not set"}</p>
-                </div>
-
-                {/* Linked Team Account Section */}
-                <div className="mb-8">
-                    <div className="mb-4">
-                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Linked team account</label>
-                        <p className="text-xs text-gray-500 mt-1 dark:text-gray-400">
-                            Easily switch between teams and access both team and any service.
-                        </p>
-                    </div>
-
-                    {/* Account Cards */}
-                    <div className="space-y-3">
-                        {/* OpenVoid Account */}
-                        <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg dark:border-gray-700">
-                            <div className="flex items-center space-x-3">
-                                <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">OV</span>
-                                </div>
-                                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">OpenVoid</span>
-                            </div>
-                            <button className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md">
-                                Manage team
-                            </button>
-                        </div>
-
-                        {/* Simplias Ventures Account */}
-                        <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg dark:border-gray-700">
-                            <div className="flex items-center space-x-3">
-                                <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
-                                    <span className="text-sm font-medium text-white">S</span>
-                                </div>
-                                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Simplias Ventures</span>
-                            </div>
-                            <button className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md">
-                                Manage team
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -417,7 +378,7 @@ const GeminiTab = () => {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Validate that either API key exists or user is providing a new one
         if (!hasExistingKey && !apiKey) {
             toast.error("Please enter an API Key");
