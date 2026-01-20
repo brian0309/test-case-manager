@@ -141,7 +141,7 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div 
+            <div
                 className="absolute inset-0 bg-white/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
@@ -314,7 +314,7 @@ const EditTestRunModal: React.FC<EditTestRunModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div 
+            <div
                 className="absolute inset-0 bg-white/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
@@ -428,7 +428,7 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-            <div 
+            <div
                 className="absolute inset-0 bg-white/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
@@ -567,12 +567,17 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                         {/* Complete button */}
                         <button
                             onClick={handleComplete}
-                            className="w-full px-4 py-3 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-lg active:bg-blue-50 dark:active:bg-blue-900/30"
+                            disabled={executedCount < totalItems}
+                            className={`w-full px-4 py-3 text-sm font-medium rounded-lg transition-all ${executedCount < totalItems
+                                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed opacity-60'
+                                    : 'text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 active:bg-blue-50 dark:active:bg-blue-900/30'
+                                }`}
+                            title={executedCount < totalItems ? "Please complete all test cases before finishing the run" : ""}
                         >
                             Complete Run
                         </button>
                     </div>
-                    
+
                     {/* Desktop: Horizontal layout */}
                     <div className="hidden sm:flex items-center justify-between">
                         <div className="flex gap-2">
@@ -610,7 +615,12 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                         </div>
                         <button
                             onClick={handleComplete}
-                            className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                            disabled={executedCount < totalItems}
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${executedCount < totalItems
+                                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed opacity-60'
+                                    : 'text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 active:bg-blue-50 dark:active:bg-blue-900/30 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                                }`}
+                            title={executedCount < totalItems ? "Please complete all test cases before finishing the run" : ""}
                         >
                             Complete Run
                         </button>
@@ -638,7 +648,7 @@ const TestRunsPage: React.FC = () => {
     const [isDeleteGroupModalOpen, setIsDeleteGroupModalOpen] = useState(false);
     const [editingRun, setEditingRun] = useState<TestRunListItem | null>(null);
     const [isEditRunModalOpen, setIsEditRunModalOpen] = useState(false);
-    
+
     const location = useLocation();
 
     // Handle navigation state for opening new run modal
@@ -850,11 +860,11 @@ const TestRunsPage: React.FC = () => {
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 sm:sticky sm:top-0 sm:z-20">
                 <div className="flex items-center gap-2">
                     {/* Mobile Menu Toggle */}
-                        <button
-                            onClick={() => setIsMobileSidebarOpen(true)}
-                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg md:hidden"
-                            title="Open Run Groups"
-                        >
+                    <button
+                        onClick={() => setIsMobileSidebarOpen(true)}
+                        className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg md:hidden"
+                        title="Open Run Groups"
+                    >
                         <Menu className="w-5 h-5" />
                     </button>
                     <ContextBreadcrumb showSuiteSelector={false} />
@@ -865,7 +875,7 @@ const TestRunsPage: React.FC = () => {
             {isMobileSidebarOpen && (
                 <div className="fixed inset-0 z-40 md:hidden">
                     {/* Backdrop */}
-                    <div 
+                    <div
                         className="absolute inset-0 bg-black/50 transition-opacity"
                         onClick={() => setIsMobileSidebarOpen(false)}
                     />
