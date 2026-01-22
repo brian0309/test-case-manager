@@ -15,6 +15,7 @@ import {
     TestRunGroup,
 } from '../../types/testManager';
 import { testRunApi } from '../../services/testRunApi';
+import { useRealtimeTestRuns } from '../../hooks/useRealtimeTestRuns';
 import {
     Play,
     Clock,
@@ -648,6 +649,13 @@ const TestRunsPage: React.FC = () => {
     const [isDeleteGroupModalOpen, setIsDeleteGroupModalOpen] = useState(false);
     const [editingRun, setEditingRun] = useState<TestRunListItem | null>(null);
     const [isEditRunModalOpen, setIsEditRunModalOpen] = useState(false);
+
+    // Real-time updates
+    useRealtimeTestRuns({
+        projectId: activeProject,
+        setTestRuns,
+        setExecuteRun,
+    });
 
     const location = useLocation();
 

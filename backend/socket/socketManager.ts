@@ -65,6 +65,19 @@ export interface SocketEvents {
   "testsuite:updated": { suite: any; projectId: string };
   "testsuite:deleted": { suiteId: string; projectId: string };
 
+  // Test Run Events
+  "testrun:created": { testRun: any; projectId: string };
+  "testrun:updated": { testRun: any; projectId: string };
+  "testrun:deleted": { testRunId: string; projectId: string };
+  "testrun:item-updated": { 
+    testRunId: string; 
+    itemId: string; 
+    status: string; 
+    actualResult?: string;
+    resultsSummary: any;
+    projectId: string;
+  };
+
   // Project Events
   "project:updated": { project: any; projectId: string };
   "project:settings-updated": { settings: any; projectId: string };
@@ -494,6 +507,45 @@ export const emitTestSuiteUpdated = (projectId: string, suite: any) => {
 export const emitTestSuiteDeleted = (projectId: string, suiteId: string) => {
   socketManager.emitToProject(projectId, "testsuite:deleted", {
     suiteId,
+    projectId,
+  });
+};
+
+export const emitTestRunCreated = (projectId: string, testRun: any) => {
+  socketManager.emitToProject(projectId, "testrun:created", {
+    testRun,
+    projectId,
+  });
+};
+
+export const emitTestRunUpdated = (projectId: string, testRun: any) => {
+  socketManager.emitToProject(projectId, "testrun:updated", {
+    testRun,
+    projectId,
+  });
+};
+
+export const emitTestRunDeleted = (projectId: string, testRunId: string) => {
+  socketManager.emitToProject(projectId, "testrun:deleted", {
+    testRunId,
+    projectId,
+  });
+};
+
+export const emitTestRunItemUpdated = (
+  projectId: string, 
+  testRunId: string, 
+  itemId: string, 
+  status: string, 
+  resultsSummary: any,
+  actualResult?: string
+) => {
+  socketManager.emitToProject(projectId, "testrun:item-updated", {
+    testRunId,
+    itemId,
+    status,
+    actualResult,
+    resultsSummary,
     projectId,
   });
 };

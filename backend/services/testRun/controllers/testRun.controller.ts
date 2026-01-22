@@ -7,6 +7,12 @@ import {
   UpdateRunItemRequest,
   ReorderRunItemsRequest,
 } from "../types/testRun.types.js";
+import {
+  emitTestRunCreated,
+  emitTestRunUpdated,
+  emitTestRunDeleted,
+  emitTestRunItemUpdated,
+} from "../../../socket/socketManager.js";
 
 /**
  * POST /api/projects/:projectId/runs
@@ -45,6 +51,8 @@ export const createTestRun = async (req: Request, res: Response): Promise<void> 
 
     const populated = await testRunService.getTestRunById((testRun._id as Types.ObjectId).toString(), userId);
     const response = testRunService.formatTestRunResponse(populated);
+
+    emitTestRunCreated(projectId, response);
 
     res.status(201).json({ success: true, data: response });
   } catch (error) {
@@ -161,6 +169,9 @@ export const deleteTestRun = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
+    // Emit deleted event
+    emitTestRunDeleted(deleted.projectId, id);
+
     res.status(200).json({ success: true, message: "Test run deleted successfully" });
   } catch (error) {
     console.error("Error in deleteTestRun:", error);
@@ -194,6 +205,23 @@ export const updateRunItem = async (req: Request, res: Response): Promise<void> 
     }
 
     const response = testRunService.formatTestRunResponse(testRun);
+
+    // Emit item update event
+    const updatedItem = testRun.items.find(i => (i as any)._id.toString() === itemId);
+    if (updatedItem) {
+      emitTestRunItemUpdated(
+        testRun.projectId.toString(),
+        (testRun as any)._id.toString(),
+        itemId,
+        updatedItem.status,
+        response.resultsSummary,
+        updatedItem.actualResult
+      );
+    }
+    
+    // Also emit full update for list views that might need stats update
+    emitTestRunUpdated(testRun.projectId.toString(), response);
+
     res.status(200).json({ success: true, data: response });
   } catch (error) {
     console.error("Error in updateRunItem:", error);
@@ -232,6 +260,10 @@ export const reorderRunItems = async (req: Request, res: Response): Promise<void
     }
 
     const response = testRunService.formatTestRunResponse(testRun);
+    
+    // Emit updated event (for reordering)
+    emitTestRunUpdated(testRun.projectId.toString(), response);
+    
     res.status(200).json({ success: true, data: response });
   } catch (error) {
     console.error("Error in reorderRunItems:", error);
@@ -265,6 +297,10 @@ export const cloneTestRun = async (req: Request, res: Response): Promise<void> =
     }
 
     const response = testRunService.formatTestRunResponse(testRun);
+    
+    // Emit created event
+    emitTestRunCreated(testRun.projectId.toString(), response);
+    
     res.status(201).json({ success: true, data: response });
   } catch (error) {
     console.error("Error in cloneTestRun:", error);
@@ -299,6 +335,10 @@ export const completeTestRun = async (req: Request, res: Response): Promise<void
     }
 
     const response = testRunService.formatTestRunResponse(testRun);
+    
+    // Emit updated event
+    emitTestRunUpdated(testRun.projectId.toString(), response);
+    
     res.status(200).json({ success: true, data: response });
   } catch (error) {
     console.error("Error in completeTestRun:", error);

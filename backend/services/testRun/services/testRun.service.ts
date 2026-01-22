@@ -198,10 +198,10 @@ export const updateTestRun = async (
 export const deleteTestRun = async (
   testRunId: string,
   userId: string
-): Promise<boolean> => {
+): Promise<{ projectId: string } | null> => {
   const testRun = await TestRun.findById(testRunId);
   if (!testRun) {
-    return false;
+    return null;
   }
 
   const hasAccess = await projectService.hasProjectAccess(
@@ -209,11 +209,11 @@ export const deleteTestRun = async (
     userId
   );
   if (!hasAccess) {
-    return false;
+    return null;
   }
 
   await TestRun.deleteOne({ _id: new Types.ObjectId(testRunId) });
-  return true;
+  return { projectId: testRun.projectId.toString() };
 };
 
 /**

@@ -4,7 +4,7 @@
  */
 
 import { io, Socket } from "socket.io-client";
-import { TestCase, TestSuite, Project } from "../types/testManager";
+import { TestCase, TestSuite, Project, ProjectSettings, TestRun, RunItemStatus, ResultsSummary } from "../types/testManager";
 
 // Socket event types matching backend
 export interface SocketEvents {
@@ -44,9 +44,22 @@ export interface SocketEvents {
   "testsuite:updated": { suite: TestSuite; projectId: string };
   "testsuite:deleted": { suiteId: string; projectId: string };
 
+  // Test Run Events
+  "testrun:created": { testRun: TestRun; projectId: string };
+  "testrun:updated": { testRun: TestRun; projectId: string };
+  "testrun:deleted": { testRunId: string; projectId: string };
+  "testrun:item-updated": { 
+    testRunId: string; 
+    itemId: string; 
+    status: RunItemStatus; 
+    actualResult?: string;
+    resultsSummary: ResultsSummary;
+    projectId: string;
+  };
+
   // Project Events
   "project:updated": { project: Project; projectId: string };
-  "project:settings-updated": { settings: any; projectId: string };
+  "project:settings-updated": { settings: ProjectSettings; projectId: string };
   "project:deleted": { projectId: string };
   
   // Project Presence Events
