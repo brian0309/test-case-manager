@@ -244,13 +244,21 @@ const TestCasesPage: React.FC = () => {
 
     // Fetch test suites when project is active
     useEffect(() => {
+        // Prevent race condition: if there is a suiteId or testCaseId in the URL,
+        // do not fetch data based on the old activeProject. Let the URL handler update the context first.
+        if (searchParams.get('suiteId') || searchParams.get('testCaseId')) return;
+
         if (activeProject) {
             fetchTestSuites(activeProject);
         }
-    }, [activeProject, fetchTestSuites]);
+    }, [activeProject, fetchTestSuites, searchParams]);
 
     // Fetch test cases based on suite or project selection
     useEffect(() => {
+        // Prevent race condition: if there is a suiteId or testCaseId in the URL,
+        // do not fetch data based on the old activeSuiteId/activeProject.
+        if (searchParams.get('suiteId') || searchParams.get('testCaseId')) return;
+
         if (activeSuiteId) {
             // If a specific suite is selected, fetch only that suite's cases
             fetchTestCases(activeSuiteId);
@@ -258,7 +266,7 @@ const TestCasesPage: React.FC = () => {
             // If no suite is selected but project is, fetch all cases for the project
             fetchTestCasesByProject(activeProject);
         }
-    }, [activeSuiteId, activeProject, fetchTestCases, fetchTestCasesByProject]);
+    }, [activeSuiteId, activeProject, fetchTestCases, fetchTestCasesByProject, searchParams]);
 
     // Open modal if navigation state asked for it (from toolbar quick-add)
     useEffect(() => {

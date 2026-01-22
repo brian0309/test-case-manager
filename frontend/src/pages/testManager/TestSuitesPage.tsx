@@ -89,6 +89,13 @@ const TestSuitesPage: React.FC = () => {
     // Fetch test suites and test cases when project is active
     // Prioritize loading suites first for faster initial display
     useEffect(() => {
+        // Prevent race condition: if there is a projectId in the URL that differs from activeProject,
+        // do not fetch data for the old project. Let the URL handler update the project first.
+        const urlProjectId = searchParams.get('projectId');
+        if (urlProjectId && urlProjectId !== activeProject) {
+            return;
+        }
+
         if (activeProject) {
             setIsSuitesLoading(true);
             // Fetch suites first (faster), then cases in background for stats
@@ -100,7 +107,7 @@ const TestSuitesPage: React.FC = () => {
         } else {
             setIsSuitesLoading(false);
         }
-    }, [activeProject, fetchTestSuites, fetchTestCasesByProject]);
+    }, [activeProject, fetchTestSuites, fetchTestCasesByProject, searchParams]);
 
     // Filter test cases by active project
     const projectTestCases = activeProject
