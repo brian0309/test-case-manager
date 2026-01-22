@@ -270,19 +270,19 @@ describe("Test Run Service", () => {
 
       const deleted = await testRunService.deleteTestRun(testRunId, testUserId);
 
-      expect(deleted).toBe(true);
+      expect(deleted).toEqual({ projectId: testProjectId });
       expect(mockTestRun.deleteOne).toHaveBeenCalled();
     });
 
-    it("should return false if test run not found", async () => {
+    it("should return null if test run not found", async () => {
       mockTestRun.findById = jest.fn().mockResolvedValue(null);
 
       const deleted = await testRunService.deleteTestRun(testRunId, testUserId);
 
-      expect(deleted).toBe(false);
+      expect(deleted).toBeNull();
     });
 
-    it("should return false if user has no project access", async () => {
+    it("should return null if user has no project access", async () => {
       mockTestRun.findById = jest.fn().mockResolvedValue({
         _id: new Types.ObjectId(testRunId),
         projectId: new Types.ObjectId(testProjectId),
@@ -292,7 +292,7 @@ describe("Test Run Service", () => {
 
       const deleted = await testRunService.deleteTestRun(testRunId, testUser2Id);
 
-      expect(deleted).toBe(false);
+      expect(deleted).toBeNull();
     });
   });
 
