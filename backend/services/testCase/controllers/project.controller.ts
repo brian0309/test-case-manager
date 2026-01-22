@@ -6,6 +6,12 @@ import {
   AddMemberRequest,
 } from "../types/testCase.types.js";
 
+import {
+  emitProjectUpdated,
+  emitProjectSettingsUpdated,
+  emitProjectDeleted,
+} from "../../../socket/socketManager.js";
+
 /**
  * POST /api/projects
  * Create a new project
@@ -113,6 +119,10 @@ export const updateProject = async (req: Request, res: Response): Promise<void> 
     }
 
     const response = await projectService.formatProjectResponse(project);
+
+    // Emit socket event
+    emitProjectUpdated(id, response);
+
     res.status(200).json({ success: true, data: response });
   } catch (error) {
     console.error("Error in updateProject:", error);
@@ -142,6 +152,9 @@ export const deleteProject = async (req: Request, res: Response): Promise<void> 
       });
       return;
     }
+
+    // Emit socket event
+    emitProjectDeleted(id);
 
     res.status(200).json({ success: true, message: "Project deleted successfully" });
   } catch (error) {
@@ -181,6 +194,10 @@ export const addMember = async (req: Request, res: Response): Promise<void> => {
     }
 
     const response = await projectService.formatProjectResponse(project);
+
+    // Emit socket event
+    emitProjectUpdated(id, response);
+
     res.status(200).json({ success: true, data: response });
   } catch (error: any) {
     console.error("Error in addMember:", error);
@@ -217,6 +234,10 @@ export const removeMember = async (req: Request, res: Response): Promise<void> =
     }
 
     const response = await projectService.formatProjectResponse(project);
+
+    // Emit socket event
+    emitProjectUpdated(id, response);
+
     res.status(200).json({ success: true, data: response });
   } catch (error: any) {
     console.error("Error in removeMember:", error);
@@ -280,6 +301,9 @@ export const updateProjectSettings = async (req: Request, res: Response): Promis
       return;
     }
 
+    // Emit socket event
+    emitProjectSettingsUpdated(id, settings);
+
     res.status(200).json({ success: true, data: settings });
   } catch (error: any) {
     console.error("Error in updateProjectSettings:", error);
@@ -306,6 +330,15 @@ export const permanentlyDeleteCustomFieldData = async (req: Request, res: Respon
     const { id: projectId, fieldId } = req.params;
 
     const result = await projectService.permanentlyDeleteCustomFieldData(projectId, userId, fieldId);
+
+    // Emit socket event - settings likely updated too (implicitly), or at least force refresh
+    // We should probably fetch the updated settings to emit them, but for now just signaling 
+    // project update might be enough. 
+    // However, custom field *data* removal is a content change. 
+    // The previous step usually involves removing the field definition from settings.
+    
+    // Since this action is often paired with settings update, and affects data integrity,
+    // let's just respond. The frontend usually handles the settings update separately.
 
     res.status(200).json({ 
       success: true, 

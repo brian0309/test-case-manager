@@ -33,10 +33,40 @@ export function useRealtimeTestCases({
     setActiveTestCaseId,
     activeSuiteId,
     setActiveSuiteId,
+    updateProjectLocal,
+    updateProjectSettingsLocal,
+    deleteProjectLocal,
   } = useTestManagerStore();
 
   // Track if we've set up listeners to prevent duplicates
   const listenersSetup = useRef(false);
+
+  // Handler for project updated
+  const handleProjectUpdated = useCallback(
+    (data: SocketEvents["project:updated"]) => {
+      console.log("[Realtime] Project updated:", data);
+      updateProjectLocal(data.project);
+    },
+    [updateProjectLocal]
+  );
+
+  // Handler for project settings updated
+  const handleProjectSettingsUpdated = useCallback(
+    (data: SocketEvents["project:settings-updated"]) => {
+      console.log("[Realtime] Project settings updated:", data);
+      updateProjectSettingsLocal(data.projectId, data.settings);
+    },
+    [updateProjectSettingsLocal]
+  );
+
+  // Handler for project deleted
+  const handleProjectDeleted = useCallback(
+    (data: SocketEvents["project:deleted"]) => {
+      console.log("[Realtime] Project deleted:", data);
+      deleteProjectLocal(data.projectId);
+    },
+    [deleteProjectLocal]
+  );
 
   // Handler for test case created
   const handleTestCaseCreated = useCallback(
@@ -234,6 +264,9 @@ export function useRealtimeTestCases({
       socketService.on("testsuite:created", handleTestSuiteCreated);
       socketService.on("testsuite:updated", handleTestSuiteUpdated);
       socketService.on("testsuite:deleted", handleTestSuiteDeleted);
+      socketService.on("project:updated", handleProjectUpdated);
+      socketService.on("project:settings-updated", handleProjectSettingsUpdated);
+      socketService.on("project:deleted", handleProjectDeleted);
       listenersSetup.current = true;
     }
 
@@ -251,6 +284,9 @@ export function useRealtimeTestCases({
         socketService.off("testsuite:created");
         socketService.off("testsuite:updated");
         socketService.off("testsuite:deleted");
+        socketService.off("project:updated");
+        socketService.off("project:settings-updated");
+        socketService.off("project:deleted");
         listenersSetup.current = false;
       }
     };
@@ -267,6 +303,9 @@ export function useRealtimeTestCases({
     handleTestSuiteCreated,
     handleTestSuiteUpdated,
     handleTestSuiteDeleted,
+    handleProjectUpdated,
+    handleProjectSettingsUpdated,
+    handleProjectDeleted,
   ]);
 
   // Join/leave project room when projectId changes

@@ -30,7 +30,7 @@ const initialFilters: TestCaseFilters = {
 };
 
 // Helper to convert API response to frontend types
-const mapProjectResponse = (p: ProjectResponse): Project => ({
+export const mapProjectResponse = (p: ProjectResponse): Project => ({
     id: p.id,
     name: p.name,
     description: p.description || '',
@@ -171,6 +171,9 @@ interface TestManagerStore {
     addTestCase: (testCase: TestCase) => void;
     updateTestCaseLocal: (testCase: TestCase) => void;
     deleteTestCaseLocal: (id: string) => void;
+    updateProjectLocal: (project: Project) => void;
+    updateProjectSettingsLocal: (projectId: string, settings: ProjectSettings) => void;
+    deleteProjectLocal: (projectId: string) => void;
     setProjects: (projects: Project[]) => void;
     addProject: (project: Project) => void;
 }
@@ -576,6 +579,21 @@ export const useTestManagerStore = create<TestManagerStore>()(
             })),
             deleteTestCaseLocal: (id: string) => set((state) => ({
                 testCases: state.testCases.filter((c) => c.id !== id),
+            })),
+            updateProjectLocal: (project: Project) => set((state) => ({
+                projects: state.projects.map((p) => (p.id === project.id ? project : p)),
+            })),
+            updateProjectSettingsLocal: (projectId: string, settings: ProjectSettings) => set((state) => ({
+                projectSettings: { ...state.projectSettings, [projectId]: settings }
+            })),
+            deleteProjectLocal: (projectId: string) => set((state) => ({
+                projects: state.projects.filter((p) => p.id !== projectId),
+                // If deleted project was active, clear context
+                activeProject: state.activeProject === projectId ? null : state.activeProject,
+                activeSuite: state.activeProject === projectId ? null : state.activeSuite,
+                activeSuiteId: state.activeProject === projectId ? null : state.activeSuiteId,
+                testSuites: state.activeProject === projectId ? [] : state.testSuites,
+                testCases: state.activeProject === projectId ? [] : state.testCases,
             })),
             setProjects: (projects: Project[]) => set({ projects }),
             addProject: (project: Project) => set((state) => ({ projects: [project, ...state.projects] })),

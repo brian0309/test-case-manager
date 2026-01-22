@@ -66,7 +66,8 @@ export interface SocketEvents {
   "testsuite:deleted": { suiteId: string; projectId: string };
 
   // Project Events
-  "project:updated": { project: any };
+  "project:updated": { project: any; projectId: string };
+  "project:settings-updated": { settings: any; projectId: string };
   "project:deleted": { projectId: string };
   
   // Project Presence Events
@@ -493,6 +494,26 @@ export const emitTestSuiteUpdated = (projectId: string, suite: any) => {
 export const emitTestSuiteDeleted = (projectId: string, suiteId: string) => {
   socketManager.emitToProject(projectId, "testsuite:deleted", {
     suiteId,
+    projectId,
+  });
+};
+
+export const emitProjectUpdated = (projectId: string, project: any) => {
+  socketManager.emitToProject(projectId, "project:updated", {
+    project,
+    projectId,
+  });
+};
+
+export const emitProjectSettingsUpdated = (projectId: string, settings: any) => {
+  socketManager.emitToProject(projectId, "project:settings-updated", {
+    settings,
+    projectId,
+  });
+};
+
+export const emitProjectDeleted = (projectId: string) => {
+  socketManager.emitToProject(projectId, "project:deleted", {
     projectId,
   });
 };

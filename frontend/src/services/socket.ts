@@ -45,7 +45,8 @@ export interface SocketEvents {
   "testsuite:deleted": { suiteId: string; projectId: string };
 
   // Project Events
-  "project:updated": { project: Project };
+  "project:updated": { project: Project; projectId: string };
+  "project:settings-updated": { settings: any; projectId: string };
   "project:deleted": { projectId: string };
   
   // Project Presence Events
