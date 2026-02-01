@@ -94,7 +94,7 @@ export function useCollaborativeEditing({
     }
 
     const handleRemoteEdit = (data: SocketEvents["testcase:editing"]) => {
-      // Only process if it's for this test case (server excludes sender socket already)
+      // Only process if it's for this test case; server excludes the sender socket (socketManager)
       if (data.testCaseId !== testCaseId) {
         return;
       }
