@@ -340,11 +340,15 @@ export const createTestCase = async (
  * Get all test cases in a suite
  */
 export const getTestCases = async (
-  suiteId: string
+  suiteId: string,
+  statuses?: Status[]
 ): Promise<TestCaseResponse[]> => {
   try {
+    const statusParam = statuses && statuses.length > 0
+      ? `?status=${encodeURIComponent(statuses.join(","))}`
+      : "";
     const response = await axios.get<ApiResponse<TestCaseResponse[]>>(
-      `${API_URL}/suites/${suiteId}/cases`
+      `${API_URL}/suites/${suiteId}/cases${statusParam}`
     );
     return response.data.data || [];
   } catch (error) {
@@ -356,11 +360,15 @@ export const getTestCases = async (
  * Get all test cases in a project
  */
 export const getTestCasesByProject = async (
-  projectId: string
+  projectId: string,
+  statuses?: Status[]
 ): Promise<TestCaseResponse[]> => {
   try {
+    const statusParam = statuses && statuses.length > 0
+      ? `?status=${encodeURIComponent(statuses.join(","))}`
+      : "";
     const response = await axios.get<ApiResponse<TestCaseResponse[]>>(
-      `${API_URL}/projects/${projectId}/cases`
+      `${API_URL}/projects/${projectId}/cases${statusParam}`
     );
     return response.data.data || [];
   } catch (error) {

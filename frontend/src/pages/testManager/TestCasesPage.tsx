@@ -261,12 +261,12 @@ const TestCasesPage: React.FC = () => {
 
         if (activeSuiteId) {
             // If a specific suite is selected, fetch only that suite's cases
-            fetchTestCases(activeSuiteId);
+            fetchTestCases(activeSuiteId, filters.status);
         } else if (activeProject) {
             // If no suite is selected but project is, fetch all cases for the project
-            fetchTestCasesByProject(activeProject);
+            fetchTestCasesByProject(activeProject, filters.status);
         }
-    }, [activeSuiteId, activeProject, fetchTestCases, fetchTestCasesByProject, searchParams]);
+    }, [activeSuiteId, activeProject, fetchTestCases, fetchTestCasesByProject, searchParams, filters.status]);
 
     // Open modal if navigation state asked for it (from toolbar quick-add)
     useEffect(() => {
@@ -385,17 +385,13 @@ const TestCasesPage: React.FC = () => {
         );
     }
 
-    // Display all cases from the store - filtering is now handled by the API calls
+    // Display cases from the store - filtering is now handled by the API calls
     // Also filter by activeArea if selected
     let displayedCases = activeArea
         ? testCases.filter(tc => tc.area === activeArea)
         : testCases;
 
     // Apply client-side filters
-    if (filters.status.length > 0) {
-        displayedCases = displayedCases.filter(tc => filters.status.includes(tc.status));
-    }
-
     if (filters.priority.length > 0) {
         displayedCases = displayedCases.filter(tc => filters.priority.includes(tc.priority));
     }

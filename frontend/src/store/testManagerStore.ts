@@ -145,8 +145,8 @@ interface TestManagerStore {
     deleteTestSuite: (id: string) => Promise<void>;
 
     // Test Case actions
-    fetchTestCases: (suiteId: string) => Promise<void>;
-    fetchTestCasesByProject: (projectId: string) => Promise<void>;
+    fetchTestCases: (suiteId: string, statuses?: Status[]) => Promise<void>;
+    fetchTestCasesByProject: (projectId: string, statuses?: Status[]) => Promise<void>;
     createTestCase: (suiteId: string, data: CreateTestCaseRequest) => Promise<TestCase>;
     updateTestCase: (id: string, data: UpdateTestCaseRequest) => Promise<TestCase>;
     cloneTestCase: (id: string) => Promise<TestCase>;
@@ -451,10 +451,10 @@ export const useTestManagerStore = create<TestManagerStore>()(
             // =========================================================================
             // TEST CASE ACTIONS
             // =========================================================================
-            fetchTestCases: async (suiteId: string) => {
+            fetchTestCases: async (suiteId: string, statuses?: Status[]) => {
                 set({ error: null });
                 try {
-                    const response = await testManagerApi.getTestCases(suiteId);
+                    const response = await testManagerApi.getTestCases(suiteId, statuses);
                     const testCases = response.map(mapTestCaseResponse);
                     set({ testCases });
                 } catch (error: unknown) {
@@ -462,10 +462,10 @@ export const useTestManagerStore = create<TestManagerStore>()(
                 }
             },
 
-            fetchTestCasesByProject: async (projectId: string) => {
+            fetchTestCasesByProject: async (projectId: string, statuses?: Status[]) => {
                 set({ error: null });
                 try {
-                    const response = await testManagerApi.getTestCasesByProject(projectId);
+                    const response = await testManagerApi.getTestCasesByProject(projectId, statuses);
                     const testCases = response.map(mapTestCaseResponse);
                     set({ testCases });
                 } catch (error: unknown) {

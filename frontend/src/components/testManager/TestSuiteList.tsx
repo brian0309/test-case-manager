@@ -28,7 +28,7 @@ type SortOrder = 'asc' | 'desc';
 
 const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, onSuiteClick, onCreate, onEdit, onDelete, viewMode, onViewModeToggle: _onViewModeToggle }) => {
     const navigate = useNavigate();
-    const { setActiveSuiteWithId, setFilters, setActiveArea } = useTestManagerStore();
+    const { setActiveSuiteWithId, setFilters, setActiveArea, fetchTestCases } = useTestManagerStore();
     const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
     const [selectedSuite, setSelectedSuite] = useState<TestSuite | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -161,6 +161,7 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
             : [status];
         setFilters({ status: statusFilter });
         setActiveArea(null);
+        fetchTestCases(suite.id, statusFilter);
         navigate('/test-manager/cases');
     };
 

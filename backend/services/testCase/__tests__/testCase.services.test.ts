@@ -414,6 +414,85 @@ describe("Test Case Management Services", () => {
       expect(cases).toHaveLength(2);
     });
 
+    it("should filter test cases by status for a suite", async () => {
+      mockTestSuite.findById = jest.fn().mockResolvedValue({
+        _id: new Types.ObjectId(testSuiteId),
+        projectId: new Types.ObjectId(testProjectId),
+      });
+
+      const mockCases = [
+        {
+          _id: new Types.ObjectId(),
+          title: "Failed Case",
+          suiteId: new Types.ObjectId(testSuiteId),
+          status: Status.Failed,
+        },
+      ];
+
+      const findMock1 = {
+        sort: jest.fn().mockResolvedValue([]),
+      };
+
+      const populateChain2 = {
+        populate: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue(mockCases),
+        }),
+      };
+      populateChain2.populate = jest.fn().mockReturnValue(populateChain2);
+
+      mockTestCase.find = jest.fn()
+        .mockReturnValueOnce(findMock1)
+        .mockReturnValueOnce(populateChain2);
+
+      const cases = await testCaseService.getTestCasesBySuite(
+        testSuiteId,
+        testUserId,
+        [Status.Failed]
+      );
+
+      expect(cases).toHaveLength(1);
+      expect(mockTestCase.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: { $in: [Status.Failed] },
+        })
+      );
+    });
+
+    it("should filter test cases by status for a project", async () => {
+      const mockCases = [
+        {
+          _id: new Types.ObjectId(),
+          title: "Failed Case",
+          projectId: new Types.ObjectId(testProjectId),
+          status: Status.Failed,
+        },
+      ];
+
+      const populateChain = {
+        populate: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue(mockCases),
+        }),
+      };
+      populateChain.populate = jest.fn().mockReturnValue(populateChain);
+
+      mockTestCase.find = jest.fn().mockReturnValue(populateChain);
+
+      const cases = await testCaseService.getTestCasesByProject(
+        testProjectId,
+        testUserId,
+        [Status.Failed]
+      );
+
+      expect(cases).toHaveLength(1);
+      expect(mockTestCase.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: { $in: [Status.Failed] },
+        })
+      );
+    });
+
     it("should bulk update status", async () => {
       const case1Id = new Types.ObjectId().toString();
       const case2Id = new Types.ObjectId().toString();

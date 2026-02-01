@@ -64,7 +64,8 @@ export const createTestCase = async (
  */
 export const getTestCasesBySuite = async (
   suiteId: string,
-  userId: string
+  userId: string,
+  statuses?: Status[]
 ): Promise<ITestCaseDocument[]> => {
   const suite = await TestSuite.findById(suiteId);
   if (!suite) {
@@ -107,6 +108,7 @@ export const getTestCasesBySuite = async (
 
   const testCases = await TestCase.find({
     suiteId: new Types.ObjectId(suiteId),
+    ...(statuses && statuses.length > 0 ? { status: { $in: statuses } } : {}),
   })
     .populate("assignedTester", "name email")
     .populate("suiteId", "name")
@@ -122,7 +124,8 @@ export const getTestCasesBySuite = async (
  */
 export const getTestCasesByProject = async (
   projectId: string,
-  userId: string
+  userId: string,
+  statuses?: Status[]
 ): Promise<ITestCaseDocument[]> => {
   const hasAccess = await projectService.hasProjectAccess(projectId, userId);
   if (!hasAccess) {
@@ -131,6 +134,7 @@ export const getTestCasesByProject = async (
 
   const testCases = await TestCase.find({
     projectId: new Types.ObjectId(projectId),
+    ...(statuses && statuses.length > 0 ? { status: { $in: statuses } } : {}),
   })
     .populate("assignedTester", "name email")
     .populate("suiteId", "name")

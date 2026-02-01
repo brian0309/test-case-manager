@@ -8,6 +8,7 @@ import {
   BulkUpdateStatusRequest,
   ReorderTestCasesRequest,
   BulkImportTestCasesRequest,
+  Status,
 } from "../types/testCase.types.js";
 import {
   emitTestCaseCreated,
@@ -84,8 +85,15 @@ export const getTestCasesBySuite = async (req: Request, res: Response): Promise<
     }
 
     const { suiteId } = req.params;
+    const statusQuery = req.query.status as string | undefined;
+    const statuses = statusQuery
+      ? statusQuery
+          .split(",")
+          .map((status) => status.trim())
+          .filter((status): status is Status => Boolean(status) && Object.values(Status).includes(status as Status))
+      : [];
 
-    const testCases = await testCaseService.getTestCasesBySuite(suiteId, userId);
+    const testCases = await testCaseService.getTestCasesBySuite(suiteId, userId, statuses);
     const responses = testCases.map(testCaseService.formatTestCaseResponse);
 
     res.status(200).json({ success: true, data: responses });
@@ -108,6 +116,13 @@ export const getTestCasesByProject = async (req: Request, res: Response): Promis
     }
 
     const { projectId } = req.params;
+    const statusQuery = req.query.status as string | undefined;
+    const statuses = statusQuery
+      ? statusQuery
+          .split(",")
+          .map((status) => status.trim())
+          .filter((status): status is Status => Boolean(status) && Object.values(Status).includes(status as Status))
+      : [];
 
     // Check access
     const hasAccess = await projectService.hasProjectAccess(projectId, userId);
@@ -116,7 +131,7 @@ export const getTestCasesByProject = async (req: Request, res: Response): Promis
       return;
     }
 
-    const testCases = await testCaseService.getTestCasesByProject(projectId, userId);
+    const testCases = await testCaseService.getTestCasesByProject(projectId, userId, statuses);
     const responses = testCases.map(testCaseService.formatTestCaseResponse);
 
     res.status(200).json({ success: true, data: responses });
@@ -474,4 +489,3 @@ export const bulkImportTestCases = async (req: Request, res: Response): Promise<
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
-
