@@ -15,9 +15,9 @@ import { useTestManagerStore } from '../../store/testManagerStore';
 import { useRealtimeTestCases } from '../../hooks/useRealtimeTestCases';
 import { useProjectPresence } from '../../hooks/useProjectPresence';
 import { TestCase, Status, Priority, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
-import { reorderTestCases, getTestCase, getTestSuite, bulkImportTestCases } from '../../services/testManagerApi';
+import { reorderTestCases, getTestCase, getTestSuite, bulkImportTestCasesWithSuite } from '../../services/testManagerApi';
 import { exportTestCasesToCSV, ExportColumn } from '../../utils/exportTestCases';
-import { CreateTestCaseRequest, UpdateTestCaseRequest } from '../../types/api/testManager.api';
+import { CreateTestCaseWithSuiteRequest, UpdateTestCaseRequest } from '../../types/api/testManager.api';
 import { Sparkles, GripVertical, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
 
 const TestCasesPage: React.FC = () => {
@@ -487,21 +487,29 @@ const TestCasesPage: React.FC = () => {
     };
 
     const handleImportTestCases = async (
-        testCases: CreateTestCaseRequest[],
-        skipDuplicates: boolean
+        testCases: CreateTestCaseWithSuiteRequest[],
+        skipDuplicates: boolean,
+        createMissingSuites: boolean
     ) => {
-        if (!activeSuiteId) {
-            throw new Error('No suite selected');
+        if (!activeProject) {
+            throw new Error('No project selected');
         }
 
         try {
-            const result = await bulkImportTestCases(activeSuiteId, {
+            const result = await bulkImportTestCasesWithSuite(activeProject, {
                 testCases,
                 skipDuplicates,
+                createMissingSuites,
+                defaultSuiteId: activeSuiteId || undefined,
             });
 
-            // Refresh test cases to show imported ones
-            await fetchTestCases(activeSuiteId);
+            // Refresh test suites in case new ones were created
+            await fetchTestSuites(activeProject);
+
+            // Refresh test cases if we have an active suite
+            if (activeSuiteId) {
+                await fetchTestCases(activeSuiteId);
+            }
 
             return result;
         } catch (error) {
@@ -663,6 +671,8 @@ const TestCasesPage: React.FC = () => {
                             .find((p) => p.id === activeProject)
                             ?.members.map((m) => ({ id: m.id, name: m.name })) || []
                     }
+                    availableSuites={testSuites.map((s) => ({ id: s.id, name: s.name }))}
+                    defaultSuiteId={activeSuiteId || undefined}
                 />
             )}
         </div>

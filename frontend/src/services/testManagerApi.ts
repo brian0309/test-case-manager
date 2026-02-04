@@ -23,6 +23,8 @@ import {
   Status,
   BulkImportTestCasesRequest,
   BulkImportResult,
+  BulkImportWithSuiteRequest,
+  BulkImportWithSuiteResult,
 } from "../types/api/testManager.api";
 
 // Configure axios to send credentials with all requests
@@ -508,6 +510,28 @@ export const bulkImportTestCases = async (
   }
 };
 
+/**
+ * Bulk import test cases with suite support at project level
+ * Test cases can specify a suite name in CSV, and suites can be auto-created
+ */
+export const bulkImportTestCasesWithSuite = async (
+  projectId: string,
+  data: BulkImportWithSuiteRequest
+): Promise<BulkImportWithSuiteResult> => {
+  try {
+    const response = await axios.post<ApiResponse<BulkImportWithSuiteResult>>(
+      `${API_URL}/projects/${projectId}/cases/bulk-import`,
+      data
+    );
+    if (!response.data.data) {
+      throw new Error("No data returned from server");
+    }
+    return response.data.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
 // Export all API functions as a namespace for convenience
 export const testManagerApi = {
   // Projects
@@ -535,4 +559,5 @@ export const testManagerApi = {
   bulkDeleteTestCases,
   reorderTestCases,
   bulkImportTestCases,
+  bulkImportTestCasesWithSuite,
 };

@@ -172,6 +172,19 @@ export interface BulkImportTestCasesRequest {
   skipDuplicates?: boolean;
 }
 
+// Extended request for test case with suite name
+export interface CreateTestCaseWithSuiteRequest extends CreateTestCaseRequest {
+  suiteName?: string; // Optional suite name from CSV
+}
+
+// Project-level bulk import with suite support
+export interface BulkImportWithSuiteRequest {
+  testCases: CreateTestCaseWithSuiteRequest[];
+  skipDuplicates?: boolean;
+  createMissingSuites?: boolean; // If true, create suites that don't exist
+  defaultSuiteId?: string; // Fallback suite for test cases without a suite name
+}
+
 export interface BulkImportError {
   index: number;
   title?: string;
@@ -184,6 +197,12 @@ export interface BulkImportResult {
   failed: number;
   errors: BulkImportError[];
   duplicates?: string[];
+}
+
+// Extended result for project-level import with suite support
+export interface BulkImportWithSuiteResult extends BulkImportResult {
+  suitesCreated?: string[]; // Names of suites that were created
+  suiteStats?: Record<string, { created: number; skipped: number; failed: number }>;
 }
 
 export interface BulkUpdateStatusRequest {
