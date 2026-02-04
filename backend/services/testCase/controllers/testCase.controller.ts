@@ -8,6 +8,7 @@ import {
   BulkUpdateStatusRequest,
   ReorderTestCasesRequest,
   BulkImportTestCasesRequest,
+  BulkImportWithSuiteRequest,
 } from "../types/testCase.types.js";
 import {
   emitTestCaseCreated,
@@ -468,6 +469,80 @@ export const bulkImportTestCases = async (req: Request, res: Response): Promise<
     
     if (error.message === "Test suite not found" || error.message.includes("don't have access")) {
       res.status(404).json({ success: false, message: error.message });
+      return;
+    }
+    
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+/**
+ * POST /api/projects/:projectId/cases/bulk-import
+ * Bulk import test cases at project level with suite support
+ * Test cases can specify a suite name in CSV, and suites can be auto-created
+ */
+export const bulkImportTestCasesWithSuite = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { projectId } = req.params;
+    const { testCases, skipDuplicates, createMissingSuites, defaultSuiteId }: BulkImportWithSuiteRequest = req.body;
+
+    if (!testCases || !Array.isArray(testCases) || testCases.length === 0) {
+      res.status(400).json({ 
+        success: false, 
+        message: "testCases array is required and cannot be empty" 
+      });
+      return;
+    }
+
+    const result = await testCaseService.bulkImportTestCasesWithSuite(
+      projectId,
+      userId,
+      testCases,
+      { skipDuplicates, createMissingSuites, defaultSuiteId }
+    );
+
+    // Emit socket events for real-time updates if test cases were created
+    // Group created test cases by suite for proper socket events
+    if (result.created > 0 && result.createdTestCases) {
+      const testCasesBySuite = new Map<string, any[]>();
+      for (const tc of result.createdTestCases) {
+        const suiteId = tc.suiteId;
+        if (!testCasesBySuite.has(suiteId)) {
+          testCasesBySuite.set(suiteId, []);
+        }
+        testCasesBySuite.get(suiteId)!.push(tc);
+      }
+
+      // Emit event for each suite
+      for (const [suiteId, cases] of testCasesBySuite) {
+        emitTestCasesBulkImported(projectId, suiteId, cases);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Import completed: ${result.created} created, ${result.skipped} skipped, ${result.failed} failed` +
+        (result.suitesCreated && result.suitesCreated.length > 0 
+          ? `, ${result.suitesCreated.length} suite${result.suitesCreated.length !== 1 ? 's' : ''} created` 
+          : ''),
+      data: result,
+    });
+  } catch (error: any) {
+    console.error("Error in bulkImportTestCasesWithSuite:", error);
+    
+    if (error.message.includes("don't have access")) {
+      res.status(403).json({ success: false, message: error.message });
+      return;
+    }
+    
+    if (error.message.includes("Invalid default suite")) {
+      res.status(400).json({ success: false, message: error.message });
       return;
     }
     

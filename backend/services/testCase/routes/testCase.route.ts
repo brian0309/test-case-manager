@@ -11,6 +11,7 @@ import {
   reorderTestCases,
   cloneTestCase,
   bulkImportTestCases,
+  bulkImportTestCasesWithSuite,
 } from "../controllers/testCase.controller.js";
 import { verifyToken } from "../../../middleware/verifyToken.js";
 
@@ -43,3 +44,4 @@ suiteCaseRoutes.patch("/reorder", reorderTestCases);
 export const projectCaseRoutes = express.Router({ mergeParams: true });
 projectCaseRoutes.use(verifyToken);
 projectCaseRoutes.get("/", getTestCasesByProject);
+projectCaseRoutes.post("/bulk-import", bulkImportTestCasesWithSuite);

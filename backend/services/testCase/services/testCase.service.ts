@@ -12,6 +12,8 @@ import {
   HistoryEntryResponse,
   Priority,
   Status,
+  CreateTestCaseWithSuiteRequest,
+  BulkImportWithSuiteResult,
 } from "../types/testCase.types.js";
 
 /**
@@ -732,4 +734,275 @@ export const getProjectSuiteInfoFromTestCases = async (
   }
 
   return Array.from(infoMap.values());
+};
+
+/**
+ * Bulk import test cases at project level with suite support
+ * Test cases can specify a suite name, and suites can be auto-created
+ */
+export const bulkImportTestCasesWithSuite = async (
+  projectId: string,
+  userId: string,
+  testCases: CreateTestCaseWithSuiteRequest[],
+  options: {
+    skipDuplicates?: boolean;
+    createMissingSuites?: boolean;
+    defaultSuiteId?: string;
+  } = {}
+): Promise<BulkImportWithSuiteResult> => {
+  const { skipDuplicates = false, createMissingSuites = true, defaultSuiteId } = options;
+
+  // Check project access
+  const hasAccess = await projectService.hasProjectAccess(projectId, userId);
+  if (!hasAccess) {
+    throw new Error("You don't have access to this project");
+  }
+
+  const result: BulkImportWithSuiteResult = {
+    created: 0,
+    skipped: 0,
+    failed: 0,
+    errors: [],
+    createdTestCases: [],
+    duplicates: [],
+    suitesCreated: [],
+    suiteStats: {},
+  };
+
+  // Get existing suites for this project
+  const existingSuites = await TestSuite.find({
+    projectId: new Types.ObjectId(projectId),
+  }).lean();
+
+  // Build a map of suite name (lowercase) -> suite id for quick lookup
+  const suiteNameToId = new Map<string, string>();
+  for (const suite of existingSuites) {
+    suiteNameToId.set(suite.name.toLowerCase().trim(), suite._id.toString());
+  }
+
+  // Track which suites need to be created
+  const suitesToCreate = new Set<string>();
+  
+  // First pass: identify all unique suite names that don't exist
+  for (const tc of testCases) {
+    const suiteName = tc.suiteName?.trim();
+    if (suiteName && !suiteNameToId.has(suiteName.toLowerCase())) {
+      suitesToCreate.add(suiteName);
+    }
+  }
+
+  // Create missing suites if option is enabled
+  if (createMissingSuites && suitesToCreate.size > 0) {
+    for (const suiteName of suitesToCreate) {
+      try {
+        const newSuite = new TestSuite({
+          name: suiteName,
+          description: `Automatically created during import`,
+          projectId: new Types.ObjectId(projectId),
+          createdBy: new Types.ObjectId(userId),
+        });
+        await newSuite.save();
+        suiteNameToId.set(suiteName.toLowerCase(), newSuite._id.toString());
+        result.suitesCreated!.push(suiteName);
+      } catch (error: any) {
+        // Suite creation failed, test cases targeting this suite will fail
+        console.error(`Failed to create suite "${suiteName}":`, error.message);
+      }
+    }
+  }
+
+  // Validate default suite if provided
+  if (defaultSuiteId) {
+    const defaultSuite = await TestSuite.findById(defaultSuiteId);
+    if (!defaultSuite || defaultSuite.projectId.toString() !== projectId) {
+      throw new Error("Invalid default suite ID");
+    }
+  }
+
+  // Group test cases by target suite ID
+  interface TestCaseWithIndex {
+    index: number;
+    data: CreateTestCaseWithSuiteRequest;
+    suiteId: string | null;
+  }
+  const testCasesWithSuites: TestCaseWithIndex[] = [];
+
+  for (let i = 0; i < testCases.length; i++) {
+    const tc = testCases[i];
+    const suiteName = tc.suiteName?.trim();
+    
+    let suiteId: string | null = null;
+    
+    if (suiteName) {
+      suiteId = suiteNameToId.get(suiteName.toLowerCase()) || null;
+      if (!suiteId) {
+        // Suite doesn't exist and wasn't created
+        result.failed++;
+        result.errors.push({
+          index: i + 1,
+          title: tc.title?.trim(),
+          message: `Suite "${suiteName}" not found and createMissingSuites is disabled`,
+        });
+        continue;
+      }
+    } else if (defaultSuiteId) {
+      suiteId = defaultSuiteId;
+    } else {
+      // No suite specified and no default
+      result.failed++;
+      result.errors.push({
+        index: i + 1,
+        title: tc.title?.trim(),
+        message: "No suite name specified and no default suite provided",
+      });
+      continue;
+    }
+
+    testCasesWithSuites.push({ index: i, data: tc, suiteId });
+  }
+
+  // Get existing test case titles per suite for duplicate detection
+  const existingTitlesBySuite = new Map<string, Set<string>>();
+  if (skipDuplicates) {
+    const uniqueSuiteIds = [...new Set(testCasesWithSuites.map((tc) => tc.suiteId).filter(Boolean))];
+    for (const suiteId of uniqueSuiteIds) {
+      const existingCases = await TestCase.find({
+        suiteId: new Types.ObjectId(suiteId!),
+      }).select("title");
+      const titles = new Set<string>();
+      existingCases.forEach((tc) => titles.add(tc.title.toLowerCase().trim()));
+      existingTitlesBySuite.set(suiteId!, titles);
+    }
+  }
+
+  // Get max order per suite for sequential ordering
+  const maxOrderBySuite = new Map<string, number>();
+  const uniqueSuiteIds = [...new Set(testCasesWithSuites.map((tc) => tc.suiteId).filter(Boolean))];
+  for (const suiteId of uniqueSuiteIds) {
+    const maxOrderCase = await TestCase.findOne({
+      suiteId: new Types.ObjectId(suiteId!),
+    }).sort({ order: -1 });
+    maxOrderBySuite.set(suiteId!, (maxOrderCase?.order ?? -1) + 1);
+  }
+
+  // Process each test case
+  for (const { index, data, suiteId } of testCasesWithSuites) {
+    const trimmedTitle = data.title?.trim();
+    const suiteIdStr = suiteId!;
+
+    // Initialize suite stats if not exists
+    if (!result.suiteStats![suiteIdStr]) {
+      result.suiteStats![suiteIdStr] = { created: 0, skipped: 0, failed: 0 };
+    }
+
+    try {
+      // Validate required fields
+      if (!trimmedTitle || trimmedTitle.length === 0) {
+        result.failed++;
+        result.suiteStats![suiteIdStr].failed++;
+        result.errors.push({
+          index: index + 1,
+          title: trimmedTitle,
+          message: "Title is required",
+        });
+        continue;
+      }
+
+      // Check for duplicates if option is enabled
+      const existingTitles = existingTitlesBySuite.get(suiteIdStr);
+      if (skipDuplicates && existingTitles?.has(trimmedTitle.toLowerCase())) {
+        result.skipped++;
+        result.suiteStats![suiteIdStr].skipped++;
+        result.duplicates!.push(trimmedTitle);
+        continue;
+      }
+
+      // Validate priority if provided
+      if (data.priority && !Object.values(Priority).includes(data.priority)) {
+        result.failed++;
+        result.suiteStats![suiteIdStr].failed++;
+        result.errors.push({
+          index: index + 1,
+          title: trimmedTitle,
+          message: `Invalid priority: ${data.priority}. Must be one of: ${Object.values(Priority).join(", ")}`,
+        });
+        continue;
+      }
+
+      // Validate status if provided
+      if (data.status && !Object.values(Status).includes(data.status)) {
+        result.failed++;
+        result.suiteStats![suiteIdStr].failed++;
+        result.errors.push({
+          index: index + 1,
+          title: trimmedTitle,
+          message: `Invalid status: ${data.status}. Must be one of: ${Object.values(Status).join(", ")}`,
+        });
+        continue;
+      }
+
+      // Validate assigned tester if provided
+      let assignedTesterId = data.assignedTesterId;
+      if (assignedTesterId) {
+        if (!Types.ObjectId.isValid(assignedTesterId)) {
+          assignedTesterId = userId;
+        } else {
+          const userExists = await User.findById(assignedTesterId);
+          if (!userExists) {
+            assignedTesterId = userId;
+          }
+        }
+      }
+
+      // Get next order for this suite
+      const nextOrder = maxOrderBySuite.get(suiteIdStr) || 0;
+      maxOrderBySuite.set(suiteIdStr, nextOrder + 1);
+
+      // Create test case
+      const testCase = new TestCase({
+        title: trimmedTitle,
+        priority: data.priority || Priority.Medium,
+        status: data.status || Status.Draft,
+        projectId: new Types.ObjectId(projectId),
+        suiteId: new Types.ObjectId(suiteIdStr),
+        assignedTester: assignedTesterId
+          ? new Types.ObjectId(assignedTesterId)
+          : new Types.ObjectId(userId),
+        area: data.area || "",
+        expectedResult: data.expectedResult || "",
+        testDescription: data.testDescription || "",
+        stepsContent: data.stepsContent || "",
+        comments: data.comments || "",
+        customFields: data.customFields || {},
+        history: [],
+        createdBy: new Types.ObjectId(userId),
+        order: nextOrder,
+      });
+
+      await testCase.save();
+      result.created++;
+      result.suiteStats![suiteIdStr].created++;
+
+      // Track created test case for socket events
+      const populatedTestCase = await getTestCaseById(testCase._id.toString(), userId);
+      if (populatedTestCase) {
+        result.createdTestCases!.push(formatTestCaseResponse(populatedTestCase));
+      }
+
+      // Add to duplicate check set
+      if (skipDuplicates && existingTitles) {
+        existingTitles.add(trimmedTitle.toLowerCase());
+      }
+    } catch (error: any) {
+      result.failed++;
+      result.suiteStats![suiteIdStr].failed++;
+      result.errors.push({
+        index: index + 1,
+        title: trimmedTitle,
+        message: error.message || "Failed to create test case",
+      });
+    }
+  }
+
+  return result;
 };

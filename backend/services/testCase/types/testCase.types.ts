@@ -308,3 +308,20 @@ export interface BulkImportResult {
   duplicates?: string[];
   createdTestCases?: any[]; // For socket event emission
 }
+
+// Project-level bulk import with suite support
+export interface CreateTestCaseWithSuiteRequest extends CreateTestCaseRequest {
+  suiteName?: string; // Optional suite name from CSV
+}
+
+export interface BulkImportWithSuiteRequest {
+  testCases: CreateTestCaseWithSuiteRequest[];
+  skipDuplicates?: boolean;
+  createMissingSuites?: boolean; // If true, create suites that don't exist
+  defaultSuiteId?: string; // Fallback suite for test cases without a suite name
+}
+
+export interface BulkImportWithSuiteResult extends BulkImportResult {
+  suitesCreated?: string[]; // Names of suites that were created
+  suiteStats?: Record<string, { created: number; skipped: number; failed: number }>;
+}

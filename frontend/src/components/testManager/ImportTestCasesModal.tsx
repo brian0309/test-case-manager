@@ -1,21 +1,17 @@
 import React, { useState } from 'react';
-import { X, Upload, FileUp, AlertCircle, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
+import { X, Upload, FileUp, AlertCircle, CheckCircle2, AlertTriangle, Download, Info } from 'lucide-react';
 import Papa from 'papaparse';
 import { CustomFieldDefinition, Priority, Status } from '../../types/testManager';
-import { CreateTestCaseRequest } from '../../types/api/testManager.api';
+import { CreateTestCaseWithSuiteRequest, BulkImportWithSuiteResult } from '../../types/api/testManager.api';
 
 interface ImportTestCasesModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onImport: (testCases: CreateTestCaseRequest[], skipDuplicates: boolean) => Promise<{
-        created: number;
-        skipped: number;
-        failed: number;
-        errors: Array<{ index: number; title?: string; message: string }>;
-        duplicates?: string[];
-    }>;
+    onImport: (testCases: CreateTestCaseWithSuiteRequest[], skipDuplicates: boolean, createMissingSuites: boolean) => Promise<BulkImportWithSuiteResult>;
     customFieldDefinitions: CustomFieldDefinition[];
     projectMembers: Array<{ id: string; name: string }>;
+    availableSuites: Array<{ id: string; name: string }>;
+    defaultSuiteId?: string; // Current suite selected in UI as fallback
 }
 
 interface ColumnMapping {
@@ -40,20 +36,17 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
     onImport,
     customFieldDefinitions,
     projectMembers,
+    availableSuites,
+    defaultSuiteId,
 }) => {
     const [file, setFile] = useState<File | null>(null);
     const [csvData, setCsvData] = useState<ParsedRow[]>([]);
     const [columnMappings, setColumnMappings] = useState<ColumnMapping[]>([]);
     const [skipDuplicates, setSkipDuplicates] = useState(true);
+    const [createMissingSuites, setCreateMissingSuites] = useState(true);
     const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
     const [importing, setImporting] = useState(false);
-    const [importResult, setImportResult] = useState<{
-        created: number;
-        skipped: number;
-        failed: number;
-        errors: Array<{ index: number; title?: string; message: string }>;
-        duplicates?: string[];
-    } | null>(null);
+    const [importResult, setImportResult] = useState<BulkImportWithSuiteResult | null>(null);
 
     // Step 1: File upload, Step 2: Column mapping, Step 3: Validation preview, Step 4: Results
     const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -62,6 +55,7 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
     const testCaseFields = [
         { value: '', label: '-- Do not import --' },
         { value: 'title', label: 'Title (Required)' },
+        { value: 'suiteName', label: 'Test Suite' },
         { value: 'priority', label: 'Priority' },
         { value: 'status', label: 'Status' },
         { value: 'area', label: 'Area' },
@@ -102,29 +96,41 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
         });
     };
 
+    // Header name patterns for auto-detection
+    const SUITE_HEADERS = ['suite', 'test suite', 'testsuite', 'suite name', 'suitename'];
+    const TITLE_HEADERS = ['title', 'test case', 'name'];
+    const AREA_HEADERS = ['area', 'category'];
+    const TESTER_HEADERS = ['assigned tester', 'tester', 'assignedtester'];
+    const DESCRIPTION_HEADERS = ['description', 'test description', 'testdescription'];
+    const STEPS_HEADERS = ['steps', 'steps content', 'stepscontent'];
+    const EXPECTED_HEADERS = ['expected result', 'expectedresult', 'expected'];
+    const COMMENTS_HEADERS = ['comments', 'notes'];
+
     const autoDetectMappings = (headers: string[]): ColumnMapping[] => {
         return headers.map((header) => {
             const lowerHeader = header.toLowerCase().trim();
 
             // Try to match default fields
             let testCaseField = '';
-            if (lowerHeader === 'title' || lowerHeader === 'test case' || lowerHeader === 'name') {
+            if (TITLE_HEADERS.includes(lowerHeader)) {
                 testCaseField = 'title';
+            } else if (SUITE_HEADERS.includes(lowerHeader)) {
+                testCaseField = 'suiteName';
             } else if (lowerHeader === 'priority') {
                 testCaseField = 'priority';
             } else if (lowerHeader === 'status') {
                 testCaseField = 'status';
-            } else if (lowerHeader === 'area' || lowerHeader === 'category') {
+            } else if (AREA_HEADERS.includes(lowerHeader)) {
                 testCaseField = 'area';
-            } else if (lowerHeader === 'assigned tester' || lowerHeader === 'tester' || lowerHeader === 'assignedtester') {
+            } else if (TESTER_HEADERS.includes(lowerHeader)) {
                 testCaseField = 'assignedTesterName';
-            } else if (lowerHeader === 'description' || lowerHeader === 'test description' || lowerHeader === 'testdescription') {
+            } else if (DESCRIPTION_HEADERS.includes(lowerHeader)) {
                 testCaseField = 'testDescription';
-            } else if (lowerHeader === 'steps' || lowerHeader === 'steps content' || lowerHeader === 'stepscontent') {
+            } else if (STEPS_HEADERS.includes(lowerHeader)) {
                 testCaseField = 'stepsContent';
-            } else if (lowerHeader === 'expected result' || lowerHeader === 'expectedresult' || lowerHeader === 'expected') {
+            } else if (EXPECTED_HEADERS.includes(lowerHeader)) {
                 testCaseField = 'expectedResult';
-            } else if (lowerHeader === 'comments' || lowerHeader === 'notes') {
+            } else if (COMMENTS_HEADERS.includes(lowerHeader)) {
                 testCaseField = 'comments';
             } else {
                 // Try to match custom fields
@@ -298,9 +304,9 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
         return true;
     };
 
-    const transformData = (): CreateTestCaseRequest[] => {
+    const transformData = (): CreateTestCaseWithSuiteRequest[] => {
         return csvData.map((row) => {
-            const testCase: CreateTestCaseRequest & { assignedTesterName?: string; [key: string]: unknown } = {
+            const testCase: CreateTestCaseWithSuiteRequest & { assignedTesterName?: string; [key: string]: unknown } = {
                 title: '',
             };
 
@@ -319,6 +325,9 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
                     } else if (mapping.testCaseField === 'assignedTesterName') {
                         // Store name temporarily for lookup
                         testCase.assignedTesterName = value;
+                    } else if (mapping.testCaseField === 'suiteName') {
+                        // Store suite name for the backend to resolve
+                        testCase.suiteName = value;
                     } else {
                         testCase[mapping.testCaseField] = value;
                     }
@@ -341,7 +350,7 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
                 testCase.customFields = customFields;
             }
 
-            return testCase as CreateTestCaseRequest;
+            return testCase as CreateTestCaseWithSuiteRequest;
         });
     };
 
@@ -350,7 +359,7 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
 
         try {
             const testCases = transformData();
-            const result = await onImport(testCases, skipDuplicates);
+            const result = await onImport(testCases, skipDuplicates, createMissingSuites);
             setImportResult(result);
             setStep(4);
         } catch (error: unknown) {
@@ -366,6 +375,7 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
         setColumnMappings([]);
         setValidationErrors([]);
         setImportResult(null);
+        setCreateMissingSuites(true);
         setStep(1);
     };
 
@@ -571,10 +581,50 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
                                 <label htmlFor="skip-duplicates" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
                                     <span className="font-medium">Skip duplicate titles</span>
                                     <span className="text-gray-500 dark:text-gray-400 ml-2">
-                                        (Test cases with the same title in this suite will be skipped)
+                                        (Test cases with the same title in their target suite will be skipped)
                                     </span>
                                 </label>
                             </div>
+
+                            <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg mt-3">
+                                <input
+                                    type="checkbox"
+                                    id="create-missing-suites"
+                                    checked={createMissingSuites}
+                                    onChange={(e) => setCreateMissingSuites(e.target.checked)}
+                                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700"
+                                />
+                                <label htmlFor="create-missing-suites" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                    <span className="font-medium">Create missing test suites</span>
+                                    <span className="text-gray-500 dark:text-gray-400 ml-2">
+                                        (If a test suite name doesn't exist, create it automatically)
+                                    </span>
+                                </label>
+                            </div>
+
+                            {/* Suite mapping info */}
+                            {columnMappings.some(m => m.testCaseField === 'suiteName') && (
+                                <div className="flex items-start gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mt-3">
+                                    <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                                    <div className="text-sm text-blue-800 dark:text-blue-200">
+                                        <span className="font-medium">Test Suite column mapped:</span> Test cases will be imported into their specified suites.
+                                        {defaultSuiteId && availableSuites.length > 0 && (
+                                            <span className="block text-blue-600 dark:text-blue-300 mt-1">
+                                                Test cases without a suite name will use the currently selected suite as fallback.
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {!columnMappings.some(m => m.testCaseField === 'suiteName') && defaultSuiteId && (
+                                <div className="flex items-start gap-2 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg mt-3">
+                                    <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                                    <div className="text-sm text-amber-800 dark:text-amber-200">
+                                        <span className="font-medium">No Test Suite column mapped:</span> All test cases will be imported into the currently selected suite.
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -771,6 +821,25 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
                                         <p className="text-xs text-green-700 dark:text-green-400 mt-1">
                                             {importResult.created} test case{importResult.created !== 1 ? 's' : ''} imported
                                         </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Suites Created */}
+                            {importResult.suitesCreated && importResult.suitesCreated.length > 0 && (
+                                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Info className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                                        <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300">
+                                            Test Suites Created ({importResult.suitesCreated.length})
+                                        </h3>
+                                    </div>
+                                    <div className="max-h-32 overflow-y-auto">
+                                        <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
+                                            {importResult.suitesCreated.map((suiteName, index) => (
+                                                <li key={index}>• {suiteName}</li>
+                                            ))}
+                                        </ul>
                                     </div>
                                 </div>
                             )}
