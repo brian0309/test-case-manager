@@ -96,31 +96,41 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
         });
     };
 
+    // Header name patterns for auto-detection
+    const SUITE_HEADERS = ['suite', 'test suite', 'testsuite', 'suite name', 'suitename'];
+    const TITLE_HEADERS = ['title', 'test case', 'name'];
+    const AREA_HEADERS = ['area', 'category'];
+    const TESTER_HEADERS = ['assigned tester', 'tester', 'assignedtester'];
+    const DESCRIPTION_HEADERS = ['description', 'test description', 'testdescription'];
+    const STEPS_HEADERS = ['steps', 'steps content', 'stepscontent'];
+    const EXPECTED_HEADERS = ['expected result', 'expectedresult', 'expected'];
+    const COMMENTS_HEADERS = ['comments', 'notes'];
+
     const autoDetectMappings = (headers: string[]): ColumnMapping[] => {
         return headers.map((header) => {
             const lowerHeader = header.toLowerCase().trim();
 
             // Try to match default fields
             let testCaseField = '';
-            if (lowerHeader === 'title' || lowerHeader === 'test case' || lowerHeader === 'name') {
+            if (TITLE_HEADERS.includes(lowerHeader)) {
                 testCaseField = 'title';
-            } else if (lowerHeader === 'suite' || lowerHeader === 'test suite' || lowerHeader === 'testsuite' || lowerHeader === 'suite name' || lowerHeader === 'suitename') {
+            } else if (SUITE_HEADERS.includes(lowerHeader)) {
                 testCaseField = 'suiteName';
             } else if (lowerHeader === 'priority') {
                 testCaseField = 'priority';
             } else if (lowerHeader === 'status') {
                 testCaseField = 'status';
-            } else if (lowerHeader === 'area' || lowerHeader === 'category') {
+            } else if (AREA_HEADERS.includes(lowerHeader)) {
                 testCaseField = 'area';
-            } else if (lowerHeader === 'assigned tester' || lowerHeader === 'tester' || lowerHeader === 'assignedtester') {
+            } else if (TESTER_HEADERS.includes(lowerHeader)) {
                 testCaseField = 'assignedTesterName';
-            } else if (lowerHeader === 'description' || lowerHeader === 'test description' || lowerHeader === 'testdescription') {
+            } else if (DESCRIPTION_HEADERS.includes(lowerHeader)) {
                 testCaseField = 'testDescription';
-            } else if (lowerHeader === 'steps' || lowerHeader === 'steps content' || lowerHeader === 'stepscontent') {
+            } else if (STEPS_HEADERS.includes(lowerHeader)) {
                 testCaseField = 'stepsContent';
-            } else if (lowerHeader === 'expected result' || lowerHeader === 'expectedresult' || lowerHeader === 'expected') {
+            } else if (EXPECTED_HEADERS.includes(lowerHeader)) {
                 testCaseField = 'expectedResult';
-            } else if (lowerHeader === 'comments' || lowerHeader === 'notes') {
+            } else if (COMMENTS_HEADERS.includes(lowerHeader)) {
                 testCaseField = 'comments';
             } else {
                 // Try to match custom fields

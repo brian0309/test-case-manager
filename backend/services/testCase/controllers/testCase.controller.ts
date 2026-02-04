@@ -529,7 +529,7 @@ export const bulkImportTestCasesWithSuite = async (req: Request, res: Response):
       success: true,
       message: `Import completed: ${result.created} created, ${result.skipped} skipped, ${result.failed} failed` +
         (result.suitesCreated && result.suitesCreated.length > 0 
-          ? `, ${result.suitesCreated.length} suites created` 
+          ? `, ${result.suitesCreated.length} suite${result.suitesCreated.length !== 1 ? 's' : ''} created` 
           : ''),
       data: result,
     });

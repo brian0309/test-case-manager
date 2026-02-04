@@ -797,7 +797,7 @@ export const bulkImportTestCasesWithSuite = async (
       try {
         const newSuite = new TestSuite({
           name: suiteName,
-          description: `Auto-created during import`,
+          description: `Automatically created during import`,
           projectId: new Types.ObjectId(projectId),
           createdBy: new Types.ObjectId(userId),
         });
