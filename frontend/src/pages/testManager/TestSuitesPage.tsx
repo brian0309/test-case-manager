@@ -14,7 +14,7 @@ import { TestSuite } from '../../types/testManager';
 import { useProjectPresence } from '../../hooks/useProjectPresence';
 
 const TestSuitesPage: React.FC = () => {
-    const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchTestCasesByProject, fetchProjects, deleteTestSuite, setActiveProject, clearFilters, searchQuery, clearSearchQuery } = useTestManagerStore();
+    const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchTestCasesByProject, fetchProjects, deleteTestSuite, setActiveProject, setActiveArea, clearFilters, searchQuery, clearSearchQuery } = useTestManagerStore();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -126,6 +126,8 @@ const TestSuitesPage: React.FC = () => {
             setActiveSuiteWithId(suiteId, suiteName);
             // Reset filters when selecting a suite
             clearFilters();
+            // Reset area filter when selecting a suite
+            setActiveArea(null);
             // Fetch test cases for this suite before navigating
             fetchTestCases(suiteId);
         }
