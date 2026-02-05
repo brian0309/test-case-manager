@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import {
     DndContext,
     closestCenter,
@@ -17,10 +17,35 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { List, RowComponentProps } from 'react-window';
 import { TestCase, Priority, Status, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
 import StatusBadge from './StatusBadge';
 import { Edit, Copy, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, ChevronRight } from 'lucide-react';
 import IdDisplay from './IdDisplay';
+
+const ROW_HEIGHT = 56; // Fixed row height for virtualization
+
+// Custom row props for react-window v2
+interface VirtualRowProps {
+    items: TestCase[];
+    selectedIds: string[];
+    isSelectionMode: boolean;
+    isEditMode: boolean;
+    enableReorder: boolean;
+    onRowClick: (item: TestCase) => void;
+    onToggleSelection?: (id: string) => void;
+    onStatusChange?: (caseId: string, status: Status) => void;
+    onViewClick?: (item: TestCase) => void;
+    onCloneClick?: (item: TestCase) => void;
+    onUpdate?: (id: string, field: keyof TestCase, value: string | number | boolean | Status | Priority) => void;
+    getStatusColor: (status: Status) => string;
+    customFieldDefinitions: CustomFieldDefinition[];
+    visibleCustomFieldIds: string[];
+    hiddenColumns: HiddenDefaultColumns;
+    activeArea?: string | null;
+    activeSuiteId?: string | null;
+    gridTemplateColumns: string;
+}
 
 
 type SortField = 'title' | 'priority' | 'status' | 'lastModified' | 'assignedTester';
@@ -82,6 +107,10 @@ interface SortableRowProps {
     hiddenColumns?: HiddenDefaultColumns;
     activeArea?: string | null;
     activeSuiteId?: string | null;
+    // Virtualization style
+    style?: React.CSSProperties;
+    // Grid template for consistent column sizing
+    gridTemplateColumns: string;
 }
 
 const SortableRow: React.FC<SortableRowProps> = ({
@@ -102,6 +131,8 @@ const SortableRow: React.FC<SortableRowProps> = ({
     hiddenColumns = {},
     activeArea,
     activeSuiteId,
+    style: virtualizationStyle,
+    gridTemplateColumns,
 }) => {
     const {
         attributes,
@@ -115,13 +146,21 @@ const SortableRow: React.FC<SortableRowProps> = ({
         disabled: !enableReorder,
     });
 
-    const style: React.CSSProperties = {
+    const dragStyle: React.CSSProperties = {
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,
         zIndex: isDragging ? 1000 : undefined,
-        position: isDragging ? 'relative' : undefined,
         backgroundColor: isDragging ? '#eff6ff' : undefined,
+    };
+
+    // Combine virtualization style with drag style
+    const combinedStyle: React.CSSProperties = {
+        ...virtualizationStyle,
+        ...dragStyle,
+        display: 'grid',
+        gridTemplateColumns,
+        alignItems: 'center',
     };
 
     const getContextInfo = () => {
@@ -135,9 +174,9 @@ const SortableRow: React.FC<SortableRowProps> = ({
     };
 
     return (
-        <tr
+        <div
             ref={setNodeRef}
-            style={style}
+            style={combinedStyle}
             onClick={() => {
                 if (isSelectionMode) {
                     onToggleSelection?.(item.id);
@@ -145,10 +184,10 @@ const SortableRow: React.FC<SortableRowProps> = ({
                     onRowClick(item);
                 }
             }}
-            className={`group transition-colors ${isEditMode ? '' : 'cursor-pointer'} ${isSelected ? 'bg-blue-50/50 dark:bg-blue-900/20' : 'hover:bg-gray-50/80 dark:hover:bg-gray-800/50'} ${isDragging ? 'shadow-lg' : ''}`}
+            className={`group transition-colors border-b border-gray-100 dark:border-gray-700 ${isEditMode ? '' : 'cursor-pointer'} ${isSelected ? 'bg-blue-50/50 dark:bg-blue-900/20' : 'hover:bg-gray-50/80 dark:hover:bg-gray-800/50'} ${isDragging ? 'shadow-lg' : ''}`}
         >
             {enableReorder && (
-                <td className="py-2 pl-3 pr-1 w-10">
+                <div className="py-2 pl-3 pr-1 flex items-center">
                     <div
                         {...attributes}
                         {...listeners}
@@ -158,11 +197,11 @@ const SortableRow: React.FC<SortableRowProps> = ({
                     >
                         <GripVertical className="h-4 w-4" />
                     </div>
-                </td>
+                </div>
             )}
             {isSelectionMode && (
-                <td className="py-2 pl-6 pr-2">
-                    <div className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                <div className="py-2 pl-6 pr-2 flex items-center justify-center">
+                    <div onClick={(e) => e.stopPropagation()}>
                         <input
                             type="checkbox"
                             checked={isSelected}
@@ -170,18 +209,18 @@ const SortableRow: React.FC<SortableRowProps> = ({
                             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                         />
                     </div>
-                </td>
+                </div>
             )}
             {/* ID Column */}
             {!hiddenColumns.id && (
-                <td className={`py-2 ${isSelectionMode ? 'pl-2' : enableReorder ? 'pl-2' : 'pl-6'} pr-4 text-sm font-medium text-gray-500 dark:text-gray-400 font-mono tracking-tight group-hover:text-gray-900 dark:group-hover:text-gray-200`}>
+                <div className={`py-2 ${isSelectionMode ? 'pl-2' : enableReorder ? 'pl-2' : 'pl-6'} pr-4 text-sm font-medium text-gray-500 dark:text-gray-400 font-mono tracking-tight group-hover:text-gray-900 dark:group-hover:text-gray-200 truncate`}>
                     <IdDisplay id={item.id} />
-                </td>
+                </div>
             )}
 
             {/* Title Cell: Editable or Text */}
             {!hiddenColumns.title && (
-                <td className="py-2 px-4">
+                <div className="py-2 px-4 min-w-0">
                     {isEditMode ? (
                         <div onClick={(e) => e.stopPropagation()}>
                             <input
@@ -191,27 +230,27 @@ const SortableRow: React.FC<SortableRowProps> = ({
                                 className="w-full bg-white dark:bg-gray-700 border border-blue-300 dark:border-gray-600 rounded px-2 py-1 text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/50 outline-none"
                             />
                             {getContextInfo() && (
-                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate">
                                     {getContextInfo()}
                                 </div>
                             )}
                         </div>
                     ) : (
                         <>
-                            <div className="text-[15px] font-medium text-gray-900 dark:text-gray-100">{item.title}</div>
+                            <div className="text-[15px] font-medium text-gray-900 dark:text-gray-100 truncate">{item.title}</div>
                             {getContextInfo() && (
-                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                                <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
                                     {getContextInfo()}
                                 </div>
                             )}
                         </>
                     )}
-                </td>
+                </div>
             )}
 
             {/* Priority: Editable or Badge */}
             {!hiddenColumns.priority && (
-                <td className="py-2 px-4">
+                <div className="py-2 px-4">
                     {isEditMode ? (
                         <div onClick={(e) => e.stopPropagation()}>
                             <select
@@ -227,12 +266,12 @@ const SortableRow: React.FC<SortableRowProps> = ({
                     ) : (
                         <StatusBadge type="priority" value={item.priority} />
                     )}
-                </td>
+                </div>
             )}
 
             {/* Unified Status Dropdown */}
             {!hiddenColumns.status && (
-                <td className="py-2 px-4">
+                <div className="py-2 px-4">
                     <div onClick={e => e.stopPropagation()}>
                         <select
                             value={item.status}
@@ -247,12 +286,12 @@ const SortableRow: React.FC<SortableRowProps> = ({
                             <option value={Status.Skipped}>Skipped</option>
                         </select>
                     </div>
-                </td>
+                </div>
             )}
 
             {/* Last Modified */}
             {!hiddenColumns.lastModified && (
-                <td className="py-2 px-4">
+                <div className="py-2 px-4">
                     <div className="text-sm text-gray-600 dark:text-gray-400">
                         {new Date(item.lastModified).toLocaleDateString('en-US', {
                             month: 'short',
@@ -267,12 +306,12 @@ const SortableRow: React.FC<SortableRowProps> = ({
                             hour12: true
                         })}
                     </div>
-                </td>
+                </div>
             )}
 
             {/* Assignee */}
             {!hiddenColumns.assignedTester && (
-                <td className="py-2 px-4 text-right pr-6">
+                <div className="py-2 px-4 text-right pr-6">
                     <div className="flex items-center justify-end gap-2">
                         <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[100px]">{item.assignedTester.name}</span>
                         <img
@@ -281,7 +320,7 @@ const SortableRow: React.FC<SortableRowProps> = ({
                             className="h-6 w-6 rounded-full border border-gray-200 dark:border-gray-600"
                         />
                     </div>
-                </td>
+                </div>
             )}
 
             {/* Custom Field Columns */}
@@ -299,14 +338,14 @@ const SortableRow: React.FC<SortableRowProps> = ({
                 }
 
                 return (
-                    <td key={fieldId} className="py-2 px-4">
-                        <div className="text-sm text-gray-900 dark:text-gray-100">{displayValue || '-'}</div>
-                    </td>
+                    <div key={fieldId} className="py-2 px-4">
+                        <div className="text-sm text-gray-900 dark:text-gray-100 truncate">{displayValue || '-'}</div>
+                    </div>
                 );
             })}
 
             {/* Actions Column */}
-            <td className="py-2 px-4 text-center">
+            <div className="py-2 px-4 text-center">
                 <div className="flex items-center justify-center gap-1">
                     <button
                         onClick={(e) => {
@@ -331,8 +370,292 @@ const SortableRow: React.FC<SortableRowProps> = ({
                         Edit
                     </button>
                 </div>
-            </td>
-        </tr>
+            </div>
+        </div>
+    );
+};
+
+// VirtualizedTable component that uses react-window
+interface VirtualizedTableProps {
+    data: TestCase[];
+    selectedIds: string[];
+    isSelectionMode: boolean;
+    isEditMode: boolean;
+    enableReorder: boolean;
+    onRowClick: (item: TestCase) => void;
+    onToggleSelection?: (id: string) => void;
+    onSelectAll?: (selectAll: boolean) => void;
+    onStatusChange?: (caseId: string, status: Status) => void;
+    onViewClick?: (item: TestCase) => void;
+    onCloneClick?: (item: TestCase) => void;
+    onUpdate?: (id: string, field: keyof TestCase, value: string | number | boolean | Status | Priority) => void;
+    getStatusColor: (status: Status) => string;
+    customFieldDefinitions?: CustomFieldDefinition[];
+    visibleCustomFieldIds?: string[];
+    hiddenColumns?: HiddenDefaultColumns;
+    handleColumnSort: (field: SortField) => void;
+    SortIcon: React.FC<{ field: SortField }>;
+    allSelected: boolean;
+    someSelected: boolean;
+    activeArea?: string | null;
+    activeSuiteId?: string | null;
+}
+
+const VirtualizedTable: React.FC<VirtualizedTableProps> = ({
+    data,
+    selectedIds,
+    isSelectionMode,
+    isEditMode,
+    enableReorder,
+    onRowClick,
+    onToggleSelection,
+    onSelectAll,
+    onStatusChange,
+    onViewClick,
+    onCloneClick,
+    onUpdate,
+    getStatusColor,
+    customFieldDefinitions = [],
+    visibleCustomFieldIds = [],
+    hiddenColumns = {},
+    handleColumnSort,
+    SortIcon,
+    allSelected,
+    someSelected,
+    activeArea,
+    activeSuiteId,
+}) => {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [containerHeight, setContainerHeight] = useState(400);
+
+    // Calculate container height on mount and resize
+    React.useEffect(() => {
+        const updateHeight = () => {
+            if (containerRef.current) {
+                const rect = containerRef.current.getBoundingClientRect();
+                // Account for the header height (approx 40px)
+                setContainerHeight(Math.max(200, rect.height - 40));
+            }
+        };
+
+        updateHeight();
+        window.addEventListener('resize', updateHeight);
+        return () => window.removeEventListener('resize', updateHeight);
+    }, []);
+
+    // Build grid template columns dynamically based on visible columns
+    const gridTemplateColumns = useMemo(() => {
+        const columns: string[] = [];
+        
+        if (enableReorder) columns.push('40px'); // Drag handle
+        if (isSelectionMode) columns.push('48px'); // Checkbox
+        if (!hiddenColumns.id) columns.push('120px'); // ID
+        if (!hiddenColumns.title) columns.push('1fr'); // Title (flexible)
+        if (!hiddenColumns.priority) columns.push('100px'); // Priority
+        if (!hiddenColumns.status) columns.push('120px'); // Status
+        if (!hiddenColumns.lastModified) columns.push('130px'); // Last Modified
+        if (!hiddenColumns.assignedTester) columns.push('140px'); // Assignee
+        
+        // Custom field columns
+        visibleCustomFieldIds.forEach(() => {
+            columns.push('120px');
+        });
+        
+        columns.push('140px'); // Actions
+        
+        return columns.join(' ');
+    }, [enableReorder, isSelectionMode, hiddenColumns, visibleCustomFieldIds]);
+
+    // Row component for react-window v2
+    const VirtualRow = useCallback(({ index, style }: RowComponentProps<VirtualRowProps>) => {
+        const item = data[index];
+        if (!item) return null;
+        
+        return (
+            <SortableRow
+                key={item.id}
+                item={item}
+                isSelected={selectedIds.includes(item.id)}
+                isSelectionMode={isSelectionMode}
+                isEditMode={isEditMode}
+                enableReorder={enableReorder}
+                onRowClick={onRowClick}
+                onToggleSelection={onToggleSelection}
+                onStatusChange={onStatusChange}
+                onViewClick={onViewClick}
+                onCloneClick={onCloneClick}
+                onUpdate={onUpdate}
+                getStatusColor={getStatusColor}
+                customFieldDefinitions={customFieldDefinitions}
+                visibleCustomFieldIds={visibleCustomFieldIds}
+                hiddenColumns={hiddenColumns}
+                activeArea={activeArea}
+                activeSuiteId={activeSuiteId}
+                style={style}
+                gridTemplateColumns={gridTemplateColumns}
+            />
+        );
+    }, [data, selectedIds, isSelectionMode, isEditMode, enableReorder, onRowClick, onToggleSelection, onStatusChange, onViewClick, onCloneClick, onUpdate, getStatusColor, customFieldDefinitions, visibleCustomFieldIds, hiddenColumns, activeArea, activeSuiteId, gridTemplateColumns]);
+
+    if (data.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center h-40 text-gray-400 dark:text-gray-500">
+                <p>No test cases found</p>
+            </div>
+        );
+    }
+
+    return (
+        <div ref={containerRef} className="flex flex-col flex-1 overflow-hidden">
+            {/* Header */}
+            <div 
+                className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-none"
+                style={{ display: 'grid', gridTemplateColumns, alignItems: 'center' }}
+            >
+                {enableReorder && (
+                    <div className="py-2 pl-2 pr-0"></div>
+                )}
+                {isSelectionMode && (
+                    <div className="py-2 pl-6 pr-2 flex items-center justify-center">
+                        <input
+                            type="checkbox"
+                            checked={allSelected}
+                            ref={input => {
+                                if (input) {
+                                    input.indeterminate = someSelected && !allSelected;
+                                }
+                            }}
+                            onChange={(e) => onSelectAll?.(e.target.checked)}
+                            className="w-4 h-4 text-system-blue border-gray-300 dark:border-gray-600 rounded focus:ring-system-blue bg-white dark:bg-gray-800"
+                        />
+                    </div>
+                )}
+                {/* ID Header */}
+                {!hiddenColumns?.id && (
+                    <div className={`py-2 ${isSelectionMode ? 'pl-2' : enableReorder ? 'pl-2' : 'pl-6'} pr-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider`}>ID</div>
+                )}
+
+                {/* Title Header */}
+                {!hiddenColumns?.title && (
+                    <div
+                        className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 select-none"
+                        onClick={() => handleColumnSort('title')}
+                    >
+                        <div className="flex items-center gap-1.5">
+                            Title
+                            <SortIcon field="title" />
+                        </div>
+                    </div>
+                )}
+
+                {/* Priority Header */}
+                {!hiddenColumns?.priority && (
+                    <div
+                        className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 select-none"
+                        onClick={() => handleColumnSort('priority')}
+                    >
+                        <div className="flex items-center gap-1.5">
+                            Priority
+                            <SortIcon field="priority" />
+                        </div>
+                    </div>
+                )}
+
+                {/* Status Header */}
+                {!hiddenColumns?.status && (
+                    <div
+                        className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 select-none"
+                        onClick={() => handleColumnSort('status')}
+                    >
+                        <div className="flex items-center gap-1.5">
+                            Status
+                            <SortIcon field="status" />
+                        </div>
+                    </div>
+                )}
+
+                {/* Last Modified Header */}
+                {!hiddenColumns?.lastModified && (
+                    <div
+                        className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 select-none"
+                        onClick={() => handleColumnSort('lastModified')}
+                    >
+                        <div className="flex items-center gap-1.5">
+                            Last Modified
+                            <SortIcon field="lastModified" />
+                        </div>
+                    </div>
+                )}
+
+                {/* Assignee Header */}
+                {!hiddenColumns?.assignedTester && (
+                    <div
+                        className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider text-right pr-6 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50 select-none"
+                        onClick={() => handleColumnSort('assignedTester')}
+                    >
+                        <div className="flex items-center justify-end gap-1.5">
+                            Assignee
+                            <SortIcon field="assignedTester" />
+                        </div>
+                    </div>
+                )}
+
+                {/* Custom Field Headers */}
+                {visibleCustomFieldIds?.map((fieldId) => {
+                    const fieldDef = customFieldDefinitions?.find(f => f.id === fieldId);
+                    if (!fieldDef) return null;
+
+                    return (
+                        <div
+                            key={fieldId}
+                            className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider"
+                        >
+                            {fieldDef.label}
+                        </div>
+                    );
+                })}
+
+                {/* Actions Header */}
+                <div className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider"></div>
+            </div>
+
+            {/* Virtualized List */}
+            <div className="flex-1 bg-white dark:bg-gray-900 overflow-hidden">
+                <SortableContext
+                    items={data.map((item) => item.id)}
+                    strategy={verticalListSortingStrategy}
+                >
+                    <List<VirtualRowProps>
+                        defaultHeight={containerHeight}
+                        rowComponent={VirtualRow}
+                        rowCount={data.length}
+                        rowHeight={ROW_HEIGHT}
+                        rowProps={{
+                            items: data,
+                            selectedIds,
+                            isSelectionMode,
+                            isEditMode,
+                            enableReorder,
+                            onRowClick,
+                            onToggleSelection,
+                            onStatusChange,
+                            onViewClick,
+                            onCloneClick,
+                            onUpdate,
+                            getStatusColor,
+                            customFieldDefinitions,
+                            visibleCustomFieldIds,
+                            hiddenColumns,
+                            activeArea,
+                            activeSuiteId,
+                            gridTemplateColumns,
+                        }}
+                        overscanCount={5}
+                        style={{ height: containerHeight }}
+                    />
+                </SortableContext>
+            </div>
+        </div>
     );
 };
 
@@ -526,155 +849,37 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                 </div>
             )}
 
-            {/* Desktop table */}
-            <div className="hidden sm:block overflow-auto flex-1">
+            {/* Desktop virtualized table */}
+            <div className="hidden sm:flex sm:flex-col overflow-hidden flex-1">
                 <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
                     onDragEnd={handleDragEnd}
                 >
-                    <table className="w-full text-left border-collapse">
-                        <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-none">
-                            <tr>
-                                {enableReorder && sortMode === 'custom' && (
-                                    <th className="py-2 pl-2 pr-0 w-8"></th>
-                                )}
-                                {isSelectionMode && (
-                                    <th className="py-2 pl-6 pr-2 w-10">
-                                        <div className="flex items-center justify-center">
-                                            <input
-                                                type="checkbox"
-                                                checked={allSelected}
-                                                ref={input => {
-                                                    if (input) {
-                                                        input.indeterminate = someSelected && !allSelected;
-                                                    }
-                                                }}
-                                                onChange={(e) => onSelectAll?.(e.target.checked)}
-                                                className="w-4 h-4 text-system-blue border-gray-300 dark:border-gray-600 rounded focus:ring-system-blue bg-white dark:bg-gray-800"
-                                            />
-                                        </div>
-                                    </th>
-                                )}
-                                {/* ID Header */}
-                                {!hiddenColumns?.id && (
-                                    <th className={`py-2 ${isSelectionMode ? 'pl-2' : (enableReorder && sortMode === 'custom') ? 'pl-2' : 'pl-6'} pr-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32`}>ID</th>
-                                )}
-
-                                {/* Title Header */}
-                                {!hiddenColumns?.title && (
-                                    <th
-                                        className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-1/3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
-                                        onClick={() => handleColumnSort('title')}
-                                    >
-                                        <div className="flex items-center gap-1.5">
-                                            Title
-                                            <SortIcon field="title" />
-                                        </div>
-                                    </th>
-                                )}
-
-                                {/* Priority Header */}
-                                {!hiddenColumns?.priority && (
-                                    <th
-                                        className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
-                                        onClick={() => handleColumnSort('priority')}
-                                    >
-                                        <div className="flex items-center gap-1.5">
-                                            Priority
-                                            <SortIcon field="priority" />
-                                        </div>
-                                    </th>
-                                )}
-
-                                {/* Status Header */}
-                                {!hiddenColumns?.status && (
-                                    <th
-                                        className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
-                                        onClick={() => handleColumnSort('status')}
-                                    >
-                                        <div className="flex items-center gap-1.5">
-                                            Status
-                                            <SortIcon field="status" />
-                                        </div>
-                                    </th>
-                                )}
-
-                                {/* Last Modified Header */}
-                                {!hiddenColumns?.lastModified && (
-                                    <th
-                                        className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
-                                        onClick={() => handleColumnSort('lastModified')}
-                                    >
-                                        <div className="flex items-center gap-1.5">
-                                            Last Modified
-                                            <SortIcon field="lastModified" />
-                                        </div>
-                                    </th>
-                                )}
-
-                                {/* Assignee Header */}
-                                {!hiddenColumns?.assignedTester && (
-                                    <th
-                                        className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32 text-right pr-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
-                                        onClick={() => handleColumnSort('assignedTester')}
-                                    >
-                                        <div className="flex items-center justify-end gap-1.5">
-                                            Assignee
-                                            <SortIcon field="assignedTester" />
-                                        </div>
-                                    </th>
-                                )}
-
-                                {/* Custom Field Headers */}
-                                {visibleCustomFieldIds?.map((fieldId) => {
-                                    const fieldDef = customFieldDefinitions?.find(f => f.id === fieldId);
-                                    if (!fieldDef) return null;
-
-                                    return (
-                                        <th
-                                            key={fieldId}
-                                            className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32"
-                                        >
-                                            {fieldDef.label}
-                                        </th>
-                                    );
-                                })}
-
-                                {/* Actions Header */}
-                                <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-24"></th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-900">
-                            <SortableContext
-                                items={sortedData.map((item) => item.id)}
-                                strategy={verticalListSortingStrategy}
-                            >
-                                {sortedData.map((item) => (
-                                    <SortableRow
-                                        key={item.id}
-                                        item={item}
-                                        isSelected={selectedIds.includes(item.id)}
-                                        isSelectionMode={isSelectionMode}
-                                        isEditMode={isEditMode}
-                                        enableReorder={enableReorder && sortMode === 'custom'}
-                                        onRowClick={onRowClick}
-                                        onToggleSelection={onToggleSelection}
-                                        onStatusChange={onStatusChange}
-                                        onViewClick={onViewClick}
-                                        onCloneClick={onCloneClick}
-                                        onUpdate={onUpdate}
-                                        getStatusColor={getStatusColor}
-                                        customFieldDefinitions={customFieldDefinitions}
-                                        visibleCustomFieldIds={visibleCustomFieldIds}
-                                        hiddenColumns={hiddenColumns}
-                                        activeArea={activeArea}
-                                        activeSuiteId={activeSuiteId}
-                                    />
-                                ))}
-                            </SortableContext>
-                        </tbody>
-                    </table>
+                    <VirtualizedTable
+                        data={sortedData}
+                        selectedIds={selectedIds}
+                        isSelectionMode={isSelectionMode}
+                        isEditMode={isEditMode}
+                        enableReorder={enableReorder && sortMode === 'custom'}
+                        onRowClick={onRowClick}
+                        onToggleSelection={onToggleSelection}
+                        onSelectAll={onSelectAll}
+                        onStatusChange={onStatusChange}
+                        onViewClick={onViewClick}
+                        onCloneClick={onCloneClick}
+                        onUpdate={onUpdate}
+                        getStatusColor={getStatusColor}
+                        customFieldDefinitions={customFieldDefinitions}
+                        visibleCustomFieldIds={visibleCustomFieldIds}
+                        hiddenColumns={hiddenColumns}
+                        handleColumnSort={handleColumnSort}
+                        SortIcon={SortIcon}
+                        allSelected={allSelected}
+                        someSelected={someSelected}
+                        activeArea={activeArea}
+                        activeSuiteId={activeSuiteId}
+                    />
                 </DndContext>
             </div>
 
