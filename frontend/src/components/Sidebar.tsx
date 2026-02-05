@@ -34,7 +34,7 @@ interface SubMenuItem {
 
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
   const { logout } = useAuthStore();
-  const { activeProject, projects, setActiveSuite, setActiveSuiteId } = useTestManagerStore();
+  const { activeProject, projects, setActiveSuite, setActiveSuiteId, setActiveArea, clearFilters } = useTestManagerStore();
   const navigate = useNavigate();
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
 
@@ -53,6 +53,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
   const handleAllCasesClick = () => {
     setActiveSuite(null);
     setActiveSuiteId(null);
+    setActiveArea(null);
+    clearFilters();
   };
 
   const menuItems: MenuItem[] = [
