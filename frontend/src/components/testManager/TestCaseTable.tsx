@@ -1,5 +1,6 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
     DndContext,
     closestCenter,
@@ -496,6 +497,66 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
             : <ArrowDown className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />;
     };
 
+    // Virtualization setup
+    const ROW_HEIGHT_ESTIMATE = 60;
+    const VIRTUAL_CONTAINER_HEIGHT = 600;
+    const tableScrollRef = useRef<HTMLDivElement>(null);
+
+    const rowVirtualizer = useVirtualizer({
+        count: sortedData.length,
+        getScrollElement: () => tableScrollRef.current,
+        estimateSize: () => ROW_HEIGHT_ESTIMATE,
+        overscan: 8,
+    });
+
+    // Trigger re-measurement when the dataset changes (e.g. real-time socket updates)
+    const previousDataLength = useRef(sortedData.length);
+    useEffect(() => {
+        if (sortedData.length !== previousDataLength.current) {
+            previousDataLength.current = sortedData.length;
+            rowVirtualizer.measure();
+        }
+    }, [sortedData.length, rowVirtualizer]);
+
+    // Keyboard navigation for virtual rows
+    const [focusedRowIdx, setFocusedRowIdx] = useState<number>(-1);
+
+    const handleTableKeyDown = useCallback((evt: React.KeyboardEvent<HTMLDivElement>) => {
+        if (sortedData.length === 0) return;
+        if (evt.key === 'ArrowDown') {
+            evt.preventDefault();
+            setFocusedRowIdx(prev => {
+                const next = Math.min(prev + 1, sortedData.length - 1);
+                rowVirtualizer.scrollToIndex(next, { align: 'auto' });
+                return next;
+            });
+        } else if (evt.key === 'ArrowUp') {
+            evt.preventDefault();
+            setFocusedRowIdx(prev => {
+                const next = Math.max(prev - 1, 0);
+                rowVirtualizer.scrollToIndex(next, { align: 'auto' });
+                return next;
+            });
+        } else if (evt.key === 'Enter' && focusedRowIdx >= 0 && focusedRowIdx < sortedData.length) {
+            evt.preventDefault();
+            const target = sortedData[focusedRowIdx];
+            if (isSelectionMode) {
+                onToggleSelection?.(target.id);
+            } else {
+                onRowClick(target);
+            }
+        } else if (evt.key === 'Home') {
+            evt.preventDefault();
+            setFocusedRowIdx(0);
+            rowVirtualizer.scrollToIndex(0, { align: 'start' });
+        } else if (evt.key === 'End') {
+            evt.preventDefault();
+            const lastIdx = sortedData.length - 1;
+            setFocusedRowIdx(lastIdx);
+            rowVirtualizer.scrollToIndex(lastIdx, { align: 'end' });
+        }
+    }, [sortedData, focusedRowIdx, rowVirtualizer, isSelectionMode, onToggleSelection, onRowClick]);
+
     return (
         <div className="flex-1 bg-gray-50 dark:bg-gray-900 flex flex-col">
             {/* Sort Controls Bar - Show on mobile, hide on desktop if showSortControlsInHeader */}
@@ -526,8 +587,22 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                 </div>
             )}
 
-            {/* Desktop table */}
-            <div className="hidden sm:block overflow-auto flex-1">
+            {/* Desktop table – virtualized */}
+            <div
+                ref={tableScrollRef}
+                className="hidden sm:block flex-1"
+                style={{ height: VIRTUAL_CONTAINER_HEIGHT, overflowY: 'auto' }}
+                role="grid"
+                aria-label="Test cases table"
+                aria-rowcount={sortedData.length}
+                tabIndex={0}
+                onKeyDown={handleTableKeyDown}
+            >
+                {sortedData.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
+                        <p className="text-sm">No test cases to display</p>
+                    </div>
+                ) : (
                 <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -650,32 +725,55 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                 items={sortedData.map((item) => item.id)}
                                 strategy={verticalListSortingStrategy}
                             >
-                                {sortedData.map((item) => (
-                                    <SortableRow
-                                        key={item.id}
-                                        item={item}
-                                        isSelected={selectedIds.includes(item.id)}
-                                        isSelectionMode={isSelectionMode}
-                                        isEditMode={isEditMode}
-                                        enableReorder={enableReorder && sortMode === 'custom'}
-                                        onRowClick={onRowClick}
-                                        onToggleSelection={onToggleSelection}
-                                        onStatusChange={onStatusChange}
-                                        onViewClick={onViewClick}
-                                        onCloneClick={onCloneClick}
-                                        onUpdate={onUpdate}
-                                        getStatusColor={getStatusColor}
-                                        customFieldDefinitions={customFieldDefinitions}
-                                        visibleCustomFieldIds={visibleCustomFieldIds}
-                                        hiddenColumns={hiddenColumns}
-                                        activeArea={activeArea}
-                                        activeSuiteId={activeSuiteId}
-                                    />
-                                ))}
+                                {/* Spacer row for virtual scroll offset above visible rows */}
+                                {rowVirtualizer.getVirtualItems().length > 0 && (
+                                    <tr aria-hidden="true">
+                                        <td style={{ height: rowVirtualizer.getVirtualItems()[0]?.start ?? 0, padding: 0, border: 'none' }} />
+                                    </tr>
+                                )}
+                                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                                    const item = sortedData[virtualRow.index];
+                                    if (!item) return null;
+                                    return (
+                                        <SortableRow
+                                            key={item.id}
+                                            item={item}
+                                            isSelected={selectedIds.includes(item.id)}
+                                            isSelectionMode={isSelectionMode}
+                                            isEditMode={isEditMode}
+                                            enableReorder={enableReorder && sortMode === 'custom'}
+                                            onRowClick={onRowClick}
+                                            onToggleSelection={onToggleSelection}
+                                            onStatusChange={onStatusChange}
+                                            onViewClick={onViewClick}
+                                            onCloneClick={onCloneClick}
+                                            onUpdate={onUpdate}
+                                            getStatusColor={getStatusColor}
+                                            customFieldDefinitions={customFieldDefinitions}
+                                            visibleCustomFieldIds={visibleCustomFieldIds}
+                                            hiddenColumns={hiddenColumns}
+                                            activeArea={activeArea}
+                                            activeSuiteId={activeSuiteId}
+                                        />
+                                    );
+                                })}
+                                {(() => {
+                                    const visibleRows = rowVirtualizer.getVirtualItems();
+                                    const lastVisibleRow = visibleRows[visibleRows.length - 1];
+                                    const bottomPad = lastVisibleRow
+                                        ? rowVirtualizer.getTotalSize() - lastVisibleRow.end
+                                        : 0;
+                                    return bottomPad > 0 ? (
+                                        <tr aria-hidden="true">
+                                            <td style={{ height: bottomPad, padding: 0, border: 'none' }} />
+                                        </tr>
+                                    ) : null;
+                                })()}
                             </SortableContext>
                         </tbody>
                     </table>
                 </DndContext>
+                )}
             </div>
 
             {/* Mobile list */}
