@@ -463,9 +463,13 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                             onBlur={handleFieldBlur}
                                             className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getStatusColor(localCase.status)}`}
                                         >
-                                            {Object.values(Status).map(s => (
-                                                <option key={s} value={s}>{s}</option>
-                                            ))}
+                                            {Object.values(Status).map(s => {
+                                                // Hide "Passed" option when current status is "Failed"
+                                                if (s === Status.Passed && localCase.status === Status.Failed) {
+                                                    return null;
+                                                }
+                                                return <option key={s} value={s}>{s}</option>;
+                                            })}
                                         </select>
                                         <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
                                     </div>

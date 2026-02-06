@@ -241,7 +241,7 @@ const SortableRow: React.FC<SortableRowProps> = React.memo(({
                             className={`text-xs font-semibold px-2.5 py-1 rounded-full border appearance-none cursor-pointer outline-none transition-colors text-center min-w-[90px] ${getStatusColor(item.status)}`}
                         >
                             <option value={Status.Draft}>Draft</option>
-                            <option value={Status.Passed}>Passed</option>
+                            {item.status !== Status.Failed && <option value={Status.Passed}>Passed</option>}
                             <option value={Status.Failed}>Failed</option>
                             <option value={Status.PassFixed}>Pass - Fixed</option>
                             <option value={Status.Retest}>Retest</option>
