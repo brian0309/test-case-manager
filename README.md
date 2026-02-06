@@ -27,6 +27,7 @@ A full-stack **test case management system** built with the MERN stack (MongoDB,
 
 - 📁 **Projects & Test Suites** – Organize test cases into projects with customizable fields and nested test suites
 - 📝 **Test Cases** – Create, edit, clone, and bulk-manage test cases with priority, status, steps, and expected results
+- ⚡ **Virtualized Tables** – TanStack React Virtual keeps large test case lists fast and responsive
 - 🚀 **Test Runs** – Execute test cases, track results (Pass/Fail/Blocked/Skipped), and record actual outcomes
 - 📊 **Reports & Analytics** – Visual dashboards with execution statistics, pass rates, and trend analysis
 - 👥 **Real-Time Collaboration** – Google Docs-style live editing with presence indicators via Socket.io
@@ -92,6 +93,7 @@ This project covers:
 -   📁 **Projects Page** - Create and manage testing projects
 -   📂 **Test Suites Page** - Organize test cases into suites
 -   📝 **Test Cases Page** - Table view with inline editing and bulk operations
+-   ⚡ **Virtualized Table** - TanStack React Virtual keeps large lists responsive
 -   🚀 **Test Runs Page** - Execute tests and record results
 -   📊 **Reports Page** - Analytics dashboards and execution statistics
 -   🏠 **Dashboard** - Overview with quick actions and recent activity
@@ -431,6 +433,7 @@ All API endpoints are prefixed with `/api`. Authentication endpoints are under `
 - **Framer Motion** - Animations
 - **React Router** - Routing
 - **Zustand** - State management
+- **TanStack React Virtual** - Virtualized lists/tables
 - **React Hot Toast** - Notifications
 - **Lucide React** - Icons
 
