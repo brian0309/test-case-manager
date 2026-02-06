@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import TestCaseTable, { SortInfo } from '../../components/testManager/TestCaseTable';
@@ -82,7 +82,10 @@ const TestCasesPage: React.FC = () => {
     const processedTestCaseIdRef = useRef<string | null>(null);
     const processedSuiteIdRef = useRef<string | null>(null);
 
-    const uniqueAreas = Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort();
+    const uniqueAreas = useMemo(
+        () => Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort(),
+        [testCases]
+    );
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -300,18 +303,18 @@ const TestCasesPage: React.FC = () => {
         }
     }, [location, navigate, activeProject, activeSuite, activeArea]);
 
-    const handleRowClick = (item: TestCase) => {
+    const handleRowClick = useCallback((item: TestCase) => {
         if (isListEditMode) return;
         // Row click opens view-only modal
         setViewCase(item);
-    };
+    }, [isListEditMode]);
 
-    const handleViewClick = (item: TestCase) => {
+    const handleViewClick = useCallback((item: TestCase) => {
         // View button opens edit modal
         setSelectedCase(item);
-    };
+    }, []);
 
-    const handleCloneClick = async (item: TestCase) => {
+    const handleCloneClick = useCallback(async (item: TestCase) => {
         try {
             await cloneTestCase(item.id);
             toast.success('Test case cloned successfully');
@@ -319,21 +322,71 @@ const TestCasesPage: React.FC = () => {
             toast.error('Failed to clone test case');
             console.error('Clone error:', error);
         }
-    };
+    }, [cloneTestCase]);
 
-    const handleEditFromView = (item: TestCase) => {
+    const handleEditFromView = useCallback((item: TestCase) => {
         // Close view modal and open edit modal
         setViewCase(null);
         setSelectedCase(item);
-    };
+    }, []);
 
-    const handleInlineUpdate = (caseId: string, field: keyof TestCase, value: string | boolean | number | Status | Priority) => {
+    const handleInlineUpdate = useCallback((caseId: string, field: keyof TestCase, value: string | boolean | number | Status | Priority) => {
         updateTestCase(caseId, { [field]: value } as UpdateTestCaseRequest);
-    };
+    }, [updateTestCase]);
 
-    const handleStatusChange = (caseId: string, status: Status) => {
+    const handleStatusChange = useCallback((caseId: string, status: Status) => {
         updateTestCase(caseId, { status: status });
-    };
+    }, [updateTestCase]);
+
+    // Memoize the filtered & searched test cases to avoid re-computing on every render
+    const displayedCases = useMemo(() => {
+        let cases = activeArea
+            ? testCases.filter(tc => tc.area === activeArea)
+            : testCases;
+
+        // Apply client-side filters
+        if (filters.status.length > 0) {
+            cases = cases.filter(tc => filters.status.includes(tc.status));
+        }
+
+        if (filters.priority.length > 0) {
+            cases = cases.filter(tc => filters.priority.includes(tc.priority));
+        }
+
+        if (filters.dateRange.start) {
+            const startDate = new Date(filters.dateRange.start);
+            startDate.setHours(0, 0, 0, 0);
+            const startTime = startDate.getTime();
+            cases = cases.filter(tc => new Date(tc.lastModified).getTime() >= startTime);
+        }
+
+        if (filters.dateRange.end) {
+            const endDate = new Date(filters.dateRange.end);
+            endDate.setHours(23, 59, 59, 999);
+            const endTime = endDate.getTime();
+            cases = cases.filter(tc => new Date(tc.lastModified).getTime() <= endTime);
+        }
+
+        // Apply search filter
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            cases = cases.filter(tc =>
+                tc.title.toLowerCase().includes(query) ||
+                tc.id.toLowerCase().includes(query) ||
+                (tc.area && tc.area.toLowerCase().includes(query))
+            );
+        }
+
+        return cases;
+    }, [testCases, activeArea, filters, searchQuery]);
+
+    const handleSelectAll = useCallback((selectAll: boolean) => {
+        if (selectAll) {
+            selectAllTestCases(displayedCases.map(tc => tc.id));
+        } else {
+            clearSelection();
+        }
+    }, [displayedCases, selectAllTestCases, clearSelection]);
 
     const handleSaveCase = async (updatedCase: TestCase): Promise<TestCase | void> => {
         const exists = testCases.find(c => c.id === updatedCase.id);
@@ -382,43 +435,6 @@ const TestCasesPage: React.FC = () => {
                 title="No Project Selected"
                 description="Please select a project to view and manage test cases"
             />
-        );
-    }
-
-    // Display all cases from the store - filtering is now handled by the API calls
-    // Also filter by activeArea if selected
-    let displayedCases = activeArea
-        ? testCases.filter(tc => tc.area === activeArea)
-        : testCases;
-
-    // Apply client-side filters
-    if (filters.status.length > 0) {
-        displayedCases = displayedCases.filter(tc => filters.status.includes(tc.status));
-    }
-
-    if (filters.priority.length > 0) {
-        displayedCases = displayedCases.filter(tc => filters.priority.includes(tc.priority));
-    }
-
-    if (filters.dateRange.start) {
-        const startDate = new Date(filters.dateRange.start);
-        startDate.setHours(0, 0, 0, 0);
-        displayedCases = displayedCases.filter(tc => new Date(tc.lastModified) >= startDate);
-    }
-
-    if (filters.dateRange.end) {
-        const endDate = new Date(filters.dateRange.end);
-        endDate.setHours(23, 59, 59, 999);
-        displayedCases = displayedCases.filter(tc => new Date(tc.lastModified) <= endDate);
-    }
-
-    // Apply search filter
-    if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        displayedCases = displayedCases.filter(tc =>
-            tc.title.toLowerCase().includes(query) ||
-            tc.id.toLowerCase().includes(query) ||
-            (tc.area && tc.area.toLowerCase().includes(query))
         );
     }
 
@@ -584,13 +600,7 @@ const TestCasesPage: React.FC = () => {
                     isSelectionMode={isSelectionMode}
                     selectedIds={selectedTestCaseIds}
                     onToggleSelection={toggleTestCaseSelection}
-                    onSelectAll={(selectAll: boolean) => {
-                        if (selectAll) {
-                            selectAllTestCases(displayedCases.map(tc => tc.id));
-                        } else {
-                            clearSelection();
-                        }
-                    }}
+                    onSelectAll={handleSelectAll}
                     // Custom fields and visibility props
                     customFieldDefinitions={customFieldDefinitions}
                     visibleCustomFieldIds={visibleCustomFieldIds}

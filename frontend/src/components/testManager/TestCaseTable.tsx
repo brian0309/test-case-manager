@@ -85,7 +85,7 @@ interface SortableRowProps {
     activeSuiteId?: string | null;
 }
 
-const SortableRow: React.FC<SortableRowProps> = ({
+const SortableRow: React.FC<SortableRowProps> = React.memo(({
     item,
     isSelected,
     isSelectionMode,
@@ -335,7 +335,9 @@ const SortableRow: React.FC<SortableRowProps> = ({
             </td>
         </tr>
     );
-};
+});
+
+SortableRow.displayName = 'SortableRow';
 
 const TestCaseTable: React.FC<TestCaseTableProps> = ({
     data,
@@ -391,7 +393,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
         })
     );
 
-    const getStatusColor = (status: Status) => {
+    const getStatusColor = useCallback((status: Status) => {
         switch (status) {
             case Status.Passed: return 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700';
             case Status.PassFixed: return 'bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-700';
@@ -401,7 +403,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
             case Status.Draft: return 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600';
             default: return 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-400 border-transparent dark:border-gray-600';
         }
-    };
+    }, []);
 
     const getPriorityValue = (priority: Priority): number => {
         switch (priority) {
@@ -499,14 +501,29 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
 
     // Virtualization setup
     const ROW_HEIGHT_ESTIMATE = 60;
-    const VIRTUAL_CONTAINER_HEIGHT = 600;
     const tableScrollRef = useRef<HTMLDivElement>(null);
+    const [containerHeight, setContainerHeight] = useState(600);
+
+    // Dynamically size the virtual container to fill available space
+    useEffect(() => {
+        const el = tableScrollRef.current;
+        if (!el) return;
+        const observer = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const h = entry.contentRect.height;
+                if (h > 0) setContainerHeight(h);
+            }
+        });
+        // Observe the parent so the scroll container can stretch to fill it
+        if (el.parentElement) observer.observe(el.parentElement);
+        return () => observer.disconnect();
+    }, []);
 
     const rowVirtualizer = useVirtualizer({
         count: sortedData.length,
         getScrollElement: () => tableScrollRef.current,
         estimateSize: () => ROW_HEIGHT_ESTIMATE,
-        overscan: 8,
+        overscan: 10,
     });
 
     // Trigger re-measurement when the dataset changes (e.g. real-time socket updates)
@@ -557,6 +574,18 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
         }
     }, [sortedData, focusedRowIdx, rowVirtualizer, isSelectionMode, onToggleSelection, onRowClick]);
 
+    // Mobile virtualization
+    const mobileScrollRef = useRef<HTMLDivElement>(null);
+    const mobileVirtualizer = useVirtualizer({
+        count: sortedData.length,
+        getScrollElement: () => mobileScrollRef.current,
+        estimateSize: () => 120, // approximate mobile card height
+        overscan: 5,
+    });
+
+    // Determine whether DndContext should be active (only when reorder is possible)
+    const isDndEnabled = enableReorder && sortMode === 'custom';
+
     return (
         <div className="flex-1 bg-gray-50 dark:bg-gray-900 flex flex-col">
             {/* Sort Controls Bar - Show on mobile, hide on desktop if showSortControlsInHeader */}
@@ -591,7 +620,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
             <div
                 ref={tableScrollRef}
                 className="hidden sm:block flex-1"
-                style={{ height: VIRTUAL_CONTAINER_HEIGHT, overflowY: 'auto' }}
+                style={{ height: containerHeight, overflowY: 'auto' }}
                 role="grid"
                 aria-label="Test cases table"
                 aria-rowcount={sortedData.length}
@@ -602,7 +631,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                     <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
                         <p className="text-sm">No test cases to display</p>
                     </div>
-                ) : (
+                ) : isDndEnabled ? (
                 <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -773,20 +802,143 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                         </tbody>
                     </table>
                 </DndContext>
+                ) : (
+                    <table className="w-full text-left border-collapse">
+                        <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-none">
+                            <tr>
+                                {isSelectionMode && (
+                                    <th className="py-2 pl-6 pr-2 w-10">
+                                        <div className="flex items-center justify-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={allSelected}
+                                                ref={input => {
+                                                    if (input) {
+                                                        input.indeterminate = someSelected && !allSelected;
+                                                    }
+                                                }}
+                                                onChange={(e) => onSelectAll?.(e.target.checked)}
+                                                className="w-4 h-4 text-system-blue border-gray-300 dark:border-gray-600 rounded focus:ring-system-blue bg-white dark:bg-gray-800"
+                                            />
+                                        </div>
+                                    </th>
+                                )}
+                                {!hiddenColumns?.id && (
+                                    <th className={`py-2 ${isSelectionMode ? 'pl-2' : 'pl-6'} pr-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32`}>ID</th>
+                                )}
+                                {!hiddenColumns?.title && (
+                                    <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-1/3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none" onClick={() => handleColumnSort('title')}>
+                                        <div className="flex items-center gap-1.5">Title <SortIcon field="title" /></div>
+                                    </th>
+                                )}
+                                {!hiddenColumns?.priority && (
+                                    <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none" onClick={() => handleColumnSort('priority')}>
+                                        <div className="flex items-center gap-1.5">Priority <SortIcon field="priority" /></div>
+                                    </th>
+                                )}
+                                {!hiddenColumns?.status && (
+                                    <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none" onClick={() => handleColumnSort('status')}>
+                                        <div className="flex items-center gap-1.5">Status <SortIcon field="status" /></div>
+                                    </th>
+                                )}
+                                {!hiddenColumns?.lastModified && (
+                                    <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none" onClick={() => handleColumnSort('lastModified')}>
+                                        <div className="flex items-center gap-1.5">Last Modified <SortIcon field="lastModified" /></div>
+                                    </th>
+                                )}
+                                {!hiddenColumns?.assignedTester && (
+                                    <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32 text-right pr-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none" onClick={() => handleColumnSort('assignedTester')}>
+                                        <div className="flex items-center justify-end gap-1.5">Assignee <SortIcon field="assignedTester" /></div>
+                                    </th>
+                                )}
+                                {visibleCustomFieldIds?.map((fieldId) => {
+                                    const fieldDef = customFieldDefinitions?.find(f => f.id === fieldId);
+                                    if (!fieldDef) return null;
+                                    return (
+                                        <th key={fieldId} className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32">{fieldDef.label}</th>
+                                    );
+                                })}
+                                <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-24"></th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-900">
+                            {rowVirtualizer.getVirtualItems().length > 0 && (
+                                <tr aria-hidden="true">
+                                    <td style={{ height: rowVirtualizer.getVirtualItems()[0]?.start ?? 0, padding: 0, border: 'none' }} />
+                                </tr>
+                            )}
+                            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                                const item = sortedData[virtualRow.index];
+                                if (!item) return null;
+                                return (
+                                    <SortableRow
+                                        key={item.id}
+                                        item={item}
+                                        isSelected={selectedIds.includes(item.id)}
+                                        isSelectionMode={isSelectionMode}
+                                        isEditMode={isEditMode}
+                                        enableReorder={false}
+                                        onRowClick={onRowClick}
+                                        onToggleSelection={onToggleSelection}
+                                        onStatusChange={onStatusChange}
+                                        onViewClick={onViewClick}
+                                        onCloneClick={onCloneClick}
+                                        onUpdate={onUpdate}
+                                        getStatusColor={getStatusColor}
+                                        customFieldDefinitions={customFieldDefinitions}
+                                        visibleCustomFieldIds={visibleCustomFieldIds}
+                                        hiddenColumns={hiddenColumns}
+                                        activeArea={activeArea}
+                                        activeSuiteId={activeSuiteId}
+                                    />
+                                );
+                            })}
+                            {(() => {
+                                const visibleRows = rowVirtualizer.getVirtualItems();
+                                const lastVisibleRow = visibleRows[visibleRows.length - 1];
+                                const bottomPad = lastVisibleRow
+                                    ? rowVirtualizer.getTotalSize() - lastVisibleRow.end
+                                    : 0;
+                                return bottomPad > 0 ? (
+                                    <tr aria-hidden="true">
+                                        <td style={{ height: bottomPad, padding: 0, border: 'none' }} />
+                                    </tr>
+                                ) : null;
+                            })()}
+                        </tbody>
+                    </table>
                 )}
             </div>
 
-            {/* Mobile list */}
-            <div className="block sm:hidden p-2 flex-1 overflow-auto">
+            {/* Mobile list – virtualized */}
+            <div
+                ref={mobileScrollRef}
+                className="block sm:hidden flex-1 overflow-auto"
+                style={{ padding: '0.5rem' }}
+            >
                 {sortedData.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-40 text-gray-400 dark:text-gray-500">
                         <p>No test cases found</p>
                     </div>
                 ) : (
-                    <div className="space-y-3">
-                        {sortedData.map(item => (
+                    <div style={{ height: mobileVirtualizer.getTotalSize(), position: 'relative' }}>
+                        {mobileVirtualizer.getVirtualItems().map((virtualRow) => {
+                            const item = sortedData[virtualRow.index];
+                            if (!item) return null;
+                            return (
                             <div
                                 key={item.id}
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    transform: `translateY(${virtualRow.start}px)`,
+                                }}
+                                ref={mobileVirtualizer.measureElement}
+                                data-index={virtualRow.index}
+                            >
+                            <div
                                 onClick={() => {
                                     if (isSelectionMode) {
                                         onToggleSelection?.(item.id);
@@ -794,7 +946,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         onRowClick(item);
                                     }
                                 }}
-                                className={`relative mac-card overflow-hidden cursor-pointer transition-all active:scale-[0.98] ${selectedIds.includes(item.id)
+                                className={`relative mac-card overflow-hidden cursor-pointer transition-all active:scale-[0.98] mb-3 ${selectedIds.includes(item.id)
                                     ? 'bg-blue-50/50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700'
                                     : 'hover:bg-gray-50/80 dark:hover:bg-gray-800/80'
                                     }`}
@@ -868,7 +1020,9 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                            </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>

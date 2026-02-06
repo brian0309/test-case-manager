@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, ChevronDown, Folder, Layers, Check, Home, Map, Grid2x2, Table } from 'lucide-react';
 import { useTestManagerStore } from '../../store/testManagerStore';
@@ -26,7 +26,6 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
         setActiveSuiteId,
         setActiveArea,
         fetchTestSuites,
-        fetchTestCases,
         fetchTestCasesByProject,
         testCases,
         clearFilters,
@@ -77,19 +76,16 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
         setActiveSuiteWithId(suiteId, suiteName);
         // Reset filters when selecting a suite
         clearFilters();
-        // Fetch test cases for this suite
-        await fetchTestCases(suiteId);
+        // Fetch is handled by useEffect in TestCasesPage reacting to activeSuiteId change
         setActiveArea(null);
         setIsSuiteOpen(false);
     };
 
-    const handleShowAllCases = async () => {
+    const handleShowAllCases = () => {
         // Clear suite selection to show all cases for the project
+        // The useEffect in TestCasesPage will trigger fetchTestCasesByProject
         setActiveSuite(null);
         setActiveSuiteId(null);
-        if (activeProject) {
-            await fetchTestCasesByProject(activeProject);
-        }
         setIsSuiteOpen(false);
     };
 
@@ -108,7 +104,10 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
         setIsAreaOpen(false);
     };
 
-    const uniqueAreas = Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort();
+    const uniqueAreas = useMemo(
+        () => Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort(),
+        [testCases]
+    );
 
     return (
         <div className="min-h-16 flex flex-wrap items-center justify-between gap-2 sm:gap-3 px-4 sm:px-6 py-2 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
