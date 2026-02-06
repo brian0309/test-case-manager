@@ -273,7 +273,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                 {/* Main Content Wrapper */}
                 <div className="flex-1 flex flex-col min-w-0 min-h-0">
                     {/* Modal Header */}
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0">
+                    <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex-shrink-0">
                         <div className="flex items-center gap-3">
                             {localCase.id.startsWith('new-') ? (
                                 <span className="text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 rounded-md">New Case</span>
@@ -363,9 +363,9 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                     </div>
 
                     {/* Modal Content */}
-                    <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
-                        <div className="mb-8">
-                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Title</label>
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                        <div className="mb-5">
+                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Title</label>
                             <input
                                 type="text"
                                 value={localCase.title}
@@ -376,9 +376,9 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                             />
                         </div>
                         {/* Project & Suite selectors - Always visible */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                             <div>
-                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Project</label>
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Project</label>
                                 <select
                                     value={localCase.projectId || ''}
                                     onChange={(e) => {
@@ -397,7 +397,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                             </div>
 
                             <div>
-                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Test Suite</label>
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Test Suite</label>
                                 <select
                                     value={localCase.suite || ''}
                                     onChange={(e) => setLocalCase(prev => prev ? ({ ...prev, suite: e.target.value }) : null)}
@@ -412,12 +412,12 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
                             {/* Assignee */}
                             {!hiddenFields.assignedTester && (
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Assignee</label>
-                                    <div className="flex items-center gap-3 p-2 rounded-lg bg-gray-50/50 dark:bg-gray-800/50 border border-transparent">
+                                    <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Assignee</label>
+                                    <div className="flex items-center gap-3 p-1.5 rounded-lg bg-gray-50/50 dark:bg-gray-800/50 border border-transparent">
                                         <img src={localCase.assignedTester.avatar} className="h-6 w-6 rounded-full" alt="avatar" />
                                         <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">{localCase.assignedTester.name}</span>
                                     </div>
@@ -427,7 +427,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                             {/* Priority (Editable) */}
                             {!hiddenFields.priority && (
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Priority</label>
+                                    <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Priority</label>
                                     <div className="relative">
                                         <select
                                             value={localCase.priority}
@@ -451,7 +451,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                             {/* Status (Editable) */}
                             {!hiddenFields.status && (
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Status</label>
+                                    <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Status</label>
                                     <div className="relative">
                                         <select
                                             value={localCase.status}
@@ -475,8 +475,8 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
 
                         {/* Searchable Page/Area Input - Moved below grid */}
                         {!hiddenFields.area && (
-                            <div className="mb-8">
-                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Page / Area</label>
+                            <div className="mb-5">
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Page / Area</label>
                                 <div className="relative" ref={areaRef}>
                                     <div className="flex items-center gap-2">
                                         <div className="relative w-full group">
@@ -547,7 +547,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                         {/* Test Description (between Page/Area and Steps) */}
                         {!hiddenFields.testDescription && (
                             <div className="mb-2">
-                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Test Description</label>
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Test Description</label>
                                 <textarea
                                     value={localCase.testDescription || ''}
                                     onChange={handleTestDescriptionChange}
@@ -561,7 +561,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
 
                         {!hiddenFields.stepsContent && (
                             <div className="mb-4">
-                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Test Steps</label>
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Test Steps</label>
 
                                 {error && (
                                     <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm rounded-lg flex items-center gap-2">
@@ -569,7 +569,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                                     </div>
                                 )}
 
-                                <div className="mb-8">
+                                <div className="mb-5">
                                     <RichTextEditor
                                         content={localCase.stepsContent || ''}
                                         onChange={(html) => {
@@ -586,7 +586,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                         {/* Moved Expected Result to bottom */}
                         {!hiddenFields.expectedResult && (
                             <div className="mb-2">
-                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Expected Result (Summary)</label>
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Expected Result (Summary)</label>
                                 <textarea
                                     value={localCase.expectedResult || ''}
                                     onChange={handleExpectedResultChange}
@@ -601,7 +601,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                         {/* Comments Section */}
                         {!hiddenFields.comments && (
                             <div className="mb-2">
-                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Comments</label>
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Comments</label>
                                 <RichTextEditor
                                     content={localCase.comments || ''}
                                     onChange={(html) => {
@@ -616,14 +616,14 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
 
                         {/* Custom Fields */}
                         {customFields.filter(f => !f.deleted).length > 0 && (
-                            <div className="mt-8 space-y-6">
-                                <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-                                    <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-4">Custom Fields</h3>
+                            <div className="mt-6 space-y-4">
+                                <div className="border-t border-gray-200 dark:border-gray-700 pt-5">
+                                    <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Custom Fields</h3>
                                     {customFields.filter(f => !f.deleted).map((field) => {
                                         const value = localCase.customFields?.[field.id] || '';
                                         return (
-                                            <div key={field.id} className="mb-6">
-                                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
+                                            <div key={field.id} className="mb-4">
+                                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
                                                     {field.label}
                                                     {field.required && <span className="text-red-500 dark:text-red-400 ml-1">*</span>}
                                                 </label>
