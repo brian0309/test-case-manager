@@ -452,24 +452,24 @@ export const useTestManagerStore = create<TestManagerStore>()(
             // TEST CASE ACTIONS
             // =========================================================================
             fetchTestCases: async (suiteId: string) => {
-                set({ error: null });
+                set({ isLoading: true, error: null });
                 try {
                     const response = await testManagerApi.getTestCases(suiteId);
                     const testCases = response.map(mapTestCaseResponse);
-                    set({ testCases });
+                    set({ testCases, isLoading: false });
                 } catch (error: unknown) {
-                    set({ error: (error as Error).message });
+                    set({ error: (error as Error).message, isLoading: false });
                 }
             },
 
             fetchTestCasesByProject: async (projectId: string) => {
-                set({ error: null });
+                set({ isLoading: true, error: null });
                 try {
                     const response = await testManagerApi.getTestCasesByProject(projectId);
                     const testCases = response.map(mapTestCaseResponse);
-                    set({ testCases });
+                    set({ testCases, isLoading: false });
                 } catch (error: unknown) {
-                    set({ error: (error as Error).message });
+                    set({ error: (error as Error).message, isLoading: false });
                 }
             },
 
