@@ -144,6 +144,18 @@ const initializeGoogleClient = () => {
 - Faster OAuth URL generation
 - More efficient resource usage
 
+### 6. Virtualized Test Case Table Rendering
+**File:** `frontend/src/components/testManager/TestCaseTable.tsx`
+
+**Problem:** Large test case datasets caused the table to render hundreds of DOM rows at once, degrading scroll performance.
+
+**Solution:** Implemented list virtualization with TanStack React Virtual for both desktop table rows and mobile cards.
+
+**Impact:**
+- Keeps render cost proportional to visible rows
+- Smoother scrolling on large datasets
+- Reduced DOM size and memory usage
+
 ## Performance Benchmarks
 
 ### Expected Improvements

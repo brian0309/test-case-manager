@@ -265,6 +265,7 @@ This document outlines the chronological implementation plan for integrating the
   - Fetch cases when suite is selected
   - Handle loading state
   - Handle inline updates via API
+  - Virtualize rows with TanStack React Virtual for large datasets
 
 - [x] **8.5 Update TestCaseModal.tsx**
   - Save changes via API (`updateTestCase`)
