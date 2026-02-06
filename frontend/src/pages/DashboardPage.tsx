@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Clock, ArrowUp, ArrowDown, LucideIcon, Folder, Layers, CheckSquare } from 'lucide-react';
@@ -15,6 +16,7 @@ interface Stat {
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [statsData, setStatsData] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -186,7 +188,11 @@ const DashboardPage: React.FC = () => {
           </div>
           <div className="divide-y divide-gray-100 dark:divide-gray-700 overflow-y-auto flex-1 max-h-[400px]">
             {statsData?.recentActivity?.map((activity) => (
-              <div key={activity.id} className="p-4 hover:bg-gray-50/50 transition-colors dark:hover:bg-gray-700/50">
+              <div 
+                key={activity.id} 
+                onClick={() => navigate(`/test-manager/cases?testCaseId=${activity.testCaseId}`)}
+                className="p-4 hover:bg-gray-50/50 transition-colors dark:hover:bg-gray-700/50 cursor-pointer"
+              >
                 <div className="flex items-start">
                   <div className="flex-shrink-0 h-10 w-10 rounded-full bg-gradient-to-br from-system-blue to-system-indigo flex items-center justify-center text-white font-medium text-sm shadow-sm overflow-hidden">
                     {activity.avatar.startsWith('http') ? (

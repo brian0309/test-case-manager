@@ -18,6 +18,7 @@ export interface DashboardStats {
         action: string;
         time: string;
         avatar: string;
+        testCaseId: string;
     }[];
 }
 

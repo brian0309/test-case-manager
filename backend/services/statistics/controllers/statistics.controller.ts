@@ -134,6 +134,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             avatar: string;
             action: string;
             time: Date;
+            testCaseId: string;
         }
         const userActions: UserAction[] = [];
 
@@ -145,7 +146,8 @@ export const getDashboardStats = async (req: Request, res: Response) => {
                     user: testCase.createdBy.name,
                     avatar: testCase.createdBy.profilePicture || (testCase.createdBy.name ? testCase.createdBy.name.charAt(0).toUpperCase() : '?'),
                     action: `created test case "${testCase.title}"`,
-                    time: testCase.createdAt
+                    time: testCase.createdAt,
+                    testCaseId: testCase._id.toString()
                 });
             }
 
@@ -158,7 +160,8 @@ export const getDashboardStats = async (req: Request, res: Response) => {
                             user: entry.userId.name,
                             avatar: entry.userId.profilePicture || (entry.userId.name ? entry.userId.name.charAt(0).toUpperCase() : '?'),
                             action: `updated test case "${testCase.title}"`,
-                            time: entry.timestamp
+                            time: entry.timestamp,
+                            testCaseId: testCase._id.toString()
                         });
                     }
                 });
