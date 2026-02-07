@@ -6,6 +6,7 @@ import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import RichTextEditor from '../../components/testManager/RichTextEditor';
 import ConfirmationModal from '../../components/testManager/ConfirmationModal';
+import { sanitizeHtml } from '../../utils/sanitize';
 import {
     TestRunListItem,
     TestRunStatus,
@@ -504,7 +505,7 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Steps</h4>
                             <div
                                 className="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-400"
-                                dangerouslySetInnerHTML={{ __html: currentItem.caseSnapshot.stepsContent }}
+                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(currentItem.caseSnapshot.stepsContent) }}
                             />
                         </div>
                     )}

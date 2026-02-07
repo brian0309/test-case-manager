@@ -1,5 +1,6 @@
 
 import { TestCase, Priority, Status, Project } from '../types/testManager';
+import { escapeHtml } from './sanitize';
 
 const testers = [
     { id: 'u1', name: 'Sarah Chen', avatar: 'https://picsum.photos/seed/sarah/64/64' },
@@ -55,7 +56,7 @@ const createStepsHtml = (steps: { action: string, expectedResult: string }[]) =>
     if (steps.length === 0) return '';
     return `
     <ol>
-      ${steps.map(s => `<li><p><strong>Action:</strong> ${s.action}</p><p><em>Expected:</em> ${s.expectedResult}</p></li>`).join('')}
+      ${steps.map(s => `<li><p><strong>Action:</strong> ${escapeHtml(s.action)}</p><p><em>Expected:</em> ${escapeHtml(s.expectedResult)}</p></li>`).join('')}
     </ol>
   `;
 };

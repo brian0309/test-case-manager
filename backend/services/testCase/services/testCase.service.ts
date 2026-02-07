@@ -3,6 +3,7 @@ import { TestCase } from "../../../models/testCase.model.js";
 import { TestSuite } from "../../../models/testSuite.model.js";
 import { User } from "../../../models/user.model.js";
 import * as projectService from "./project.service.js";
+import { sanitizeRichText } from "../../../utils/sanitize.js";
 import {
   ITestCaseDocument,
   CreateTestCaseRequest,
@@ -48,10 +49,10 @@ export const createTestCase = async (
       ? new Types.ObjectId(data.assignedTesterId)
       : new Types.ObjectId(userId), // Default to creator
     area: data.area || "",
-    expectedResult: data.expectedResult || "",
+    expectedResult: sanitizeRichText(data.expectedResult),
     testDescription: data.testDescription || "",
-    stepsContent: data.stepsContent || "",
-    comments: data.comments || "",
+    stepsContent: sanitizeRichText(data.stepsContent),
+    comments: sanitizeRichText(data.comments),
     customFields: data.customFields || {},
     history: [],
     createdBy: new Types.ObjectId(userId),
@@ -247,10 +248,10 @@ export const updateTestCase = async (
       assignedTester: new Types.ObjectId(data.assignedTesterId),
     }),
     ...(data.area !== undefined && { area: data.area }),
-    ...(data.expectedResult !== undefined && { expectedResult: data.expectedResult }),
+    ...(data.expectedResult !== undefined && { expectedResult: sanitizeRichText(data.expectedResult) }),
     ...(data.testDescription !== undefined && { testDescription: data.testDescription }),
-    ...(data.stepsContent !== undefined && { stepsContent: data.stepsContent }),
-    ...(data.comments !== undefined && { comments: data.comments }),
+    ...(data.stepsContent !== undefined && { stepsContent: sanitizeRichText(data.stepsContent) }),
+    ...(data.comments !== undefined && { comments: sanitizeRichText(data.comments) }),
     ...(data.customFields !== undefined && { customFields: data.customFields }),
     lastModified: new Date(),
   };
@@ -652,10 +653,10 @@ export const bulkImportTestCases = async (
           ? new Types.ObjectId(assignedTesterId)
           : new Types.ObjectId(userId),
         area: data.area || "",
-        expectedResult: data.expectedResult || "",
+        expectedResult: sanitizeRichText(data.expectedResult),
         testDescription: data.testDescription || "",
-        stepsContent: data.stepsContent || "",
-        comments: data.comments || "",
+        stepsContent: sanitizeRichText(data.stepsContent),
+        comments: sanitizeRichText(data.comments),
         customFields: data.customFields || {},
         history: [],
         createdBy: new Types.ObjectId(userId),
@@ -969,10 +970,10 @@ export const bulkImportTestCasesWithSuite = async (
           ? new Types.ObjectId(assignedTesterId)
           : new Types.ObjectId(userId),
         area: data.area || "",
-        expectedResult: data.expectedResult || "",
+        expectedResult: sanitizeRichText(data.expectedResult),
         testDescription: data.testDescription || "",
-        stepsContent: data.stepsContent || "",
-        comments: data.comments || "",
+        stepsContent: sanitizeRichText(data.stepsContent),
+        comments: sanitizeRichText(data.comments),
         customFields: data.customFields || {},
         history: [],
         createdBy: new Types.ObjectId(userId),

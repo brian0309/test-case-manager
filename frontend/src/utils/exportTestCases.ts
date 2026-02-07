@@ -4,16 +4,7 @@
  */
 
 import { TestCase, CustomFieldDefinition, HiddenDefaultColumns } from '../types/testManager';
-
-/**
- * Strip HTML tags from rich text content
- */
-function stripHtml(html: string | undefined): string {
-    if (!html) return '';
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || '';
-}
+import { stripHtml } from './sanitize';
 
 /**
  * Escape CSV values to handle quotes, commas, and newlines
