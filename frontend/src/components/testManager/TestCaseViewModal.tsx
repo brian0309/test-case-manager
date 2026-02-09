@@ -350,44 +350,51 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                     )}
 
                     {/* Custom Fields */}
-                    {customFields.filter(f => !f.deleted).length > 0 && (
-                        <div className="mt-6 space-y-4">
-                            <div className="border-t border-gray-200 dark:border-gray-700 pt-5">
-                                <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Custom Fields</h3>
-                                {customFields.filter(f => !f.deleted).map((field) => {
-                                    const value = localCase.customFields?.[field.id] || '';
+                    {(() => {
+                        const nonDeletedFields = customFields.filter(f => !f.deleted);
+                        const fieldsWithContent = nonDeletedFields.filter((field) => {
+                            const value = localCase.customFields?.[field.id] || '';
+                            return value && value.trim() !== '';
+                        });
+                        return fieldsWithContent.length > 0 ? (
+                            <div className="mt-6 space-y-4">
+                                <div className="border-t border-gray-200 dark:border-gray-700 pt-5">
+                                    <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Custom Fields</h3>
+                                    {fieldsWithContent.map((field) => {
+                                        const value = localCase.customFields?.[field.id] || '';
 
-                                    return (
-                                        <div key={field.id} className="mb-4">
-                                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
-                                                {field.label}
-                                            </label>
-                                            {(field.type === 'text' || field.type === 'dropdown') && (
-                                                <div className="text-sm font-medium text-gray-700 dark:text-gray-300 py-2 border-b border-gray-200 dark:border-gray-700">
-                                                    {field.type === 'dropdown'
-                                                        ? (field.options?.find(opt => opt.id === value)?.label || value)
-                                                        : value
-                                                    }
-                                                </div>
-                                            )}
-                                            {field.type === 'long_text' && (
-                                                <div className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 whitespace-pre-wrap">
-                                                    {value}
-                                                </div>
-                                            )}
-                                            {field.type === 'wysiwyg' && (
-                                                <RichTextEditor
-                                                    content={value}
-                                                    onChange={() => { }}
-                                                    editable={false}
-                                                />
-                                            )}
-                                        </div>
-                                    );
-                                })}
+                                        return (
+                                            <div key={field.id} className="mb-4">
+                                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
+                                                    {field.label}
+                                                </label>
+                                                {(field.type === 'text' || field.type === 'dropdown') && (
+                                                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300 py-2 border-b border-gray-200 dark:border-gray-700">
+                                                        {field.type === 'dropdown'
+                                                            ? (field.options?.find(opt => opt.id === value)?.label || value)
+                                                            : value
+                                                        }
+                                                    </div>
+                                                )}
+                                                {field.type === 'long_text' && (
+                                                    <div className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 whitespace-pre-wrap">
+                                                        {value}
+                                                    </div>
+                                                )}
+                                                {field.type === 'wysiwyg' && (
+                                                    <RichTextEditor
+                                                        content={value}
+                                                        onChange={() => { }}
+                                                        editable={false}
+                                                    />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        ) : null;
+                    })()}
 
                     {/* Last Modified Info */}
                     {localCase.lastModified && (
