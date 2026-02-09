@@ -17,6 +17,7 @@ import { useProjectPresence } from '../../hooks/useProjectPresence';
 import { TestCase, Status, Priority, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
 import { reorderTestCases, getTestCase, getTestSuite, bulkImportTestCasesWithSuite } from '../../services/testManagerApi';
 import { exportTestCasesToCSV, ExportColumn } from '../../utils/exportTestCases';
+import { escapeHtml } from '../../utils/sanitize';
 import { CreateTestCaseWithSuiteRequest, UpdateTestCaseRequest } from '../../types/api/testManager.api';
 import { Sparkles, GripVertical, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
 
@@ -465,7 +466,7 @@ const TestCasesPage: React.FC = () => {
         for (const testCase of cases) {
             // Format steps into a readable HTML list for the editor
             const stepsHtml = testCase.steps && testCase.steps.length > 0
-                ? `<ol>${testCase.steps.map(s => `<li><strong>${s.action}</strong> - <em>${s.expectedResult}</em></li>`).join('')}</ol>`
+                ? `<ol>${testCase.steps.map(s => `<li><strong>${escapeHtml(s.action)}</strong> - <em>${escapeHtml(s.expectedResult)}</em></li>`).join('')}</ol>`
                 : '';
 
             await createTestCase(activeSuiteId, {
