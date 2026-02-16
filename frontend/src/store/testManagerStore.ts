@@ -479,7 +479,9 @@ export const useTestManagerStore = create<TestManagerStore>()(
                     const response = await testManagerApi.createTestCase(suiteId, data);
                     const testCase = mapTestCaseResponse(response);
                     set((state) => ({
-                        testCases: [testCase, ...state.testCases],
+                        testCases: state.testCases.some((tc) => tc.id === testCase.id)
+                            ? state.testCases
+                            : [testCase, ...state.testCases],
                         isLoading: false,
                     }));
                     return testCase;

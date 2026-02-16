@@ -32,6 +32,7 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
     const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const savedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const lastSavedCaseRef = useRef<string | null>(null);
+    const inFlightSaveRef = useRef<string | null>(null);
 
     // Store access for projects/suites selection
     const { projects, testSuites, fetchTestSuites, fetchProjectSettings, projectSettings } = useTestManagerStore();
@@ -102,7 +103,11 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
         if (currentJson === lastSavedCaseRef.current) {
             return; // No changes to save
         }
+        if (inFlightSaveRef.current === currentJson) {
+            return; // Prevent duplicate concurrent saves for same payload
+        }
 
+        inFlightSaveRef.current = currentJson;
         setSaveStatus('saving');
         setError(null);
         try {
@@ -124,6 +129,8 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
         } catch (err: unknown) {
             setSaveStatus('error');
             setError((err as Error)?.message || 'Failed to save changes');
+        } finally {
+            inFlightSaveRef.current = null;
         }
     }, [onSave]);
 
