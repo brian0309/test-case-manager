@@ -162,7 +162,7 @@ const TestManagerPage: React.FC = () => {
         // Create a temporary local test case for the modal
         const newCase: TestCase = {
             id: `new-${Date.now()}`,
-            title: 'New Test Case',
+            title: '',
             priority: Priority.Medium,
             status: Status.Draft,
             lastModified: new Date().toISOString(),
