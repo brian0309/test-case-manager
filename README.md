@@ -298,6 +298,24 @@ cd frontend
 npm run dev
 ```
 
+**Lint:**
+```bash
+# Backend
+npm run lint:backend
+
+# Frontend
+cd frontend && npm run lint
+```
+
+**Type-check:**
+```bash
+# Backend
+npm run type-check
+
+# Frontend
+cd frontend && npm run type-check
+```
+
 The application will be available at:
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:5000`

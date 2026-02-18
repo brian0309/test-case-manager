@@ -18,7 +18,9 @@ This repo is a full-stack MERN authentication example (TypeScript). The goal of 
 - Dev / test / build commands (from repo READMEs)
   - Dev (root): `npm run dev` (starts backend with hot reload). Frontend dev: `cd frontend && npm run dev`.
   - Production build: `npm run build` (root) and `npm run start` to run built app.
-  - Backend-specific: `npx tsx watch index.ts` (or `npm run build:backend` + run dist). Type-check: `npm run type-check`.
+  - Backend-specific: `npx tsx watch index.ts` (or `npm run build:backend` + run dist).
+  - Lint: `npm run lint:backend` (backend, from root); `cd frontend && npm run lint` (frontend, max-warnings 0).
+  - Type-check: `npm run type-check` (backend, from root); `cd frontend && npm run type-check` (frontend).
   - Tests: `npm test` (all), `npm run test:unit`, `npm run test:integration`. Tests use Jest + Supertest + mongodb-memory-server (see `backend/__tests__/`).
 
 - Environment variables that matter (use these keys and exact behavior)
@@ -76,10 +78,12 @@ This repo is a full-stack MERN authentication example (TypeScript). The goal of 
 
 - Quick checklist the agent should follow before submitting code
   1. Update/confirm environment variable names and README if behavior changed.
-  2. Run `npm run type-check` and `npm test` (or the subset affected) locally—use in-memory DB helpers for backend tests.
-  3. Preserve `.js`-style import paths in compiled/ESM server files.
-  4. Add or update tests for auth-sensitive changes (token/cookie, login flows, OAuth). Use `backend/__tests__` helpers.
-  5. **For real-time features**: Emit socket events from controllers after CRUD operations, and subscribe in frontend components.
+  2. Run lint: `npm run lint:backend` (root) and `cd frontend && npm run lint`. Fix all warnings — frontend lint runs with `--max-warnings 0`.
+  3. Run type-check: `npm run type-check` (root) and `cd frontend && npm run type-check`. Both must pass with no errors.
+  4. Run `npm test` (or the subset affected) locally—use in-memory DB helpers for backend tests.
+  5. Preserve `.js`-style import paths in compiled/ESM server files.
+  6. Add or update tests for auth-sensitive changes (token/cookie, login flows, OAuth). Use `backend/__tests__` helpers.
+  7. **For real-time features**: Emit socket events from controllers after CRUD operations, and subscribe in frontend components.
 
 - Editing guidance for real-time features
   - When adding a new entity that needs live updates:
