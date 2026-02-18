@@ -23,7 +23,7 @@ export const createTestSuite = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const data: CreateTestSuiteRequest = req.body;
 
     if (!data.name || data.name.trim().length === 0) {
@@ -65,7 +65,7 @@ export const getTestSuites = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
 
     // Check access
     const hasAccess = await projectService.hasProjectAccess(projectId, userId);
@@ -98,7 +98,7 @@ export const getTestSuite = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const suite = await testSuiteService.getTestSuiteById(id, userId);
 
     if (!suite) {
@@ -126,7 +126,7 @@ export const updateTestSuite = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const data: UpdateTestSuiteRequest = req.body;
 
     const suite = await testSuiteService.updateTestSuite(id, userId, data);
@@ -166,7 +166,7 @@ export const deleteTestSuite = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     
     // Get suite info before deletion for socket event
     const suiteBeforeDelete = await testSuiteService.getTestSuiteById(id, userId);

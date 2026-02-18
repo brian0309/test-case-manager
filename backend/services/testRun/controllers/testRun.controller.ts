@@ -26,7 +26,7 @@ export const createTestRun = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const data: CreateTestRunRequest = req.body;
 
     if (!data.title || data.title.trim().length === 0) {
@@ -73,7 +73,7 @@ export const getTestRunsByProject = async (req: Request, res: Response): Promise
       return;
     }
 
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
 
     const testRuns = await testRunService.getTestRunsByProject(projectId, userId);
     const responses = testRuns.map(testRunService.formatTestRunListResponse);
@@ -97,7 +97,7 @@ export const getTestRun = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const testRun = await testRunService.getTestRunById(id, userId);
 
     if (!testRun) {
@@ -125,7 +125,7 @@ export const updateTestRun = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const data: UpdateTestRunRequest = req.body;
 
     const testRun = await testRunService.updateTestRun(id, userId, data);
@@ -158,7 +158,7 @@ export const deleteTestRun = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const deleted = await testRunService.deleteTestRun(id, userId);
 
     if (!deleted) {
@@ -191,7 +191,7 @@ export const updateRunItem = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const { id, itemId } = req.params;
+    const { id, itemId } = req.params as Record<string, string>;
     const data: UpdateRunItemRequest = req.body;
 
     const testRun = await testRunService.updateRunItem(id, itemId, userId, data);
@@ -241,7 +241,7 @@ export const reorderRunItems = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const data: ReorderRunItemsRequest = req.body;
 
     if (!data.items || !Array.isArray(data.items)) {
@@ -283,7 +283,7 @@ export const cloneTestRun = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const { title } = req.body;
 
     const testRun = await testRunService.cloneTestRun(id, userId, title);
@@ -320,7 +320,7 @@ export const completeTestRun = async (req: Request, res: Response): Promise<void
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
 
     const testRun = await testRunService.updateTestRun(id, userId, {
       status: "Completed" as any,

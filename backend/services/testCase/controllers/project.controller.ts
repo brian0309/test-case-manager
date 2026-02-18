@@ -77,7 +77,7 @@ export const getProject = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const project = await projectService.getProjectById(id, userId);
 
     if (!project) {
@@ -105,7 +105,7 @@ export const updateProject = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const data: UpdateProjectRequest = req.body;
 
     const project = await projectService.updateProject(id, userId, data);
@@ -142,7 +142,7 @@ export const deleteProject = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const deleted = await projectService.deleteProject(id, userId);
 
     if (!deleted) {
@@ -175,7 +175,7 @@ export const addMember = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const { email }: AddMemberRequest = req.body;
 
     if (!email || email.trim().length === 0) {
@@ -221,7 +221,7 @@ export const removeMember = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    const { id, memberId } = req.params;
+    const { id, memberId } = req.params as Record<string, string>;
 
     const project = await projectService.removeProjectMember(id, userId, memberId);
 
@@ -261,7 +261,7 @@ export const getProjectSettings = async (req: Request, res: Response): Promise<v
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const settings = await projectService.getProjectSettings(id, userId);
 
     if (settings === null) {
@@ -288,7 +288,7 @@ export const updateProjectSettings = async (req: Request, res: Response): Promis
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const settingsData = req.body;
 
     const settings = await projectService.updateProjectSettings(id, userId, settingsData);
@@ -327,7 +327,7 @@ export const permanentlyDeleteCustomFieldData = async (req: Request, res: Respon
       return;
     }
 
-    const { id: projectId, fieldId } = req.params;
+    const { id: projectId, fieldId } = req.params as Record<string, string>;
 
     const result = await projectService.permanentlyDeleteCustomFieldData(projectId, userId, fieldId);
 

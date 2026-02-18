@@ -33,7 +33,7 @@ export const createTestCase = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const { suiteId } = req.params;
+    const { suiteId } = req.params as Record<string, string>;
     const data: CreateTestCaseRequest = req.body;
 
     if (!data.title || data.title.trim().length === 0) {
@@ -84,7 +84,7 @@ export const getTestCasesBySuite = async (req: Request, res: Response): Promise<
       return;
     }
 
-    const { suiteId } = req.params;
+    const { suiteId } = req.params as Record<string, string>;
 
     const testCases = await testCaseService.getTestCasesBySuite(suiteId, userId);
     const responses = testCases.map(testCaseService.formatTestCaseResponse);
@@ -108,7 +108,7 @@ export const getTestCasesByProject = async (req: Request, res: Response): Promis
       return;
     }
 
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
 
     // Check access
     const hasAccess = await projectService.hasProjectAccess(projectId, userId);
@@ -139,7 +139,7 @@ export const getTestCase = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const testCase = await testCaseService.getTestCaseById(id, userId);
 
     if (!testCase) {
@@ -167,7 +167,7 @@ export const updateTestCase = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const data: UpdateTestCaseRequest = req.body;
 
     const testCase = await testCaseService.updateTestCase(id, userId, data);
@@ -208,7 +208,7 @@ export const cloneTestCase = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
 
     const clonedTestCase = await testCaseService.cloneTestCase(id, userId);
 
@@ -253,7 +253,7 @@ export const deleteTestCase = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-    const { id } = req.params;
+    const { id } = req.params as Record<string, string>;
     const deleted = await testCaseService.deleteTestCase(id, userId);
 
     if (!deleted) {
@@ -378,7 +378,7 @@ export const reorderTestCases = async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    const { suiteId } = req.params;
+    const { suiteId } = req.params as Record<string, string>;
     const { items }: ReorderTestCasesRequest = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -429,7 +429,7 @@ export const bulkImportTestCases = async (req: Request, res: Response): Promise<
       return;
     }
 
-    const { suiteId } = req.params;
+    const { suiteId } = req.params as Record<string, string>;
     const { testCases, skipDuplicates }: BulkImportTestCasesRequest = req.body;
 
     if (!testCases || !Array.isArray(testCases) || testCases.length === 0) {
@@ -489,7 +489,7 @@ export const bulkImportTestCasesWithSuite = async (req: Request, res: Response):
       return;
     }
 
-    const { projectId } = req.params;
+    const { projectId } = req.params as Record<string, string>;
     const { testCases, skipDuplicates, createMissingSuites, defaultSuiteId }: BulkImportWithSuiteRequest = req.body;
 
     if (!testCases || !Array.isArray(testCases) || testCases.length === 0) {

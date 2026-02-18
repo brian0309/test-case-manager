@@ -18,7 +18,7 @@ export const createTestRunGroup = async (req: Request, res: Response): Promise<v
             return;
         }
 
-        const { projectId } = req.params;
+        const { projectId } = req.params as Record<string, string>;
         const data: CreateTestRunGroupRequest = req.body;
 
         if (!data.name || data.name.trim().length === 0) {
@@ -58,7 +58,7 @@ export const getTestRunGroupsByProject = async (req: Request, res: Response): Pr
             return;
         }
 
-        const { projectId } = req.params;
+        const { projectId } = req.params as Record<string, string>;
 
         const groups = await testRunGroupService.getTestRunGroupsByProject(projectId, userId);
         const responses = groups.map(testRunGroupService.formatTestRunGroupResponse);
@@ -82,7 +82,7 @@ export const getTestRunGroup = async (req: Request, res: Response): Promise<void
             return;
         }
 
-        const { id } = req.params;
+        const { id } = req.params as Record<string, string>;
         const group = await testRunGroupService.getTestRunGroupById(id, userId);
 
         if (!group) {
@@ -110,7 +110,7 @@ export const updateTestRunGroup = async (req: Request, res: Response): Promise<v
             return;
         }
 
-        const { id } = req.params;
+        const { id } = req.params as Record<string, string>;
         const data: UpdateTestRunGroupRequest = req.body;
 
         const group = await testRunGroupService.updateTestRunGroup(id, userId, data);
@@ -143,7 +143,7 @@ export const deleteTestRunGroup = async (req: Request, res: Response): Promise<v
             return;
         }
 
-        const { id } = req.params;
+        const { id } = req.params as Record<string, string>;
         const deleted = await testRunGroupService.deleteTestRunGroup(id, userId);
 
         if (!deleted) {

@@ -13,7 +13,7 @@ export class ReportingController {
      */
     async getProjectSummary(req: Request, res: Response): Promise<void> {
         try {
-            const { projectId } = req.params;
+            const { projectId } = req.params as Record<string, string>;
             const params: ReportFilterParams = {
                 startDate: req.query.startDate as string,
                 endDate: req.query.endDate as string,
@@ -38,7 +38,7 @@ export class ReportingController {
      */
     async getTrendReport(req: Request, res: Response): Promise<void> {
         try {
-            const { projectId } = req.params;
+            const { projectId } = req.params as Record<string, string>;
             const groupBy = (req.query.groupBy as 'day' | 'week' | 'month') || 'day';
 
             const params: TrendReportParams = {
@@ -66,7 +66,7 @@ export class ReportingController {
      */
     async getSuiteComparison(req: Request, res: Response): Promise<void> {
         try {
-            const { projectId } = req.params;
+            const { projectId } = req.params as Record<string, string>;
             const params: ReportFilterParams = {
                 startDate: req.query.startDate as string,
                 endDate: req.query.endDate as string,
@@ -88,7 +88,7 @@ export class ReportingController {
      */
     async getTestCaseHealth(req: Request, res: Response): Promise<void> {
         try {
-            const { projectId } = req.params;
+            const { projectId } = req.params as Record<string, string>;
             const params: ReportFilterParams = {
                 startDate: req.query.startDate as string,
                 endDate: req.query.endDate as string,
@@ -109,7 +109,7 @@ export class ReportingController {
      */
     async getDetailedRunReport(req: Request, res: Response): Promise<void> {
         try {
-            const { runId } = req.params;
+            const { runId } = req.params as Record<string, string>;
             const report = await reportingService.getDetailedRunReport(runId);
             res.status(200).json(report);
         } catch (error: any) {
