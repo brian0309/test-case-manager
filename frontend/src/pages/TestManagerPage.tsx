@@ -165,6 +165,7 @@ const TestManagerPage: React.FC = () => {
             title: '',
             priority: Priority.Medium,
             status: Status.Draft,
+            createdAt: new Date().toISOString(),
             lastModified: new Date().toISOString(),
             assignedTester: {
                 id: 'u-current',

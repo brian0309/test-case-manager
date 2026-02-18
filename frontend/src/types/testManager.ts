@@ -83,6 +83,7 @@ export interface HiddenDefaultColumns {
     title?: boolean;
     priority?: boolean;
     status?: boolean;
+    createdAt?: boolean;
     lastModified?: boolean;
     assignedTester?: boolean;
 }
@@ -136,6 +137,7 @@ export interface TestCase {
     title: string;
     priority: Priority;
     status: Status; // Unified status
+    createdAt: string;
     lastModified: string;
     assignedTester: Tester;
     steps: TestStep[];

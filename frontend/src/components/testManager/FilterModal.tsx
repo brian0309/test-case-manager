@@ -51,6 +51,16 @@ const FilterModal: React.FC = () => {
         }));
     };
 
+    const handleCreatedAtChange = (type: 'start' | 'end', value: string) => {
+        setLocalFilters(prev => ({
+            ...prev,
+            createdAtRange: {
+                ...(prev.createdAtRange || { start: null, end: null }),
+                [type]: value || null
+            }
+        }));
+    };
+
     const handleApply = () => {
         setFilters(localFilters);
         if (localFilters.status.length > 0) {
@@ -63,7 +73,8 @@ const FilterModal: React.FC = () => {
         setLocalFilters({
             status: [],
             priority: [],
-            dateRange: { start: null, end: null }
+            dateRange: { start: null, end: null },
+            createdAtRange: { start: null, end: null }
         });
     };
 
@@ -173,6 +184,37 @@ const FilterModal: React.FC = () => {
                                         type="date"
                                         value={localFilters.dateRange.end || ''}
                                         onChange={(e) => handleDateChange('end', e.target.value)}
+                                        className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Created Date Filter */}
+                    <div className="space-y-3">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block">Created Date</label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">From</span>
+                                <div className="relative">
+                                    <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={14} />
+                                    <input
+                                        type="date"
+                                        value={localFilters.createdAtRange?.start || ''}
+                                        onChange={(e) => handleCreatedAtChange('start', e.target.value)}
+                                        className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-xs text-gray-500 dark:text-gray-400">To</span>
+                                <div className="relative">
+                                    <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={14} />
+                                    <input
+                                        type="date"
+                                        value={localFilters.createdAtRange?.end || ''}
+                                        onChange={(e) => handleCreatedAtChange('end', e.target.value)}
                                         className="w-full pl-8 pr-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
                                     />
                                 </div>

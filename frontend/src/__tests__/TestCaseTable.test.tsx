@@ -63,6 +63,7 @@ function buildTestCase(overrides: Partial<TestCase> & { id: string; title: strin
     return {
         priority: Priority.Medium,
         status: Status.Draft,
+        createdAt: new Date().toISOString(),
         lastModified: new Date().toISOString(),
         assignedTester: { id: 'tester-1', name: 'Tester A', avatar: 'https://example.com/avatar.png' },
         steps: [],

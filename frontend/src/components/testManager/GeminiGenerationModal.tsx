@@ -271,6 +271,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
             title: c.title,
             priority: Priority.Medium,
             status: Status.Draft,
+            createdAt: new Date().toISOString(),
             lastModified: new Date().toISOString(),
             assignedTester: {
                 id: 'u-current', // Placeholder, backend might override or frontend store handles it

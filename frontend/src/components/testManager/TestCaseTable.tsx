@@ -24,7 +24,7 @@ import { Edit, Copy, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, C
 import IdDisplay from './IdDisplay';
 
 
-type SortField = 'title' | 'priority' | 'status' | 'lastModified' | 'assignedTester';
+type SortField = 'title' | 'priority' | 'status' | 'createdAt' | 'lastModified' | 'assignedTester';
 type SortOrder = 'asc' | 'desc';
 
 export interface SortInfo {
@@ -271,6 +271,26 @@ const SortableRow: React.FC<SortableRowProps> = React.memo(({
                 </td>
             )}
 
+            {/* Created Date */}
+            {!hiddenColumns.createdAt && (
+                <td className="py-2 px-4">
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {new Date(item.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                        })}
+                    </div>
+                    <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                        {new Date(item.createdAt).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                        })}
+                    </div>
+                </td>
+            )}
+
             {/* Assignee */}
             {!hiddenColumns.assignedTester && (
                 <td className="py-2 px-4 text-right pr-6">
@@ -436,6 +456,9 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                     break;
                 case 'lastModified':
                     comparison = new Date(a.lastModified).getTime() - new Date(b.lastModified).getTime();
+                    break;
+                case 'createdAt':
+                    comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
                     break;
                 case 'assignedTester':
                     comparison = a.assignedTester.name.localeCompare(b.assignedTester.name);
@@ -717,6 +740,19 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                     </th>
                                 )}
 
+                                {/* Created Date Header */}
+                                {!hiddenColumns?.createdAt && (
+                                    <th
+                                        className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
+                                        onClick={() => handleColumnSort('createdAt')}
+                                    >
+                                        <div className="flex items-center gap-1.5">
+                                            Created Date
+                                            <SortIcon field="createdAt" />
+                                        </div>
+                                    </th>
+                                )}
+
                                 {/* Assignee Header */}
                                 {!hiddenColumns?.assignedTester && (
                                     <th
@@ -844,6 +880,11 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                 {!hiddenColumns?.lastModified && (
                                     <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none" onClick={() => handleColumnSort('lastModified')}>
                                         <div className="flex items-center gap-1.5">Last Modified <SortIcon field="lastModified" /></div>
+                                    </th>
+                                )}
+                                {!hiddenColumns?.createdAt && (
+                                    <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none" onClick={() => handleColumnSort('createdAt')}>
+                                        <div className="flex items-center gap-1.5">Created Date <SortIcon field="createdAt" /></div>
                                     </th>
                                 )}
                                 {!hiddenColumns?.assignedTester && (
