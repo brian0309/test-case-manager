@@ -235,6 +235,7 @@ const TestCasesTab: React.FC<{
         { key: 'title', label: 'Title' },
         { key: 'priority', label: 'Priority' },
         { key: 'status', label: 'Status' },
+        { key: 'createdAt', label: 'Created Date' },
         { key: 'lastModified', label: 'Last Modified' },
         { key: 'assignedTester', label: 'Assigned Tester' },
     ];

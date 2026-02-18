@@ -167,6 +167,7 @@ const TestCasesPage: React.FC = () => {
                     title: testCaseResponse.title,
                     priority: testCaseResponse.priority as Priority,
                     status: testCaseResponse.status as Status,
+                    createdAt: testCaseResponse.createdAt,
                     lastModified: testCaseResponse.lastModified,
                     assignedTester: testCaseResponse.assignedTester,
                     steps: [], // Legacy field - app uses stepsContent for rich text steps
@@ -282,6 +283,7 @@ const TestCasesPage: React.FC = () => {
                     title: '',
                     priority: Priority.Medium,
                     status: Status.Draft,
+                    createdAt: new Date().toISOString(),
                     lastModified: new Date().toISOString(),
                     assignedTester: {
                         id: 'u-current',
@@ -366,6 +368,20 @@ const TestCasesPage: React.FC = () => {
             endDate.setHours(23, 59, 59, 999);
             const endTime = endDate.getTime();
             cases = cases.filter(tc => new Date(tc.lastModified).getTime() <= endTime);
+        }
+
+        if (filters.createdAtRange?.start) {
+            const startDate = new Date(filters.createdAtRange.start);
+            startDate.setHours(0, 0, 0, 0);
+            const startTime = startDate.getTime();
+            cases = cases.filter(tc => new Date(tc.createdAt).getTime() >= startTime);
+        }
+
+        if (filters.createdAtRange?.end) {
+            const endDate = new Date(filters.createdAtRange.end);
+            endDate.setHours(23, 59, 59, 999);
+            const endTime = endDate.getTime();
+            cases = cases.filter(tc => new Date(tc.createdAt).getTime() <= endTime);
         }
 
         // Apply search filter

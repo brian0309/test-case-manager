@@ -21,12 +21,17 @@ export interface TestCaseFilters {
         start: string | null;
         end: string | null;
     };
+    createdAtRange: {
+        start: string | null;
+        end: string | null;
+    };
 }
 
 const initialFilters: TestCaseFilters = {
     status: [],
     priority: [],
     dateRange: { start: null, end: null },
+    createdAtRange: { start: null, end: null },
 };
 
 // Helper to convert API response to frontend types
@@ -46,6 +51,7 @@ const mapTestCaseResponse = (tc: TestCaseResponse): TestCase => ({
     title: tc.title,
     priority: tc.priority as Priority,
     status: tc.status as Status,
+    createdAt: tc.createdAt,
     lastModified: tc.lastModified,
     assignedTester: tc.assignedTester as Tester,
     steps: [], // Not used anymore, stepsContent is used
