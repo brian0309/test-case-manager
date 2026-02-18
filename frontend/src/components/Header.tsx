@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import { useAuthStore } from "../store/authStore";
 import { useTestManagerStore } from "../store/testManagerStore";
 import { useThemeStore } from "../store/themeStore";
@@ -83,4 +83,5 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   );
 };
 
-export default Header;
+// Memoize Header to prevent unnecessary re-renders
+export default memo(Header);
