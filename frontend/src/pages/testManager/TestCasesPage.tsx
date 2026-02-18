@@ -167,6 +167,7 @@ const TestCasesPage: React.FC = () => {
                     title: testCaseResponse.title,
                     priority: testCaseResponse.priority as Priority,
                     status: testCaseResponse.status as Status,
+                    createdAt: testCaseResponse.createdAt,
                     lastModified: testCaseResponse.lastModified,
                     assignedTester: testCaseResponse.assignedTester,
                     steps: [], // Legacy field - app uses stepsContent for rich text steps
