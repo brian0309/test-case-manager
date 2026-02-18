@@ -1,7 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
+
+// Debounce helper for resize events
+const debounce = <T extends (...args: any[]) => void>(func: T, wait: number): T => {
+  let timeout: NodeJS.Timeout | null = null;
+  return ((...args: any[]) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  }) as T;
+};
 
 const AppLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -20,14 +29,17 @@ const AppLayout: React.FC = () => {
       }
     };
 
+    // Debounced version for resize events (250ms)
+    const debouncedHandleResize = debounce(handleResize, 250);
+
     // Initial check
     handleResize();
 
-    // Add event listener
-    window.addEventListener('resize', handleResize);
+    // Add event listener with debouncing
+    window.addEventListener('resize', debouncedHandleResize);
 
     // Cleanup
-    return () => window.removeEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', debouncedHandleResize);
   }, []);
 
   // Close sidebar with Escape on mobile and lock body scrolling when sidebar open
@@ -51,9 +63,9 @@ const AppLayout: React.FC = () => {
     };
   }, [isMobile, isSidebarOpen]);
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+  const toggleSidebar = useCallback(() => {
+    setIsSidebarOpen(prev => !prev);
+  }, []);
 
   return (
     <div className="flex h-screen">

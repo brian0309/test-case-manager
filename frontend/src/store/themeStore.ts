@@ -16,20 +16,28 @@ export const useThemeStore = create<ThemeState>()(
       toggleTheme: () => {
         const newValue = !get().isDarkMode;
         set({ isDarkMode: newValue });
-        if (newValue) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
+        
+        // Use requestAnimationFrame to batch DOM updates for smoother transitions
+        requestAnimationFrame(() => {
+          if (newValue) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        });
       },
 
       setTheme: (isDark: boolean) => {
         set({ isDarkMode: isDark });
-        if (isDark) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
+        
+        // Use requestAnimationFrame to batch DOM updates for smoother transitions
+        requestAnimationFrame(() => {
+          if (isDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        });
       },
 
       initializeTheme: () => {

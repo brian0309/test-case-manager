@@ -17,11 +17,11 @@ body {
   color: #f5f5f5;
 }
 
-/* Glassmorphism Utilities */
+/* Glassmorphism Utilities - Optimized for performance */
 .glass-panel {
   background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
@@ -34,8 +34,8 @@ body {
 
 .glass-sidebar {
   background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(25px) saturate(180%);
-  -webkit-backdrop-filter: blur(25px) saturate(180%);
+  backdrop-filter: blur(15px) saturate(150%);
+  -webkit-backdrop-filter: blur(15px) saturate(150%);
   border-right: 1px solid rgba(0, 0, 0, 0.05);
 }
 
@@ -44,7 +44,7 @@ body {
   border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Card Styles */
+/* Card Styles - Optimized with CSS containment */
 .mac-card {
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
@@ -53,6 +53,7 @@ body {
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.6);
   transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  contain: layout style paint;
 }
 
 .dark .mac-card {
@@ -384,19 +385,21 @@ body {
   border-left: 4px solid #4fc3f7;
 }
 
-/* Modal dark mode styles */
+/* Modal dark mode styles - Optimized backdrop filters */
 .dark .modal-overlay {
   background-color: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(8px) saturate(150%);
-  -webkit-backdrop-filter: blur(8px) saturate(150%);
+  backdrop-filter: blur(6px) saturate(150%);
+  -webkit-backdrop-filter: blur(6px) saturate(150%);
+  will-change: opacity;
 }
 
 .dark .modal-content {
   background-color: rgba(36, 36, 36, 0.95);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  contain: layout style;
 }
 
 .dark .modal-header {
@@ -409,31 +412,31 @@ body {
   background-color: rgba(60, 60, 60, 0.3);
 }
 
-/* Enhanced glassmorphism for modals in dark mode */
+/* Enhanced glassmorphism for modals in dark mode - Optimized */
 .glass-modal-overlay {
   background-color: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  backdrop-filter: blur(8px) saturate(150%);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
 }
 
 .dark .glass-modal-overlay {
   background-color: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  backdrop-filter: blur(10px) saturate(150%);
+  -webkit-backdrop-filter: blur(10px) saturate(150%);
 }
 
 .glass-modal-content {
   background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
 .dark .glass-modal-content {
   background: rgba(36, 36, 36, 0.9);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
@@ -457,8 +460,22 @@ body {
   border-top-color: #404040;
 }
 
-/* Transition for theme switching */
-* {
+/* Transition for theme switching - optimized selector to avoid universal selector */
+body,
+.mac-card,
+.glass-panel,
+.glass-sidebar,
+.searchbar-input,
+.mac-button,
+button,
+input,
+select,
+textarea,
+a,
+.badge,
+.toast,
+.modal-overlay,
+.modal-content {
   transition-property: background-color, border-color, color, fill, stroke;
   transition-duration: 200ms;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -466,7 +483,21 @@ body {
 
 /* Reduce motion for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
-  * {
+  body,
+  .mac-card,
+  .glass-panel,
+  .glass-sidebar,
+  .searchbar-input,
+  .mac-button,
+  button,
+  input,
+  select,
+  textarea,
+  a,
+  .badge,
+  .toast,
+  .modal-overlay,
+  .modal-content {
     transition-duration: 0ms;
   }
 }
