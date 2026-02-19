@@ -96,6 +96,13 @@ export interface SocketEvents {
     projectId: string;
     users: Array<{ id: string; name: string; avatar?: string }>;
   };
+
+  // Discussion Events
+  "discussion:created": {
+    message: any;
+    testCaseId: string;
+    projectId: string;
+  };
 }
 
 class SocketManager {
