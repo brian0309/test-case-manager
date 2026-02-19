@@ -25,6 +25,7 @@ import uploadRoutes from "./services/upload/routes/upload.route.js";
 import statisticsRoutes from "./services/statistics/routes/statistics.route.js";
 import geminiRoutes from "./services/geminigen/gemini.route.js";
 import reportingRoutes from "./services/reporting/routes/reporting.route.js";
+import discussionRoutes from "./services/discussion/routes/discussion.route.js";
 import { getCorsOptions } from "./config/dynamicCors.js";
 
 const app: Express = express();
@@ -57,6 +58,9 @@ app.use("/api/suites/:suiteId/cases", suiteCaseRoutes);
 app.use("/api/cases", caseRoutes);
 app.use("/api/runs", runRoutes);
 app.use("/api/run-groups", runGroupRoutes);
+
+// Discussion Routes
+app.use("/api/testcase", discussionRoutes);
 
 // Only serve frontend static files in production for traditional deployment
 // (not when deployed separately to Vercel)

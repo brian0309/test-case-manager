@@ -96,6 +96,28 @@ export interface SocketEvents {
     projectId: string;
     users: Array<{ id: string; name: string; avatar?: string }>;
   };
+
+  // Discussion Events
+  "discussion:message-created": {
+    testCaseId: string;
+    projectId: string;
+    message: {
+      id: string;
+      content: string;
+      authorId: string;
+      authorName: string;
+      authorAvatar?: string;
+      imageUrl?: string;
+      messageType: "text" | "image";
+      createdAt: Date;
+      updatedAt: Date;
+    };
+  };
+  "discussion:message-deleted": {
+    testCaseId: string;
+    projectId: string;
+    messageId: string;
+  };
 }
 
 class SocketManager {
