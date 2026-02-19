@@ -91,7 +91,7 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
     }
 
     // Get user info
-    const user = await User.findById(userId).select("name avatar");
+    const user = await User.findById(userId).select("name profilePicture");
     if (!user) {
       res.status(404).json({ success: false, message: "User not found" });
       return;
@@ -113,7 +113,7 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
       content: data.content.trim(),
       authorId: userId,
       authorName: user.name,
-      authorAvatar: user.avatar,
+      authorAvatar: user.profilePicture,
       imageUrl: data.imageUrl,
       messageType: data.messageType || (data.imageUrl ? "image" : "text"),
     };
@@ -137,11 +137,14 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
 
     // Emit socket event for real-time updates
     const projectId = testCase.projectId.toString();
-    socketManager.io?.to(`testcase:${testCaseId}`).emit("discussion:message-created", {
-      testCaseId,
-      projectId,
-      message: messageResponse,
-    });
+    const io = socketManager.getIO();
+    if (io) {
+      io.to(`testcase:${testCaseId}`).emit("discussion:message-created", {
+        testCaseId,
+        projectId,
+        message: messageResponse,
+      });
+    }
 
     res.status(201).json({ success: true, data: messageResponse });
   } catch (error) {
@@ -197,11 +200,14 @@ export const deleteMessage = async (req: Request, res: Response): Promise<void> 
 
     // Emit socket event for real-time updates
     const projectId = testCase.projectId.toString();
-    socketManager.io?.to(`testcase:${testCaseId}`).emit("discussion:message-deleted", {
-      testCaseId,
-      projectId,
-      messageId,
-    });
+    const io = socketManager.getIO();
+    if (io) {
+      io.to(`testcase:${testCaseId}`).emit("discussion:message-deleted", {
+        testCaseId,
+        projectId,
+        messageId,
+      });
+    }
 
     res.status(200).json({ success: true, message: "Message deleted" });
   } catch (error) {

@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { TestCase, Priority, Status, CustomFieldDefinition } from '../../types/testManager';
 import { X, Edit2, ChevronDown, Share2 } from 'lucide-react';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import RichTextEditor from './RichTextEditor';
+import DiscussionPanel from './DiscussionPanel';
 import toast from 'react-hot-toast';
 import { useCollaborativeEditing } from '../../hooks/useCollaborativeEditing';
 import { socketService, SocketEvents } from '../../services/socket';
@@ -159,7 +159,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                 onClick={onClose}
             />
 
-            <div className="relative w-full h-full sm:h-auto sm:max-w-6xl bg-white dark:bg-gray-800 sm:rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-[scaleIn_0.2s_ease-out]">
+            <div className="relative w-full h-full sm:h-auto sm:max-w-7xl bg-white dark:bg-gray-800 sm:rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-[scaleIn_0.2s_ease-out]">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 sm:py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                     <div className="flex items-center gap-3">
@@ -221,8 +221,10 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                     </div>
                 </div>
 
-                {/* Modal Content */}
-                <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                {/* Main Content Area - Split between Test Case and Discussion */}
+                <div className="flex-1 flex overflow-hidden">
+                    {/* Modal Content */}
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6">
                     <div className="mb-5">
                         <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Title</label>
                         <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{localCase.title}</h1>
@@ -413,8 +415,12 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                     )}
                 </div>
 
-                {/* Modal Footer */}
-                <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 sm:py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                {/* Discussion Panel */}
+                <DiscussionPanel testCaseId={testCase.id} projectId={testCase.projectId} />
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-2.5 sm:py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                     <div>
                         <button
                             onClick={() => onNavigate && onNavigate(currentIndex - 1)}

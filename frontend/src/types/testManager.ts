@@ -462,3 +462,26 @@ export interface RunTimelineEntry {
 }
 
 export type ViewMode = 'projects' | 'cases' | 'suites' | 'runs';
+
+// ===== Discussion Types =====
+
+export interface DiscussionMessage {
+    id: string;
+    content: string;
+    authorId: string;
+    authorName: string;
+    authorAvatar?: string;
+    imageUrl?: string;
+    messageType: 'text' | 'image';
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface Discussion {
+    id: string;
+    testCaseId: string;
+    projectId: string;
+    messages: DiscussionMessage[];
+    createdAt: Date;
+    updatedAt: Date;
+}

@@ -4,7 +4,7 @@
  */
 
 import { io, Socket } from "socket.io-client";
-import { TestCase, TestSuite, Project, ProjectSettings, TestRun, RunItemStatus, ResultsSummary } from "../types/testManager";
+import { TestCase, TestSuite, Project, ProjectSettings, TestRun, RunItemStatus, ResultsSummary, DiscussionMessage } from "../types/testManager";
 
 // Socket event types matching backend
 export interface SocketEvents {
@@ -74,6 +74,18 @@ export interface SocketEvents {
   "project:presence": {
     projectId: string;
     users: Array<{ id: string; name: string; avatar?: string }>;
+  };
+
+  // Discussion Events
+  "discussion:message-created": {
+    testCaseId: string;
+    projectId: string;
+    message: DiscussionMessage;
+  };
+  "discussion:message-deleted": {
+    testCaseId: string;
+    projectId: string;
+    messageId: string;
   };
 }
 

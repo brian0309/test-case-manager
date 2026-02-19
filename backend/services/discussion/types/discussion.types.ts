@@ -1,5 +1,3 @@
-import { ObjectId } from "mongoose";
-
 export interface DiscussionMessage {
   id: string;
   content: string;
