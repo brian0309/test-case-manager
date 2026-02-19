@@ -309,9 +309,9 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                                     onChange={() => { }}
                                     editable={false}
                                 />
-                            ) : localCase.steps.length > 0 ? (
+                            ) : (localCase.steps ?? []).length > 0 ? (
                                 <div className="space-y-2">
-                                    {localCase.steps.map((step, idx) => (
+                                    {(localCase.steps ?? []).map((step, idx) => (
                                         <div key={idx} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
                                             <div className="flex gap-3">
                                                 <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-semibold">
