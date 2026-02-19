@@ -119,12 +119,20 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
                 });
             }
 
-            await sendDiscussionMessage(
+            const sentMessage = await sendDiscussionMessage(
                 testCaseId,
                 projectId,
                 body || (allAttachments.length > 0 ? '(attachment)' : ''),
                 allAttachments
             );
+
+            // Immediately add the message to the local state so it appears
+            // without waiting for the socket event. The socket listener
+            // already deduplicates by id, so no double-render will occur.
+            setMessages(prev => {
+                if (prev.some(m => m.id === sentMessage.id)) return prev;
+                return [...prev, sentMessage];
+            });
 
             setInputValue('');
             setPendingAttachments([]);
