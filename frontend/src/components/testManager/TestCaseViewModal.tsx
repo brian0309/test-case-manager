@@ -206,7 +206,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                             Share
                         </button>
                         <button
-                            onClick={() => onEdit(testCase)}
+                            onClick={() => onEdit(localCase)}
                             className="px-3 py-1.5 rounded-lg text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors flex items-center gap-1.5"
                             title="Edit Test Case"
                         >

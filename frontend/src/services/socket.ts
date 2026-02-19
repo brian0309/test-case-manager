@@ -103,6 +103,12 @@ class SocketService {
   private maxReconnectAttempts = 5;
   private currentProjectId: string | null = null;
   private currentSuiteId: string | null = null;
+  // Store user info so we can resend it on reconnect
+  private currentUser: { id: string; name: string; avatar?: string } | null = null;
+  // Buffer event listeners registered before the socket is created
+  // so they aren't silently lost
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private pendingListeners: Array<{ event: string; callback: (...args: any[]) => void }> = [];
 
   /**
    * Get socket URL based on environment
@@ -148,13 +154,20 @@ class SocketService {
       reconnectionDelayMax: 5000,
     });
 
+    // Flush any event listeners that were registered before connect()
+    for (const { event, callback } of this.pendingListeners) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      this.socket.on(event, callback as any);
+    }
+    this.pendingListeners = [];
+
     this.socket.on("connect", () => {
       this.isConnecting = false;
       this.reconnectAttempts = 0;
 
-      // Rejoin rooms if we had them before reconnect
+      // Rejoin rooms if we had them before reconnect (with user info for presence)
       if (this.currentProjectId) {
-        this.joinProject(this.currentProjectId);
+        this.joinProject(this.currentProjectId, this.currentUser ?? undefined);
       }
       if (this.currentSuiteId) {
         this.joinSuite(this.currentSuiteId);
@@ -180,6 +193,8 @@ class SocketService {
       this.socket = null;
       this.currentProjectId = null;
       this.currentSuiteId = null;
+      this.currentUser = null;
+      this.pendingListeners = [];
     }
   }
 
@@ -204,9 +219,14 @@ class SocketService {
     // Always track the intended project so we can join on (re)connect
     this.currentProjectId = projectId;
 
+    // Persist user info so reconnections include presence data
+    if (user) {
+      this.currentUser = user;
+    }
+
     // Only emit if connected; the on("connect") handler will rejoin otherwise
     if (this.socket?.connected) {
-      this.socket.emit("join:project", { projectId, user });
+      this.socket.emit("join:project", { projectId, user: user ?? this.currentUser });
     }
   }
 
@@ -303,7 +323,9 @@ class SocketService {
   }
 
   /**
-   * Subscribe to a socket event
+   * Subscribe to a socket event.
+   * If the socket hasn't been created yet, the listener is buffered and
+   * will be attached once connect() creates the socket instance.
    */
   on<K extends keyof SocketEvents>(
     event: K,
@@ -312,6 +334,10 @@ class SocketService {
     if (this.socket) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.socket.on(event, callback as any);
+    } else {
+      // Buffer the listener so it isn't silently lost
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      this.pendingListeners.push({ event, callback: callback as any });
     }
   }
 
@@ -329,6 +355,16 @@ class SocketService {
       } else {
         this.socket.off(event);
       }
+    }
+    // Also remove from pending listeners if socket isn't created yet
+    if (callback) {
+      this.pendingListeners = this.pendingListeners.filter(
+        (l) => !(l.event === event && l.callback === callback)
+      );
+    } else {
+      this.pendingListeners = this.pendingListeners.filter(
+        (l) => l.event !== event
+      );
     }
   }
 
