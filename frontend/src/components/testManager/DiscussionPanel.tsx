@@ -82,6 +82,19 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
         scrollToBottom();
     }, [messages, scrollToBottom]);
 
+    // Ensure socket is connected and in the correct project room for live updates
+    useEffect(() => {
+        if (!socketService.isConnected()) {
+            socketService.connect();
+        }
+        // Defensively join the project room so discussion events are received
+        // even if the parent hooks haven't joined yet (race condition on initial load).
+        // joinProject is idempotent — re-joining the same room is a no-op on the server.
+        if (projectId) {
+            socketService.joinProject(projectId);
+        }
+    }, [projectId]);
+
     // Real-time socket listener
     useEffect(() => {
         const handleNewMessage = (data: SocketEvents['discussion:created']) => {

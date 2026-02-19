@@ -310,7 +310,7 @@ export function useRealtimeTestCases({
 
   // Join/leave project room when projectId changes
   useEffect(() => {
-    if (projectId && socketService.isConnected()) {
+    if (projectId) {
       socketService.joinProject(projectId);
     }
 
@@ -323,7 +323,7 @@ export function useRealtimeTestCases({
 
   // Join/leave suite room when suiteId changes
   useEffect(() => {
-    if (suiteId && socketService.isConnected()) {
+    if (suiteId) {
       socketService.joinSuite(suiteId);
     }
 

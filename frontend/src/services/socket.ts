@@ -194,14 +194,19 @@ class SocketService {
    * Join a project room to receive updates for that project
    */
   joinProject(projectId: string, user?: { id: string; name: string; avatar?: string }): void {
-    if (this.socket?.connected && projectId) {
-      // Leave previous project room if different
-      if (this.currentProjectId && this.currentProjectId !== projectId) {
-        this.leaveProject(this.currentProjectId);
-      }
+    if (!projectId) return;
 
+    // Leave previous project room if different
+    if (this.currentProjectId && this.currentProjectId !== projectId) {
+      this.leaveProject(this.currentProjectId);
+    }
+
+    // Always track the intended project so we can join on (re)connect
+    this.currentProjectId = projectId;
+
+    // Only emit if connected; the on("connect") handler will rejoin otherwise
+    if (this.socket?.connected) {
       this.socket.emit("join:project", { projectId, user });
-      this.currentProjectId = projectId;
     }
   }
 
@@ -209,11 +214,13 @@ class SocketService {
    * Leave a project room
    */
   leaveProject(projectId: string): void {
-    if (this.socket?.connected && projectId) {
+    if (!projectId) return;
+
+    if (this.socket?.connected) {
       this.socket.emit("leave:project", projectId);
-      if (this.currentProjectId === projectId) {
-        this.currentProjectId = null;
-      }
+    }
+    if (this.currentProjectId === projectId) {
+      this.currentProjectId = null;
     }
   }
 
@@ -221,14 +228,19 @@ class SocketService {
    * Join a suite room to receive updates for that suite
    */
   joinSuite(suiteId: string): void {
-    if (this.socket?.connected && suiteId) {
-      // Leave previous suite room if different
-      if (this.currentSuiteId && this.currentSuiteId !== suiteId) {
-        this.leaveSuite(this.currentSuiteId);
-      }
+    if (!suiteId) return;
 
+    // Leave previous suite room if different
+    if (this.currentSuiteId && this.currentSuiteId !== suiteId) {
+      this.leaveSuite(this.currentSuiteId);
+    }
+
+    // Always track the intended suite so we can join on (re)connect
+    this.currentSuiteId = suiteId;
+
+    // Only emit if connected; the on("connect") handler will rejoin otherwise
+    if (this.socket?.connected) {
       this.socket.emit("join:suite", suiteId);
-      this.currentSuiteId = suiteId;
     }
   }
 
@@ -236,11 +248,13 @@ class SocketService {
    * Leave a suite room
    */
   leaveSuite(suiteId: string): void {
-    if (this.socket?.connected && suiteId) {
+    if (!suiteId) return;
+
+    if (this.socket?.connected) {
       this.socket.emit("leave:suite", suiteId);
-      if (this.currentSuiteId === suiteId) {
-        this.currentSuiteId = null;
-      }
+    }
+    if (this.currentSuiteId === suiteId) {
+      this.currentSuiteId = null;
     }
   }
 
