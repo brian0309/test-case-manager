@@ -156,6 +156,10 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
                         toast.error(error);
                         return;
                     }
+                    // Revoke previous blob URL to prevent memory leak
+                    if (pastedImagePreview) {
+                        URL.revokeObjectURL(pastedImagePreview);
+                    }
                     setPastedFile(file);
                     setPastedImagePreview(URL.createObjectURL(file));
                 }

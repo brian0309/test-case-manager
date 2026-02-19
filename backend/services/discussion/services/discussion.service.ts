@@ -6,6 +6,7 @@ import {
   MessageResponse,
 } from "../types/discussion.types.js";
 import { User } from "../../../models/user.model.js";
+import { TestCase } from "../../../models/testCase.model.js";
 
 const DEFAULT_AVATAR =
   "https://ui-avatars.com/api/?background=random&color=fff&name=";
@@ -86,3 +87,13 @@ export const createSystemMessage = async (
 
 // Keep User import referenced to avoid tree-shaking
 void User;
+
+/**
+ * Look up the projectId for a given test case
+ */
+export const getProjectIdForTestCase = async (
+  testCaseId: string
+): Promise<string | null> => {
+  const tc = await TestCase.findById(testCaseId).select("projectId").lean();
+  return tc ? tc.projectId.toString() : null;
+};

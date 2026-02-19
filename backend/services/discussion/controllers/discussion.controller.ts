@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as discussionService from "../services/discussion.service.js";
+import * as projectService from "../../testCase/services/project.service.js";
 import { socketManager } from "../../../socket/socketManager.js";
 
 /**
@@ -12,9 +13,28 @@ export const getDiscussionMessages = async (
 ): Promise<void> => {
   try {
     const testCaseId = req.params.testCaseId as string;
+    const userId = req.userId;
 
     if (!testCaseId) {
       res.status(400).json({ success: false, message: "Test case ID is required" });
+      return;
+    }
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    // Verify the user has access to the project this test case belongs to
+    const projectId = await discussionService.getProjectIdForTestCase(testCaseId);
+    if (!projectId) {
+      res.status(404).json({ success: false, message: "Test case not found" });
+      return;
+    }
+
+    const hasAccess = await projectService.hasProjectAccess(projectId, userId);
+    if (!hasAccess) {
+      res.status(403).json({ success: false, message: "Access denied" });
       return;
     }
 
@@ -57,6 +77,13 @@ export const createDiscussionMessage = async (
 
     if (!projectId) {
       res.status(400).json({ success: false, message: "Project ID is required" });
+      return;
+    }
+
+    // Verify the user has access to this project
+    const hasAccess = await projectService.hasProjectAccess(projectId, userId);
+    if (!hasAccess) {
+      res.status(403).json({ success: false, message: "Access denied" });
       return;
     }
 
