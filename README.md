@@ -63,6 +63,7 @@ This project covers:
 -   📁 **Projects** – Create and manage testing projects with custom fields and member collaboration
 -   📂 **Test Suites** – Organize test cases into logical groupings within projects
 -   📝 **Test Cases** – Full CRUD with priority, status, steps, expected results, and custom fields
+-   💬 **Discussions** – Built-in chat for each test case with image sharing and real-time updates
 -   🔄 **Bulk Operations** – Clone, move, delete, and reorder multiple test cases at once
 -   🚀 **Test Runs** – Execute test cases and record Pass/Fail/Blocked/Skipped results
 -   📊 **Reports & Analytics** – Visual dashboards with execution statistics and trends
@@ -74,6 +75,7 @@ This project covers:
 -   📡 **WebSocket Integration** – Socket.io for instant updates across all clients
 -   👥 **Live Presence** – See who's viewing and editing in real-time
 -   ✏️ **Collaborative Editing** – Google Docs-style field-level live editing
+-   💬 **Real-Time Discussions** – Instant message delivery with typing indicators
 -   🔄 **Automatic Sync** – UI updates instantly when team members make changes
 
 ### Authentication Features
@@ -94,6 +96,7 @@ This project covers:
 -   📂 **Test Suites Page** - Organize test cases into suites
 -   📝 **Test Cases Page** - Table view with inline editing and bulk operations
 -   ⚡ **Virtualized Table** - TanStack React Virtual keeps large lists responsive
+-   💬 **Discussion Panel** - Built-in chat for each test case with image upload and fullscreen viewer
 -   🚀 **Test Runs Page** - Execute tests and record results
 -   📊 **Reports Page** - Analytics dashboards and execution statistics
 -   🏠 **Dashboard** - Overview with quick actions and recent activity
