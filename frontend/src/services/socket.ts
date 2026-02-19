@@ -75,6 +75,23 @@ export interface SocketEvents {
     projectId: string;
     users: Array<{ id: string; name: string; avatar?: string }>;
   };
+
+  // Discussion Events
+  "discussion:created": {
+    message: {
+      id: string;
+      testCaseId: string;
+      projectId: string;
+      user: { id: string; name: string; avatar: string };
+      type: "comment" | "system";
+      body: string;
+      attachments: Array<{ url: string; filename: string; fileSize: number; contentType: string }>;
+      createdAt: string;
+      updatedAt: string;
+    };
+    testCaseId: string;
+    projectId: string;
+  };
 }
 
 type EventCallback<T> = (data: T) => void;

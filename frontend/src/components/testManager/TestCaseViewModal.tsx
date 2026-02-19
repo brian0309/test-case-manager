@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { useCollaborativeEditing } from '../../hooks/useCollaborativeEditing';
 import { socketService, SocketEvents } from '../../services/socket';
 import IdDisplay from './IdDisplay';
+import DiscussionPanel from './DiscussionPanel';
 
 interface TestCaseViewModalProps {
     testCase: TestCase;
@@ -159,7 +160,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                 onClick={onClose}
             />
 
-            <div className="relative w-full h-full sm:h-auto sm:max-w-6xl bg-white dark:bg-gray-800 sm:rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-[scaleIn_0.2s_ease-out]">
+            <div className="relative w-full h-full sm:h-auto sm:max-w-7xl bg-white dark:bg-gray-800 sm:rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-[scaleIn_0.2s_ease-out]">
                 {/* Modal Header */}
                 <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 sm:py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                     <div className="flex items-center gap-3">
@@ -221,196 +222,202 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                     </div>
                 </div>
 
-                {/* Modal Content */}
-                <div className="flex-1 overflow-y-auto p-4 md:p-6">
-                    <div className="mb-5">
-                        <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Title</label>
-                        <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{localCase.title}</h1>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
-                        {/* Assignee */}
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Assignee</label>
-                            <div className="flex items-center gap-3 p-1.5 rounded-lg bg-gray-50/50 dark:bg-gray-800/50 border border-transparent">
-                                <img src={localCase.assignedTester.avatar} className="h-6 w-6 rounded-full" alt="avatar" />
-                                <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">{localCase.assignedTester.name}</span>
-                            </div>
-                        </div>
-
-                        {/* Priority */}
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Priority</label>
-                            <div className="relative">
-                                <select
-                                    value={localCase.priority}
-                                    onChange={(e) => handlePriorityChange(e.target.value as Priority)}
-                                    className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getPriorityColor(localCase.priority)}`}
-                                >
-                                    {Object.values(Priority).map(p => (
-                                        <option key={p} value={p}>{p}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
-                            </div>
-                        </div>
-
-                        {/* Status */}
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Status</label>
-                            <div className="relative">
-                                <select
-                                    value={localCase.status}
-                                    onChange={(e) => handleStatusChange(e.target.value as Status)}
-                                    className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getStatusColor(localCase.status)}`}
-                                >
-                                    {Object.values(Status).map(s => {
-                                        // Hide "Passed" option when current status is "Failed"
-                                        if (s === Status.Passed && localCase.status === Status.Failed) {
-                                            return null;
-                                        }
-                                        return <option key={s} value={s}>{s}</option>;
-                                    })}
-                                </select>
-                                <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Page/Area */}
-                    {localCase.area && (
+                {/* Content area: main content + discussion panel side by side */}
+                <div className="flex-1 flex overflow-hidden min-h-0">
+                    {/* Main Content */}
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6">
                         <div className="mb-5">
-                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Page / Area</label>
-                            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 py-2 border-b border-gray-200 dark:border-gray-700/80">
-                                {localCase.area}
+                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Title</label>
+                            <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{localCase.title}</h1>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+                            {/* Assignee */}
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Assignee</label>
+                                <div className="flex items-center gap-3 p-1.5 rounded-lg bg-gray-50/50 dark:bg-gray-800/50 border border-transparent">
+                                    <img src={localCase.assignedTester.avatar} className="h-6 w-6 rounded-full" alt="avatar" />
+                                    <span className="text-sm text-gray-700 dark:text-gray-300 font-medium">{localCase.assignedTester.name}</span>
+                                </div>
+                            </div>
+
+                            {/* Priority */}
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Priority</label>
+                                <div className="relative">
+                                    <select
+                                        value={localCase.priority}
+                                        onChange={(e) => handlePriorityChange(e.target.value as Priority)}
+                                        className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getPriorityColor(localCase.priority)}`}
+                                    >
+                                        {Object.values(Priority).map(p => (
+                                            <option key={p} value={p}>{p}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                                </div>
+                            </div>
+
+                            {/* Status */}
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Status</label>
+                                <div className="relative">
+                                    <select
+                                        value={localCase.status}
+                                        onChange={(e) => handleStatusChange(e.target.value as Status)}
+                                        className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getStatusColor(localCase.status)}`}
+                                    >
+                                        {Object.values(Status).map(s => {
+                                            // Hide "Passed" option when current status is "Failed"
+                                            if (s === Status.Passed && localCase.status === Status.Failed) {
+                                                return null;
+                                            }
+                                            return <option key={s} value={s}>{s}</option>;
+                                        })}
+                                    </select>
+                                    <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                                </div>
                             </div>
                         </div>
-                    )}
 
-                    {/* Test Description */}
-                    {localCase.testDescription && (
+                        {/* Page/Area */}
+                        {localCase.area && (
+                            <div className="mb-5">
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Page / Area</label>
+                                <div className="text-sm font-medium text-gray-700 dark:text-gray-300 py-2 border-b border-gray-200 dark:border-gray-700/80">
+                                    {localCase.area}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Test Description */}
+                        {localCase.testDescription && (
+                            <div className="mb-5">
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Test Description</label>
+                                <div className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700/80 whitespace-pre-wrap">
+                                    {localCase.testDescription}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Test Steps */}
                         <div className="mb-5">
-                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Test Description</label>
-                            <div className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700/80 whitespace-pre-wrap">
-                                {localCase.testDescription}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Test Steps */}
-                    <div className="mb-5">
-                        <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Test Steps</label>
-                        {localCase.stepsContent ? (
-                            <RichTextEditor
-                                content={localCase.stepsContent}
-                                onChange={() => { }}
-                                editable={false}
-                            />
-                        ) : localCase.steps.length > 0 ? (
-                            <div className="space-y-2">
-                                {localCase.steps.map((step, idx) => (
-                                    <div key={idx} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
-                                        <div className="flex gap-3">
-                                            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-semibold">
-                                                {idx + 1}
-                                            </div>
-                                            <div className="flex-1 space-y-1">
-                                                <p className="text-sm text-gray-900 dark:text-gray-100"><strong>Action:</strong> {step.action}</p>
-                                                <p className="text-sm text-gray-600 dark:text-gray-400"><em>Expected:</em> {step.expectedResult}</p>
+                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Test Steps</label>
+                            {localCase.stepsContent ? (
+                                <RichTextEditor
+                                    content={localCase.stepsContent}
+                                    onChange={() => { }}
+                                    editable={false}
+                                />
+                            ) : localCase.steps.length > 0 ? (
+                                <div className="space-y-2">
+                                    {localCase.steps.map((step, idx) => (
+                                        <div key={idx} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                                            <div className="flex gap-3">
+                                                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-semibold">
+                                                    {idx + 1}
+                                                </div>
+                                                <div className="flex-1 space-y-1">
+                                                    <p className="text-sm text-gray-900 dark:text-gray-100"><strong>Action:</strong> {step.action}</p>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400"><em>Expected:</em> {step.expectedResult}</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-gray-400 dark:text-gray-500 italic">No steps defined</p>
+                            )}
+                        </div>
+
+                        {/* Expected Result */}
+                        {localCase.expectedResult && (
+                            <div className="mb-5">
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Expected Result (Summary)</label>
+                                <div className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700/80 whitespace-pre-wrap">
+                                    {localCase.expectedResult}
+                                </div>
                             </div>
-                        ) : (
-                            <p className="text-sm text-gray-400 dark:text-gray-500 italic">No steps defined</p>
+                        )}
+
+                        {/* Comments */}
+                        {localCase.comments && (
+                            <div className="mb-2">
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Comments</label>
+                                <RichTextEditor
+                                    content={localCase.comments}
+                                    onChange={() => { }}
+                                    editable={false}
+                                />
+                            </div>
+                        )}
+
+                        {/* Custom Fields */}
+                        {(() => {
+                            const nonDeletedFields = customFields.filter(f => !f.deleted);
+                            const fieldsWithContent = nonDeletedFields.filter((field) => {
+                                const value = localCase.customFields?.[field.id] || '';
+                                return value && value.trim() !== '';
+                            });
+                            return fieldsWithContent.length > 0 ? (
+                                <div className="mt-6 space-y-4">
+                                    <div className="border-t border-gray-200 dark:border-gray-700 pt-5">
+                                        <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Custom Fields</h3>
+                                        {fieldsWithContent.map((field) => {
+                                            const value = localCase.customFields?.[field.id] || '';
+
+                                            return (
+                                                <div key={field.id} className="mb-4">
+                                                    <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
+                                                        {field.label}
+                                                    </label>
+                                                    {(field.type === 'text' || field.type === 'dropdown') && (
+                                                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300 py-2 border-b border-gray-200 dark:border-gray-700">
+                                                            {field.type === 'dropdown'
+                                                                ? (field.options?.find(opt => opt.id === value)?.label || value)
+                                                                : value
+                                                            }
+                                                        </div>
+                                                    )}
+                                                    {field.type === 'long_text' && (
+                                                        <div className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 whitespace-pre-wrap">
+                                                            {value}
+                                                        </div>
+                                                    )}
+                                                    {field.type === 'wysiwyg' && (
+                                                        <RichTextEditor
+                                                            content={value}
+                                                            onChange={() => { }}
+                                                            editable={false}
+                                                        />
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ) : null;
+                        })()}
+
+                        {/* Last Modified Info */}
+                        {localCase.lastModified && (
+                            <div className="mt-5 pt-5 border-t border-gray-200 dark:border-gray-700">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    Last modified: {new Date(localCase.lastModified).toLocaleString('en-US', {
+                                        month: 'long',
+                                        day: 'numeric',
+                                        year: 'numeric',
+                                        hour: 'numeric',
+                                        minute: '2-digit',
+                                        hour12: true
+                                    })}
+                                </p>
+                            </div>
                         )}
                     </div>
 
-                    {/* Expected Result */}
-                    {localCase.expectedResult && (
-                        <div className="mb-5">
-                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Expected Result (Summary)</label>
-                            <div className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700/80 whitespace-pre-wrap">
-                                {localCase.expectedResult}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Comments */}
-                    {localCase.comments && (
-                        <div className="mb-2">
-                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Comments</label>
-                            <RichTextEditor
-                                content={localCase.comments}
-                                onChange={() => { }}
-                                editable={false}
-                            />
-                        </div>
-                    )}
-
-                    {/* Custom Fields */}
-                    {(() => {
-                        const nonDeletedFields = customFields.filter(f => !f.deleted);
-                        const fieldsWithContent = nonDeletedFields.filter((field) => {
-                            const value = localCase.customFields?.[field.id] || '';
-                            return value && value.trim() !== '';
-                        });
-                        return fieldsWithContent.length > 0 ? (
-                            <div className="mt-6 space-y-4">
-                                <div className="border-t border-gray-200 dark:border-gray-700 pt-5">
-                                    <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Custom Fields</h3>
-                                    {fieldsWithContent.map((field) => {
-                                        const value = localCase.customFields?.[field.id] || '';
-
-                                        return (
-                                            <div key={field.id} className="mb-4">
-                                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
-                                                    {field.label}
-                                                </label>
-                                                {(field.type === 'text' || field.type === 'dropdown') && (
-                                                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300 py-2 border-b border-gray-200 dark:border-gray-700">
-                                                        {field.type === 'dropdown'
-                                                            ? (field.options?.find(opt => opt.id === value)?.label || value)
-                                                            : value
-                                                        }
-                                                    </div>
-                                                )}
-                                                {field.type === 'long_text' && (
-                                                    <div className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 whitespace-pre-wrap">
-                                                        {value}
-                                                    </div>
-                                                )}
-                                                {field.type === 'wysiwyg' && (
-                                                    <RichTextEditor
-                                                        content={value}
-                                                        onChange={() => { }}
-                                                        editable={false}
-                                                    />
-                                                )}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        ) : null;
-                    })()}
-
-                    {/* Last Modified Info */}
-                    {localCase.lastModified && (
-                        <div className="mt-5 pt-5 border-t border-gray-200 dark:border-gray-700">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                Last modified: {new Date(localCase.lastModified).toLocaleString('en-US', {
-                                    month: 'long',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                    hour: 'numeric',
-                                    minute: '2-digit',
-                                    hour12: true
-                                })}
-                            </p>
-                        </div>
-                    )}
+                    {/* Discussion Panel */}
+                    <DiscussionPanel testCaseId={testCase.id} projectId={testCase.projectId} />
                 </div>
 
                 {/* Modal Footer */}
