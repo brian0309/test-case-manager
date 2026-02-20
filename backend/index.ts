@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createServer } from 'http';
+import { setServers } from "node:dns/promises";
 import { connectDB } from "./db/connectDB.js";
 import { socketManager } from "./socket/socketManager.js";
 
@@ -14,6 +15,19 @@ const __dirname: string = path.dirname(__filename);
 
 // Load environment variables from root .env file
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
+const DNS_OVERRIDE_SERVERS = (process.env.DNS_OVERRIDE_SERVERS || "1.1.1.1,8.8.8.8")
+	.split(",")
+	.map((server) => server.trim())
+	.filter(Boolean);
+
+const applyDevDnsOverride = async (): Promise<void> => {
+	if (process.env.NODE_ENV !== "development" || DNS_OVERRIDE_SERVERS.length === 0) {
+		return;
+	}
+
+	await setServers(DNS_OVERRIDE_SERVERS);
+};
 
 import authRoutes from "./routes/auth.route.js";
 import exampleRoutes from "./services/example/routes/example.route.js";
@@ -89,13 +103,19 @@ if (process.env.VERCEL !== '1') {
 // For Vercel serverless deployment, export the app
 export default app;
 
-// Only listen when not in serverless environment (Vercel)
-if (process.env.VERCEL !== '1') {
-	httpServer.listen(PORT, () => {
-		connectDB();
-		console.log("Server is running on port: ", PORT);
-	});
-} else {
-	// Connect to DB in serverless environment
-	connectDB();
-}
+const startServer = async (): Promise<void> => {
+	await applyDevDnsOverride();
+	await connectDB();
+
+	// Only listen when not in serverless environment (Vercel)
+	if (process.env.VERCEL !== '1') {
+		httpServer.listen(PORT, () => {
+			console.log("Server is running on port: ", PORT);
+		});
+	}
+};
+
+startServer().catch((error: Error) => {
+	console.error("Failed to start server:", error.message);
+	process.exit(1);
+});
