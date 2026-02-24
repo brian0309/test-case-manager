@@ -6,7 +6,7 @@ import { ExportColumn, getDefaultExportColumns } from '../../utils/exportTestCas
 interface ExportTestCasesModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onExport: (columns: ExportColumn[]) => void;
+    onExport: (columns: ExportColumn[], format: 'csv' | 'xlsx') => void;
     customFieldDefinitions: CustomFieldDefinition[];
     visibleCustomFieldIds: string[];
     hiddenColumns: HiddenDefaultColumns;
@@ -23,6 +23,7 @@ const ExportTestCasesModal: React.FC<ExportTestCasesModalProps> = ({
     testCaseCount,
 }) => {
     const [columns, setColumns] = useState<ExportColumn[]>([]);
+    const [format, setFormat] = useState<'csv' | 'xlsx'>('xlsx');
 
     // Initialize columns when modal opens
     useEffect(() => {
@@ -55,7 +56,7 @@ const ExportTestCasesModal: React.FC<ExportTestCasesModalProps> = ({
     };
 
     const handleExport = () => {
-        onExport(columns);
+        onExport(columns, format);
         onClose();
     };
 
@@ -82,7 +83,7 @@ const ExportTestCasesModal: React.FC<ExportTestCasesModalProps> = ({
                             Export Test Cases
                         </h2>
                         <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            Select columns to include in the CSV export ({testCaseCount} test case{testCaseCount !== 1 ? 's' : ''})
+                            Select columns to include in the export ({testCaseCount} test case{testCaseCount !== 1 ? 's' : ''})
                         </p>
                     </div>
                     <button
@@ -190,6 +191,30 @@ const ExportTestCasesModal: React.FC<ExportTestCasesModalProps> = ({
                     >
                         Cancel
                     </button>
+
+                    {/* Format toggle */}
+                    <div className="flex items-center rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden text-sm font-medium mr-auto ml-0">
+                        <button
+                            onClick={() => setFormat('xlsx')}
+                            className={`px-3 py-2 transition-colors ${
+                                format === 'xlsx'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                            }`}
+                        >
+                            XLSX
+                        </button>
+                        <button
+                            onClick={() => setFormat('csv')}
+                            className={`px-3 py-2 transition-colors ${
+                                format === 'csv'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                            }`}
+                        >
+                            CSV
+                        </button>
+                    </div>
                     <button
                         onClick={handleExport}
                         disabled={enabledCount === 0}

@@ -34,6 +34,7 @@
     "react-router-dom": "^6.26.0",
     "recharts": "^3.3.0",
     "socket.io-client": "^4.8.3",
+    "xlsx": "^0.18.5",
     "zustand": "^4.5.4"
   },
   "devDependencies": {

@@ -16,7 +16,7 @@ import { useRealtimeTestCases } from '../../hooks/useRealtimeTestCases';
 import { useProjectPresence } from '../../hooks/useProjectPresence';
 import { TestCase, Status, Priority, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
 import { reorderTestCases, getTestCase, getTestSuite, bulkImportTestCasesWithSuite } from '../../services/testManagerApi';
-import { exportTestCasesToCSV, ExportColumn } from '../../utils/exportTestCases';
+import { exportTestCasesToCSV, exportTestCasesToXLSX, ExportColumn } from '../../utils/exportTestCases';
 import { escapeHtml } from '../../utils/sanitize';
 import { CreateTestCaseWithSuiteRequest, UpdateTestCaseRequest } from '../../types/api/testManager.api';
 import { Sparkles, GripVertical, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
@@ -499,20 +499,30 @@ const TestCasesPage: React.FC = () => {
         toast.success(`Added ${cases.length} test cases`);
     };
 
-    const handleExportTestCases = (columns: ExportColumn[]) => {
+    const handleExportTestCases = (columns: ExportColumn[], format: 'csv' | 'xlsx') => {
         try {
             const projectName = projects.find(p => p.id === activeProject)?.name;
             const suiteName = activeSuite;
-            
-            exportTestCasesToCSV(
-                displayedCases,
-                { columns },
-                customFieldDefinitions,
-                projectName,
-                suiteName || undefined
-            );
-            
-            toast.success(`Exported ${displayedCases.length} test case${displayedCases.length !== 1 ? 's' : ''} to CSV`);
+
+            if (format === 'xlsx') {
+                exportTestCasesToXLSX(
+                    displayedCases,
+                    { columns },
+                    customFieldDefinitions,
+                    projectName,
+                    suiteName || undefined
+                );
+            } else {
+                exportTestCasesToCSV(
+                    displayedCases,
+                    { columns },
+                    customFieldDefinitions,
+                    projectName,
+                    suiteName || undefined
+                );
+            }
+
+            toast.success(`Exported ${displayedCases.length} test case${displayedCases.length !== 1 ? 's' : ''} to ${format.toUpperCase()}`);
         } catch (error) {
             console.error('Export error:', error);
             toast.error(error instanceof Error ? error.message : 'Failed to export test cases');

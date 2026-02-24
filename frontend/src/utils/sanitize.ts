@@ -53,6 +53,27 @@ export function stripHtml(html: string | undefined): string {
 }
 
 /**
+ * Strip HTML tags while preserving visible line breaks.
+ * Converts common block/line break tags to \n, then removes remaining tags.
+ */
+export function stripHtmlPreserveLineBreaks(html: string | undefined): string {
+    if (!html) return '';
+
+    const sanitized = DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: ['br', 'p', 'div', 'li', 'tr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr'],
+        ALLOWED_ATTR: [],
+    });
+
+    const withLineBreaks = sanitized
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<hr\s*\/?>/gi, '\n')
+        .replace(/<\/(p|div|li|tr|h[1-6])>/gi, '\n');
+
+    const text = DOMPurify.sanitize(withLineBreaks, { ALLOWED_TAGS: [] });
+    return text.replace(/\n{3,}/g, '\n\n');
+}
+
+/**
  * Escape special HTML characters in a string to prevent injection
  * when building HTML from template literals.
  */

@@ -1,10 +1,11 @@
 /**
  * Test Case Export Utilities
- * Handles exporting test cases to CSV format with custom field support
+ * Handles exporting test cases to CSV and XLSX format with custom field support
  */
 
+import * as XLSX from 'xlsx';
 import { TestCase, CustomFieldDefinition, HiddenDefaultColumns } from '../types/testManager';
-import { stripHtml } from './sanitize';
+import { stripHtmlPreserveLineBreaks } from './sanitize';
 
 /**
  * Escape CSV values to handle quotes, commas, and newlines
@@ -46,7 +47,7 @@ export interface ExportOptions {
 }
 
 /**
- * Export test cases to CSV format
+ * Export test cases to CSV format (RFC 4180 compliant, UTF-8 BOM for Excel)
  */
 export function exportTestCasesToCSV(
     testCases: TestCase[],
@@ -56,65 +57,20 @@ export function exportTestCasesToCSV(
     suiteName?: string
 ): void {
     const enabledColumns = options.columns.filter(col => col.enabled);
-    
+
     if (enabledColumns.length === 0) {
         throw new Error('Please select at least one column to export');
     }
 
-    // Build CSV header
-    const headers = enabledColumns.map(col => escapeCsvValue(col.label));
-    const csvRows = [headers.join(',')];
+    // Build rows using shared helper, then apply CSV escaping
+    const rows = buildRows(testCases, enabledColumns);
+    const csvRows = rows.map(row => row.map(cell => escapeCsvValue(cell)).join(','));
 
-    // Build CSV rows
-    testCases.forEach(testCase => {
-        const rowValues = enabledColumns.map(col => {
-            // Handle custom fields
-            if (col.isCustomField && col.customFieldId) {
-                const value = testCase.customFields?.[col.customFieldId] || '';
-                return escapeCsvValue(value);
-            }
+    // Combine rows with CRLF per RFC 4180
+    const csvContent = csvRows.join('\r\n');
 
-            // Handle default fields
-            switch (col.id) {
-                case 'id':
-                    return escapeCsvValue(testCase.id);
-                case 'title':
-                    return escapeCsvValue(testCase.title);
-                case 'priority':
-                    return escapeCsvValue(testCase.priority);
-                case 'status':
-                    return escapeCsvValue(testCase.status);
-                case 'assignedTester':
-                    return escapeCsvValue(testCase.assignedTester?.name || '');
-                case 'area':
-                    return escapeCsvValue(testCase.area || '');
-                case 'suite':
-                    return escapeCsvValue(testCase.suite || '');
-                case 'testDescription':
-                    return escapeCsvValue(testCase.testDescription || '');
-                case 'stepsContent':
-                    return escapeCsvValue(stripHtml(testCase.stepsContent));
-                case 'expectedResult':
-                    return escapeCsvValue(stripHtml(testCase.expectedResult));
-                case 'comments':
-                    return escapeCsvValue(stripHtml(testCase.comments));
-                case 'lastModified':
-                    return escapeCsvValue(formatDate(testCase.lastModified));
-                case 'order':
-                    return escapeCsvValue(testCase.order?.toString() || '');
-                default:
-                    return '';
-            }
-        });
-
-        csvRows.push(rowValues.join(','));
-    });
-
-    // Combine all rows
-    const csvContent = csvRows.join('\n');
-
-    // Create blob and download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // Create blob with UTF-8 BOM so Excel opens it correctly
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
@@ -132,6 +88,83 @@ export function exportTestCasesToCSV(
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+}
+
+/**
+ * Build the rows array shared between CSV and XLSX export
+ */
+function buildRows(
+    testCases: TestCase[],
+    enabledColumns: ExportColumn[]
+): string[][] {
+    const header = enabledColumns.map(col => col.label);
+    const rows: string[][] = [header];
+
+    testCases.forEach(testCase => {
+        const rowValues = enabledColumns.map(col => {
+            if (col.isCustomField && col.customFieldId) {
+                return testCase.customFields?.[col.customFieldId] || '';
+            }
+            switch (col.id) {
+                case 'id': return testCase.id || '';
+                case 'title': return testCase.title || '';
+                case 'priority': return testCase.priority || '';
+                case 'status': return testCase.status || '';
+                case 'assignedTester': return testCase.assignedTester?.name || '';
+                case 'area': return testCase.area || '';
+                case 'suite': return testCase.suite || '';
+                case 'testDescription': return testCase.testDescription || '';
+                case 'stepsContent': return stripHtmlPreserveLineBreaks(testCase.stepsContent);
+                case 'expectedResult': return stripHtmlPreserveLineBreaks(testCase.expectedResult);
+                case 'comments': return stripHtmlPreserveLineBreaks(testCase.comments);
+                case 'lastModified': return formatDate(testCase.lastModified);
+                case 'order': return testCase.order?.toString() || '';
+                default: return '';
+            }
+        });
+        rows.push(rowValues);
+    });
+
+    return rows;
+}
+
+/**
+ * Export test cases to XLSX format
+ */
+export function exportTestCasesToXLSX(
+    testCases: TestCase[],
+    options: ExportOptions,
+    _customFieldDefinitions: CustomFieldDefinition[],
+    projectName?: string,
+    suiteName?: string
+): void {
+    const enabledColumns = options.columns.filter(col => col.enabled);
+    if (enabledColumns.length === 0) {
+        throw new Error('Please select at least one column to export');
+    }
+
+    const rows = buildRows(testCases, enabledColumns);
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+
+    // Auto-width columns
+    const colWidths = enabledColumns.map((col, i) => ({
+        wch: Math.max(
+            col.label.length,
+            ...rows.slice(1).map(r => Math.min((r[i] || '').length, 80))
+        ),
+    }));
+    ws['!cols'] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Test Cases');
+
+    const timestamp = new Date().toISOString().split('T')[0];
+    let filename = 'test-cases';
+    if (projectName) filename += `-${projectName.replace(/[^a-z0-9]/gi, '_')}`;
+    if (suiteName) filename += `-${suiteName.replace(/[^a-z0-9]/gi, '_')}`;
+    filename += `-${timestamp}.xlsx`;
+
+    XLSX.writeFile(wb, filename);
 }
 
 /**
