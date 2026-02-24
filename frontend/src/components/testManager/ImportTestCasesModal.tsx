@@ -304,6 +304,24 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
         return true;
     };
 
+    // Rich text fields that should have line breaks converted to HTML
+    const RICH_TEXT_FIELDS = new Set(['stepsContent', 'testDescription', 'expectedResult', 'comments']);
+
+    /**
+     * Convert plain text (possibly with \n line breaks from CSV) to TipTap-compatible HTML.
+     * Each non-empty line becomes a <p> element; blank lines become <p><br></p>.
+     * If the value is already HTML (starts with a tag), it is returned as-is.
+     */
+    const plainTextToHtml = (text: string): string => {
+        if (!text) return '';
+        // If already HTML, skip conversion
+        if (/^\s*<[a-zA-Z]/.test(text)) return text;
+        const lines = text.split(/\r?\n/);
+        return lines
+            .map((line) => (line.trim() === '' ? '<p><br></p>' : `<p>${line}</p>`))
+            .join('');
+    };
+
     const transformData = (): CreateTestCaseWithSuiteRequest[] => {
         return csvData.map((row) => {
             const testCase: CreateTestCaseWithSuiteRequest & { assignedTesterName?: string; [key: string]: unknown } = {
@@ -328,6 +346,10 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
                     } else if (mapping.testCaseField === 'suiteName') {
                         // Store suite name for the backend to resolve
                         testCase.suiteName = value;
+                    } else if (RICH_TEXT_FIELDS.has(mapping.testCaseField)) {
+                        // Convert plain-text newlines to HTML so they render correctly
+                        // in the TipTap rich text editor
+                        testCase[mapping.testCaseField] = plainTextToHtml(value);
                     } else {
                         testCase[mapping.testCaseField] = value;
                     }
