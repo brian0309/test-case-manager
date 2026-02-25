@@ -9,6 +9,7 @@ import {
   reorderRunItems,
   cloneTestRun,
   completeTestRun,
+  getTagsByProject,
 } from "../controllers/testRun.controller.js";
 import {
   createTestRunGroup,
@@ -44,6 +45,7 @@ export const projectRunRoutes = express.Router({ mergeParams: true });
 projectRunRoutes.use(verifyToken);
 projectRunRoutes.post("/", createTestRun);
 projectRunRoutes.get("/", getTestRunsByProject);
+projectRunRoutes.get("/tags", getTagsByProject);
 
 // Test run group routes - mounted under /api/projects/:projectId/run-groups
 export const projectRunGroupRoutes = express.Router({ mergeParams: true });

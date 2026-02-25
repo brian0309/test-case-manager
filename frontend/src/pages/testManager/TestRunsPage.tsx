@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import CreateGroupModal from './components/CreateGroupModal';
 import RunGroupsSidebar from '../../components/testManager/RunGroupsSidebar';
+import TagInput from '../../components/testManager/TagInput';
 
 // Status badge colors for test runs
 const getRunStatusColor = (status: TestRunStatus) => {
@@ -73,13 +74,14 @@ const getItemStatusColor = (status: RunItemStatus) => {
 interface CreateRunModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (title: string, description: string, caseIds: string[], groupId?: string) => Promise<void>;
+    onSubmit: (title: string, description: string, caseIds: string[], groupId?: string, tags?: string[]) => Promise<void>;
     testCases: TestCase[];
     testSuites: { id: string; name: string }[];
     testRunGroups: TestRunGroup[];
     selectedCases: string[];
     onToggleCase: (caseId: string) => void;
     onSelectAll: (selectAll: boolean, filteredCases: TestCase[]) => void;
+    tagSuggestions: string[];
 }
 
 const CreateRunModal: React.FC<CreateRunModalProps> = ({
@@ -92,12 +94,14 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
     selectedCases,
     onToggleCase,
     onSelectAll,
+    tagSuggestions,
 }) => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedSuiteFilter, setSelectedSuiteFilter] = useState<string>('all');
     const [selectedGroupId, setSelectedGroupId] = useState<string>('');
+    const [tags, setTags] = useState<string[]>([]);
 
     // Filter test cases by selected suite
     const filteredTestCases = selectedSuiteFilter === 'all'
@@ -111,6 +115,7 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
             setDescription('');
             setSelectedSuiteFilter('all');
             setSelectedGroupId('');
+            setTags([]);
         }
     }, [isOpen]);
 
@@ -128,11 +133,12 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
 
         setIsSubmitting(true);
         try {
-            await onSubmit(title, description, selectedCases, selectedGroupId || undefined);
+            await onSubmit(title, description, selectedCases, selectedGroupId || undefined, tags.length > 0 ? tags : undefined);
             setTitle('');
             setDescription('');
             setSelectedSuiteFilter('all');
             setSelectedGroupId('');
+            setTags([]);
             onClose();
         } catch (error: unknown) {
             toast.error((error as Error).message || 'Failed to create test run');
@@ -209,6 +215,17 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
                         </div>
                     </div>
 
+                    {/* Tags */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags</label>
+                        <TagInput
+                            tags={tags}
+                            onChange={setTags}
+                            suggestions={tagSuggestions}
+                            placeholder="e.g., regression, smoke, sprint-23"
+                        />
+                    </div>
+
                     <div>
                         <div className="flex items-center justify-between mb-2">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -274,7 +291,8 @@ interface EditTestRunModalProps {
     onClose: () => void;
     testRun: TestRunListItem | null;
     testRunGroups: TestRunGroup[];
-    onSubmit: (runId: string, data: { title: string; groupId: string | null }) => Promise<void>;
+    onSubmit: (runId: string, data: { title: string; groupId: string | null; tags: string[] }) => Promise<void>;
+    tagSuggestions: string[];
 }
 
 const EditTestRunModal: React.FC<EditTestRunModalProps> = ({
@@ -283,15 +301,18 @@ const EditTestRunModal: React.FC<EditTestRunModalProps> = ({
     testRun,
     testRunGroups,
     onSubmit,
+    tagSuggestions,
 }) => {
     const [title, setTitle] = useState('');
     const [selectedGroupId, setSelectedGroupId] = useState<string>('');
+    const [tags, setTags] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (testRun) {
             setTitle(testRun.title);
             setSelectedGroupId(testRun.groupId || '');
+            setTags(testRun.tags || []);
         }
     }, [testRun]);
 
@@ -307,6 +328,7 @@ const EditTestRunModal: React.FC<EditTestRunModalProps> = ({
             await onSubmit(testRun.id, {
                 title: title.trim(),
                 groupId: selectedGroupId || null,
+                tags,
             });
             onClose();
         } catch {
@@ -350,6 +372,15 @@ const EditTestRunModal: React.FC<EditTestRunModalProps> = ({
                                 </option>
                             ))}
                         </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags</label>
+                        <TagInput
+                            tags={tags}
+                            onChange={setTags}
+                            suggestions={tagSuggestions}
+                            placeholder="e.g., regression, smoke, sprint-23"
+                        />
                     </div>
                 </div>
                 <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
@@ -944,6 +975,7 @@ const TestRunsPage: React.FC = () => {
     const [isDeleteGroupModalOpen, setIsDeleteGroupModalOpen] = useState(false);
     const [editingRun, setEditingRun] = useState<TestRunListItem | null>(null);
     const [isEditRunModalOpen, setIsEditRunModalOpen] = useState(false);
+    const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
 
     // Real-time updates
     useRealtimeTestRuns({
@@ -997,10 +1029,22 @@ const TestRunsPage: React.FC = () => {
         }
     }, [activeProject]);
 
+    // Fetch tag suggestions
+    const fetchTags = useCallback(async () => {
+        if (!activeProject) return;
+        try {
+            const tags = await testRunApi.getTagsByProject(activeProject);
+            setTagSuggestions(tags);
+        } catch (error: unknown) {
+            console.error('Failed to fetch tags:', error);
+        }
+    }, [activeProject]);
+
     useEffect(() => {
         fetchRuns();
         fetchGroups();
-    }, [fetchRuns, fetchGroups]);
+        fetchTags();
+    }, [fetchRuns, fetchGroups, fetchTags]);
 
     // Fetch test cases and suites for the create modal
     useEffect(() => {
@@ -1010,17 +1054,19 @@ const TestRunsPage: React.FC = () => {
         }
     }, [activeProject, fetchTestCasesByProject, fetchTestSuites]);
 
-    const handleCreateRun = async (title: string, description: string, caseIds: string[], groupId?: string) => {
+    const handleCreateRun = async (title: string, description: string, caseIds: string[], groupId?: string, tags?: string[]) => {
         if (!activeProject) return;
         await testRunApi.createTestRun(activeProject, {
             title,
             description,
             testCaseIds: caseIds,
             groupId,
+            tags,
         });
         toast.success('Test run created!');
         setSelectedCasesForRun([]);
         fetchRuns();
+        fetchTags();
     };
 
     const handleCreateGroup = async (name: string, description: string, color: string) => {
@@ -1097,14 +1143,16 @@ const TestRunsPage: React.FC = () => {
         setIsEditRunModalOpen(true);
     };
 
-    const handleUpdateRun = async (runId: string, data: { title: string; groupId: string | null }) => {
+    const handleUpdateRun = async (runId: string, data: { title: string; groupId: string | null; tags: string[] }) => {
         try {
             await testRunApi.updateTestRun(runId, {
                 title: data.title,
                 groupId: data.groupId,
+                tags: data.tags,
             });
             toast.success('Test run updated');
             fetchRuns();
+            fetchTags();
         } catch (error: unknown) {
             toast.error((error as Error).message || 'Failed to update test run');
             throw error;
@@ -1311,7 +1359,7 @@ const TestRunsPage: React.FC = () => {
                                 >
                                     <div className="flex items-start justify-between mb-3">
                                         <div>
-                                            <div className="flex items-center gap-2 mb-1">
+                                            <div className="flex items-center flex-wrap gap-2 mb-1">
                                                 <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">{run.title}</h3>
                                                 <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getRunStatusColor(run.status)}`}>
                                                     {run.status}
@@ -1321,6 +1369,14 @@ const TestRunsPage: React.FC = () => {
                                                         {testRunGroups.find(g => g.id === run.groupId)?.name || 'Group'}
                                                     </span>
                                                 )}
+                                                {run.tags && run.tags.length > 0 && run.tags.map((tag) => (
+                                                    <span
+                                                        key={tag}
+                                                        className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-100 dark:border-purple-800"
+                                                    >
+                                                        {tag}
+                                                    </span>
+                                                ))}
                                             </div>
                                             <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
                                                 <span className="flex items-center gap-1">
@@ -1436,6 +1492,7 @@ const TestRunsPage: React.FC = () => {
                         setSelectedCasesForRun([]);
                     }
                 }}
+                tagSuggestions={tagSuggestions}
             />
 
             {/* Create/Edit Group Modal */}
@@ -1474,6 +1531,7 @@ const TestRunsPage: React.FC = () => {
                 testRun={editingRun}
                 testRunGroups={testRunGroups}
                 onSubmit={handleUpdateRun}
+                tagSuggestions={tagSuggestions}
             />
         </div>
     );

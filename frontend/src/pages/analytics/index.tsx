@@ -2,14 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { reportingApi } from '../../services/reportingApi';
+import { testRunApi } from '../../services/testRunApi';
 import {
     ProjectSummaryReport,
     TrendReport,
     SuiteComparisonReport,
     TestCaseHealthReport,
+    TestRunGroup,
 } from '../../types/testManager';
 import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
+import TagInput from '../../components/testManager/TagInput';
 import toast from 'react-hot-toast';
 import {
     LineChart,
@@ -65,6 +68,14 @@ const AnalyticsPage: React.FC = () => {
     const [groupBy, setGroupBy] = useState<'day' | 'week' | 'month'>(
         (searchParams.get('groupBy') as 'day' | 'week' | 'month') || 'day'
     );
+    const [selectedTags, setSelectedTags] = useState<string[]>(
+        searchParams.get('tags') ? (searchParams.get('tags') as string).split(',') : []
+    );
+    const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+    const [selectedGroupId, setSelectedGroupId] = useState<string>(
+        searchParams.get('groupId') || ''
+    );
+    const [runGroups, setRunGroups] = useState<TestRunGroup[]>([]);
     
     // Report data
     const [summaryReport, setSummaryReport] = useState<ProjectSummaryReport | null>(null);
@@ -79,8 +90,14 @@ const AnalyticsPage: React.FC = () => {
             params.start = customRange.start;
             params.end = customRange.end;
         }
+        if (selectedTags.length > 0) {
+            params.tags = selectedTags.join(',');
+        }
+        if (selectedGroupId) {
+            params.groupId = selectedGroupId;
+        }
         setSearchParams(params, { replace: true });
-    }, [dateRange, customRange, groupBy, setSearchParams]);
+    }, [dateRange, customRange, groupBy, selectedTags, selectedGroupId, setSearchParams]);
 
     // Calculate date range
     const getDateRange = useCallback(() => {
@@ -134,6 +151,8 @@ const AnalyticsPage: React.FC = () => {
             const params = {
                 startDate: range.startDate,
                 endDate: range.endDate,
+                tags: selectedTags.length > 0 ? selectedTags : undefined,
+                groupId: selectedGroupId || undefined,
             };
 
             // Fetch reports in parallel
@@ -155,7 +174,34 @@ const AnalyticsPage: React.FC = () => {
         } finally {
             setIsLoading(false);
         }
-    }, [activeProject, dateRange, groupBy, getDateRange]);
+    }, [activeProject, dateRange, groupBy, selectedTags, selectedGroupId, getDateRange]);
+
+    // Fetch tag suggestions
+    useEffect(() => {
+        if (activeProject) {
+            testRunApi.getTagsByProject(activeProject)
+                .then(setTagSuggestions)
+                .catch(() => { /* ignore */ });
+        }
+    }, [activeProject]);
+
+    // Fetch run groups
+    useEffect(() => {
+        if (activeProject) {
+            testRunApi.getTestRunGroups(activeProject)
+                .then((groups) => setRunGroups(groups.map(g => ({
+                    id: g.id,
+                    name: g.name,
+                    description: g.description,
+                    projectId: g.projectId,
+                    color: g.color,
+                    createdBy: g.createdBy,
+                    createdAt: g.createdAt,
+                    updatedAt: g.updatedAt,
+                }))))
+                .catch(() => { /* ignore */ });
+        }
+    }, [activeProject]);
 
     useEffect(() => {
         if (activeProject) {
@@ -267,6 +313,32 @@ const AnalyticsPage: React.FC = () => {
                             ))}
                         </div>
                     )}
+                </div>
+
+                {/* Tag & Group filters */}
+                <div className="mt-2 flex items-start gap-3 flex-wrap">
+                    <div className="flex-1 min-w-[200px] max-w-md">
+                        <TagInput
+                            tags={selectedTags}
+                            onChange={setSelectedTags}
+                            suggestions={tagSuggestions}
+                            placeholder="Filter by tags..."
+                        />
+                    </div>
+                    <div className="min-w-[180px]">
+                        <select
+                            value={selectedGroupId}
+                            onChange={(e) => setSelectedGroupId(e.target.value)}
+                            className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100"
+                        >
+                            <option value="">All Run Groups</option>
+                            {runGroups.map((group) => (
+                                <option key={group.id} value={group.id}>
+                                    {group.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
 

@@ -216,6 +216,22 @@ export const reorderTestCases = async (
   }
 };
 
+/**
+ * Get all unique tags for a project
+ */
+export const getTagsByProject = async (
+  projectId: string
+): Promise<string[]> => {
+  try {
+    const response = await axios.get<ApiResponse<string[]>>(
+      `${API_URL}/projects/${projectId}/runs/tags`
+    );
+    return response.data.data || [];
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
 // ============================================================================
 // TEST RUN GROUP API
 // ============================================================================
@@ -324,6 +340,7 @@ export const testRunApi = {
   cloneTestRun,
   completeTestRun,
   reorderTestCases,
+  getTagsByProject,
   // Test Run Groups
   createTestRunGroup,
   getTestRunGroups,

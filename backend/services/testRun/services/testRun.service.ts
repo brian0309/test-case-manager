@@ -414,6 +414,26 @@ function updateResultsSummary(testRun: ITestRunDocument): void {
 }
 
 /**
+ * Get all unique tags for a project
+ */
+export const getTagsByProject = async (
+  projectId: string,
+  userId: string
+): Promise<string[]> => {
+  const hasAccess = await projectService.hasProjectAccess(projectId, userId);
+  if (!hasAccess) {
+    return [];
+  }
+
+  const tags = await TestRun.distinct("tags", {
+    projectId: new Types.ObjectId(projectId),
+    tags: { $exists: true, $ne: [] },
+  });
+
+  return (tags as string[]).sort();
+};
+
+/**
  * Format tester for API response
  */
 const formatTesterResponse = (user: any): TesterResponse => {

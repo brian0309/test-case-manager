@@ -272,6 +272,28 @@ export const reorderRunItems = async (req: Request, res: Response): Promise<void
 };
 
 /**
+ * GET /api/projects/:projectId/runs/tags
+ * Get all unique tags for a project
+ */
+export const getTagsByProject = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { projectId } = req.params as Record<string, string>;
+    const tags = await testRunService.getTagsByProject(projectId, userId);
+
+    res.status(200).json({ success: true, data: tags });
+  } catch (error) {
+    console.error("Error in getTagsByProject:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+/**
  * POST /api/runs/:id/clone
  * Clone a test run
  */

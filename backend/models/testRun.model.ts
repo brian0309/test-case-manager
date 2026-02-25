@@ -141,6 +141,7 @@ testRunSchema.index({ groupId: 1 });
 testRunSchema.index({ projectId: 1, createdAt: -1 });
 testRunSchema.index({ status: 1 });
 testRunSchema.index({ createdBy: 1 });
+testRunSchema.index({ projectId: 1, tags: 1 });
 
 export const TestRun = mongoose.model<ITestRunDocument>("TestRun", testRunSchema);
 
