@@ -6,7 +6,6 @@ import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import RichTextEditor from '../../components/testManager/RichTextEditor';
 import ConfirmationModal from '../../components/testManager/ConfirmationModal';
-import { sanitizeHtml } from '../../utils/sanitize';
 import {
     TestRunListItem,
     TestRunStatus,
@@ -14,6 +13,7 @@ import {
     TestRun,
     TestCase,
     TestRunGroup,
+    RunItem,
 } from '../../types/testManager';
 import { testRunApi } from '../../services/testRunApi';
 import { useRealtimeTestRuns } from '../../hooks/useRealtimeTestRuns';
@@ -30,6 +30,8 @@ import {
     Layers,
     Menu,
     Edit2,
+    ArrowLeft,
+    Eye,
 } from 'lucide-react';
 import CreateGroupModal from './components/CreateGroupModal';
 import RunGroupsSidebar from '../../components/testManager/RunGroupsSidebar';
@@ -377,6 +379,7 @@ interface ExecuteRunModalProps {
     testRun: TestRun | null;
     onUpdateItem: (itemId: string, status: RunItemStatus, actualResult?: string) => Promise<void>;
     onComplete: () => Promise<void>;
+    startIndex?: number;
 }
 
 const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
@@ -385,10 +388,18 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
     testRun,
     onUpdateItem,
     onComplete,
+    startIndex = 0,
 }) => {
-    const [currentIndex, setCurrentIndex] = useState(0);
+    const [currentIndex, setCurrentIndex] = useState(startIndex);
     const [actualResult, setActualResult] = useState('');
     const [isUpdating, setIsUpdating] = useState(false);
+
+    // Reset index when modal opens with a new startIndex
+    useEffect(() => {
+        if (isOpen) {
+            setCurrentIndex(startIndex);
+        }
+    }, [isOpen, startIndex]);
 
     useEffect(() => {
         if (testRun && testRun.items[currentIndex]) {
@@ -503,9 +514,10 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                     {currentItem.caseSnapshot.stepsContent && (
                         <div className="mb-5 sm:mb-6">
                             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Steps</h4>
-                            <div
-                                className="prose prose-sm dark:prose-invert max-w-none text-gray-600 dark:text-gray-400"
-                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(currentItem.caseSnapshot.stepsContent) }}
+                            <RichTextEditor
+                                content={currentItem.caseSnapshot.stepsContent}
+                                onChange={() => {}}
+                                editable={false}
                             />
                         </div>
                     )}
@@ -633,6 +645,286 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
     );
 };
 
+// Run item status color for badges (styled like TestCaseTable)
+const getRunItemStatusBadgeColor = (status: RunItemStatus) => {
+    switch (status) {
+        case RunItemStatus.Passed:
+            return 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700';
+        case RunItemStatus.Failed:
+            return 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700';
+        case RunItemStatus.Blocked:
+            return 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700';
+        case RunItemStatus.Skipped:
+            return 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-400 border-gray-200 dark:border-gray-600';
+        case RunItemStatus.NotRun:
+        default:
+            return 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600';
+    }
+};
+
+// Priority badge color (dot style, like TestCaseTable)
+const getPriorityColor = (priority?: string) => {
+    switch (priority) {
+        case 'Critical': return 'bg-red-500 dark:bg-red-500';
+        case 'High': return 'bg-orange-500 dark:bg-orange-500';
+        case 'Medium': return 'bg-yellow-400 dark:bg-yellow-500';
+        case 'Low': return 'bg-blue-400 dark:bg-blue-500';
+        default: return 'bg-gray-400 dark:bg-gray-500';
+    }
+};
+
+// Run Detail View – table layout similar to TestCaseTable
+interface RunDetailViewProps {
+    testRun: TestRun;
+    onBack: () => void;
+    onUpdateItem: (itemId: string, status: RunItemStatus, actualResult?: string) => Promise<void>;
+    onComplete: () => Promise<void>;
+    onOpenExecute: (itemIndex: number) => void;
+}
+
+const RunDetailView: React.FC<RunDetailViewProps> = ({
+    testRun,
+    onBack,
+    onUpdateItem,
+    onComplete,
+    onOpenExecute,
+}) => {
+    const executedCount = testRun.items.filter(i => i.status !== RunItemStatus.NotRun).length;
+    const totalItems = testRun.items.length;
+
+    const handleStatusChange = async (item: RunItem, newStatus: RunItemStatus) => {
+        try {
+            await onUpdateItem(item.id, newStatus, item.actualResult);
+        } catch (error: unknown) {
+            toast.error((error as Error).message || 'Failed to update status');
+        }
+    };
+
+    const handleComplete = async () => {
+        try {
+            await onComplete();
+            toast.success('Test run completed!');
+        } catch (error: unknown) {
+            toast.error((error as Error).message || 'Failed to complete run');
+        }
+    };
+
+    return (
+        <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-20">
+                <div className="flex items-center gap-3 min-w-0">
+                    <button
+                        onClick={onBack}
+                        className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
+                        title="Back to runs"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">{testRun.title}</h2>
+                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getRunStatusColor(testRun.status)}`}>
+                                {testRun.status}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            <span>{executedCount} / {totalItems} executed ({totalItems > 0 ? Math.round((executedCount / totalItems) * 100) : 0}%)</span>
+                            <span>{testRun.resultsSummary.passRate}% pass rate</span>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={handleComplete}
+                        disabled={executedCount < totalItems}
+                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                            executedCount < totalItems
+                                ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed opacity-60'
+                                : 'text-white bg-blue-600 hover:bg-blue-700'
+                        }`}
+                        title={executedCount < totalItems ? 'Complete all test cases first' : 'Complete Run'}
+                    >
+                        Complete Run
+                    </button>
+                </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="h-2 bg-gray-100 dark:bg-gray-700 flex flex-shrink-0">
+                {testRun.resultsSummary.passed > 0 && (
+                    <div className="bg-green-500" style={{ width: `${(testRun.resultsSummary.passed / totalItems) * 100}%` }} />
+                )}
+                {testRun.resultsSummary.failed > 0 && (
+                    <div className="bg-red-500" style={{ width: `${(testRun.resultsSummary.failed / totalItems) * 100}%` }} />
+                )}
+                {testRun.resultsSummary.blocked > 0 && (
+                    <div className="bg-orange-500" style={{ width: `${(testRun.resultsSummary.blocked / totalItems) * 100}%` }} />
+                )}
+                {testRun.resultsSummary.skipped > 0 && (
+                    <div className="bg-gray-400 dark:bg-gray-500" style={{ width: `${(testRun.resultsSummary.skipped / totalItems) * 100}%` }} />
+                )}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden sm:block flex-1 overflow-auto">
+                <table className="w-full text-left border-collapse">
+                    <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-none">
+                        <tr>
+                            <th className="py-2 pl-6 pr-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-12">#</th>
+                            <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-1/3">Title</th>
+                            <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32">Priority</th>
+                            <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40">Run Status</th>
+                            <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40">Area</th>
+                            <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-24"></th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-900">
+                        {testRun.items.map((item, index) => (
+                            <tr
+                                key={item.id}
+                                onClick={() => onOpenExecute(index)}
+                                className="group transition-colors cursor-pointer hover:bg-gray-50/80 dark:hover:bg-gray-800/50"
+                            >
+                                {/* Order */}
+                                <td className="py-2.5 pl-6 pr-4 text-sm font-medium text-gray-400 dark:text-gray-500 font-mono tracking-tight group-hover:text-gray-900 dark:group-hover:text-gray-200">
+                                    {index + 1}
+                                </td>
+
+                                {/* Title */}
+                                <td className="py-2.5 px-4">
+                                    <div className="text-[15px] font-medium text-gray-900 dark:text-gray-100">{item.caseSnapshot.title}</div>
+                                    {item.caseSnapshot.testDescription && (
+                                        <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate max-w-md">
+                                            {item.caseSnapshot.testDescription}
+                                        </div>
+                                    )}
+                                </td>
+
+                                {/* Priority */}
+                                <td className="py-2.5 px-4">
+                                    <div className="flex items-center gap-2">
+                                        <span className={`h-2.5 w-2.5 rounded-full ${getPriorityColor(item.caseSnapshot.priority)} shadow-sm`} />
+                                        <span className="text-sm text-gray-700 dark:text-gray-300">{item.caseSnapshot.priority || 'N/A'}</span>
+                                    </div>
+                                </td>
+
+                                {/* Run Status Dropdown */}
+                                <td className="py-2.5 px-4">
+                                    <div onClick={e => e.stopPropagation()}>
+                                        <select
+                                            value={item.status}
+                                            onChange={(e) => handleStatusChange(item, e.target.value as RunItemStatus)}
+                                            className={`text-xs font-semibold px-2.5 py-1 rounded-full border appearance-none cursor-pointer outline-none transition-colors text-center min-w-[90px] ${getRunItemStatusBadgeColor(item.status)}`}
+                                        >
+                                            <option value={RunItemStatus.NotRun}>Not Run</option>
+                                            <option value={RunItemStatus.Passed}>Passed</option>
+                                            <option value={RunItemStatus.Failed}>Failed</option>
+                                            <option value={RunItemStatus.Blocked}>Blocked</option>
+                                            <option value={RunItemStatus.Skipped}>Skipped</option>
+                                        </select>
+                                    </div>
+                                </td>
+
+                                {/* Area */}
+                                <td className="py-2.5 px-4">
+                                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                                        {item.caseSnapshot.area || '—'}
+                                    </div>
+                                </td>
+
+                                {/* Actions */}
+                                <td className="py-2.5 px-4 text-center">
+                                    <div className="flex items-center justify-center gap-1">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onOpenExecute(index);
+                                            }}
+                                            className="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                            title="Execute Test Case"
+                                        >
+                                            <Eye className="h-3.5 w-3.5" />
+                                            View
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Mobile list */}
+            <div className="block sm:hidden flex-1 overflow-auto p-2">
+                {testRun.items.map((item, index) => (
+                    <div
+                        key={item.id}
+                        onClick={() => onOpenExecute(index)}
+                        className="relative mac-card overflow-hidden cursor-pointer transition-all active:scale-[0.98] mb-3 hover:bg-gray-50/80 dark:hover:bg-gray-800/80"
+                    >
+                        {/* Priority Color Bar */}
+                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${getPriorityColor(item.caseSnapshot.priority)}`} />
+
+                        <div className="p-4 pl-5">
+                            <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                    {/* Top Row: Status & Index */}
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getRunItemStatusBadgeColor(item.status)}`}>
+                                            {item.status}
+                                        </span>
+                                        <span className="text-[10px] font-mono text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                                            #{index + 1}
+                                        </span>
+                                    </div>
+
+                                    {/* Title */}
+                                    <h4 className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
+                                        {item.caseSnapshot.title}
+                                    </h4>
+
+                                    {/* Area */}
+                                    {item.caseSnapshot.area && (
+                                        <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 truncate">
+                                            {item.caseSnapshot.area}
+                                        </div>
+                                    )}
+
+                                    {/* Footer: Priority & Status change */}
+                                    <div className="mt-4 flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`h-2.5 w-2.5 rounded-full ${getPriorityColor(item.caseSnapshot.priority)} shadow-sm`} />
+                                            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                                                {item.caseSnapshot.priority || 'N/A'}
+                                            </span>
+                                        </div>
+                                        <div onClick={e => e.stopPropagation()}>
+                                            <select
+                                                value={item.status}
+                                                onChange={(e) => handleStatusChange(item, e.target.value as RunItemStatus)}
+                                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border appearance-none cursor-pointer outline-none transition-colors min-w-[80px] ${getRunItemStatusBadgeColor(item.status)}`}
+                                            >
+                                                <option value={RunItemStatus.NotRun}>Not Run</option>
+                                                <option value={RunItemStatus.Passed}>Passed</option>
+                                                <option value={RunItemStatus.Failed}>Failed</option>
+                                                <option value={RunItemStatus.Blocked}>Blocked</option>
+                                                <option value={RunItemStatus.Skipped}>Skipped</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <ChevronRight className="h-5 w-5 text-gray-300 dark:text-gray-600 flex-shrink-0 mt-1" />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 const TestRunsPage: React.FC = () => {
     const { activeProject, testCases, testSuites, fetchTestCasesByProject, fetchTestSuites } = useTestManagerStore();
     const [testRuns, setTestRuns] = useState<TestRunListItem[]>([]);
@@ -644,6 +936,8 @@ const TestRunsPage: React.FC = () => {
     const [selectedCasesForRun, setSelectedCasesForRun] = useState<string[]>([]);
     const [executeRun, setExecuteRun] = useState<TestRun | null>(null);
     const [isExecuteModalOpen, setIsExecuteModalOpen] = useState(false);
+    const [detailRun, setDetailRun] = useState<TestRun | null>(null);
+    const [executeStartIndex, setExecuteStartIndex] = useState(0);
     const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('all');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null);
@@ -820,25 +1114,55 @@ const TestRunsPage: React.FC = () => {
     const handleExecuteRun = async (runId: string) => {
         try {
             const run = await testRunApi.getTestRun(runId);
-            setExecuteRun(run as unknown as TestRun);
-            setIsExecuteModalOpen(true);
+            const typedRun = run as unknown as TestRun;
+            setDetailRun(typedRun);
         } catch (error: unknown) {
             toast.error((error as Error).message || 'Failed to load run');
         }
     };
 
+    const handleOpenExecuteFromDetail = (itemIndex: number) => {
+        if (!detailRun) return;
+        setExecuteRun(detailRun);
+        setExecuteStartIndex(itemIndex);
+        setIsExecuteModalOpen(true);
+    };
+
     const handleUpdateRunItem = async (itemId: string, status: RunItemStatus, actualResult?: string) => {
-        if (!executeRun) return;
-        const updated = await testRunApi.updateRunItem(executeRun.id, itemId, {
+        const currentRun = executeRun || detailRun;
+        if (!currentRun) return;
+        const updated = await testRunApi.updateRunItem(currentRun.id, itemId, {
             status,
             actualResult,
         });
-        setExecuteRun(updated as unknown as TestRun);
+        const typedUpdated = updated as unknown as TestRun;
+        if (executeRun) setExecuteRun(typedUpdated);
+        setDetailRun(typedUpdated);
+    };
+
+    const handleDetailUpdateItem = async (itemId: string, status: RunItemStatus, actualResult?: string) => {
+        if (!detailRun) return;
+        const updated = await testRunApi.updateRunItem(detailRun.id, itemId, {
+            status,
+            actualResult,
+        });
+        const typedUpdated = updated as unknown as TestRun;
+        setDetailRun(typedUpdated);
     };
 
     const handleCompleteRun = async () => {
-        if (!executeRun) return;
-        await testRunApi.completeTestRun(executeRun.id);
+        const currentRun = executeRun || detailRun;
+        if (!currentRun) return;
+        await testRunApi.completeTestRun(currentRun.id);
+        // Refresh the detail view
+        if (detailRun) {
+            try {
+                const refreshed = await testRunApi.getTestRun(detailRun.id);
+                setDetailRun(refreshed as unknown as TestRun);
+            } catch {
+                // If refresh fails, just close
+            }
+        }
         fetchRuns();
     };
 
@@ -860,6 +1184,37 @@ const TestRunsPage: React.FC = () => {
                 title="No Project Selected"
                 description="Please select a project to view and manage test runs"
             />
+        );
+    }
+
+    // If a run is selected for detail view, show the detail table
+    if (detailRun) {
+        return (
+            <>
+                <RunDetailView
+                    testRun={detailRun}
+                    onBack={() => {
+                        setDetailRun(null);
+                        fetchRuns();
+                    }}
+                    onUpdateItem={handleDetailUpdateItem}
+                    onComplete={handleCompleteRun}
+                    onOpenExecute={handleOpenExecuteFromDetail}
+                />
+
+                {/* Execute Run Modal (from detail view) */}
+                <ExecuteRunModal
+                    isOpen={isExecuteModalOpen}
+                    onClose={() => {
+                        setIsExecuteModalOpen(false);
+                        setExecuteRun(null);
+                    }}
+                    testRun={executeRun}
+                    onUpdateItem={handleUpdateRunItem}
+                    onComplete={handleCompleteRun}
+                    startIndex={executeStartIndex}
+                />
+            </>
         );
     }
 
@@ -1093,19 +1448,6 @@ const TestRunsPage: React.FC = () => {
                 onSubmit={editingGroup ? handleUpdateGroup : handleCreateGroup}
                 initialData={editingGroup}
                 mode={editingGroup ? 'edit' : 'create'}
-            />
-
-            {/* Execute Run Modal */}
-            <ExecuteRunModal
-                isOpen={isExecuteModalOpen}
-                onClose={() => {
-                    setIsExecuteModalOpen(false);
-                    setExecuteRun(null);
-                    fetchRuns();
-                }}
-                testRun={executeRun}
-                onUpdateItem={handleUpdateRunItem}
-                onComplete={handleCompleteRun}
             />
 
             {/* Delete Group Confirmation Modal */}
