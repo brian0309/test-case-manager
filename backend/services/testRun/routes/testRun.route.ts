@@ -19,11 +19,13 @@ import {
   deleteTestRunGroup,
 } from "../controllers/testRunGroup.controller.js";
 import { verifyToken } from "../../../middleware/verifyToken.js";
+import { apiRateLimiter } from "../../../middleware/rateLimiter.js";
 
 const router: Router = express.Router();
 
-// All routes are protected
+// All routes are protected and rate-limited
 router.use(verifyToken);
+router.use(apiRateLimiter);
 
 // Test run CRUD
 router.get("/:id", getTestRun);
@@ -43,6 +45,7 @@ export default router;
 // Export routes that need to be mounted under /api/projects/:projectId
 export const projectRunRoutes = express.Router({ mergeParams: true });
 projectRunRoutes.use(verifyToken);
+projectRunRoutes.use(apiRateLimiter);
 projectRunRoutes.post("/", createTestRun);
 projectRunRoutes.get("/", getTestRunsByProject);
 projectRunRoutes.get("/tags", getTagsByProject);
@@ -50,12 +53,14 @@ projectRunRoutes.get("/tags", getTagsByProject);
 // Test run group routes - mounted under /api/projects/:projectId/run-groups
 export const projectRunGroupRoutes = express.Router({ mergeParams: true });
 projectRunGroupRoutes.use(verifyToken);
+projectRunGroupRoutes.use(apiRateLimiter);
 projectRunGroupRoutes.post("/", createTestRunGroup);
 projectRunGroupRoutes.get("/", getTestRunGroupsByProject);
 
 // Standalone run group routes - mounted under /api/run-groups
 export const runGroupRoutes = express.Router();
 runGroupRoutes.use(verifyToken);
+runGroupRoutes.use(apiRateLimiter);
 runGroupRoutes.get("/:id", getTestRunGroup);
 runGroupRoutes.put("/:id", updateTestRunGroup);
 runGroupRoutes.delete("/:id", deleteTestRunGroup);
