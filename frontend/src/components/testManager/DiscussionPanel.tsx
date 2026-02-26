@@ -42,6 +42,51 @@ const formatFileSize = (bytes: number): string => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
+/**
+ * Parse a system message body and return React nodes with the run ID hyperlinked.
+ * Matches the pattern: (ID: <mongoId>)
+ */
+const renderSystemMessageBody = (
+    body: string,
+    testCaseId: string,
+    isFailedMessage: boolean,
+): React.ReactNode => {
+    const runMatch = body.match(/\(ID:\s*([a-f0-9]{24})\)/i);
+    if (!runMatch) return body;
+
+    const itemMatch = body.match(/\(ITEM_ID:\s*([a-f0-9]{24})\)/i);
+    const idToken = runMatch[0];  // e.g. "(ID: 69a0081fc1100c76a417d009)"
+    const runId = runMatch[1];
+    const itemId = itemMatch?.[1];
+    const [before, afterRaw] = body.split(idToken);
+    const after = itemMatch ? afterRaw.replace(itemMatch[0], '') : afterRaw;
+    const href = itemId
+        ? `/test-manager/runs?runId=${runId}&itemId=${itemId}&caseId=${testCaseId}`
+        : `/test-manager/runs?runId=${runId}&caseId=${testCaseId}`;
+
+    return (
+        <>
+            {before}
+            <span>(ID:&nbsp;</span>
+            <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`underline transition-colors font-mono ${
+                    isFailedMessage
+                        ? 'text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300'
+                        : 'text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300'
+                }`}
+                title="Open test run in new tab"
+            >
+                {runId}
+            </a>
+            <span>)</span>
+            {after}
+        </>
+    );
+};
+
 const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId }) => {
     const { user } = useAuthStore();
     const [isOpen, setIsOpen] = useState(true);
@@ -345,10 +390,15 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
 
                             {group.messages.map(msg => {
                                 if (msg.type === 'system') {
+                                    const isFailedMessage = /failed in test run/i.test(msg.body);
                                     return (
                                         <div key={msg.id} className="flex justify-center my-2">
-                                            <span className="text-[11px] text-gray-400 dark:text-gray-500 italic bg-gray-50 dark:bg-gray-800/50 px-2 py-0.5 rounded-full">
-                                                {msg.body}
+                                            <span className={`text-[11px] italic px-2 py-0.5 rounded-full ${
+                                                isFailedMessage
+                                                    ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
+                                                    : 'text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800/50'
+                                            }`}>
+                                                {renderSystemMessageBody(msg.body, testCaseId, isFailedMessage)}
                                             </span>
                                         </div>
                                     );

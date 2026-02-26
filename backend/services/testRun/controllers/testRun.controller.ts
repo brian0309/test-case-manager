@@ -258,7 +258,7 @@ export const updateRunItem = async (req: Request, res: Response): Promise<void> 
 
           // Post a system discussion message about the failure
           const runId = (testRun as any)._id.toString();
-          const messageBody = `Failed in test run: ${testRun.title} (ID: ${runId})`;
+          const messageBody = `Failed in test run: ${testRun.title} (ID: ${runId}) (ITEM_ID: ${itemId})`;
           const message = await discussionService.createSystemMessage(caseId, projectId, userId, messageBody);
           socketManager.emitToProject(projectId, "discussion:created", {
             message,

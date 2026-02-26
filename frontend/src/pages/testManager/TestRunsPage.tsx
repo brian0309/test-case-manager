@@ -116,10 +116,45 @@ const TestRunsPage: React.FC = () => {
     useEffect(() => {
         if (location.state?.openNewRun) {
             setIsCreateModalOpen(true);
-            // Clear the state to prevent re-opening on refresh
             window.history.replaceState({}, document.title);
         }
     }, [location.state]);
+
+    // Handle deep-link to a specific test run via ?runId= query param
+    // Read from window.location directly to avoid React Router searchParams interference
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const runId = params.get('runId');
+        const itemId = params.get('itemId');
+        const caseId = params.get('caseId');
+        if (!runId) return;
+
+        // Clean the URL immediately so it doesn't re-trigger on refresh
+        const url = new URL(window.location.href);
+        url.searchParams.delete('runId');
+        window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : ''));
+
+        const loadRun = async () => {
+            try {
+                const run = await testRunApi.getTestRun(runId);
+                const typedRun = run as unknown as TestRun;
+                setDetailRun(typedRun);
+
+                const targetItemIndex = typedRun.items.findIndex(
+                    item => item.id === itemId || item.caseId === itemId || item.caseId === caseId
+                );
+
+                if (targetItemIndex >= 0) {
+                    setExecuteRun(typedRun);
+                    setExecuteStartIndex(targetItemIndex);
+                    setIsExecuteModalOpen(true);
+                }
+            } catch {
+                toast.error('Could not load the linked test run');
+            }
+        };
+        loadRun();
+    }, []);
 
     // Fetch test runs when project changes
     const fetchRuns = useCallback(async () => {
@@ -352,16 +387,7 @@ const TestRunsPage: React.FC = () => {
         return run.groupId === selectedGroupFilter;
     });
 
-    if (!activeProject) {
-        return (
-            <EmptyProjectState
-                title="No Project Selected"
-                description="Please select a project to view and manage test runs"
-            />
-        );
-    }
-
-    // If a run is selected for detail view, show the detail table
+    // If a run is selected for detail view, show it regardless of activeProject state
     if (detailRun) {
         return (
             <>
@@ -389,6 +415,15 @@ const TestRunsPage: React.FC = () => {
                     startIndex={executeStartIndex}
                 />
             </>
+        );
+    }
+
+    if (!activeProject) {
+        return (
+            <EmptyProjectState
+                title="No Project Selected"
+                description="Please select a project to view and manage test runs"
+            />
         );
     }
 
