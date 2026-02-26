@@ -13,11 +13,15 @@ interface Props {
 }
 
 const TestSuiteEditModal: React.FC<Props> = ({ isOpen, onClose, suite, projectId }) => {
-    const { updateTestSuite, fetchTestSuites } = useTestManagerStore();
+    const { updateTestSuite, fetchTestSuites, testSuites } = useTestManagerStore();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [tags, setTags] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
+
+    const tagSuggestions = Array.from(
+        new Set(testSuites.flatMap(s => s.tags || []))
+    ).sort();
     const [error, setError] = useState<string | null>(null);
 
     // Reset form when suite changes or modal opens
@@ -111,7 +115,7 @@ const TestSuiteEditModal: React.FC<Props> = ({ isOpen, onClose, suite, projectId
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tags (optional)</label>
-                        <TagInput tags={tags} onChange={setTags} placeholder="e.g. regression, smoke, api" />
+                        <TagInput tags={tags} onChange={setTags} placeholder="e.g. regression, smoke, api" suggestions={tagSuggestions} />
                     </div>
                 </div>
 

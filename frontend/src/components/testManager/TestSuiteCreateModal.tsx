@@ -11,12 +11,16 @@ interface Props {
 }
 
 const TestSuiteCreateModal: React.FC<Props> = ({ isOpen, onClose, projectId }) => {
-    const { createTestSuite, fetchTestSuites, setActiveSuite, setActiveSuiteId } = useTestManagerStore();
+    const { createTestSuite, fetchTestSuites, setActiveSuite, setActiveSuiteId, testSuites } = useTestManagerStore();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [tags, setTags] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const tagSuggestions = Array.from(
+        new Set(testSuites.flatMap(s => s.tags || []))
+    ).sort();
 
     if (!isOpen) return null;
 
@@ -101,7 +105,7 @@ const TestSuiteCreateModal: React.FC<Props> = ({ isOpen, onClose, projectId }) =
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tags (optional)</label>
-                        <TagInput tags={tags} onChange={setTags} placeholder="e.g. regression, smoke, api" />
+                        <TagInput tags={tags} onChange={setTags} placeholder="e.g. regression, smoke, api" suggestions={tagSuggestions} />
                     </div>
                 </div>
 
