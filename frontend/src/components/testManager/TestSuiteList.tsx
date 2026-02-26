@@ -3,8 +3,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { TestCase, TestSuite, Status } from '../../types/testManager';
-import { Folder, MoreHorizontal, PieChart, AlertCircle, Plus, Pencil, Trash2, Share2, ArrowUp, ArrowDown } from 'lucide-react';
+import { Folder, MoreHorizontal, PieChart, AlertCircle, Plus, Pencil, Trash2, Share2, ArrowUp, ArrowDown, Tag } from 'lucide-react';
 import { useTestManagerStore } from '../../store/testManagerStore';
+import { getTagColor } from './TagInput';
 
 interface TestSuiteListProps {
     testCases: TestCase[];
@@ -200,8 +201,16 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                         </div>
                                         <div>
                                             <h3 className="font-semibold text-gray-900 dark:text-white text-lg tracking-tight">{suite.name}</h3>
-                                            <span className="text-xs text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider">{stats.total} Cases</span>
-                                        </div>
+                                            <span className="text-xs text-gray-400 dark:text-gray-500 font-medium uppercase tracking-wider">{stats.total} Cases</span>                                            {suite.tags && suite.tags.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                                    {suite.tags.map(tag => (
+                                                        <span key={tag} className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-medium ${getTagColor(tag)}`}>
+                                                            <Tag className="h-2.5 w-2.5 opacity-70" />
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}                                        </div>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <button
@@ -373,6 +382,7 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                         )}
                                     </div>
                                 </th>
+                                <th className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Tags</th>
                                 <th className="py-3 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
@@ -495,6 +505,20 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                                     day: 'numeric',
                                                     year: 'numeric'
                                                 })}
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-4">
+                                            <div className="flex flex-wrap gap-1">
+                                                {suite.tags && suite.tags.length > 0 ? (
+                                                    suite.tags.map(tag => (
+                                                        <span key={tag} className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-medium ${getTagColor(tag)}`}>
+                                                            <Tag className="h-2.5 w-2.5 opacity-70" />
+                                                            {tag}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="py-4 px-4 text-right">

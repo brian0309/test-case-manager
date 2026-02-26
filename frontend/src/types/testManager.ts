@@ -119,6 +119,7 @@ export interface TestSuite {
     id: string;
     name: string;
     description?: string;
+    tags?: string[];
     projectId: string;
     createdAt: string;
     updatedAt: string;

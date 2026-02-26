@@ -78,6 +78,7 @@ const mapTestSuiteResponse = (s: TestSuiteResponse): TestSuite => ({
     id: s.id,
     name: s.name,
     description: s.description,
+    tags: s.tags || [],
     projectId: s.projectId,
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,

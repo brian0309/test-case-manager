@@ -10,9 +10,11 @@ interface ContextBreadcrumbProps {
         onToggle: () => void;
     };
     rightContent?: React.ReactNode;
+    /** Content rendered between breadcrumbs and view-toggle (e.g. tag filter) */
+    beforeToggle?: React.ReactNode;
 }
 
-const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector = true, viewToggle, rightContent }) => {
+const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector = true, viewToggle, rightContent, beforeToggle }) => {
     const {
         projects,
         testSuites,
@@ -296,6 +298,9 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                     </div>
                 </>
             )}
+
+            {/* Tag filter or other before-toggle content */}
+            {beforeToggle}
 
             {/* View Toggle Button - shows when provided */}
             {viewToggle && (

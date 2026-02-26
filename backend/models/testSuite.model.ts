@@ -14,6 +14,10 @@ const testSuiteSchema = new Schema<ITestSuiteDocument>(
       trim: true,
       maxlength: 500,
     },
+    tags: {
+      type: [String],
+      default: [],
+    },
     projectId: {
       type: Schema.Types.ObjectId,
       ref: "Project",

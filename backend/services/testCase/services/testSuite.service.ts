@@ -26,6 +26,7 @@ export const createTestSuite = async (
   const suite = new TestSuite({
     name: data.name,
     description: data.description || "",
+    tags: data.tags || [],
     projectId: new Types.ObjectId(projectId),
     createdBy: new Types.ObjectId(userId),
   });
@@ -110,6 +111,7 @@ export const updateTestSuite = async (
       $set: {
         ...(data.name && { name: data.name }),
         ...(data.description !== undefined && { description: data.description }),
+        ...(data.tags !== undefined && { tags: data.tags }),
       },
     },
     { new: true }
@@ -170,6 +172,7 @@ export const formatTestSuiteResponse = async (
     id: suite._id.toString(),
     name: suite.name,
     description: suite.description,
+    tags: suite.tags || [],
     projectId: suite.projectId.toString(),
     createdBy: suite.createdBy.toString(),
     caseCount,

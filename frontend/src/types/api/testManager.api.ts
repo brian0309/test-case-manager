@@ -66,6 +66,7 @@ export interface TestSuiteResponse {
   id: string;
   name: string;
   description?: string;
+  tags?: string[];
   projectId: string;
   createdBy: string;
   caseCount: number;
@@ -134,11 +135,13 @@ export interface AddMemberRequest {
 export interface CreateTestSuiteRequest {
   name: string;
   description?: string;
+  tags?: string[];
 }
 
 export interface UpdateTestSuiteRequest {
   name?: string;
   description?: string;
+  tags?: string[];
 }
 
 export interface CreateTestCaseRequest {

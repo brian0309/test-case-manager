@@ -109,6 +109,7 @@ export interface IProjectDocument extends IProject, Document {}
 export interface ITestSuite {
   name: string;
   description?: string;
+  tags?: string[];
   projectId: Types.ObjectId;
   createdBy: Types.ObjectId;
   createdAt: Date;
@@ -172,6 +173,7 @@ export interface TestSuiteResponse {
   id: string;
   name: string;
   description?: string;
+  tags?: string[];
   projectId: string;
   createdBy: string;
   caseCount: number;
@@ -244,11 +246,13 @@ export interface AddMemberRequest {
 export interface CreateTestSuiteRequest {
   name: string;
   description?: string;
+  tags?: string[];
 }
 
 export interface UpdateTestSuiteRequest {
   name?: string;
   description?: string;
+  tags?: string[];
 }
 
 export interface CreateTestCaseRequest {

@@ -3,6 +3,7 @@ import { X, Save } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { TestSuite } from '../../types/testManager';
+import TagInput from './TagInput';
 
 interface Props {
     isOpen: boolean;
@@ -15,6 +16,7 @@ const TestSuiteEditModal: React.FC<Props> = ({ isOpen, onClose, suite, projectId
     const { updateTestSuite, fetchTestSuites } = useTestManagerStore();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
+    const [tags, setTags] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -23,6 +25,7 @@ const TestSuiteEditModal: React.FC<Props> = ({ isOpen, onClose, suite, projectId
         if (suite && isOpen) {
             setName(suite.name);
             setDescription(suite.description || '');
+            setTags(suite.tags || []);
             setError(null);
         }
     }, [suite, isOpen]);
@@ -47,7 +50,8 @@ const TestSuiteEditModal: React.FC<Props> = ({ isOpen, onClose, suite, projectId
         try {
             await updateTestSuite(suite.id, { 
                 name: name.trim(), 
-                description: description.trim() 
+                description: description.trim(),
+                tags,
             });
             // Refresh suites
             if (projectId) {
@@ -103,6 +107,11 @@ const TestSuiteEditModal: React.FC<Props> = ({ isOpen, onClose, suite, projectId
                             maxLength={500}
                             placeholder="Short description of this suite"
                         />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tags (optional)</label>
+                        <TagInput tags={tags} onChange={setTags} placeholder="e.g. regression, smoke, api" />
                     </div>
                 </div>
 

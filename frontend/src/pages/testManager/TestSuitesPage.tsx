@@ -10,8 +10,10 @@ import TestSuiteEditModal from '../../components/testManager/TestSuiteEditModal'
 import ConfirmationModal from '../../components/testManager/ConfirmationModal';
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import ProjectPresenceIndicator from '../../components/testManager/ProjectPresenceIndicator';
+import { getTagColor } from '../../components/testManager/TagInput';
 import { TestSuite } from '../../types/testManager';
 import { useProjectPresence } from '../../hooks/useProjectPresence';
+import { Tag, X, ChevronDown, Check } from 'lucide-react';
 
 const TestSuitesPage: React.FC = () => {
     const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchTestCasesByProject, fetchProjects, deleteTestSuite, setActiveProject, setActiveArea, clearFilters, searchQuery, clearSearchQuery } = useTestManagerStore();
@@ -36,6 +38,22 @@ const TestSuitesPage: React.FC = () => {
     const [suiteToEdit, setSuiteToEdit] = useState<TestSuite | null>(null);
     const [suiteToDelete, setSuiteToDelete] = useState<TestSuite | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Tag filter state
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [tagFilterOpen, setTagFilterOpen] = useState(false);
+    const tagFilterRef = useRef<HTMLDivElement>(null);
+
+    // Close tag filter dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (tagFilterRef.current && !tagFilterRef.current.contains(e.target as Node)) {
+                setTagFilterOpen(false);
+            }
+        };
+        if (tagFilterOpen) document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [tagFilterOpen]);
 
     const [viewMode, setViewMode] = useState<'card' | 'table'>(() => {
         if (typeof window !== 'undefined') {
@@ -115,10 +133,20 @@ const TestSuitesPage: React.FC = () => {
         : [];
 
     // Filter test suites based on search query
-    const filteredTestSuites = testSuites.filter(suite =>
-        suite.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (suite.description && suite.description.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const filteredTestSuites = testSuites.filter(suite => {
+        const matchesSearch =
+            suite.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (suite.description && suite.description.toLowerCase().includes(searchQuery.toLowerCase()));
+        const matchesTags =
+            selectedTags.length === 0 ||
+            selectedTags.every(t => suite.tags?.includes(t));
+        return matchesSearch && matchesTags;
+    });
+
+    // Gather all distinct tags from all suites in this project
+    const allTags = Array.from(
+        new Set(testSuites.flatMap(s => s.tags || []))
+    ).sort();
 
     const handleSuiteClick = (suiteName: string, suiteId?: string) => {
         if (suiteId) {
@@ -213,16 +241,73 @@ const TestSuitesPage: React.FC = () => {
         <div className="flex flex-col h-auto sm:h-full bg-white dark:bg-gray-900">
             {/* Context Breadcrumb - project only, no suite selector */}
             <div className="bg-white dark:bg-gray-900 sm:sticky sm:top-0 sm:z-20">
-                <div className="flex items-center gap-3 px-4 sm:px-6">
-                    <ContextBreadcrumb
-                        showSuiteSelector={false}
-                        viewToggle={{ mode: viewMode, onToggle: handleViewModeToggle }}
-                    />
-                    {/* Project presence indicator */}
-                    {activeProject && (
-                        <ProjectPresenceIndicator users={projectUsers} maxDisplay={4} />
-                    )}
-                </div>
+                <ContextBreadcrumb
+                    showSuiteSelector={false}
+                    viewToggle={{ mode: viewMode, onToggle: handleViewModeToggle }}
+                    rightContent={activeProject ? <ProjectPresenceIndicator users={projectUsers} maxDisplay={4} /> : undefined}
+                    beforeToggle={allTags.length > 0 ? (
+                        <div className="relative" ref={tagFilterRef}>
+                            <button
+                                onClick={() => setTagFilterOpen(!tagFilterOpen)}
+                                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium border rounded-lg transition-colors shadow-sm dark:shadow-none ${
+                                    selectedTags.length > 0
+                                        ? 'border-blue-400 dark:border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                        : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600'
+                                }`}
+                            >
+                                <Tag size={14} />
+                                <span className="hidden sm:inline">Tags</span>
+                                {selectedTags.length > 0 && (
+                                    <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold bg-blue-500 text-white rounded-full">
+                                        {selectedTags.length}
+                                    </span>
+                                )}
+                                <ChevronDown size={13} className={`text-gray-400 transition-transform ${tagFilterOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {tagFilterOpen && (
+                                <div className="absolute top-full left-0 mt-1 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50">
+                                    <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">
+                                        <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter by Tags</p>
+                                        {selectedTags.length > 0 && (
+                                            <button
+                                                onClick={() => setSelectedTags([])}
+                                                className="text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+                                            >
+                                                <X size={11} /> Clear
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="max-h-52 overflow-y-auto">
+                                        {allTags.map(tag => (
+                                            <button
+                                                key={tag}
+                                                onClick={() =>
+                                                    setSelectedTags(prev =>
+                                                        prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+                                                    )
+                                                }
+                                                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
+                                                    selectedTags.includes(tag)
+                                                        ? 'bg-blue-50 dark:bg-blue-900/30'
+                                                        : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                                                }`}
+                                            >
+                                                <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-medium ${getTagColor(tag)}`}>
+                                                    <Tag className="h-2.5 w-2.5 opacity-70" />
+                                                    {tag}
+                                                </span>
+                                                {selectedTags.includes(tag) && (
+                                                    <Check size={12} className="ml-auto text-blue-500 dark:text-blue-400 flex-shrink-0" />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ) : undefined}
+                />
             </div>
 
             <div className="flex-1 sm:overflow-auto">

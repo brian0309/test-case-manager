@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTestManagerStore } from '../../store/testManagerStore';
+import TagInput from './TagInput';
 
 interface Props {
     isOpen: boolean;
@@ -13,6 +14,7 @@ const TestSuiteCreateModal: React.FC<Props> = ({ isOpen, onClose, projectId }) =
     const { createTestSuite, fetchTestSuites, setActiveSuite, setActiveSuiteId } = useTestManagerStore();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
+    const [tags, setTags] = useState<string[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +41,7 @@ const TestSuiteCreateModal: React.FC<Props> = ({ isOpen, onClose, projectId }) =
         setIsSaving(true);
         setError(null);
         try {
-            const suite = await createTestSuite(projectId, { name: name.trim(), description: description.trim() });
+            const suite = await createTestSuite(projectId, { name: name.trim(), description: description.trim(), tags });
             // Refresh suites and set active
             await fetchTestSuites(projectId);
             setActiveSuite(suite.name);
@@ -96,6 +98,10 @@ const TestSuiteCreateModal: React.FC<Props> = ({ isOpen, onClose, projectId }) =
                             maxLength={500}
                             placeholder="Short description of this suite"
                         />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tags (optional)</label>
+                        <TagInput tags={tags} onChange={setTags} placeholder="e.g. regression, smoke, api" />
                     </div>
                 </div>
 
