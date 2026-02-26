@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { TestCase, TestSuite, Status } from '../../types/testManager';
-import { Folder, MoreHorizontal, PieChart, AlertCircle, Plus, Pencil, Trash2, Share2, ArrowUp, ArrowDown, Tag } from 'lucide-react';
+import { Folder, MoreHorizontal, PieChart, AlertCircle, Plus, Pencil, Trash2, Share2, ArrowUp, ArrowDown, Tag, Play } from 'lucide-react';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { getTagColor } from '../../utils/tagColors';
 
@@ -29,13 +29,20 @@ type SortOrder = 'asc' | 'desc';
 
 const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, onSuiteClick, onCreate, onEdit, onDelete, viewMode, onViewModeToggle: _onViewModeToggle }) => {
     const navigate = useNavigate();
-    const { setActiveSuiteWithId, setFilters, setActiveArea } = useTestManagerStore();
+    const { setActiveSuiteWithId, setFilters, setActiveArea, activeProject } = useTestManagerStore();
     const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
     const [selectedSuite, setSelectedSuite] = useState<TestSuite | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const [sortField, setSortField] = useState<SortField>('name');
     const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
+    const handlePlaySuite = (e: React.MouseEvent, suiteId: string, suiteName: string) => {
+        e.stopPropagation();
+        if (!activeProject || !suiteId) return;
+        const url = `/test-manager/runs?openCreate=true&suiteId=${encodeURIComponent(suiteId)}&suiteName=${encodeURIComponent(suiteName)}&projectId=${encodeURIComponent(activeProject)}`;
+        window.open(url, '_blank');
+    };
 
     // Close dropdown on outside click
     useEffect(() => {
@@ -213,6 +220,13 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                             )}                                        </div>
                                     </div>
                                     <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={(e) => handlePlaySuite(e, suite.id, suite.name)}
+                                            className="p-2 text-gray-300 dark:text-gray-600 hover:text-green-600 dark:hover:text-green-400 rounded-full hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors opacity-0 group-hover:opacity-100"
+                                            title="Create Test Run from this suite"
+                                        >
+                                            <Play className="h-4 w-4" />
+                                        </button>
                                         <button
                                             onClick={(e) => handleShareClick(e, suite.id)}
                                             className="p-2 text-gray-300 dark:text-gray-600 hover:text-blue-500 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors opacity-0 group-hover:opacity-100"
@@ -523,6 +537,13 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                                         </td>
                                         <td className="py-4 px-4 text-right">
                                             <div className="flex items-center justify-end gap-1">
+                                                <button
+                                                    onClick={(e) => handlePlaySuite(e, suite.id, suite.name)}
+                                                    className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors"
+                                                    title="Create Test Run from this suite"
+                                                >
+                                                    <Play className="h-4 w-4" />
+                                                </button>
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import EmptyProjectState from '../../components/testManager/EmptyProjectState';
@@ -71,6 +71,16 @@ const getItemStatusColor = (status: RunItemStatus) => {
 };
 
 // Create Test Run Modal
+const generateSuiteTitle = (suiteName: string) => {
+    const now = new Date();
+    const month = now.toLocaleString('en-US', { month: 'short' });
+    const day = String(now.getDate()).padStart(2, '0');
+    const year = now.getFullYear();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${suiteName} - ${month}-${day}-${year} ${hours}:${minutes}`;
+};
+
 interface CreateRunModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -82,6 +92,7 @@ interface CreateRunModalProps {
     onToggleCase: (caseId: string) => void;
     onSelectAll: (selectAll: boolean, filteredCases: TestCase[]) => void;
     tagSuggestions: string[];
+    initialTitle?: string;
 }
 
 const CreateRunModal: React.FC<CreateRunModalProps> = ({
@@ -95,8 +106,9 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
     onToggleCase,
     onSelectAll,
     tagSuggestions,
+    initialTitle,
 }) => {
-    const [title, setTitle] = useState('');
+    const [title, setTitle] = useState(initialTitle ?? '');
     const [description, setDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedSuiteFilter, setSelectedSuiteFilter] = useState<string>('all');
@@ -108,16 +120,18 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
         ? testCases
         : testCases.filter(tc => tc.suiteId === selectedSuiteFilter);
 
-    // Reset state when modal closes
+    // Sync title and reset state when modal opens or closes
     useEffect(() => {
-        if (!isOpen) {
+        if (isOpen) {
+            setTitle(initialTitle ?? '');
+        } else {
             setTitle('');
             setDescription('');
             setSelectedSuiteFilter('all');
             setSelectedGroupId('');
             setTags([]);
         }
-    }, [isOpen]);
+    }, [isOpen, initialTitle]);
 
     if (!isOpen) return null;
 
@@ -134,7 +148,7 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
         setIsSubmitting(true);
         try {
             await onSubmit(title, description, selectedCases, selectedGroupId || undefined, tags.length > 0 ? tags : undefined);
-            setTitle('');
+            setTitle(initialTitle ?? '');
             setDescription('');
             setSelectedSuiteFilter('all');
             setSelectedGroupId('');
@@ -957,7 +971,8 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
 };
 
 const TestRunsPage: React.FC = () => {
-    const { activeProject, testCases, testSuites, fetchTestCasesByProject, fetchTestSuites } = useTestManagerStore();
+    const { activeProject, testCases, testSuites, fetchTestCasesByProject, fetchTestSuites, setActiveProject } = useTestManagerStore();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [testRuns, setTestRuns] = useState<TestRunListItem[]>([]);
     const [testRunGroups, setTestRunGroups] = useState<TestRunGroup[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -976,6 +991,54 @@ const TestRunsPage: React.FC = () => {
     const [editingRun, setEditingRun] = useState<TestRunListItem | null>(null);
     const [isEditRunModalOpen, setIsEditRunModalOpen] = useState(false);
     const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+    const [createModalInitialTitle, setCreateModalInitialTitle] = useState('');
+
+    // Ref to hold suite ID from URL params, resolved once test cases are loaded
+    const pendingSuiteIdRef = useRef<string | null>(null);
+    const pendingSuiteNameRef = useRef<string | null>(null);
+    const processedUrlRef = useRef(false);
+
+    // Handle URL params: openCreate=true&suiteId=...&suiteName=...&projectId=...
+    useEffect(() => {
+        if (processedUrlRef.current) return;
+        const openCreate = searchParams.get('openCreate');
+        const suiteId = searchParams.get('suiteId');
+        const suiteName = searchParams.get('suiteName');
+        const projectId = searchParams.get('projectId');
+
+        if (openCreate !== 'true') return;
+        processedUrlRef.current = true;
+
+        if (projectId && projectId !== activeProject) {
+            setActiveProject(projectId);
+        }
+
+        if (suiteId) {
+            pendingSuiteIdRef.current = suiteId;
+            pendingSuiteNameRef.current = suiteName;
+        } else {
+            setIsCreateModalOpen(true);
+        }
+
+        // Clear URL params
+        setSearchParams({}, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams]);
+
+    // Once test cases are loaded, resolve the pending suite selection and open modal
+    useEffect(() => {
+        if (!pendingSuiteIdRef.current || testCases.length === 0) return;
+        const suiteId = pendingSuiteIdRef.current;
+        const suiteName = pendingSuiteNameRef.current;
+        pendingSuiteIdRef.current = null;
+        pendingSuiteNameRef.current = null;
+        const ids = testCases.filter(tc => tc.suiteId === suiteId).map(tc => tc.id);
+        setSelectedCasesForRun(ids);
+        if (suiteName) {
+            setCreateModalInitialTitle(generateSuiteTitle(suiteName));
+        }
+        setIsCreateModalOpen(true);
+    }, [testCases]);
 
     // Real-time updates
     useRealtimeTestRuns({
@@ -1478,6 +1541,7 @@ const TestRunsPage: React.FC = () => {
                 onClose={() => {
                     setIsCreateModalOpen(false);
                     setSelectedCasesForRun([]);
+                    setCreateModalInitialTitle('');
                 }}
                 onSubmit={handleCreateRun}
                 testCases={testCases}
@@ -1493,6 +1557,7 @@ const TestRunsPage: React.FC = () => {
                     }
                 }}
                 tagSuggestions={tagSuggestions}
+                initialTitle={createModalInitialTitle}
             />
 
             {/* Create/Edit Group Modal */}
