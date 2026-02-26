@@ -10,7 +10,7 @@ import TestSuiteEditModal from '../../components/testManager/TestSuiteEditModal'
 import ConfirmationModal from '../../components/testManager/ConfirmationModal';
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import ProjectPresenceIndicator from '../../components/testManager/ProjectPresenceIndicator';
-import { getTagColor } from '../../components/testManager/TagInput';
+import { getTagColor } from '../../utils/tagColors';
 import { TestSuite } from '../../types/testManager';
 import { useProjectPresence } from '../../hooks/useProjectPresence';
 import { Tag, X, ChevronDown, Check } from 'lucide-react';

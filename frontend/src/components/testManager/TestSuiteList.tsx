@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { TestCase, TestSuite, Status } from '../../types/testManager';
 import { Folder, MoreHorizontal, PieChart, AlertCircle, Plus, Pencil, Trash2, Share2, ArrowUp, ArrowDown, Tag } from 'lucide-react';
 import { useTestManagerStore } from '../../store/testManagerStore';
-import { getTagColor } from './TagInput';
+import { getTagColor } from '../../utils/tagColors';
 
 interface TestSuiteListProps {
     testCases: TestCase[];
