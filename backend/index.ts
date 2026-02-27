@@ -50,7 +50,7 @@ const PORT: number = parseInt(process.env.PORT || "5000", 10);
 // backend/config/dynamicCors.ts for details.
 app.use(cors(getCorsOptions()));
 
-app.use(express.json()); // allows us to parse incoming requests:req.body
+app.use(express.json({ limit: '10mb' })); // allows us to parse incoming requests:req.body
 app.use(cookieParser()); // allows us to parse incoming cookies
 
 app.use("/api/auth", authRoutes);
