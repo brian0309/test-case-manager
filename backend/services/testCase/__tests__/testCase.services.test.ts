@@ -6,11 +6,17 @@ jest.mock("../../../models/project.model.js");
 jest.mock("../../../models/testSuite.model.js");
 jest.mock("../../../models/testCase.model.js");
 jest.mock("../../../models/user.model.js");
+jest.mock("../../../models/testRun.model.js");
+jest.mock("../../../models/testRunGroup.model.js");
+jest.mock("../../../models/discussion.model.js");
 
 import { Project } from "../../../models/project.model.js";
 import { TestSuite } from "../../../models/testSuite.model.js";
 import { TestCase } from "../../../models/testCase.model.js";
 import { User } from "../../../models/user.model.js";
+import { TestRun } from "../../../models/testRun.model.js";
+import { TestRunGroup } from "../../../models/testRunGroup.model.js";
+import { DiscussionMessage } from "../../../models/discussion.model.js";
 import * as projectService from "../services/project.service.js";
 import * as testSuiteService from "../services/testSuite.service.js";
 import * as testCaseService from "../services/testCase.service.js";
@@ -19,6 +25,9 @@ const mockProject = Project as jest.Mocked<typeof Project>;
 const mockTestSuite = TestSuite as jest.Mocked<typeof TestSuite>;
 const mockTestCase = TestCase as jest.Mocked<typeof TestCase>;
 const mockUser = User as jest.Mocked<typeof User>;
+const mockTestRun = TestRun as jest.Mocked<typeof TestRun>;
+const mockTestRunGroup = TestRunGroup as jest.Mocked<typeof TestRunGroup>;
+const mockDiscussionMessage = DiscussionMessage as jest.Mocked<typeof DiscussionMessage>;
 
 describe("Test Case Management Services", () => {
   let testUserId: string;
@@ -145,6 +154,9 @@ describe("Test Case Management Services", () => {
 
       mockTestCase.deleteMany = jest.fn().mockResolvedValue({ deletedCount: 1 });
       mockTestSuite.deleteMany = jest.fn().mockResolvedValue({ deletedCount: 1 });
+      mockTestRun.deleteMany = jest.fn().mockResolvedValue({ deletedCount: 1 });
+      mockTestRunGroup.deleteMany = jest.fn().mockResolvedValue({ deletedCount: 1 });
+      mockDiscussionMessage.deleteMany = jest.fn().mockResolvedValue({ deletedCount: 1 });
       mockProject.deleteOne = jest.fn().mockResolvedValue({ deletedCount: 1 });
 
       const deleted = await projectService.deleteProject(testProjectId, testUserId);
@@ -153,6 +165,9 @@ describe("Test Case Management Services", () => {
       // Verify cascade was called
       expect(mockTestCase.deleteMany).toHaveBeenCalled();
       expect(mockTestSuite.deleteMany).toHaveBeenCalled();
+      expect(mockTestRun.deleteMany).toHaveBeenCalled();
+      expect(mockTestRunGroup.deleteMany).toHaveBeenCalled();
+      expect(mockDiscussionMessage.deleteMany).toHaveBeenCalled();
       expect(mockProject.deleteOne).toHaveBeenCalled();
     });
 
