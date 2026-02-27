@@ -3,6 +3,9 @@ import { Project } from "../../../models/project.model.js";
 import { TestSuite } from "../../../models/testSuite.model.js";
 import { TestCase } from "../../../models/testCase.model.js";
 import { User } from "../../../models/user.model.js";
+import { TestRun } from "../../../models/testRun.model.js";
+import { TestRunGroup } from "../../../models/testRunGroup.model.js";
+import { DiscussionMessage } from "../../../models/discussion.model.js";
 import {
   IProjectDocument,
   CreateProjectRequest,
@@ -118,6 +121,9 @@ export const deleteProject = async (
   // Cascade delete: test cases first, then suites, then project
   await TestCase.deleteMany({ projectId: projectObjectId });
   await TestSuite.deleteMany({ projectId: projectObjectId });
+  await TestRun.deleteMany({ projectId: projectObjectId });
+  await TestRunGroup.deleteMany({ projectId: projectObjectId });
+  await DiscussionMessage.deleteMany({ projectId: projectObjectId });
   await Project.deleteOne({ _id: projectObjectId });
 
   return true;
