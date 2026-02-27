@@ -47,6 +47,9 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
     const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
     const [importing, setImporting] = useState(false);
     const [importResult, setImportResult] = useState<BulkImportWithSuiteResult | null>(null);
+    const [chunkProgress, setChunkProgress] = useState<{ current: number; total: number } | null>(null);
+
+    const CHUNK_SIZE = 50;
 
     // Step 1: File upload, Step 2: Column mapping, Step 3: Validation preview, Step 4: Results
     const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
@@ -378,16 +381,73 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
 
     const handleImport = async () => {
         setImporting(true);
+        setChunkProgress(null);
 
         try {
             const testCases = transformData();
-            const result = await onImport(testCases, skipDuplicates, createMissingSuites);
-            setImportResult(result);
+            const chunks: typeof testCases[] = [];
+            for (let i = 0; i < testCases.length; i += CHUNK_SIZE) {
+                chunks.push(testCases.slice(i, i + CHUNK_SIZE));
+            }
+
+            setChunkProgress({ current: 0, total: chunks.length });
+
+            const combined: BulkImportWithSuiteResult = {
+                created: 0,
+                skipped: 0,
+                failed: 0,
+                errors: [],
+                duplicates: [],
+                suitesCreated: [],
+                suiteStats: {},
+            };
+
+            for (let i = 0; i < chunks.length; i++) {
+                const result = await onImport(chunks[i], skipDuplicates, createMissingSuites);
+                setChunkProgress({ current: i + 1, total: chunks.length });
+
+                combined.created += result.created;
+                combined.skipped += result.skipped;
+                combined.failed += result.failed;
+
+                // Offset error indices so they reflect original row numbers
+                const offset = i * CHUNK_SIZE;
+                for (const err of result.errors) {
+                    combined.errors.push({ ...err, index: err.index + offset });
+                }
+
+                if (result.duplicates) {
+                    combined.duplicates!.push(...result.duplicates);
+                }
+                if (result.suitesCreated) {
+                    const existing = new Set(combined.suitesCreated ?? []);
+                    for (const s of result.suitesCreated) {
+                        if (!existing.has(s)) {
+                            combined.suitesCreated!.push(s);
+                            existing.add(s);
+                        }
+                    }
+                }
+                if (result.suiteStats) {
+                    for (const [suiteId, stats] of Object.entries(result.suiteStats)) {
+                        if (!combined.suiteStats![suiteId]) {
+                            combined.suiteStats![suiteId] = { ...stats };
+                        } else {
+                            combined.suiteStats![suiteId].created += stats.created;
+                            combined.suiteStats![suiteId].skipped += stats.skipped;
+                            combined.suiteStats![suiteId].failed += stats.failed;
+                        }
+                    }
+                }
+            }
+
+            setImportResult(combined);
             setStep(4);
         } catch (error: unknown) {
             alert(`Import failed: ${(error as Error).message || 'Unknown error'}`);
         } finally {
             setImporting(false);
+            setChunkProgress(null);
         }
     };
 
@@ -397,6 +457,7 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
         setColumnMappings([]);
         setValidationErrors([]);
         setImportResult(null);
+        setChunkProgress(null);
         setCreateMissingSuites(true);
         setStep(1);
     };
@@ -430,6 +491,9 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
     const validCount = csvData.length - validationErrors.length;
     const duplicateMappings = step === 2 ? getDuplicateMappings() : [];
     const hasDuplicateMappings = duplicateMappings.length > 0;
+    const importPct = importing && chunkProgress
+        ? Math.round((chunkProgress.current / chunkProgress.total) * 100)
+        : 0;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
@@ -879,7 +943,24 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
                         )}
                         {step === 3 && (
                             <span>
-                                {validCount} valid, {validationErrors.length} errors
+                                {importing && chunkProgress ? (
+                                    <span className="flex items-center gap-2">
+                                        <span className="text-blue-600 dark:text-blue-400 font-medium">
+                                            Batch {chunkProgress.current}/{chunkProgress.total}
+                                        </span>
+                                        <span className="inline-block w-32 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                            <span
+                                                className="block h-2 bg-blue-500 rounded-full transition-all duration-300"
+                                                style={{ width: `${importPct}%` }}
+                                            />
+                                        </span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                            {importPct}%
+                                        </span>
+                                    </span>
+                                ) : (
+                                    <>{validCount} valid, {validationErrors.length} errors</>
+                                )}
                             </span>
                         )}
                     </div>
@@ -929,7 +1010,9 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
                                     {importing ? (
                                         <>
                                             <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                                            Importing...
+                                            {chunkProgress
+                                                ? `Importing batch ${chunkProgress.current} / ${chunkProgress.total}…`
+                                                : 'Importing...'}
                                         </>
                                     ) : (
                                         <>
