@@ -513,6 +513,7 @@ const TestSuitesPage: React.FC = () => {
                     confirmText="Delete Selected"
                     isDestructive={true}
                     isLoading={isBulkDeleting}
+                    requireConfirmationText="delete"
                 />
 
                 <TestSuiteList
