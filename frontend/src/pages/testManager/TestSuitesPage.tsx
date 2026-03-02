@@ -16,6 +16,13 @@ import { TestSuite } from '../../types/testManager';
 import { useProjectPresence } from '../../hooks/useProjectPresence';
 import { Tag, X, ChevronDown, Check } from 'lucide-react';
 
+const getSuiteTagFilterStorageKey = (projectId: string) => `testSuitesTagFilter:${projectId}`;
+
+type StoredSuiteTagFilter = {
+    selectedTags: string[];
+    includeNoTags: boolean;
+};
+
 const TestSuitesPage: React.FC = () => {
     const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchTestCasesByProject, fetchProjects, updateTestSuite, deleteTestSuite, setActiveProject, setActiveArea, clearFilters, searchQuery, clearSearchQuery } = useTestManagerStore();
     const navigate = useNavigate();
@@ -50,6 +57,46 @@ const TestSuitesPage: React.FC = () => {
     const [includeNoTags, setIncludeNoTags] = useState(false);
     const [tagFilterOpen, setTagFilterOpen] = useState(false);
     const tagFilterRef = useRef<HTMLDivElement>(null);
+
+    // Restore tag filter state per project
+    useEffect(() => {
+        if (!activeProject || typeof window === 'undefined') {
+            setSelectedTags([]);
+            setIncludeNoTags(false);
+            return;
+        }
+
+        try {
+            const rawValue = localStorage.getItem(getSuiteTagFilterStorageKey(activeProject));
+            if (!rawValue) {
+                setSelectedTags([]);
+                setIncludeNoTags(false);
+                return;
+            }
+
+            const parsed = JSON.parse(rawValue) as Partial<StoredSuiteTagFilter>;
+            setSelectedTags(Array.isArray(parsed.selectedTags) ? parsed.selectedTags.filter((tag): tag is string => typeof tag === 'string') : []);
+            setIncludeNoTags(typeof parsed.includeNoTags === 'boolean' ? parsed.includeNoTags : false);
+        } catch (error) {
+            console.error('Failed to restore suite tag filters from localStorage:', error);
+            setSelectedTags([]);
+            setIncludeNoTags(false);
+        }
+    }, [activeProject]);
+
+    // Persist tag filter state per project
+    useEffect(() => {
+        if (!activeProject || typeof window === 'undefined') {
+            return;
+        }
+
+        const payload: StoredSuiteTagFilter = {
+            selectedTags,
+            includeNoTags,
+        };
+
+        localStorage.setItem(getSuiteTagFilterStorageKey(activeProject), JSON.stringify(payload));
+    }, [activeProject, selectedTags, includeNoTags]);
 
     // Close tag filter dropdown on outside click
     useEffect(() => {
