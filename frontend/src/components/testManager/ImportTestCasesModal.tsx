@@ -109,6 +109,17 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
     const EXPECTED_HEADERS = ['expected result', 'expectedresult', 'expected'];
     const COMMENTS_HEADERS = ['comments', 'notes'];
 
+    const normalizeImportedStatus = (value: string): Status | '' => {
+        const trimmedValue = value.trim();
+        if (!trimmedValue) return '';
+
+        const normalizedValue = trimmedValue.toLowerCase();
+        if (normalizedValue === 'pass') return Status.Passed;
+        if (normalizedValue === 'fail') return Status.Failed;
+
+        return trimmedValue as Status;
+    };
+
     const autoDetectMappings = (headers: string[]): ColumnMapping[] => {
         return headers.map((header) => {
             const lowerHeader = header.toLowerCase().trim();
@@ -272,7 +283,8 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
             const statusMapping = columnMappings.find((m) => m.testCaseField === 'status');
             if (statusMapping) {
                 const status = row[statusMapping.csvColumn]?.trim();
-                if (status && !Object.values(Status).includes(status as Status)) {
+                const normalizedStatus = normalizeImportedStatus(status || '');
+                if (normalizedStatus && !Object.values(Status).includes(normalizedStatus)) {
                     errors.push({
                         row: rowNum,
                         field: 'Status',
@@ -342,7 +354,10 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
                     if (mapping.testCaseField === 'priority') {
                         testCase.priority = value as Priority;
                     } else if (mapping.testCaseField === 'status') {
-                        testCase.status = value as Status;
+                        const normalizedStatus = normalizeImportedStatus(value);
+                        if (normalizedStatus) {
+                            testCase.status = normalizedStatus;
+                        }
                     } else if (mapping.testCaseField === 'assignedTesterName') {
                         // Store name temporarily for lookup
                         testCase.assignedTesterName = value;
@@ -563,7 +578,7 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
                                         <li>First row must contain column headers</li>
                                         <li>Title column is required</li>
                                         <li>Priority values: Low, Medium, High, Critical</li>
-                                        <li>Status values: Draft, Passed, Failed, Retest, Pass - Fixed, Skipped</li>
+                                        <li>Status values: Draft, Passed, Failed, Retest, Pass - Fixed, Skipped (also accepts Pass/Fail)</li>
                                         <li>Custom fields must match existing field names</li>
                                     </ul>
                                 </div>

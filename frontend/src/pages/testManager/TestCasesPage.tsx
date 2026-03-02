@@ -503,11 +503,24 @@ const TestCasesPage: React.FC = () => {
         try {
             const projectName = projects.find(p => p.id === activeProject)?.name;
             const suiteName = activeSuite;
+            const suiteTagsBySuiteId = testSuites.reduce<Record<string, string[]>>((acc, suite) => {
+                if (suite.tags && suite.tags.length > 0) {
+                    acc[suite.id] = suite.tags;
+                }
+                return acc;
+            }, {});
+            const suiteTagsBySuiteName = testSuites.reduce<Record<string, string[]>>((acc, suite) => {
+                if (suite.tags && suite.tags.length > 0) {
+                    acc[suite.name] = suite.tags;
+                }
+                return acc;
+            }, {});
+            const exportOptions = { columns, suiteTagsBySuiteId, suiteTagsBySuiteName };
 
             if (format === 'xlsx') {
                 exportTestCasesToXLSX(
                     displayedCases,
-                    { columns },
+                    exportOptions,
                     customFieldDefinitions,
                     projectName,
                     suiteName || undefined
@@ -515,7 +528,7 @@ const TestCasesPage: React.FC = () => {
             } else {
                 exportTestCasesToCSV(
                     displayedCases,
-                    { columns },
+                    exportOptions,
                     customFieldDefinitions,
                     projectName,
                     suiteName || undefined

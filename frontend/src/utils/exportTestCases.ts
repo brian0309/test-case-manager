@@ -44,6 +44,8 @@ export interface ExportColumn {
 
 export interface ExportOptions {
     columns: ExportColumn[];
+    suiteTagsBySuiteId?: Record<string, string[]>;
+    suiteTagsBySuiteName?: Record<string, string[]>;
 }
 
 /**
@@ -63,7 +65,10 @@ export function exportTestCasesToCSV(
     }
 
     // Build rows using shared helper, then apply CSV escaping
-    const rows = buildRows(testCases, enabledColumns);
+    const rows = buildRows(testCases, enabledColumns, {
+        suiteTagsBySuiteId: options.suiteTagsBySuiteId,
+        suiteTagsBySuiteName: options.suiteTagsBySuiteName,
+    });
     const csvRows = rows.map(row => row.map(cell => escapeCsvValue(cell)).join(','));
 
     // Combine rows with CRLF per RFC 4180
@@ -95,12 +100,18 @@ export function exportTestCasesToCSV(
  */
 function buildRows(
     testCases: TestCase[],
-    enabledColumns: ExportColumn[]
+    enabledColumns: ExportColumn[],
+    options?: Pick<ExportOptions, 'suiteTagsBySuiteId' | 'suiteTagsBySuiteName'>
 ): string[][] {
     const header = enabledColumns.map(col => col.label);
     const rows: string[][] = [header];
 
     testCases.forEach(testCase => {
+        const suiteTags =
+            (testCase.suiteId && options?.suiteTagsBySuiteId?.[testCase.suiteId]) ||
+            (testCase.suite && options?.suiteTagsBySuiteName?.[testCase.suite]) ||
+            [];
+
         const rowValues = enabledColumns.map(col => {
             if (col.isCustomField && col.customFieldId) {
                 return testCase.customFields?.[col.customFieldId] || '';
@@ -113,6 +124,7 @@ function buildRows(
                 case 'assignedTester': return testCase.assignedTester?.name || '';
                 case 'area': return testCase.area || '';
                 case 'suite': return testCase.suite || '';
+                case 'suiteTags': return suiteTags.join(', ');
                 case 'testDescription': return testCase.testDescription || '';
                 case 'stepsContent': return stripHtmlPreserveLineBreaks(testCase.stepsContent);
                 case 'expectedResult': return stripHtmlPreserveLineBreaks(testCase.expectedResult);
@@ -143,7 +155,10 @@ export function exportTestCasesToXLSX(
         throw new Error('Please select at least one column to export');
     }
 
-    const rows = buildRows(testCases, enabledColumns);
+    const rows = buildRows(testCases, enabledColumns, {
+        suiteTagsBySuiteId: options.suiteTagsBySuiteId,
+        suiteTagsBySuiteName: options.suiteTagsBySuiteName,
+    });
     const ws = XLSX.utils.aoa_to_sheet(rows);
 
     // Auto-width columns
@@ -183,6 +198,7 @@ export function getDefaultExportColumns(
         { id: 'assignedTester', label: 'Assigned Tester', enabled: !hiddenColumns.assignedTester },
         { id: 'area', label: 'Area', enabled: true }, // Not in hiddenColumns, default to true
         { id: 'suite', label: 'Suite', enabled: true }, // Not in hiddenColumns, default to true
+        { id: 'suiteTags', label: 'Suite Tags', enabled: true }, // Not in hiddenColumns, default to true
         { id: 'testDescription', label: 'Description', enabled: true }, // Not in hiddenColumns, default to true
         { id: 'stepsContent', label: 'Steps', enabled: true }, // Not in hiddenColumns, default to true
         { id: 'expectedResult', label: 'Expected Result', enabled: true }, // Not in hiddenColumns, default to true
