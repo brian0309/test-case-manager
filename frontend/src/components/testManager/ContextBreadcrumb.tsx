@@ -5,6 +5,7 @@ import { useTestManagerStore } from '../../store/testManagerStore';
 
 interface ContextBreadcrumbProps {
     showSuiteSelector?: boolean;
+    filteredSuites?: Array<{ id: string; name: string }>;
     viewToggle?: {
         mode: 'card' | 'table';
         onToggle: () => void;
@@ -14,7 +15,7 @@ interface ContextBreadcrumbProps {
     beforeToggle?: React.ReactNode;
 }
 
-const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector = true, viewToggle, rightContent, beforeToggle }) => {
+const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector = true, filteredSuites, viewToggle, rightContent, beforeToggle }) => {
     const {
         projects,
         testSuites,
@@ -43,6 +44,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
 
     const currentProject = projects.find(p => p.id === activeProject);
     const currentSuite = testSuites.find(s => s.id === activeSuiteId);
+    const suiteOptions = filteredSuites ?? testSuites;
 
     // Close dropdowns when clicking outside
     useEffect(() => {
@@ -202,7 +204,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                                 <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
 
                                 <div className="max-h-64 overflow-y-auto">
-                                    {testSuites.map(suite => (
+                                    {suiteOptions.map(suite => (
                                         <button
                                             key={suite.id}
                                             onClick={() => handleSuiteChange(suite.id, suite.name)}
@@ -214,9 +216,11 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                                             {activeSuiteId === suite.id && <Check size={14} />}
                                         </button>
                                     ))}
-                                    {testSuites.length === 0 && (
+                                    {suiteOptions.length === 0 && (
                                         <div className="px-3 py-4 text-sm text-gray-400 dark:text-gray-500 text-center">
-                                            No test suites yet
+                                            {filteredSuites && testSuites.length > 0
+                                                ? 'No suites match current filters'
+                                                : 'No test suites yet'}
                                         </div>
                                     )}
                                 </div>

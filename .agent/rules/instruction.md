@@ -61,8 +61,13 @@ This repo is a full-stack MERN authentication example (TypeScript). The goal of 
 
 - Quick checklist the agent should follow before submitting code
   1. Update/confirm environment variable names and README if behavior changed.
- 2. Run `npm run type-check` and `npm test` (or the subset affected) locally—use in-memory DB helpers for backend tests.
- 3. Preserve `.js`-style import paths in compiled/ESM server files.
- 4. Add or update tests for auth-sensitive changes (token/cookie, login flows, OAuth). Use `backend/__tests__` helpers.
+ 2. **IMPORTANT:** After finishing any task, run lint and type-check before handoff:
+   - `npm run lint:backend` (root)
+   - `cd frontend && npm run lint`
+   - `npm run type-check` (root)
+   - `cd frontend && npm run type-check`
+ 3. Run `npm test` (or the subset affected) locally—use in-memory DB helpers for backend tests.
+ 4. Preserve `.js`-style import paths in compiled/ESM server files.
+ 5. Add or update tests for auth-sensitive changes (token/cookie, login flows, OAuth). Use `backend/__tests__` helpers.
 
 If anything above is unclear or you want more examples from a specific file, tell me which area to expand (controllers, tests, deployment notes, or frontend API integration) and I will iterate. 

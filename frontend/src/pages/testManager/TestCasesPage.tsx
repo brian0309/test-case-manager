@@ -19,7 +19,15 @@ import { reorderTestCases, getTestCase, getTestSuite, bulkImportTestCasesWithSui
 import { exportTestCasesToCSV, exportTestCasesToXLSX, ExportColumn } from '../../utils/exportTestCases';
 import { escapeHtml } from '../../utils/sanitize';
 import { CreateTestCaseWithSuiteRequest, UpdateTestCaseRequest } from '../../types/api/testManager.api';
-import { Sparkles, GripVertical, ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
+import { Sparkles, GripVertical, ArrowUp, ArrowDown, RotateCcw, Tag, X, ChevronDown, Check } from 'lucide-react';
+import { getTagColor } from '../../utils/tagColors';
+
+const getSuiteTagFilterStorageKey = (projectId: string) => `testSuitesTagFilter:${projectId}`;
+
+type StoredSuiteTagFilter = {
+    selectedTags: string[];
+    includeNoTags: boolean;
+};
 
 const TestCasesPage: React.FC = () => {
     const {
@@ -78,6 +86,10 @@ const TestCasesPage: React.FC = () => {
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isGeminiModalOpen, setIsGeminiModalOpen] = useState(false);
+    const [selectedSuiteTags, setSelectedSuiteTags] = useState<string[]>([]);
+    const [includeSuitesWithNoTags, setIncludeSuitesWithNoTags] = useState(false);
+    const [isSuiteTagFilterOpen, setIsSuiteTagFilterOpen] = useState(false);
+    const suiteTagFilterRef = useRef<HTMLDivElement>(null);
     
     // Track if we've already processed the testCaseId URL parameter
     const processedTestCaseIdRef = useRef<string | null>(null);
@@ -91,6 +103,61 @@ const TestCasesPage: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
+
+    // Restore suite tag filter state per project (shared with TestSuitesPage)
+    useEffect(() => {
+        if (!activeProject || typeof window === 'undefined') {
+            setSelectedSuiteTags([]);
+            setIncludeSuitesWithNoTags(false);
+            return;
+        }
+
+        try {
+            const rawValue = localStorage.getItem(getSuiteTagFilterStorageKey(activeProject));
+            if (!rawValue) {
+                setSelectedSuiteTags([]);
+                setIncludeSuitesWithNoTags(false);
+                return;
+            }
+
+            const parsed = JSON.parse(rawValue) as Partial<StoredSuiteTagFilter>;
+            setSelectedSuiteTags(Array.isArray(parsed.selectedTags) ? parsed.selectedTags.filter((tag): tag is string => typeof tag === 'string') : []);
+            setIncludeSuitesWithNoTags(typeof parsed.includeNoTags === 'boolean' ? parsed.includeNoTags : false);
+        } catch (error) {
+            console.error('Failed to restore suite tag filters from localStorage:', error);
+            setSelectedSuiteTags([]);
+            setIncludeSuitesWithNoTags(false);
+        }
+    }, [activeProject]);
+
+    // Persist suite tag filter state per project
+    useEffect(() => {
+        if (!activeProject || typeof window === 'undefined') {
+            return;
+        }
+
+        const payload: StoredSuiteTagFilter = {
+            selectedTags: selectedSuiteTags,
+            includeNoTags: includeSuitesWithNoTags,
+        };
+
+        localStorage.setItem(getSuiteTagFilterStorageKey(activeProject), JSON.stringify(payload));
+    }, [activeProject, selectedSuiteTags, includeSuitesWithNoTags]);
+
+    // Close suite tag filter dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (suiteTagFilterRef.current && !suiteTagFilterRef.current.contains(event.target as Node)) {
+                setIsSuiteTagFilterOpen(false);
+            }
+        };
+
+        if (isSuiteTagFilterOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isSuiteTagFilterOpen]);
 
     // Load project settings when active project changes
     useEffect(() => {
@@ -341,6 +408,40 @@ const TestCasesPage: React.FC = () => {
         updateTestCase(caseId, { status: status });
     }, [updateTestCase]);
 
+    const allSuiteTags = useMemo(
+        () => Array.from(new Set(testSuites.flatMap(suite => suite.tags || []))).sort(),
+        [testSuites]
+    );
+
+    const hasSuitesWithNoTags = useMemo(
+        () => testSuites.some(suite => !suite.tags || suite.tags.length === 0),
+        [testSuites]
+    );
+
+    const activeSuiteTagFilterCount = selectedSuiteTags.length + (includeSuitesWithNoTags ? 1 : 0);
+    const isSuiteTagFilterModeOn = activeSuiteTagFilterCount > 0;
+
+    const filteredSuitesForBreadcrumb = useMemo(() => {
+        if (!isSuiteTagFilterModeOn) {
+            return testSuites;
+        }
+
+        return testSuites.filter(suite => {
+            const suiteHasNoTags = !suite.tags || suite.tags.length === 0;
+            const matchesSelectedTags =
+                selectedSuiteTags.length === 0 ||
+                selectedSuiteTags.every(tag => suite.tags?.includes(tag));
+
+            if (includeSuitesWithNoTags) {
+                return selectedSuiteTags.length === 0
+                    ? suiteHasNoTags
+                    : (matchesSelectedTags || suiteHasNoTags);
+            }
+
+            return matchesSelectedTags;
+        });
+    }, [testSuites, selectedSuiteTags, includeSuitesWithNoTags, isSuiteTagFilterModeOn]);
+
     // Memoize the filtered & searched test cases to avoid re-computing on every render
     const displayedCases = useMemo(() => {
         let cases = activeArea
@@ -580,11 +681,94 @@ const TestCasesPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 sm:justify-between bg-white dark:bg-gray-900 sm:sticky sm:top-0 sm:z-20">
                 <ContextBreadcrumb 
                     showSuiteSelector={true} 
+                    filteredSuites={filteredSuitesForBreadcrumb.map(suite => ({ id: suite.id, name: suite.name }))}
                     rightContent={
                         activeProject && projectUsers.length > 0 ? (
                             <ProjectPresenceIndicator users={projectUsers} maxDisplay={4} />
                         ) : null
                     }
+                    beforeToggle={allSuiteTags.length > 0 || hasSuitesWithNoTags ? (
+                        <div className="relative" ref={suiteTagFilterRef}>
+                            <button
+                                onClick={() => setIsSuiteTagFilterOpen(!isSuiteTagFilterOpen)}
+                                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium border rounded-lg transition-colors shadow-sm dark:shadow-none ${
+                                    activeSuiteTagFilterCount > 0
+                                        ? 'border-blue-400 dark:border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                        : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600'
+                                }`}
+                            >
+                                <Tag size={14} />
+                                <span className="hidden sm:inline">Suite Tags</span>
+                                {activeSuiteTagFilterCount > 0 && (
+                                    <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold bg-blue-500 text-white rounded-full">
+                                        {activeSuiteTagFilterCount}
+                                    </span>
+                                )}
+                                <ChevronDown size={13} className={`text-gray-400 transition-transform ${isSuiteTagFilterOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {isSuiteTagFilterOpen && (
+                                <div className="absolute top-full left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50">
+                                    <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700 flex items-center justify-between">
+                                        <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter Suite Menu</p>
+                                        {activeSuiteTagFilterCount > 0 && (
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedSuiteTags([]);
+                                                    setIncludeSuitesWithNoTags(false);
+                                                }}
+                                                className="text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+                                            >
+                                                <X size={11} /> Clear
+                                            </button>
+                                        )}
+                                    </div>
+                                    <div className="max-h-52 overflow-y-auto">
+                                        {hasSuitesWithNoTags && (
+                                            <button
+                                                onClick={() => setIncludeSuitesWithNoTags(prev => !prev)}
+                                                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
+                                                    includeSuitesWithNoTags
+                                                        ? 'bg-blue-50 dark:bg-blue-900/30'
+                                                        : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                                                }`}
+                                            >
+                                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                                                    No Tags
+                                                </span>
+                                                {includeSuitesWithNoTags && (
+                                                    <Check size={12} className="ml-auto text-blue-500 dark:text-blue-400 flex-shrink-0" />
+                                                )}
+                                            </button>
+                                        )}
+                                        {allSuiteTags.map(tag => (
+                                            <button
+                                                key={tag}
+                                                onClick={() =>
+                                                    setSelectedSuiteTags(prev =>
+                                                        prev.includes(tag) ? prev.filter(currentTag => currentTag !== tag) : [...prev, tag]
+                                                    )
+                                                }
+                                                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
+                                                    selectedSuiteTags.includes(tag)
+                                                        ? 'bg-blue-50 dark:bg-blue-900/30'
+                                                        : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                                                }`}
+                                            >
+                                                <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-medium ${getTagColor(tag)}`}>
+                                                    <Tag className="h-2.5 w-2.5 opacity-70" />
+                                                    {tag}
+                                                </span>
+                                                {selectedSuiteTags.includes(tag) && (
+                                                    <Check size={12} className="ml-auto text-blue-500 dark:text-blue-400 flex-shrink-0" />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ) : undefined}
                 />
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto px-4 sm:px-6">
                     {/* Sorting controls - Desktop only, next to Generate AI button */}

@@ -78,12 +78,13 @@ This repo is a full-stack MERN authentication example (TypeScript). The goal of 
 
 - Quick checklist the agent should follow before submitting code
   1. Update/confirm environment variable names and README if behavior changed.
-  2. Run lint: `npm run lint:backend` (root) and `cd frontend && npm run lint`. Fix all warnings — frontend lint runs with `--max-warnings 0`.
-  3. Run type-check: `npm run type-check` (root) and `cd frontend && npm run type-check`. Both must pass with no errors.
-  4. Run `npm test` (or the subset affected) locally—use in-memory DB helpers for backend tests.
-  5. Preserve `.js`-style import paths in compiled/ESM server files.
-  6. Add or update tests for auth-sensitive changes (token/cookie, login flows, OAuth). Use `backend/__tests__` helpers.
-  7. **For real-time features**: Emit socket events from controllers after CRUD operations, and subscribe in frontend components.
+  2. **IMPORTANT:** After finishing any task, run lint and type-check before handoff.
+  3. Run lint: `npm run lint:backend` (root) and `cd frontend && npm run lint`. Fix all warnings — frontend lint runs with `--max-warnings 0`.
+  4. Run type-check: `npm run type-check` (root) and `cd frontend && npm run type-check`. Both must pass with no errors.
+  5. Run `npm test` (or the subset affected) locally—use in-memory DB helpers for backend tests.
+  6. Preserve `.js`-style import paths in compiled/ESM server files.
+  7. Add or update tests for auth-sensitive changes (token/cookie, login flows, OAuth). Use `backend/__tests__` helpers.
+  8. **For real-time features**: Emit socket events from controllers after CRUD operations, and subscribe in frontend components.
 
 - Editing guidance for real-time features
   - When adding a new entity that needs live updates:
