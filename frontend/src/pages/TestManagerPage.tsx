@@ -312,6 +312,9 @@ const TestManagerPage: React.FC = () => {
                             onCreate={handleCreateSuite}
                             viewMode={suiteViewMode}
                             onViewModeToggle={handleSuiteViewModeToggle}
+                            selectedSuiteIds={[]}
+                            onToggleSuiteSelection={() => {}}
+                            onSelectAllSuites={() => {}}
                         />
                     )}
                 </div>

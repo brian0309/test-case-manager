@@ -16,6 +16,9 @@ interface TestSuiteListProps {
     onDelete?: (suite: TestSuite) => void;
     viewMode: 'card' | 'table';
     onViewModeToggle: () => void;
+    selectedSuiteIds: string[];
+    onToggleSuiteSelection: (suiteId: string) => void;
+    onSelectAllSuites: (checked: boolean, visibleSuiteIds: string[]) => void;
 }
 
 interface DropdownPosition {
@@ -27,7 +30,7 @@ interface DropdownPosition {
 type SortField = 'name' | 'total' | 'progress' | 'updatedAt';
 type SortOrder = 'asc' | 'desc';
 
-const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, onSuiteClick, onCreate, onEdit, onDelete, viewMode, onViewModeToggle: _onViewModeToggle }) => {
+const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, onSuiteClick, onCreate, onEdit, onDelete, viewMode, onViewModeToggle: _onViewModeToggle, selectedSuiteIds, onToggleSuiteSelection, onSelectAllSuites }) => {
     const navigate = useNavigate();
     const { setActiveSuiteWithId, setFilters, setActiveArea, activeProject } = useTestManagerStore();
     const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
@@ -173,6 +176,9 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
     };
 
     const sortedSuites = getSortedSuites();
+    const visibleSuiteIds = sortedSuites.map((suite) => suite.id);
+    const allVisibleSelected = visibleSuiteIds.length > 0 && visibleSuiteIds.every((id) => selectedSuiteIds.includes(id));
+    const someVisibleSelected = visibleSuiteIds.some((id) => selectedSuiteIds.includes(id));
 
     return (
         <>
@@ -193,16 +199,32 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
 
                 {sortedSuites.map(suite => {
                     const stats = getSuiteStats(suite.name);
+                    const isSelected = selectedSuiteIds.includes(suite.id);
 
                     return (
                         <div
                             key={suite.id || suite.name}
                             onClick={() => onSuiteClick(suite.name, suite.id)}
-                            className="group bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:hover:shadow-none hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between"
+                            className={`group bg-white dark:bg-gray-800 rounded-2xl border p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:hover:shadow-none hover:-translate-y-1 transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+                                isSelected
+                                    ? 'border-blue-400 dark:border-blue-500 bg-blue-50/40 dark:bg-blue-900/10'
+                                    : 'border-gray-100 dark:border-gray-700'
+                            }`}
                         >
+                            <div className="absolute top-3 left-3 z-10">
+                                <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={() => onToggleSuiteSelection(suite.id)}
+                                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 bg-white dark:bg-gray-800"
+                                    aria-label={`Select suite ${suite.name}`}
+                                />
+                            </div>
+
                             <div>
                                 <div className="flex justify-between items-start mb-6">
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-3 pl-6">
                                         <div className="h-10 w-10 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-500 dark:text-blue-400">
                                             <Folder className="h-5 w-5 fill-blue-100 dark:fill-blue-900/50" strokeWidth={2} />
                                         </div>
@@ -351,6 +373,23 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                     <table className="w-full text-left border-collapse">
                         <thead className="sticky top-0 z-10 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
                             <tr>
+                                <th className="py-3 pl-4 pr-2 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                                    <div className="flex items-center justify-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={allVisibleSelected}
+                                            ref={(input) => {
+                                                if (input) {
+                                                    input.indeterminate = someVisibleSelected && !allVisibleSelected;
+                                                }
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                            onChange={(e) => onSelectAllSuites(e.target.checked, visibleSuiteIds)}
+                                            className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 bg-white dark:bg-gray-800"
+                                            aria-label="Select all visible suites"
+                                        />
+                                    </div>
+                                </th>
                                 <th
                                     className="py-3 pl-4 pr-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 select-none"
                                     onClick={() => handleSort('name')}
@@ -403,12 +442,28 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                             {sortedSuites.map(suite => {
                                 const stats = getSuiteStats(suite.name);
+                                const isSelected = selectedSuiteIds.includes(suite.id);
                                 return (
                                     <tr
                                         key={suite.id || suite.name}
-                                        className="group hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                                        className={`group transition-colors cursor-pointer ${
+                                            isSelected
+                                                ? 'bg-blue-50/60 dark:bg-blue-900/20 hover:bg-blue-100/70 dark:hover:bg-blue-900/30'
+                                                : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                                        }`}
                                         onClick={() => onSuiteClick(suite.name, suite.id)}
                                     >
+                                        <td className="py-4 pl-4 pr-2" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex items-center justify-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => onToggleSuiteSelection(suite.id)}
+                                                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 bg-white dark:bg-gray-800"
+                                                    aria-label={`Select suite ${suite.name}`}
+                                                />
+                                            </div>
+                                        </td>
                                         <td className="py-4 pl-4 pr-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-500 dark:text-blue-400">
