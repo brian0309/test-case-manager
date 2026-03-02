@@ -139,7 +139,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                         </button>
 
                         {isProjectOpen && (
-                            <div className="absolute top-full left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                            <div className="absolute top-full left-0 mt-1 w-56 sm:w-[28rem] max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
                                 <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
                                     <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Switch Project</p>
                                 </div>
@@ -184,7 +184,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                         </button>
 
                         {isSuiteOpen && (
-                            <div className="absolute top-full left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                            <div className="absolute top-full left-0 mt-1 w-56 sm:w-[28rem] max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
                                 <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
                                     <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter by Suite</p>
                                 </div>
@@ -257,7 +257,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
                         </button>
 
                         {isAreaOpen && (
-                            <div className="absolute top-full left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                            <div className="absolute top-full left-0 mt-1 w-56 sm:w-[28rem] max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
                                 <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
                                     <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter by Area</p>
                                 </div>
