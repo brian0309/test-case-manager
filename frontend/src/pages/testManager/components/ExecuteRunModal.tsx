@@ -20,6 +20,7 @@ export interface ExecuteRunModalProps {
     onUpdateItem: (itemId: string, status: RunItemStatus, actualResult?: string) => Promise<void>;
     onComplete: () => Promise<void>;
     startIndex?: number;
+    itemOrder?: number[];
     availableTestCases?: TestCase[];
     availableSuites?: TestSuite[];
 }
@@ -31,6 +32,7 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
     onUpdateItem,
     onComplete,
     startIndex = 0,
+    itemOrder,
     availableTestCases = [],
     availableSuites = [],
 }) => {
@@ -45,11 +47,28 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
         }
     }, [isOpen, startIndex]);
 
-    useEffect(() => {
-        if (testRun && testRun.items[currentIndex]) {
-            setActualResult(testRun.items[currentIndex].actualResult || '');
+    const orderedIndices = useMemo(() => {
+        if (!testRun) return [];
+        if (itemOrder && itemOrder.length > 0) {
+            return itemOrder.filter((index) => index >= 0 && index < testRun.items.length);
         }
-    }, [testRun, currentIndex]);
+        return testRun.items.map((_, index) => index);
+    }, [testRun, itemOrder]);
+
+    const totalItems = orderedIndices.length;
+    const activeItemIndex = totalItems > 0 ? orderedIndices[Math.min(currentIndex, totalItems - 1)] : 0;
+
+    useEffect(() => {
+        if (currentIndex >= totalItems && totalItems > 0) {
+            setCurrentIndex(totalItems - 1);
+        }
+    }, [currentIndex, totalItems]);
+
+    useEffect(() => {
+        if (testRun && testRun.items[activeItemIndex]) {
+            setActualResult(testRun.items[activeItemIndex].actualResult || '');
+        }
+    }, [testRun, activeItemIndex]);
 
     const suiteNameById = useMemo(() => {
         const map = new Map<string, string>();
@@ -65,8 +84,7 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
 
     if (!isOpen || !testRun) return null;
 
-    const currentItem = testRun.items[currentIndex];
-    const totalItems = testRun.items.length;
+    const currentItem = testRun.items[activeItemIndex];
     const executedCount = testRun.items.filter(i => i.status !== RunItemStatus.NotRun).length;
 
     const resolvedSuiteName = (() => {
@@ -127,19 +145,22 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
 
                 {/* Progress bar */}
                 <div className="h-2 bg-gray-100 dark:bg-gray-700 flex">
-                    {testRun.items.map((item, idx) => (
+                    {orderedIndices.map((itemIndex, idx) => {
+                        const item = testRun.items[itemIndex];
+                        return (
                         <div
                             key={item.id}
                             className={`flex-1 ${getItemStatusColor(item.status)} ${idx === currentIndex ? 'ring-2 ring-blue-400 ring-inset' : ''}`}
                             onClick={() => setCurrentIndex(idx)}
                             style={{ cursor: 'pointer' }}
                         />
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {/* Current item */}
                 <div className="flex-1 overflow-y-auto p-3 sm:p-6">
-                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                    <div className="flex items-start justify-between mb-3 sm:mb-4 gap-2">
                         <div className="flex items-center gap-1.5 sm:gap-2">
                             <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                                 Case {currentIndex + 1} of {totalItems}
@@ -148,7 +169,15 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                                 {currentItem.status}
                             </span>
                         </div>
-                        <div className="flex items-center gap-1 sm:gap-2">
+                        <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 max-w-[70%]">
+                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700 text-[11px] sm:text-sm text-gray-600 dark:text-gray-400 max-w-[180px] sm:max-w-[260px]">
+                                <Layers className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400 flex-shrink-0" />
+                                <span className="truncate">Suite: {resolvedSuiteName}</span>
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700 text-[11px] sm:text-sm text-gray-600 dark:text-gray-400 max-w-[180px] sm:max-w-[260px]">
+                                <MapPin className="w-3.5 h-3.5 text-green-500 dark:text-green-400 flex-shrink-0" />
+                                <span className="truncate">Area: {resolvedAreaName}</span>
+                            </span>
                             <button
                                 onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
                                 disabled={currentIndex === 0}
@@ -169,17 +198,6 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                     <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
                         {currentItem.caseSnapshot.title}
                     </h3>
-
-                    <div className="mb-4 sm:mb-5 flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700">
-                            <Layers className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
-                            Suite: {resolvedSuiteName}
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700">
-                            <MapPin className="w-3.5 h-3.5 text-green-500 dark:text-green-400" />
-                            Area: {resolvedAreaName}
-                        </span>
-                    </div>
 
                     {currentItem.caseSnapshot.testDescription && (
                         <div className="mb-5 sm:mb-6">

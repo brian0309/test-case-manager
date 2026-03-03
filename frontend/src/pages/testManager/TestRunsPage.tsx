@@ -47,6 +47,7 @@ const TestRunsPage: React.FC = () => {
     const [isExecuteModalOpen, setIsExecuteModalOpen] = useState(false);
     const [detailRun, setDetailRun] = useState<TestRun | null>(null);
     const [executeStartIndex, setExecuteStartIndex] = useState(0);
+    const [executeItemOrder, setExecuteItemOrder] = useState<number[] | undefined>(undefined);
     const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('all');
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null);
@@ -147,6 +148,7 @@ const TestRunsPage: React.FC = () => {
                 if (targetItemIndex >= 0) {
                     setExecuteRun(typedRun);
                     setExecuteStartIndex(targetItemIndex);
+                    setExecuteItemOrder(undefined);
                     setIsExecuteModalOpen(true);
                 }
             } catch {
@@ -330,10 +332,11 @@ const TestRunsPage: React.FC = () => {
         }
     };
 
-    const handleOpenExecuteFromDetail = (itemIndex: number) => {
+    const handleOpenExecuteFromDetail = (itemIndex: number, itemOrder?: number[]) => {
         if (!detailRun) return;
         setExecuteRun(detailRun);
         setExecuteStartIndex(itemIndex);
+        setExecuteItemOrder(itemOrder);
         setIsExecuteModalOpen(true);
     };
 
@@ -410,11 +413,13 @@ const TestRunsPage: React.FC = () => {
                     onClose={() => {
                         setIsExecuteModalOpen(false);
                         setExecuteRun(null);
+                        setExecuteItemOrder(undefined);
                     }}
                     testRun={executeRun}
                     onUpdateItem={handleUpdateRunItem}
                     onComplete={handleCompleteRun}
                     startIndex={executeStartIndex}
+                    itemOrder={executeItemOrder}
                     availableTestCases={testCases}
                     availableSuites={testSuites}
                 />

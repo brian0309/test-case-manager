@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { ArrowLeft, ChevronRight, Eye, Layers, Map as MapIcon, ChevronDown, Check } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Eye, Layers, Map as MapIcon, ChevronDown, ChevronUp, Check, ArrowUpDown } from 'lucide-react';
 import { TestRun, RunItemStatus, RunItem, TestCase, TestSuite } from '../../../types/testManager';
 import {
     getRunStatusColor,
@@ -13,7 +13,7 @@ export interface RunDetailViewProps {
     onBack: () => void;
     onUpdateItem: (itemId: string, status: RunItemStatus, actualResult?: string) => Promise<void>;
     onComplete: () => Promise<void>;
-    onOpenExecute: (itemIndex: number) => void;
+    onOpenExecute: (itemIndex: number, itemOrder?: number[]) => void;
     availableTestCases?: TestCase[];
     availableSuites?: TestSuite[];
 }
@@ -29,6 +29,8 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
 }) => {
     const [selectedAreaFilter, setSelectedAreaFilter] = useState<string>('all');
     const [selectedSuiteFilter, setSelectedSuiteFilter] = useState<string>('all');
+    const [sortField, setSortField] = useState<'none' | 'area' | 'priority' | 'runStatus' | 'suite'>('none');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [isAreaOpen, setIsAreaOpen] = useState(false);
     const [isSuiteOpen, setIsSuiteOpen] = useState(false);
     const areaRef = useRef<HTMLDivElement>(null);
@@ -96,6 +98,71 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
             });
     }, [testRun.items, selectedAreaFilter, selectedSuiteFilter, itemSuiteNameByItemId]);
 
+    const sortedItems = useMemo(() => {
+        if (sortField === 'none') return filteredItems;
+
+        const priorityRank: Record<string, number> = {
+            critical: 1,
+            high: 2,
+            medium: 3,
+            low: 4,
+        };
+
+        const statusRank: Record<RunItemStatus, number> = {
+            [RunItemStatus.NotRun]: 1,
+            [RunItemStatus.Passed]: 2,
+            [RunItemStatus.Failed]: 3,
+            [RunItemStatus.Blocked]: 4,
+            [RunItemStatus.Skipped]: 5,
+        };
+
+        return [...filteredItems].sort((left, right) => {
+            let compareValue = 0;
+
+            if (sortField === 'area') {
+                const leftArea = (left.item.caseSnapshot.area || '').trim();
+                const rightArea = (right.item.caseSnapshot.area || '').trim();
+                compareValue = leftArea.localeCompare(rightArea);
+            } else if (sortField === 'priority') {
+                const leftPriority = (left.item.caseSnapshot.priority || '').toLowerCase();
+                const rightPriority = (right.item.caseSnapshot.priority || '').toLowerCase();
+                const leftValue = priorityRank[leftPriority] ?? 99;
+                const rightValue = priorityRank[rightPriority] ?? 99;
+                compareValue = leftValue !== rightValue
+                    ? leftValue - rightValue
+                    : leftPriority.localeCompare(rightPriority);
+            } else if (sortField === 'suite') {
+                const leftSuite = itemSuiteNameByItemId.get(left.item.id) || '';
+                const rightSuite = itemSuiteNameByItemId.get(right.item.id) || '';
+                compareValue = leftSuite.localeCompare(rightSuite);
+            } else {
+                compareValue = statusRank[left.item.status] - statusRank[right.item.status];
+            }
+
+            return sortDirection === 'asc' ? compareValue : -compareValue;
+        });
+    }, [filteredItems, sortField, sortDirection, itemSuiteNameByItemId]);
+
+    const sortedItemOrder = useMemo(() => {
+        return sortedItems.map(({ index }) => index);
+    }, [sortedItems]);
+
+    const handleSortClick = (field: 'area' | 'priority' | 'runStatus' | 'suite') => {
+        if (sortField !== field) {
+            setSortField(field);
+            setSortDirection('asc');
+            return;
+        }
+
+        if (sortDirection === 'asc') {
+            setSortDirection('desc');
+            return;
+        }
+
+        setSortField('none');
+        setSortDirection('asc');
+    };
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (suiteRef.current && !suiteRef.current.contains(event.target as Node)) {
@@ -113,6 +180,8 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
     useEffect(() => {
         setSelectedAreaFilter('all');
         setSelectedSuiteFilter('all');
+        setSortField('none');
+        setSortDirection('asc');
     }, [testRun.id]);
 
     const handleStatusChange = async (item: RunItem, newStatus: RunItemStatus) => {
@@ -145,8 +214,126 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                             <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">{testRun.title}</h2>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <div className="relative" ref={suiteRef}>
+                                    <button
+                                        onClick={() => setIsSuiteOpen(!isSuiteOpen)}
+                                        title={selectedSuiteFilter === 'all' ? 'All Suites' : selectedSuiteFilter}
+                                        className={`flex items-center gap-1 px-2 py-0.5 text-sm font-medium rounded-md transition-all ${selectedSuiteFilter !== 'all'
+                                            ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                            : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                            }`}
+                                    >
+                                        <Layers size={14} className={selectedSuiteFilter !== 'all' ? 'text-purple-500 dark:text-purple-400 flex-shrink-0' : 'text-gray-400 dark:text-gray-500 flex-shrink-0'} />
+                                        <span className="max-w-[120px] truncate">{selectedSuiteFilter === 'all' ? 'All Suites' : selectedSuiteFilter}</span>
+                                        <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform flex-shrink-0 ${isSuiteOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    {isSuiteOpen && (
+                                        <div className="absolute top-full left-0 mt-1 w-56 sm:w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                                            <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
+                                                <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter by Suite</p>
+                                            </div>
+
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedSuiteFilter('all');
+                                                    setIsSuiteOpen(false);
+                                                }}
+                                                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedSuiteFilter === 'all' ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
+                                            >
+                                                <Layers size={14} className={selectedSuiteFilter === 'all' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'} />
+                                                <span className="flex-1">All Suites</span>
+                                                {selectedSuiteFilter === 'all' && <Check size={14} />}
+                                            </button>
+
+                                            <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
+
+                                            <div className="max-h-64 overflow-y-auto">
+                                                {suiteOptions.map((suite) => (
+                                                    <button
+                                                        key={suite}
+                                                        onClick={() => {
+                                                            setSelectedSuiteFilter(suite);
+                                                            setIsSuiteOpen(false);
+                                                        }}
+                                                        title={suite}
+                                                        className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedSuiteFilter === suite ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
+                                                    >
+                                                        <Layers size={14} className={selectedSuiteFilter === suite ? 'text-purple-500 dark:text-purple-400' : 'text-gray-400 dark:text-gray-500'} />
+                                                        <span className="truncate flex-1">{suite}</span>
+                                                        {selectedSuiteFilter === suite && <Check size={14} />}
+                                                    </button>
+                                                ))}
+                                                {suiteOptions.length === 0 && (
+                                                    <div className="px-3 py-4 text-sm text-gray-400 dark:text-gray-500 text-center">No suites found</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="relative" ref={areaRef}>
+                                    <button
+                                        onClick={() => setIsAreaOpen(!isAreaOpen)}
+                                        title={selectedAreaFilter === 'all' ? 'All Areas' : selectedAreaFilter}
+                                        className={`flex items-center gap-1 px-2 py-0.5 text-sm font-medium rounded-md transition-all ${selectedAreaFilter !== 'all'
+                                            ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                            : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                            }`}
+                                    >
+                                        <MapIcon size={14} className={selectedAreaFilter !== 'all' ? 'text-green-500 dark:text-green-400 flex-shrink-0' : 'text-gray-400 dark:text-gray-500 flex-shrink-0'} />
+                                        <span className="max-w-[120px] truncate">{selectedAreaFilter === 'all' ? 'All Areas' : selectedAreaFilter}</span>
+                                        <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform flex-shrink-0 ${isAreaOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    {isAreaOpen && (
+                                        <div className="absolute top-full left-0 mt-1 w-56 sm:w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                                            <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
+                                                <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter by Area</p>
+                                            </div>
+
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedAreaFilter('all');
+                                                    setIsAreaOpen(false);
+                                                }}
+                                                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedAreaFilter === 'all' ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
+                                            >
+                                                <MapIcon size={14} className={selectedAreaFilter === 'all' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'} />
+                                                <span className="flex-1">All Areas</span>
+                                                {selectedAreaFilter === 'all' && <Check size={14} />}
+                                            </button>
+
+                                            <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
+
+                                            <div className="max-h-64 overflow-y-auto">
+                                                {areaOptions.map((area) => (
+                                                    <button
+                                                        key={area}
+                                                        onClick={() => {
+                                                            setSelectedAreaFilter(area);
+                                                            setIsAreaOpen(false);
+                                                        }}
+                                                        title={area}
+                                                        className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedAreaFilter === area ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
+                                                    >
+                                                        <MapIcon size={14} className={selectedAreaFilter === area ? 'text-green-500 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'} />
+                                                        <span className="truncate flex-1">{area}</span>
+                                                        {selectedAreaFilter === area && <Check size={14} />}
+                                                    </button>
+                                                ))}
+                                                {areaOptions.length === 0 && (
+                                                    <div className="px-3 py-4 text-sm text-gray-400 dark:text-gray-500 text-center">No areas found</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                            </div>
                             <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getRunStatusColor(testRun.status)}`}>
                                 {testRun.status}
                             </span>
@@ -154,123 +341,6 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                         <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                             <span>{executedCount} / {totalItems} executed ({totalItems > 0 ? Math.round((executedCount / totalItems) * 100) : 0}%)</span>
                             <span>{testRun.resultsSummary.passRate}% pass rate</span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                            <div className="relative" ref={suiteRef}>
-                                <button
-                                    onClick={() => setIsSuiteOpen(!isSuiteOpen)}
-                                    title={selectedSuiteFilter === 'all' ? 'All Suites' : selectedSuiteFilter}
-                                    className={`flex items-center gap-1 px-2 py-0.5 text-sm font-medium rounded-md transition-all ${selectedSuiteFilter !== 'all'
-                                        ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                        : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                        }`}
-                                >
-                                    <Layers size={14} className={selectedSuiteFilter !== 'all' ? 'text-purple-500 dark:text-purple-400 flex-shrink-0' : 'text-gray-400 dark:text-gray-500 flex-shrink-0'} />
-                                    <span className="max-w-[120px] truncate">{selectedSuiteFilter === 'all' ? 'All Suites' : selectedSuiteFilter}</span>
-                                    <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform flex-shrink-0 ${isSuiteOpen ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                {isSuiteOpen && (
-                                    <div className="absolute top-full left-0 mt-1 w-56 sm:w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-                                        <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
-                                            <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter by Suite</p>
-                                        </div>
-
-                                        <button
-                                            onClick={() => {
-                                                setSelectedSuiteFilter('all');
-                                                setIsSuiteOpen(false);
-                                            }}
-                                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedSuiteFilter === 'all' ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
-                                        >
-                                            <Layers size={14} className={selectedSuiteFilter === 'all' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'} />
-                                            <span className="flex-1">All Suites</span>
-                                            {selectedSuiteFilter === 'all' && <Check size={14} />}
-                                        </button>
-
-                                        <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
-
-                                        <div className="max-h-64 overflow-y-auto">
-                                            {suiteOptions.map((suite) => (
-                                                <button
-                                                    key={suite}
-                                                    onClick={() => {
-                                                        setSelectedSuiteFilter(suite);
-                                                        setIsSuiteOpen(false);
-                                                    }}
-                                                    title={suite}
-                                                    className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedSuiteFilter === suite ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
-                                                >
-                                                    <Layers size={14} className={selectedSuiteFilter === suite ? 'text-purple-500 dark:text-purple-400' : 'text-gray-400 dark:text-gray-500'} />
-                                                    <span className="truncate flex-1">{suite}</span>
-                                                    {selectedSuiteFilter === suite && <Check size={14} />}
-                                                </button>
-                                            ))}
-                                            {suiteOptions.length === 0 && (
-                                                <div className="px-3 py-4 text-sm text-gray-400 dark:text-gray-500 text-center">No suites found</div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="relative" ref={areaRef}>
-                                <button
-                                    onClick={() => setIsAreaOpen(!isAreaOpen)}
-                                    title={selectedAreaFilter === 'all' ? 'All Areas' : selectedAreaFilter}
-                                    className={`flex items-center gap-1 px-2 py-0.5 text-sm font-medium rounded-md transition-all ${selectedAreaFilter !== 'all'
-                                        ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                        : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                        }`}
-                                >
-                                    <MapIcon size={14} className={selectedAreaFilter !== 'all' ? 'text-green-500 dark:text-green-400 flex-shrink-0' : 'text-gray-400 dark:text-gray-500 flex-shrink-0'} />
-                                    <span className="max-w-[120px] truncate">{selectedAreaFilter === 'all' ? 'All Areas' : selectedAreaFilter}</span>
-                                    <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform flex-shrink-0 ${isAreaOpen ? 'rotate-180' : ''}`} />
-                                </button>
-
-                                {isAreaOpen && (
-                                    <div className="absolute top-full left-0 mt-1 w-56 sm:w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-                                        <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
-                                            <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter by Area</p>
-                                        </div>
-
-                                        <button
-                                            onClick={() => {
-                                                setSelectedAreaFilter('all');
-                                                setIsAreaOpen(false);
-                                            }}
-                                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedAreaFilter === 'all' ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
-                                        >
-                                            <MapIcon size={14} className={selectedAreaFilter === 'all' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'} />
-                                            <span className="flex-1">All Areas</span>
-                                            {selectedAreaFilter === 'all' && <Check size={14} />}
-                                        </button>
-
-                                        <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
-
-                                        <div className="max-h-64 overflow-y-auto">
-                                            {areaOptions.map((area) => (
-                                                <button
-                                                    key={area}
-                                                    onClick={() => {
-                                                        setSelectedAreaFilter(area);
-                                                        setIsAreaOpen(false);
-                                                    }}
-                                                    title={area}
-                                                    className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedAreaFilter === area ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
-                                                >
-                                                    <MapIcon size={14} className={selectedAreaFilter === area ? 'text-green-500 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'} />
-                                                    <span className="truncate flex-1">{area}</span>
-                                                    {selectedAreaFilter === area && <Check size={14} />}
-                                                </button>
-                                            ))}
-                                            {areaOptions.length === 0 && (
-                                                <div className="px-3 py-4 text-sm text-gray-400 dark:text-gray-500 text-center">No areas found</div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -312,18 +382,79 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                     <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-none">
                         <tr>
                             <th className="py-2 pl-6 pr-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-12">#</th>
-                            <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-1/3">Title</th>
-                            <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32">Priority</th>
-                            <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40">Run Status</th>
-                            <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40">Area</th>
+                            <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-1/4">Title</th>
+                            <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-32">
+                                <button
+                                    type="button"
+                                    onClick={() => handleSortClick('priority')}
+                                    className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300"
+                                >
+                                    <span>Priority</span>
+                                    {sortField !== 'priority' ? (
+                                        <ArrowUpDown className="h-3.5 w-3.5" />
+                                    ) : sortDirection === 'asc' ? (
+                                        <ChevronUp className="h-3.5 w-3.5" />
+                                    ) : (
+                                        <ChevronDown className="h-3.5 w-3.5" />
+                                    )}
+                                </button>
+                            </th>
+                            <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40">
+                                <button
+                                    type="button"
+                                    onClick={() => handleSortClick('runStatus')}
+                                    className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300"
+                                >
+                                    <span>Run Status</span>
+                                    {sortField !== 'runStatus' ? (
+                                        <ArrowUpDown className="h-3.5 w-3.5" />
+                                    ) : sortDirection === 'asc' ? (
+                                        <ChevronUp className="h-3.5 w-3.5" />
+                                    ) : (
+                                        <ChevronDown className="h-3.5 w-3.5" />
+                                    )}
+                                </button>
+                            </th>
+                            <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-48">
+                                <button
+                                    type="button"
+                                    onClick={() => handleSortClick('suite')}
+                                    className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300"
+                                >
+                                    <span>Suite</span>
+                                    {sortField !== 'suite' ? (
+                                        <ArrowUpDown className="h-3.5 w-3.5" />
+                                    ) : sortDirection === 'asc' ? (
+                                        <ChevronUp className="h-3.5 w-3.5" />
+                                    ) : (
+                                        <ChevronDown className="h-3.5 w-3.5" />
+                                    )}
+                                </button>
+                            </th>
+                            <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-40">
+                                <button
+                                    type="button"
+                                    onClick={() => handleSortClick('area')}
+                                    className="inline-flex items-center gap-1 hover:text-gray-600 dark:hover:text-gray-300"
+                                >
+                                    <span>Area</span>
+                                    {sortField !== 'area' ? (
+                                        <ArrowUpDown className="h-3.5 w-3.5" />
+                                    ) : sortDirection === 'asc' ? (
+                                        <ChevronUp className="h-3.5 w-3.5" />
+                                    ) : (
+                                        <ChevronDown className="h-3.5 w-3.5" />
+                                    )}
+                                </button>
+                            </th>
                             <th className="py-2 px-4 text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider w-24"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-900">
-                        {filteredItems.map(({ item, index }) => (
+                        {sortedItems.map(({ item, index }, sortedIndex) => (
                             <tr
                                 key={item.id}
-                                onClick={() => onOpenExecute(index)}
+                                onClick={() => onOpenExecute(sortedIndex, sortedItemOrder)}
                                 className="group transition-colors cursor-pointer hover:bg-gray-50/80 dark:hover:bg-gray-800/50"
                             >
                                 {/* Order */}
@@ -366,6 +497,13 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                                     </div>
                                 </td>
 
+                                {/* Suite */}
+                                <td className="py-2.5 px-4">
+                                    <div className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[220px]" title={itemSuiteNameByItemId.get(item.id) || '—'}>
+                                        {itemSuiteNameByItemId.get(item.id) || '—'}
+                                    </div>
+                                </td>
+
                                 {/* Area */}
                                 <td className="py-2.5 px-4">
                                     <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -379,7 +517,7 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                onOpenExecute(index);
+                                                onOpenExecute(sortedIndex, sortedItemOrder);
                                             }}
                                             className="inline-flex items-center gap-1.5 px-2 py-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                                             title="Execute Test Case"
@@ -391,9 +529,9 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                                 </td>
                             </tr>
                         ))}
-                        {filteredItems.length === 0 && (
+                        {sortedItems.length === 0 && (
                             <tr>
-                                <td colSpan={6} className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                                <td colSpan={7} className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                                     No test cases match the selected filters.
                                 </td>
                             </tr>
@@ -404,10 +542,10 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
 
             {/* Mobile list */}
             <div className="block sm:hidden flex-1 overflow-auto p-2">
-                {filteredItems.map(({ item, index }) => (
+                {sortedItems.map(({ item, index }, sortedIndex) => (
                     <div
                         key={item.id}
-                        onClick={() => onOpenExecute(index)}
+                        onClick={() => onOpenExecute(sortedIndex, sortedItemOrder)}
                         className="relative mac-card overflow-hidden cursor-pointer transition-all active:scale-[0.98] mb-3 hover:bg-gray-50/80 dark:hover:bg-gray-800/80"
                     >
                         {/* Priority Color Bar */}
@@ -435,6 +573,12 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                                     {item.caseSnapshot.area && (
                                         <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 truncate">
                                             {item.caseSnapshot.area}
+                                        </div>
+                                    )}
+
+                                    {!!itemSuiteNameByItemId.get(item.id) && (
+                                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate">
+                                            {itemSuiteNameByItemId.get(item.id)}
                                         </div>
                                     )}
 
@@ -467,7 +611,7 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                         </div>
                     </div>
                 ))}
-                {filteredItems.length === 0 && (
+                {sortedItems.length === 0 && (
                     <div className="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
                         No test cases match the selected filters.
                     </div>
