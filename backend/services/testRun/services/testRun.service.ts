@@ -187,6 +187,43 @@ export const updateTestRun = async (
     testRun.groupId = data.groupId ? new Types.ObjectId(data.groupId) : undefined;
   }
 
+  if (data.additionalTestCaseIds && data.additionalTestCaseIds.length > 0) {
+    const existingCaseIds = new Set(testRun.items.map((item) => item.caseId.toString()));
+    const idsToAdd = Array.from(new Set(data.additionalTestCaseIds)).filter(
+      (caseId) => !existingCaseIds.has(caseId)
+    );
+
+    if (idsToAdd.length > 0) {
+      const testCases = await TestCase.find({
+        _id: { $in: idsToAdd.map((caseId) => new Types.ObjectId(caseId)) },
+        projectId: testRun.projectId,
+      })
+        .sort({ order: 1 })
+        .lean();
+
+      let nextOrder = testRun.items.reduce((maxOrder, item) => Math.max(maxOrder, item.order), -1) + 1;
+
+      for (const testCase of testCases) {
+        testRun.items.push({
+          caseId: testCase._id as Types.ObjectId,
+          caseSnapshot: {
+            title: testCase.title,
+            priority: testCase.priority,
+            area: testCase.area,
+            expectedResult: testCase.expectedResult,
+            testDescription: testCase.testDescription,
+            stepsContent: testCase.stepsContent,
+          },
+          order: nextOrder++,
+          status: RunItemStatus.NotRun,
+          assignedTo: testCase.assignedTester,
+        });
+      }
+
+      updateResultsSummary(testRun);
+    }
+  }
+
   await testRun.save();
 
   return getTestRunById(testRunId, userId);

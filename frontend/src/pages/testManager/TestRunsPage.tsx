@@ -306,12 +306,13 @@ const TestRunsPage: React.FC = () => {
         setIsEditRunModalOpen(true);
     };
 
-    const handleUpdateRun = async (runId: string, data: { title: string; groupId: string | null; tags: string[] }) => {
+    const handleUpdateRun = async (runId: string, data: { title: string; groupId: string | null; tags: string[]; additionalTestCaseIds?: string[] }) => {
         try {
             await testRunApi.updateTestRun(runId, {
                 title: data.title,
                 groupId: data.groupId,
                 tags: data.tags,
+                additionalTestCaseIds: data.additionalTestCaseIds,
             });
             toast.success('Test run updated');
             fetchRuns();
@@ -702,6 +703,8 @@ const TestRunsPage: React.FC = () => {
                 }}
                 testRun={editingRun}
                 testRunGroups={testRunGroups}
+                testCases={testCases}
+                testSuites={testSuites.map((suite) => ({ id: suite.id, name: suite.name }))}
                 onSubmit={handleUpdateRun}
                 tagSuggestions={tagSuggestions}
             />

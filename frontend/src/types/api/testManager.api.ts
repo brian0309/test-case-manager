@@ -326,6 +326,7 @@ export interface UpdateTestRunRequest {
   tags?: string[];
   status?: TestRunStatus;
   groupId?: string | null; // null to remove from group
+  additionalTestCaseIds?: string[];
 }
 
 export interface UpdateRunItemRequest {
