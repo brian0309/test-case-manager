@@ -371,6 +371,7 @@ export interface TestCaseHealthReport {
         startDate: string;
         endDate: string;
     };
+    failedRunCases: FailedRunCaseItem[];
     flakyTests: FlakyTestItem[];
     neverExecutedTests: NeverExecutedTestItem[];
     mostFailingTests: MostFailingTestItem[];
@@ -380,6 +381,17 @@ export interface TestCaseHealthReport {
         neverExecutedCount: number;
         highFailureCount: number;
     };
+}
+
+export interface FailedRunCaseItem {
+    runId: string;
+    runName: string;
+    itemId: string;
+    caseId: string;
+    testCaseName: string;
+    testSuite: string;
+    area: string;
+    failedAt: Date | null;
 }
 
 export interface FlakyTestItem {

@@ -14,6 +14,7 @@ import {
     FlakyTestItem,
     NeverExecutedTestItem,
     MostFailingTestItem,
+    FailedRunCaseItem,
     DetailedRunReport,
     SuiteBreakdownItem,
     GroupBreakdownItem,
@@ -629,8 +630,10 @@ export class ReportingService {
 
         // Get all completed runs with items
         const runs = await TestRun.find(filter)
-            .select('items')
+            .select('title suiteId items')
             .lean();
+
+        const failedRunCases: FailedRunCaseItem[] = [];
 
         // Collect all unique caseIds from runs
         const allCaseIds = new Set<string>();
@@ -674,6 +677,19 @@ export class ReportingService {
                 const caseId = item.caseId.toString();
                 const suiteId = caseToSuiteMap.get(caseId);
                 const suiteName = suiteId ? (suiteNameMap.get(suiteId) || 'Unknown') : 'Unknown';
+
+                if (item.status === RunItemStatus.Failed) {
+                    failedRunCases.push({
+                        runId: run._id.toString(),
+                        runName: run.title,
+                        itemId: item._id?.toString() || '',
+                        caseId,
+                        testCaseName: item.caseSnapshot.title,
+                        testSuite: suiteName,
+                        area: item.caseSnapshot.area || 'Unassigned',
+                        failedAt: item.executedAt || null,
+                    });
+                }
 
                 if (!caseExecutionMap.has(caseId)) {
                     caseExecutionMap.set(caseId, {
@@ -779,6 +795,13 @@ export class ReportingService {
         return {
             projectId,
             dateRange,
+            failedRunCases: failedRunCases
+                .sort((a, b) => {
+                    const aTime = a.failedAt ? new Date(a.failedAt).getTime() : 0;
+                    const bTime = b.failedAt ? new Date(b.failedAt).getTime() : 0;
+                    return bTime - aTime;
+                })
+                .slice(0, 100),
             flakyTests: flakyTests.sort((a, b) => b.flakyScore - a.flakyScore).slice(0, 20),
             neverExecutedTests: neverExecutedTests.slice(0, 50),
             mostFailingTests: mostFailingTests.sort((a, b) => b.failureRate - a.failureRate).slice(0, 20),

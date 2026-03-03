@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { reportingApi } from '../../services/reportingApi';
 import { testRunApi } from '../../services/testRunApi';
@@ -51,8 +51,21 @@ const COLORS = {
     primary: '#3B82F6',
 };
 
+const calculatePassRate = (passed: number, failed: number): number => {
+    const executedTotal = passed + failed;
+    if (executedTotal === 0) return 0;
+    return (passed / executedTotal) * 100;
+};
+
+const calculateFailRate = (passed: number, failed: number): number => {
+    const executedTotal = passed + failed;
+    if (executedTotal === 0) return 0;
+    return (failed / executedTotal) * 100;
+};
+
 const AnalyticsPage: React.FC = () => {
     const { activeProject } = useTestManagerStore();
+    const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'overview' | 'trends' | 'suites' | 'health'>('overview');
@@ -82,6 +95,18 @@ const AnalyticsPage: React.FC = () => {
     const [trendReport, setTrendReport] = useState<TrendReport | null>(null);
     const [suiteReport, setSuiteReport] = useState<SuiteComparisonReport | null>(null);
     const [healthReport, setHealthReport] = useState<TestCaseHealthReport | null>(null);
+
+    const handleOpenFailedRunCase = useCallback((runId: string, itemId: string, caseId: string) => {
+        const runParam = encodeURIComponent(runId);
+        const itemParam = encodeURIComponent(itemId);
+        const caseParam = encodeURIComponent(caseId);
+        const url = `/test-manager/runs?runId=${runParam}&itemId=${itemParam}&caseId=${caseParam}`;
+
+        const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+        if (!newWindow) {
+            navigate(url);
+        }
+    }, [navigate]);
 
     // Sync URL params when state changes
     useEffect(() => {
@@ -379,7 +404,7 @@ const AnalyticsPage: React.FC = () => {
                     <SuitesTab suiteReport={suiteReport} />
                 )}
                 {activeTab === 'health' && healthReport && (
-                    <HealthTab healthReport={healthReport} />
+                    <HealthTab healthReport={healthReport} onOpenFailedRunCase={handleOpenFailedRunCase} />
                 )}
             </div>
         </div>
@@ -391,13 +416,30 @@ const OverviewTab: React.FC<{ summaryReport: ProjectSummaryReport; trendReport: 
     summaryReport,
     trendReport,
 }) => {
-    // Prepare data for pie chart
-    const pieData = [
+    const overallPassRate = calculatePassRate(
+        summaryReport.overallStats.totalPassed,
+        summaryReport.overallStats.totalFailed
+    );
+
+    const testCaseDistributionData = [
         { name: 'Passed', value: summaryReport.overallStats.totalPassed, color: COLORS.passed },
         { name: 'Failed', value: summaryReport.overallStats.totalFailed, color: COLORS.failed },
         { name: 'Blocked', value: summaryReport.overallStats.totalBlocked, color: COLORS.blocked },
         { name: 'Skipped', value: summaryReport.overallStats.totalSkipped, color: COLORS.skipped },
+        { name: 'Not Run', value: summaryReport.overallStats.totalNotRun, color: COLORS.primary },
     ].filter(item => item.value > 0);
+
+    const passFailDistributionData = [
+        { name: 'Passed', value: summaryReport.overallStats.totalPassed, color: COLORS.passed },
+        { name: 'Failed', value: summaryReport.overallStats.totalFailed, color: COLORS.failed },
+    ].filter(item => item.value > 0);
+
+    const trendChartData = trendReport
+        ? trendReport.dataPoints.map((point) => ({
+            ...point,
+            computedPassRate: calculatePassRate(point.passed, point.failed),
+        }))
+        : [];
 
     return (
         <div className="space-y-6">
@@ -411,7 +453,7 @@ const OverviewTab: React.FC<{ summaryReport: ProjectSummaryReport; trendReport: 
                 />
                 <KPICard
                     title="Average Pass Rate"
-                    value={`${summaryReport.overallStats.averagePassRate.toFixed(1)}%`}
+                    value={`${overallPassRate.toFixed(1)}%`}
                     icon={<CheckCircle className="w-5 h-5" />}
                     color="green"
                     trend={trendReport ? {
@@ -436,13 +478,13 @@ const OverviewTab: React.FC<{ summaryReport: ProjectSummaryReport; trendReport: 
 
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Pass Rate Distribution */}
+                {/* Test Case Distribution */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Test Results Distribution</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Test Case Distribution</h3>
                     <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
                             <Pie
-                                data={pieData}
+                                data={testCaseDistributionData}
                                 cx="50%"
                                 cy="50%"
                                 labelLine={false}
@@ -451,7 +493,7 @@ const OverviewTab: React.FC<{ summaryReport: ProjectSummaryReport; trendReport: 
                                 fill="#8884d8"
                                 dataKey="value"
                             >
-                                {pieData.map((entry, index) => (
+                                {testCaseDistributionData.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                 ))}
                             </Pie>
@@ -460,37 +502,61 @@ const OverviewTab: React.FC<{ summaryReport: ProjectSummaryReport; trendReport: 
                     </ResponsiveContainer>
                 </div>
 
-                {/* Recent Pass Rate Trend */}
-                {trendReport && trendReport.dataPoints.length > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Pass Rate Trend</h3>
-                        <ResponsiveContainer width="100%" height={300}>
-                            <LineChart data={trendReport.dataPoints}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
-                                <XAxis
-                                    dataKey="periodLabel"
-                                    stroke="#6B7280"
-                                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                                />
-                                <YAxis
-                                    stroke="#6B7280"
-                                    tick={{ fill: '#6B7280', fontSize: 12 }}
-                                    domain={[0, 100]}
-                                />
-                                <Tooltip />
-                                <Line
-                                    type="monotone"
-                                    dataKey="passRate"
-                                    stroke={COLORS.primary}
-                                    strokeWidth={2}
-                                    dot={{ fill: COLORS.primary, r: 4 }}
-                                    activeDot={{ r: 6 }}
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-                )}
+                {/* Pass/Fail Distribution */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Test Pass/Fail Distribution</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                            <Pie
+                                data={passFailDistributionData}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                                outerRadius={100}
+                                fill="#8884d8"
+                                dataKey="value"
+                            >
+                                {passFailDistributionData.map((entry, index) => (
+                                    <Cell key={`pass-fail-cell-${index}`} fill={entry.color} />
+                                ))}
+                            </Pie>
+                            <Tooltip />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
             </div>
+
+            {/* Recent Pass Rate Trend */}
+            {trendReport && trendReport.dataPoints.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Pass Rate Trend</h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={trendChartData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
+                            <XAxis
+                                dataKey="periodLabel"
+                                stroke="#6B7280"
+                                tick={{ fill: '#6B7280', fontSize: 12 }}
+                            />
+                            <YAxis
+                                stroke="#6B7280"
+                                tick={{ fill: '#6B7280', fontSize: 12 }}
+                                domain={[0, 100]}
+                            />
+                            <Tooltip />
+                            <Line
+                                type="monotone"
+                                dataKey="computedPassRate"
+                                stroke={COLORS.primary}
+                                strokeWidth={2}
+                                dot={{ fill: COLORS.primary, r: 4 }}
+                                activeDot={{ r: 6 }}
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
+            )}
 
             {/* Suite Breakdown */}
             {summaryReport.suiteBreakdown.length > 0 && (
@@ -508,27 +574,31 @@ const OverviewTab: React.FC<{ summaryReport: ProjectSummaryReport; trendReport: 
                                 </tr>
                             </thead>
                             <tbody>
-                                {summaryReport.suiteBreakdown.map((suite) => (
+                                {summaryReport.suiteBreakdown.map((suite) => {
+                                    const suitePassRate = calculatePassRate(suite.totalPassed, suite.totalFailed);
+
+                                    return (
                                     <tr key={suite.suiteId} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                                         <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100">{suite.suiteName}</td>
                                         <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{suite.totalRuns}</td>
                                         <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{suite.totalTests}</td>
                                         <td className="py-3 px-4 text-right">
                                             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                                suite.averagePassRate >= 80
+                                                suitePassRate >= 80
                                                     ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                                    : suite.averagePassRate >= 60
+                                                    : suitePassRate >= 60
                                                     ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
                                                     : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                                             }`}>
-                                                {suite.averagePassRate.toFixed(1)}%
+                                                {suitePassRate.toFixed(1)}%
                                             </span>
                                         </td>
                                         <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">
                                             {formatDuration(suite.averageDuration)}
                                         </td>
                                     </tr>
-                                ))}
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -540,6 +610,23 @@ const OverviewTab: React.FC<{ summaryReport: ProjectSummaryReport; trendReport: 
 
 // Trends Tab Component
 const TrendsTab: React.FC<{ trendReport: TrendReport }> = ({ trendReport }) => {
+    const trendSummaryPassRate = (() => {
+        const aggregate = trendReport.dataPoints.reduce(
+            (acc, point) => ({
+                passed: acc.passed + point.passed,
+                failed: acc.failed + point.failed,
+            }),
+            { passed: 0, failed: 0 }
+        );
+
+        return calculatePassRate(aggregate.passed, aggregate.failed);
+    })();
+
+    const trendChartData = trendReport.dataPoints.map((point) => ({
+        ...point,
+        computedPassRate: calculatePassRate(point.passed, point.failed),
+    }));
+
     return (
         <div className="space-y-6">
             {/* Trend Summary */}
@@ -551,7 +638,7 @@ const TrendsTab: React.FC<{ trendReport: TrendReport }> = ({ trendReport }) => {
                     </div>
                     <div>
                         <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Average Pass Rate</div>
-                        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{trendReport.summary.averagePassRate}%</div>
+                        <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{trendSummaryPassRate.toFixed(1)}%</div>
                     </div>
                     <div>
                         <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Trend</div>
@@ -579,7 +666,7 @@ const TrendsTab: React.FC<{ trendReport: TrendReport }> = ({ trendReport }) => {
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Pass Rate Over Time</h3>
                 <ResponsiveContainer width="100%" height={400}>
-                    <LineChart data={trendReport.dataPoints}>
+                    <LineChart data={trendChartData}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                         <XAxis
                             dataKey="periodLabel"
@@ -596,7 +683,7 @@ const TrendsTab: React.FC<{ trendReport: TrendReport }> = ({ trendReport }) => {
                         <Legend />
                         <Line
                             type="monotone"
-                            dataKey="passRate"
+                            dataKey="computedPassRate"
                             stroke={COLORS.primary}
                             strokeWidth={2}
                             dot={{ fill: COLORS.primary, r: 4 }}
@@ -638,8 +725,8 @@ const TrendsTab: React.FC<{ trendReport: TrendReport }> = ({ trendReport }) => {
 const SuitesTab: React.FC<{ suiteReport: SuiteComparisonReport }> = ({ suiteReport }) => {
     const chartData = suiteReport.suites.map(suite => ({
         name: suite.suiteName.length > 20 ? suite.suiteName.substring(0, 20) + '...' : suite.suiteName,
-        passRate: suite.passRate,
-        failureRate: suite.failureRate,
+        passRate: calculatePassRate(suite.passed, suite.failed),
+        failureRate: calculateFailRate(suite.passed, suite.failed),
     }));
 
     return (
@@ -677,22 +764,27 @@ const SuitesTab: React.FC<{ suiteReport: SuiteComparisonReport }> = ({ suiteRepo
                         </thead>
                         <tbody>
                             {suiteReport.suites.map((suite) => (
+                                (() => {
+                                    const suitePassRate = calculatePassRate(suite.passed, suite.failed);
+                                    const suiteFailRate = calculateFailRate(suite.passed, suite.failed);
+
+                                    return (
                                 <tr key={suite.suiteId} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
                                     <td className="py-3 px-4 text-sm font-medium text-gray-900 dark:text-gray-100">{suite.suiteName}</td>
                                     <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{suite.totalRuns}</td>
                                     <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{suite.totalTests}</td>
                                     <td className="py-3 px-4 text-right">
                                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                            suite.passRate >= 80
+                                            suitePassRate >= 80
                                                 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                                : suite.passRate >= 60
+                                                : suitePassRate >= 60
                                                 ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
                                                 : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                                         }`}>
-                                            {suite.passRate.toFixed(1)}%
+                                            {suitePassRate.toFixed(1)}%
                                         </span>
                                     </td>
-                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{suite.failureRate.toFixed(1)}%</td>
+                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{suiteFailRate.toFixed(1)}%</td>
                                     <td className="py-3 px-4 text-center">
                                         {suite.trend === 'improving' && <TrendingUp className="w-4 h-4 text-green-600 dark:text-green-400 mx-auto" />}
                                         {suite.trend === 'declining' && <TrendingDown className="w-4 h-4 text-red-600 dark:text-red-400 mx-auto" />}
@@ -702,6 +794,8 @@ const SuitesTab: React.FC<{ suiteReport: SuiteComparisonReport }> = ({ suiteRepo
                                         {formatDuration(suite.averageDuration)}
                                     </td>
                                 </tr>
+                                    );
+                                })()
                             ))}
                         </tbody>
                     </table>
@@ -712,7 +806,10 @@ const SuitesTab: React.FC<{ suiteReport: SuiteComparisonReport }> = ({ suiteRepo
 };
 
 // Health Tab Component
-const HealthTab: React.FC<{ healthReport: TestCaseHealthReport }> = ({ healthReport }) => {
+const HealthTab: React.FC<{ healthReport: TestCaseHealthReport; onOpenFailedRunCase: (runId: string, itemId: string, caseId: string) => void }> = ({
+    healthReport,
+    onOpenFailedRunCase,
+}) => {
     return (
         <div className="space-y-6">
             {/* Summary Cards */}
@@ -734,6 +831,45 @@ const HealthTab: React.FC<{ healthReport: TestCaseHealthReport }> = ({ healthRep
                     <div className="text-2xl font-bold text-red-600 dark:text-red-400">{healthReport.summary.highFailureCount}</div>
                 </div>
             </div>
+
+            {/* Failed Test Run Cases */}
+            {healthReport.failedRunCases.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
+                        <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                        Failed Test Run Cases
+                    </h3>
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-gray-200 dark:border-gray-700">
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Test Case Name</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Test Run Name</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Test Suite</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Area</th>
+                                    <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {healthReport.failedRunCases.slice(0, 20).map((item) => (
+                                    <tr
+                                        key={`${item.runId}-${item.itemId}`}
+                                        onClick={() => onOpenFailedRunCase(item.runId, item.itemId, item.caseId)}
+                                        className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                                        title="Open failed test case in test run"
+                                    >
+                                        <td className="py-3 px-4 text-sm text-gray-900 dark:text-gray-100">{item.testCaseName}</td>
+                                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.runName}</td>
+                                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.testSuite}</td>
+                                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.area}</td>
+                                        <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{item.failedAt ? new Date(item.failedAt).toLocaleString() : '-'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
 
             {/* Flaky Tests */}
             {healthReport.flakyTests.length > 0 && (
