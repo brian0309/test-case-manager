@@ -522,7 +522,13 @@ const TestRunsPage: React.FC = () => {
                         </div>
                     ) : (
                         <div className="grid gap-4">
-                            {filteredRuns.map((run) => (
+                            {filteredRuns.map((run) => {
+                                const executedCount = run.resultsSummary.passed + run.resultsSummary.failed;
+                                const computedPassRate = executedCount > 0
+                                    ? Math.round((run.resultsSummary.passed / executedCount) * 100)
+                                    : 0;
+
+                                return (
                                 <div
                                     key={run.id}
                                     className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-4 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] dark:hover:shadow-none transition-shadow cursor-pointer"
@@ -562,7 +568,7 @@ const TestRunsPage: React.FC = () => {
                                                 )}
                                                 <span className="flex items-center gap-1">
                                                     <CheckCircle className="w-3.5 h-3.5" />
-                                                    {run.resultsSummary.passRate}% Pass Rate
+                                                    {computedPassRate}% Pass Rate
                                                 </span>
                                             </div>
                                         </div>
@@ -637,7 +643,8 @@ const TestRunsPage: React.FC = () => {
                                         )}
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     )}
                 </div>
