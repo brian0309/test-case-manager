@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import {
     CheckCircle,
@@ -6,8 +6,10 @@ import {
     AlertCircle,
     ChevronRight,
     ChevronLeft,
+    Layers,
+    MapPin,
 } from 'lucide-react';
-import { TestRun, RunItemStatus } from '../../../types/testManager';
+import { TestRun, RunItemStatus, TestCase, TestSuite } from '../../../types/testManager';
 import RichTextEditor from '../../../components/testManager/RichTextEditor';
 import { getItemStatusColor } from './testRunUtils';
 
@@ -18,6 +20,8 @@ export interface ExecuteRunModalProps {
     onUpdateItem: (itemId: string, status: RunItemStatus, actualResult?: string) => Promise<void>;
     onComplete: () => Promise<void>;
     startIndex?: number;
+    availableTestCases?: TestCase[];
+    availableSuites?: TestSuite[];
 }
 
 const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
@@ -27,6 +31,8 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
     onUpdateItem,
     onComplete,
     startIndex = 0,
+    availableTestCases = [],
+    availableSuites = [],
 }) => {
     const [currentIndex, setCurrentIndex] = useState(startIndex);
     const [actualResult, setActualResult] = useState('');
@@ -45,11 +51,33 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
         }
     }, [testRun, currentIndex]);
 
+    const suiteNameById = useMemo(() => {
+        const map = new Map<string, string>();
+        availableSuites.forEach((suite) => map.set(suite.id, suite.name));
+        return map;
+    }, [availableSuites]);
+
+    const testCaseById = useMemo(() => {
+        const map = new Map<string, TestCase>();
+        availableTestCases.forEach((testCase) => map.set(testCase.id, testCase));
+        return map;
+    }, [availableTestCases]);
+
     if (!isOpen || !testRun) return null;
 
     const currentItem = testRun.items[currentIndex];
     const totalItems = testRun.items.length;
     const executedCount = testRun.items.filter(i => i.status !== RunItemStatus.NotRun).length;
+
+    const resolvedSuiteName = (() => {
+        const itemCase = testCaseById.get(currentItem.caseId);
+        if (itemCase?.suiteId) {
+            return suiteNameById.get(itemCase.suiteId) || itemCase.suite || testRun.suiteName || '—';
+        }
+        return itemCase?.suite || testRun.suiteName || '—';
+    })();
+
+    const resolvedAreaName = currentItem.caseSnapshot.area || testCaseById.get(currentItem.caseId)?.area || '—';
 
     const handleStatusUpdate = async (status: RunItemStatus) => {
         setIsUpdating(true);
@@ -141,6 +169,17 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                     <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
                         {currentItem.caseSnapshot.title}
                     </h3>
+
+                    <div className="mb-4 sm:mb-5 flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700">
+                            <Layers className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400" />
+                            Suite: {resolvedSuiteName}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700">
+                            <MapPin className="w-3.5 h-3.5 text-green-500 dark:text-green-400" />
+                            Area: {resolvedAreaName}
+                        </span>
+                    </div>
 
                     {currentItem.caseSnapshot.testDescription && (
                         <div className="mb-5 sm:mb-6">

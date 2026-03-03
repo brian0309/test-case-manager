@@ -400,6 +400,8 @@ const TestRunsPage: React.FC = () => {
                     onUpdateItem={handleDetailUpdateItem}
                     onComplete={handleCompleteRun}
                     onOpenExecute={handleOpenExecuteFromDetail}
+                    availableTestCases={testCases}
+                    availableSuites={testSuites}
                 />
 
                 {/* Execute Run Modal (from detail view) */}
@@ -413,6 +415,8 @@ const TestRunsPage: React.FC = () => {
                     onUpdateItem={handleUpdateRunItem}
                     onComplete={handleCompleteRun}
                     startIndex={executeStartIndex}
+                    availableTestCases={testCases}
+                    availableSuites={testSuites}
                 />
             </>
         );
