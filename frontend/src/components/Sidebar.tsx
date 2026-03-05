@@ -12,6 +12,7 @@ import {
   Folder,
   List,
   Layers,
+  ClipboardList,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -81,6 +82,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
       icon: <List size={18} />,
       label: 'All Cases',
       to: '/test-manager/cases',
+      subItems: [],
+      requiresProject: true
+    },
+    {
+      icon: <ClipboardList size={18} />,
+      label: 'Test Runs',
+      to: '/test-manager/runs',
       subItems: [],
       requiresProject: true
     },
