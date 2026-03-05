@@ -109,11 +109,43 @@ export const getTestCasesByProject = async (req: Request, res: Response): Promis
     }
 
     const { projectId } = req.params as Record<string, string>;
+    const rawLimit = req.query.limit;
+    const rawOffset = req.query.offset;
+    const limit = typeof rawLimit === "string" ? Number.parseInt(rawLimit, 10) : undefined;
+    const offset = typeof rawOffset === "string" ? Number.parseInt(rawOffset, 10) : undefined;
+
+    const isPaginatedRequest =
+      Number.isInteger(limit) &&
+      Number.isInteger(offset) &&
+      (limit as number) > 0 &&
+      (offset as number) >= 0;
 
     // Check access
     const hasAccess = await projectService.hasProjectAccess(projectId, userId);
     if (!hasAccess) {
       res.status(404).json({ success: false, message: "Project not found" });
+      return;
+    }
+
+    if (isPaginatedRequest) {
+      const safeLimit = Math.min(limit as number, 200);
+      const safeOffset = offset as number;
+      const result = await testCaseService.getTestCasesByProjectPaginated(projectId, userId, {
+        limit: safeLimit,
+        offset: safeOffset,
+      });
+      const responses = result.items.map(testCaseService.formatTestCaseResponse);
+
+      res.status(200).json({
+        success: true,
+        data: responses,
+        meta: {
+          total: result.total,
+          limit: safeLimit,
+          offset: safeOffset,
+          hasMore: safeOffset + responses.length < result.total,
+        },
+      });
       return;
     }
 

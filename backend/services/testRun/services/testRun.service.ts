@@ -109,6 +109,37 @@ export const getTestRunsByProject = async (
   return testRuns as unknown as ITestRunDocument[];
 };
 
+export const getTestRunsByProjectPaginated = async (
+  projectId: string,
+  userId: string,
+  options: { limit: number; offset: number }
+): Promise<{ items: ITestRunDocument[]; total: number }> => {
+  const hasAccess = await projectService.hasProjectAccess(projectId, userId);
+  if (!hasAccess) {
+    return { items: [], total: 0 };
+  }
+
+  const query = {
+    projectId: new Types.ObjectId(projectId),
+  };
+
+  const [items, total] = await Promise.all([
+    TestRun.find(query)
+      .populate("createdBy", "name email")
+      .populate("suiteId", "name")
+      .sort({ createdAt: -1 })
+      .skip(options.offset)
+      .limit(options.limit)
+      .lean(),
+    TestRun.countDocuments(query),
+  ]);
+
+  return {
+    items: items as unknown as ITestRunDocument[],
+    total,
+  };
+};
+
 /**
  * Get a single test run by ID
  */

@@ -7,6 +7,7 @@ import axios, { AxiosError } from "axios";
 import { API_URL } from "../utils/api";
 import {
   ApiResponse,
+  PaginationMeta,
   ApiErrorResponse,
   TestRunResponse,
   TestRunListResponse,
@@ -26,6 +27,11 @@ const getErrorMessage = (error: unknown): string => {
   const axiosError = error as AxiosError<ApiErrorResponse>;
   return axiosError.response?.data?.message || "An unexpected error occurred";
 };
+
+export interface PaginatedTestRunsResult {
+  items: TestRunListResponse[];
+  meta: PaginationMeta;
+}
 
 // ============================================================================
 // TEST RUN API
@@ -63,6 +69,37 @@ export const getTestRuns = async (
       `${API_URL}/projects/${projectId}/runs`
     );
     return response.data.data || [];
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
+/**
+ * Get paginated test runs for a project
+ */
+export const getTestRunsPaginated = async (
+  projectId: string,
+  params: { limit: number; offset: number }
+): Promise<PaginatedTestRunsResult> => {
+  try {
+    const response = await axios.get<ApiResponse<TestRunListResponse[]>>(
+      `${API_URL}/projects/${projectId}/runs`,
+      {
+        params,
+      }
+    );
+
+    const fallbackMeta: PaginationMeta = {
+      total: response.data.data?.length || 0,
+      limit: params.limit,
+      offset: params.offset,
+      hasMore: false,
+    };
+
+    return {
+      items: response.data.data || [],
+      meta: response.data.meta || fallbackMeta,
+    };
   } catch (error) {
     throw new Error(getErrorMessage(error));
   }
@@ -332,6 +369,7 @@ export const deleteTestRunGroup = async (id: string): Promise<void> => {
 export const testRunApi = {
   createTestRun,
   getTestRuns,
+  getTestRunsPaginated,
   getTestRun,
   updateTestRun,
   deleteTestRun,

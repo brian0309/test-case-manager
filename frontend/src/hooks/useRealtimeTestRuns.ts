@@ -38,7 +38,12 @@ export const useRealtimeTestRuns = ({
             updatedAt: data.testRun.updatedAt,
         };
 
-        setTestRuns(prev => [newItem, ...prev]);
+        setTestRuns((prev) => {
+            if (prev.some((run) => run.id === newItem.id)) {
+                return prev;
+            }
+            return [newItem, ...prev];
+        });
     }, [setTestRuns]);
 
     const handleTestRunUpdated = useCallback((data: SocketEvents['testrun:updated']) => {

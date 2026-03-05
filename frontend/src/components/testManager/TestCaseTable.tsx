@@ -482,8 +482,9 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
         }
     };
 
-    const allSelected = sortedData.length > 0 && sortedData.every(item => selectedIds.includes(item.id));
-    const someSelected = sortedData.some(item => selectedIds.includes(item.id));
+    const selectedIdsSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+    const allSelected = sortedData.length > 0 && sortedData.every(item => selectedIdsSet.has(item.id));
+    const someSelected = sortedData.some(item => selectedIdsSet.has(item.id));
 
     const getContextInfo = (item: TestCase) => {
         const showSuite = !activeSuiteId;
@@ -803,7 +804,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         <SortableRow
                                             key={item.id}
                                             item={item}
-                                            isSelected={selectedIds.includes(item.id)}
+                                            isSelected={selectedIdsSet.has(item.id)}
                                             isSelectionMode={isSelectionMode}
                                             isEditMode={isEditMode}
                                             enableReorder={enableReorder && sortMode === 'custom'}
@@ -915,7 +916,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                     <SortableRow
                                         key={item.id}
                                         item={item}
-                                        isSelected={selectedIds.includes(item.id)}
+                                        isSelected={selectedIdsSet.has(item.id)}
                                         isSelectionMode={isSelectionMode}
                                         isEditMode={isEditMode}
                                         enableReorder={false}
@@ -987,7 +988,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                         onRowClick(item);
                                     }
                                 }}
-                                className={`relative mac-card overflow-hidden cursor-pointer transition-all active:scale-[0.98] mb-3 ${selectedIds.includes(item.id)
+                                className={`relative mac-card overflow-hidden cursor-pointer transition-all active:scale-[0.98] mb-3 ${selectedIdsSet.has(item.id)
                                     ? 'bg-blue-50/50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700'
                                     : 'hover:bg-gray-50/80 dark:hover:bg-gray-800/80'
                                     }`}
@@ -1049,7 +1050,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                                                 <div className="p-1" onClick={(e) => e.stopPropagation()}>
                                                     <input
                                                         type="checkbox"
-                                                        checked={selectedIds.includes(item.id)}
+                                                        checked={selectedIdsSet.has(item.id)}
                                                         onChange={() => onToggleSelection?.(item.id)}
                                                         className="w-5 h-5 text-blue-600 border-gray-300 dark:border-gray-600 rounded-full focus:ring-blue-500 bg-white dark:bg-gray-700"
                                                     />

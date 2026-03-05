@@ -21,10 +21,18 @@ export enum Status {
 }
 
 // Base API Response
+export interface PaginationMeta {
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+}
+
 export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data?: T;
+  meta?: PaginationMeta;
 }
 
 // Member in a project

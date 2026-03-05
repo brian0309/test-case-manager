@@ -46,7 +46,7 @@ export const mapProjectResponse = (p: ProjectResponse): Project => ({
     updatedAt: p.updatedAt,
 });
 
-const mapTestCaseResponse = (tc: TestCaseResponse): TestCase => ({
+export const mapTestCaseResponse = (tc: TestCaseResponse): TestCase => ({
     id: tc.id,
     title: tc.title,
     priority: tc.priority as Priority,

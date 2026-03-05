@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import toast from 'react-hot-toast';
 import { ArrowLeft, ChevronRight, Eye, Layers, Map as MapIcon, ChevronDown, ChevronUp, Check, ArrowUpDown } from 'lucide-react';
 import { TestRun, RunItemStatus, RunItem, TestCase, TestSuite } from '../../../types/testManager';
@@ -35,6 +36,14 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
     const [isSuiteOpen, setIsSuiteOpen] = useState(false);
     const areaRef = useRef<HTMLDivElement>(null);
     const suiteRef = useRef<HTMLDivElement>(null);
+
+    // Virtualization – desktop table
+    const ROW_HEIGHT_ESTIMATE = 52;
+    const tableScrollRef = useRef<HTMLDivElement>(null);
+    const [containerHeight, setContainerHeight] = useState(600);
+
+    // Virtualization – mobile cards
+    const mobileScrollRef = useRef<HTMLDivElement>(null);
 
     const executedCount = testRun.items.filter(i => i.status !== RunItemStatus.NotRun).length;
     const totalItems = testRun.items.length;
@@ -146,6 +155,34 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
     const sortedItemOrder = useMemo(() => {
         return sortedItems.map(({ index }) => index);
     }, [sortedItems]);
+
+    // Dynamically size the desktop virtual container to fill available space
+    useEffect(() => {
+        const el = tableScrollRef.current;
+        if (!el) return;
+        const observer = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const h = entry.contentRect.height;
+                if (h > 0) setContainerHeight(h);
+            }
+        });
+        if (el.parentElement) observer.observe(el.parentElement);
+        return () => observer.disconnect();
+    }, []);
+
+    const rowVirtualizer = useVirtualizer({
+        count: sortedItems.length,
+        getScrollElement: () => tableScrollRef.current,
+        estimateSize: () => ROW_HEIGHT_ESTIMATE,
+        overscan: 10,
+    });
+
+    const mobileVirtualizer = useVirtualizer({
+        count: sortedItems.length,
+        getScrollElement: () => mobileScrollRef.current,
+        estimateSize: () => 160,
+        overscan: 5,
+    });
 
     const handleSortClick = (field: 'area' | 'priority' | 'runStatus' | 'suite') => {
         if (sortField !== field) {
@@ -376,8 +413,17 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                 )}
             </div>
 
-            {/* Desktop table */}
-            <div className="hidden sm:block flex-1 overflow-auto">
+            {/* Desktop table – virtualized */}
+            <div
+                ref={tableScrollRef}
+                className="hidden sm:block flex-1"
+                style={{ height: containerHeight, overflowY: 'auto' }}
+            >
+                {sortedItems.length === 0 ? (
+                    <div className="flex items-center justify-center py-8 text-sm text-gray-500 dark:text-gray-400">
+                        No test cases match the selected filters.
+                    </div>
+                ) : (
                 <table className="w-full text-left border-collapse">
                     <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-none">
                         <tr>
@@ -451,7 +497,15 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-900">
-                        {sortedItems.map(({ item, index }, sortedIndex) => (
+                        {rowVirtualizer.getVirtualItems().length > 0 && (
+                            <tr aria-hidden="true">
+                                <td colSpan={7} style={{ height: rowVirtualizer.getVirtualItems()[0]?.start ?? 0, padding: 0, border: 'none' }} />
+                            </tr>
+                        )}
+                        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                            const { item, index } = sortedItems[virtualRow.index];
+                            const sortedIndex = virtualRow.index;
+                            return (
                             <tr
                                 key={item.id}
                                 onClick={() => onOpenExecute(sortedIndex, sortedItemOrder)}
@@ -528,92 +582,122 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                                     </div>
                                 </td>
                             </tr>
-                        ))}
-                        {sortedItems.length === 0 && (
-                            <tr>
-                                <td colSpan={7} className="py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                                    No test cases match the selected filters.
-                                </td>
-                            </tr>
-                        )}
+                            );
+                        })}
+                        {(() => {
+                            const visibleRows = rowVirtualizer.getVirtualItems();
+                            const lastVisibleRow = visibleRows[visibleRows.length - 1];
+                            const bottomPad = lastVisibleRow
+                                ? rowVirtualizer.getTotalSize() - lastVisibleRow.end
+                                : 0;
+                            return bottomPad > 0 ? (
+                                <tr aria-hidden="true">
+                                    <td colSpan={7} style={{ height: bottomPad, padding: 0, border: 'none' }} />
+                                </tr>
+                            ) : null;
+                        })()}
                     </tbody>
                 </table>
+                )}
             </div>
 
-            {/* Mobile list */}
-            <div className="block sm:hidden flex-1 overflow-auto p-2">
-                {sortedItems.map(({ item, index }, sortedIndex) => (
-                    <div
-                        key={item.id}
-                        onClick={() => onOpenExecute(sortedIndex, sortedItemOrder)}
-                        className="relative mac-card overflow-hidden cursor-pointer transition-all active:scale-[0.98] mb-3 hover:bg-gray-50/80 dark:hover:bg-gray-800/80"
-                    >
-                        {/* Priority Color Bar */}
-                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${getPriorityColor(item.caseSnapshot.priority)}`} />
+            {/* Mobile list – virtualized */}
+            <div
+                ref={mobileScrollRef}
+                className="block sm:hidden flex-1 overflow-auto"
+                style={{ padding: '0.5rem' }}
+            >
+                {sortedItems.length === 0 ? (
+                    <div className="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
+                        No test cases match the selected filters.
+                    </div>
+                ) : (
+                    <div style={{ height: mobileVirtualizer.getTotalSize(), position: 'relative' }}>
+                        {mobileVirtualizer.getVirtualItems().map((virtualRow) => {
+                            const { item, index } = sortedItems[virtualRow.index];
+                            const sortedIndex = virtualRow.index;
+                            return (
+                                <div
+                                    key={item.id}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        transform: `translateY(${virtualRow.start}px)`,
+                                    }}
+                                    ref={mobileVirtualizer.measureElement}
+                                    data-index={virtualRow.index}
+                                >
+                                    <div
+                                        onClick={() => onOpenExecute(sortedIndex, sortedItemOrder)}
+                                        className="relative mac-card overflow-hidden cursor-pointer transition-all active:scale-[0.98] mb-3 hover:bg-gray-50/80 dark:hover:bg-gray-800/80"
+                                    >
+                                        {/* Priority Color Bar */}
+                                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${getPriorityColor(item.caseSnapshot.priority)}`} />
 
-                        <div className="p-4 pl-5">
-                            <div className="flex items-start justify-between gap-3">
-                                <div className="flex-1 min-w-0">
-                                    {/* Top Row: Status & Index */}
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getRunItemStatusBadgeColor(item.status)}`}>
-                                            {item.status}
-                                        </span>
-                                        <span className="text-[10px] font-mono text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                                            #{index + 1}
-                                        </span>
-                                    </div>
+                                        <div className="p-4 pl-5">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="flex-1 min-w-0">
+                                                    {/* Top Row: Status & Index */}
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getRunItemStatusBadgeColor(item.status)}`}>
+                                                            {item.status}
+                                                        </span>
+                                                        <span className="text-[10px] font-mono text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                                                            #{index + 1}
+                                                        </span>
+                                                    </div>
 
-                                    {/* Title */}
-                                    <h4 className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
-                                        {item.caseSnapshot.title}
-                                    </h4>
+                                                    {/* Title */}
+                                                    <h4 className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
+                                                        {item.caseSnapshot.title}
+                                                    </h4>
 
-                                    {/* Area */}
-                                    {item.caseSnapshot.area && (
-                                        <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 truncate">
-                                            {item.caseSnapshot.area}
-                                        </div>
-                                    )}
+                                                    {/* Area */}
+                                                    {item.caseSnapshot.area && (
+                                                        <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 truncate">
+                                                            {item.caseSnapshot.area}
+                                                        </div>
+                                                    )}
 
-                                    {!!itemSuiteNameByItemId.get(item.id) && (
-                                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate">
-                                            {itemSuiteNameByItemId.get(item.id)}
-                                        </div>
-                                    )}
+                                                    {!!itemSuiteNameByItemId.get(item.id) && (
+                                                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate">
+                                                            {itemSuiteNameByItemId.get(item.id)}
+                                                        </div>
+                                                    )}
 
-                                    {/* Footer: Priority & Status change */}
-                                    <div className="mt-4 flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <span className={`h-2.5 w-2.5 rounded-full ${getPriorityColor(item.caseSnapshot.priority)} shadow-sm`} />
-                                            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
-                                                {item.caseSnapshot.priority || 'N/A'}
-                                            </span>
-                                        </div>
-                                        <div onClick={e => e.stopPropagation()}>
-                                            <select
-                                                value={item.status}
-                                                onChange={(e) => handleStatusChange(item, e.target.value as RunItemStatus)}
-                                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border appearance-none cursor-pointer outline-none transition-colors min-w-[80px] ${getRunItemStatusBadgeColor(item.status)}`}
-                                            >
-                                                <option value={RunItemStatus.NotRun}>Not Run</option>
-                                                <option value={RunItemStatus.Passed}>Passed</option>
-                                                <option value={RunItemStatus.Failed}>Failed</option>
-                                                <option value={RunItemStatus.Blocked}>Blocked</option>
-                                                <option value={RunItemStatus.Skipped}>Skipped</option>
-                                            </select>
+                                                    {/* Footer: Priority & Status change */}
+                                                    <div className="mt-4 flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`h-2.5 w-2.5 rounded-full ${getPriorityColor(item.caseSnapshot.priority)} shadow-sm`} />
+                                                            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                                                                {item.caseSnapshot.priority || 'N/A'}
+                                                            </span>
+                                                        </div>
+                                                        <div onClick={e => e.stopPropagation()}>
+                                                            <select
+                                                                value={item.status}
+                                                                onChange={(e) => handleStatusChange(item, e.target.value as RunItemStatus)}
+                                                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border appearance-none cursor-pointer outline-none transition-colors min-w-[80px] ${getRunItemStatusBadgeColor(item.status)}`}
+                                                            >
+                                                                <option value={RunItemStatus.NotRun}>Not Run</option>
+                                                                <option value={RunItemStatus.Passed}>Passed</option>
+                                                                <option value={RunItemStatus.Failed}>Failed</option>
+                                                                <option value={RunItemStatus.Blocked}>Blocked</option>
+                                                                <option value={RunItemStatus.Skipped}>Skipped</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <ChevronRight className="h-5 w-5 text-gray-300 dark:text-gray-600 flex-shrink-0 mt-1" />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-
-                                <ChevronRight className="h-5 w-5 text-gray-300 dark:text-gray-600 flex-shrink-0 mt-1" />
-                            </div>
-                        </div>
-                    </div>
-                ))}
-                {sortedItems.length === 0 && (
-                    <div className="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
-                        No test cases match the selected filters.
+                            );
+                        })}
                     </div>
                 )}
             </div>

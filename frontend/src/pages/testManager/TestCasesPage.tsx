@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { shallow } from 'zustand/shallow';
 import TestCaseTable, { SortInfo } from '../../components/testManager/TestCaseTable';
 import TestCaseModal from '../../components/testManager/TestCaseModal';
 import TestCaseViewModal from '../../components/testManager/TestCaseViewModal';
@@ -11,18 +12,19 @@ import GeminiGenerationModal from '../../components/testManager/GeminiGeneration
 import ExportTestCasesModal from '../../components/testManager/ExportTestCasesModal';
 import ImportTestCasesModal from '../../components/testManager/ImportTestCasesModal';
 import ProjectPresenceIndicator from '../../components/testManager/ProjectPresenceIndicator';
-import { useTestManagerStore } from '../../store/testManagerStore';
+import { mapTestCaseResponse, useTestManagerStore } from '../../store/testManagerStore';
 import { useRealtimeTestCases } from '../../hooks/useRealtimeTestCases';
 import { useProjectPresence } from '../../hooks/useProjectPresence';
 import { TestCase, Status, Priority, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
-import { reorderTestCases, getTestCase, getTestSuite, bulkImportTestCasesWithSuite } from '../../services/testManagerApi';
+import { reorderTestCases, getTestCase, getTestSuite, bulkImportTestCasesWithSuite, getTestCasesByProjectPaginated } from '../../services/testManagerApi';
 import { exportTestCasesToCSV, exportTestCasesToXLSX, ExportColumn } from '../../utils/exportTestCases';
 import { escapeHtml } from '../../utils/sanitize';
 import { CreateTestCaseWithSuiteRequest, UpdateTestCaseRequest } from '../../types/api/testManager.api';
-import { Sparkles, GripVertical, ArrowUp, ArrowDown, RotateCcw, Tag, X, ChevronDown, Check } from 'lucide-react';
+import { Sparkles, GripVertical, ArrowUp, ArrowDown, RotateCcw, Tag, X, ChevronDown, Check, Loader2 } from 'lucide-react';
 import { getTagColor } from '../../utils/tagColors';
 
 const getSuiteTagFilterStorageKey = (projectId: string) => `testSuitesTagFilter:${projectId}`;
+const PROJECT_CASES_PAGE_SIZE = 100;
 
 type StoredSuiteTagFilter = {
     selectedTags: string[];
@@ -49,24 +51,55 @@ const TestCasesPage: React.FC = () => {
         isFilterModalOpen,
         searchQuery,
         clearSearchQuery,
-        // Selection
         isSelectionMode,
         selectedTestCaseIds,
         toggleTestCaseSelection,
         selectAllTestCases,
         clearSelection,
-        // Project settings
         fetchProjectSettings,
         getProjectSettings,
-        // Context setting actions
         setActiveProject,
         setActiveSuiteWithId,
         setActiveArea,
-        // Export callback
         setExportTestCasesCallback,
-        // Import callback
         setImportTestCasesCallback,
-    } = useTestManagerStore();
+        setTestCases,
+    } = useTestManagerStore(
+        (state) => ({
+            testCases: state.testCases,
+            activeSuite: state.activeSuite,
+            activeSuiteId: state.activeSuiteId,
+            activeProject: state.activeProject,
+            activeArea: state.activeArea,
+            updateTestCase: state.updateTestCase,
+            createTestCase: state.createTestCase,
+            cloneTestCase: state.cloneTestCase,
+            fetchProjects: state.fetchProjects,
+            projects: state.projects,
+            testSuites: state.testSuites,
+            fetchTestSuites: state.fetchTestSuites,
+            fetchTestCases: state.fetchTestCases,
+            fetchTestCasesByProject: state.fetchTestCasesByProject,
+            filters: state.filters,
+            isFilterModalOpen: state.isFilterModalOpen,
+            searchQuery: state.searchQuery,
+            clearSearchQuery: state.clearSearchQuery,
+            isSelectionMode: state.isSelectionMode,
+            selectedTestCaseIds: state.selectedTestCaseIds,
+            toggleTestCaseSelection: state.toggleTestCaseSelection,
+            selectAllTestCases: state.selectAllTestCases,
+            clearSelection: state.clearSelection,
+            fetchProjectSettings: state.fetchProjectSettings,
+            getProjectSettings: state.getProjectSettings,
+            setActiveProject: state.setActiveProject,
+            setActiveSuiteWithId: state.setActiveSuiteWithId,
+            setActiveArea: state.setActiveArea,
+            setExportTestCasesCallback: state.setExportTestCasesCallback,
+            setImportTestCasesCallback: state.setImportTestCasesCallback,
+            setTestCases: state.setTestCases,
+        }),
+        shallow
+    );
 
     // Enable real-time updates for test cases
     useRealtimeTestCases({
@@ -86,10 +119,17 @@ const TestCasesPage: React.FC = () => {
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isGeminiModalOpen, setIsGeminiModalOpen] = useState(false);
+    const [isProjectCasesLoading, setIsProjectCasesLoading] = useState(false);
+    const [isProjectCasesLoadingMore, setIsProjectCasesLoadingMore] = useState(false);
+    const [projectCasesHasMore, setProjectCasesHasMore] = useState(false);
+    const [projectCasesOffset, setProjectCasesOffset] = useState(0);
+    const [projectCasesTotal, setProjectCasesTotal] = useState(0);
     const [selectedSuiteTags, setSelectedSuiteTags] = useState<string[]>([]);
     const [includeSuitesWithNoTags, setIncludeSuitesWithNoTags] = useState(false);
     const [isSuiteTagFilterOpen, setIsSuiteTagFilterOpen] = useState(false);
     const suiteTagFilterRef = useRef<HTMLDivElement>(null);
+    const projectCasesScrollContainerRef = useRef<HTMLDivElement>(null);
+    const projectCasesSentinelRef = useRef<HTMLDivElement>(null);
     
     // Track if we've already processed the testCaseId URL parameter
     const processedTestCaseIdRef = useRef<string | null>(null);
@@ -103,6 +143,53 @@ const TestCasesPage: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
+
+    const loadProjectCases = useCallback(async (reset = true, offsetValue = 0) => {
+        if (!activeProject) return;
+
+        if (reset) {
+            setIsProjectCasesLoading(true);
+            setTestCases([]);
+            setProjectCasesOffset(0);
+            setProjectCasesHasMore(false);
+            setProjectCasesTotal(0);
+        } else {
+            setIsProjectCasesLoadingMore(true);
+        }
+
+        try {
+            const currentOffset = reset ? 0 : offsetValue;
+            const result = await getTestCasesByProjectPaginated(activeProject, {
+                limit: PROJECT_CASES_PAGE_SIZE,
+                offset: currentOffset,
+            });
+            const mapped = result.items.map(mapTestCaseResponse);
+
+            setTestCases((previous) => {
+                if (reset) {
+                    return mapped;
+                }
+
+                const existingIds = new Set(previous.map((testCase) => testCase.id));
+                const dedupedIncoming = mapped.filter((testCase) => !existingIds.has(testCase.id));
+                return [...previous, ...dedupedIncoming];
+            });
+
+            const loadedCount = mapped.length;
+            const totalLoaded = currentOffset + loadedCount;
+            setProjectCasesOffset(totalLoaded);
+            setProjectCasesTotal(result.meta.total);
+            setProjectCasesHasMore(result.meta.hasMore && totalLoaded < result.meta.total);
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to load test cases');
+        } finally {
+            if (reset) {
+                setIsProjectCasesLoading(false);
+            } else {
+                setIsProjectCasesLoadingMore(false);
+            }
+        }
+    }, [activeProject, setTestCases]);
 
     // Restore suite tag filter state per project (shared with TestSuitesPage)
     useEffect(() => {
@@ -332,13 +419,51 @@ const TestCasesPage: React.FC = () => {
         if (searchParams.get('suiteId') || searchParams.get('testCaseId')) return;
 
         if (activeSuiteId) {
+            setProjectCasesHasMore(false);
+            setProjectCasesOffset(0);
             // If a specific suite is selected, fetch only that suite's cases
             fetchTestCases(activeSuiteId);
         } else if (activeProject) {
-            // If no suite is selected but project is, fetch all cases for the project
-            fetchTestCasesByProject(activeProject);
+            // If no suite is selected but project is, fetch cases in pages
+            loadProjectCases(true, 0);
         }
-    }, [activeSuiteId, activeProject, fetchTestCases, fetchTestCasesByProject, searchParams]);
+    }, [activeSuiteId, activeProject, fetchTestCases, fetchTestCasesByProject, searchParams, loadProjectCases]);
+
+    const handleLoadMoreProjectCases = useCallback(() => {
+        if (activeSuiteId || !projectCasesHasMore || isProjectCasesLoading || isProjectCasesLoadingMore) {
+            return;
+        }
+
+        loadProjectCases(false, projectCasesOffset);
+    }, [activeSuiteId, isProjectCasesLoading, isProjectCasesLoadingMore, loadProjectCases, projectCasesHasMore, projectCasesOffset]);
+
+    useEffect(() => {
+        if (activeSuiteId || !projectCasesHasMore || isProjectCasesLoading || isProjectCasesLoadingMore) {
+            return;
+        }
+
+        const sentinel = projectCasesSentinelRef.current;
+        if (!sentinel) {
+            return;
+        }
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const first = entries[0];
+                if (first?.isIntersecting) {
+                    handleLoadMoreProjectCases();
+                }
+            },
+            {
+                root: projectCasesScrollContainerRef.current,
+                rootMargin: '200px 0px',
+                threshold: 0,
+            }
+        );
+
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [activeSuiteId, handleLoadMoreProjectCases, isProjectCasesLoading, isProjectCasesLoadingMore, projectCasesHasMore]);
 
     // Open modal if navigation state asked for it (from toolbar quick-add)
     useEffect(() => {
@@ -547,15 +672,6 @@ const TestCasesPage: React.FC = () => {
         return createdCase;
     };
 
-    if (!activeProject && !selectedCase) {
-        return (
-            <EmptyProjectState
-                title="No Project Selected"
-                description="Please select a project to view and manage test cases"
-            />
-        );
-    }
-
     // Handle drag-and-drop reordering of test cases
     const handleReorder = async (reorderedCases: TestCase[]) => {
         if (!activeSuiteId) {
@@ -643,7 +759,7 @@ const TestCasesPage: React.FC = () => {
         }
     };
 
-    const handleImportTestCases = async (
+    const handleImportTestCases = useCallback(async (
         testCases: CreateTestCaseWithSuiteRequest[],
         skipDuplicates: boolean,
         createMissingSuites: boolean
@@ -666,6 +782,8 @@ const TestCasesPage: React.FC = () => {
             // Refresh test cases if we have an active suite
             if (activeSuiteId) {
                 await fetchTestCases(activeSuiteId);
+            } else {
+                await loadProjectCases(true, 0);
             }
 
             return result;
@@ -673,7 +791,16 @@ const TestCasesPage: React.FC = () => {
             console.error('Import error:', error);
             throw error;
         }
-    };
+    }, [activeProject, activeSuiteId, fetchTestSuites, fetchTestCases, loadProjectCases]);
+
+    if (!activeProject && !selectedCase) {
+        return (
+            <EmptyProjectState
+                title="No Project Selected"
+                description="Please select a project to view and manage test cases"
+            />
+        );
+    }
 
     return (
         <div className="flex flex-col h-auto sm:h-full bg-white dark:bg-gray-900">
@@ -809,7 +936,7 @@ const TestCasesPage: React.FC = () => {
             </div>
 
             {/* Test Case Table */}
-            <div className="flex-1 sm:overflow-auto">
+            <div ref={projectCasesScrollContainerRef} className="flex-1 sm:overflow-auto">
                 <TestCaseTable
                     data={displayedCases}
                     onRowClick={handleRowClick}
@@ -835,6 +962,28 @@ const TestCasesPage: React.FC = () => {
                     activeArea={activeArea}
                     activeSuiteId={activeSuiteId}
                 />
+                {!activeSuiteId && activeProject && (
+                    <div ref={projectCasesSentinelRef} className="flex justify-center py-3">
+                        {isProjectCasesLoading ? (
+                            <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Loading test cases...
+                            </div>
+                        ) : (projectCasesHasMore && isProjectCasesLoadingMore) ? (
+                            <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Loading more test cases...
+                            </div>
+                        ) : null}
+                    </div>
+                )}
+                {!activeSuiteId && activeProject && (
+                    <div className="flex justify-end px-4 pb-3">
+                        <div className="text-xs text-gray-400 dark:text-gray-500">
+                            Loaded {Math.min(projectCasesOffset, displayedCases.length)} / {projectCasesTotal || displayedCases.length} test cases
+                        </div>
+                    </div>
+                )}
             </div>
             {viewCase && (
                 <TestCaseViewModal
