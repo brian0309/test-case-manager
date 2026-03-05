@@ -29,7 +29,6 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
         setActiveSuiteId,
         setActiveArea,
         fetchTestSuites,
-        fetchTestCasesByProject,
         testCases,
         clearFilters,
     } = useTestManagerStore();
@@ -71,8 +70,6 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
         setActiveSuiteId(null);
         // Fetch suites for the new project
         await fetchTestSuites(projectId);
-        // Fetch all test cases for the project (no suite filter)
-        await fetchTestCasesByProject(projectId);
         setIsProjectOpen(false);
     };
 

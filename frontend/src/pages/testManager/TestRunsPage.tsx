@@ -24,6 +24,7 @@ import {
     Layers,
     Menu,
     Edit2,
+    Loader2,
 } from 'lucide-react';
 import CreateGroupModal from './components/CreateGroupModal';
 import RunGroupsSidebar from '../../components/testManager/RunGroupsSidebar';
@@ -32,6 +33,28 @@ import EditTestRunModal from './components/EditTestRunModal';
 import ExecuteRunModal from './components/ExecuteRunModal';
 import RunDetailView from './components/RunDetailView';
 import { getRunStatusColor, generateSuiteTitle } from './components/testRunUtils';
+
+const RUNS_PAGE_SIZE = 40;
+
+const mapRunResponseToListItem = (run: TestRun): TestRunListItem => ({
+    id: run.id,
+    title: run.title,
+    description: run.description,
+    projectId: run.projectId,
+    suiteId: run.suiteId,
+    suiteName: run.suiteName,
+    status: run.status,
+    environment: run.environment,
+    tags: run.tags,
+    itemCount: run.items.length,
+    createdBy: run.createdBy,
+    startedAt: run.startedAt,
+    completedAt: run.completedAt,
+    resultsSummary: run.resultsSummary,
+    groupId: run.groupId,
+    createdAt: run.createdAt,
+    updatedAt: run.updatedAt,
+});
 
 
 const TestRunsPage: React.FC = () => {
@@ -57,6 +80,10 @@ const TestRunsPage: React.FC = () => {
     const [testRuns, setTestRuns] = useState<TestRunListItem[]>([]);
     const [testRunGroups, setTestRunGroups] = useState<TestRunGroup[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasMoreRuns, setHasMoreRuns] = useState(false);
+    const [runsOffset, setRunsOffset] = useState(0);
+    const [runsTotal, setRunsTotal] = useState(0);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
     const [editingGroup, setEditingGroup] = useState<TestRunGroup | undefined>(undefined);
@@ -74,6 +101,8 @@ const TestRunsPage: React.FC = () => {
     const [isEditRunModalOpen, setIsEditRunModalOpen] = useState(false);
     const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
     const [createModalInitialTitle, setCreateModalInitialTitle] = useState('');
+    const runsListContainerRef = useRef<HTMLDivElement>(null);
+    const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
 
     // Ref to hold suite ID from URL params, resolved once test cases are loaded
     const pendingSuiteIdRef = useRef<string | null>(null);
@@ -177,16 +206,44 @@ const TestRunsPage: React.FC = () => {
     }, []);
 
     // Fetch test runs when project changes
-    const fetchRuns = useCallback(async () => {
+    const fetchRuns = useCallback(async (reset = true, offsetValue = 0) => {
         if (!activeProject) return;
-        setIsLoading(true);
+        if (reset) {
+            setIsLoading(true);
+        } else {
+            setIsLoadingMore(true);
+        }
         try {
-            const runs = await testRunApi.getTestRuns(activeProject);
-            setTestRuns(runs as unknown as TestRunListItem[]);
+            const nextOffset = reset ? 0 : offsetValue;
+            const result = await testRunApi.getTestRunsPaginated(activeProject, {
+                limit: RUNS_PAGE_SIZE,
+                offset: nextOffset,
+            });
+
+            setTestRuns((previous) => {
+                const incomingRuns = result.items as unknown as TestRunListItem[];
+                if (reset) {
+                    return incomingRuns;
+                }
+
+                const existingIds = new Set(previous.map((run) => run.id));
+                const dedupedIncoming = incomingRuns.filter((run) => !existingIds.has(run.id));
+                return [...previous, ...dedupedIncoming];
+            });
+
+            const loadedCount = result.items.length;
+            const totalLoaded = nextOffset + loadedCount;
+            setRunsOffset(totalLoaded);
+            setRunsTotal(result.meta.total);
+            setHasMoreRuns(result.meta.hasMore && totalLoaded < result.meta.total);
         } catch (error: unknown) {
             toast.error((error as Error).message || 'Failed to load test runs');
         } finally {
-            setIsLoading(false);
+            if (reset) {
+                setIsLoading(false);
+            } else {
+                setIsLoadingMore(false);
+            }
         }
     }, [activeProject]);
 
@@ -222,22 +279,70 @@ const TestRunsPage: React.FC = () => {
     }, [activeProject]);
 
     useEffect(() => {
-        fetchRuns();
+        fetchRuns(true);
         fetchGroups();
         fetchTags();
     }, [fetchRuns, fetchGroups, fetchTags]);
 
-    // Fetch test cases and suites for the create modal
+    const handleLoadMoreRuns = useCallback(() => {
+        if (!hasMoreRuns || isLoadingMore || isLoading) return;
+        fetchRuns(false, runsOffset);
+    }, [fetchRuns, hasMoreRuns, isLoadingMore, isLoading, runsOffset]);
+
     useEffect(() => {
-        if (activeProject) {
+        if (!hasMoreRuns || isLoading || isLoadingMore) {
+            return;
+        }
+
+        const sentinel = loadMoreSentinelRef.current;
+        if (!sentinel) {
+            return;
+        }
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const first = entries[0];
+                if (first?.isIntersecting) {
+                    handleLoadMoreRuns();
+                }
+            },
+            {
+                root: runsListContainerRef.current,
+                rootMargin: '200px 0px',
+                threshold: 0,
+            }
+        );
+
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [handleLoadMoreRuns, hasMoreRuns, isLoading, isLoadingMore]);
+
+    // Fetch test cases and suites only when run creation/editing flows need them
+    useEffect(() => {
+        const shouldLoadCaseSelectionData =
+            !!activeProject &&
+            (
+                isCreateModalOpen ||
+                isEditRunModalOpen ||
+                searchParams.get('openCreate') === 'true'
+            );
+
+        if (shouldLoadCaseSelectionData && activeProject) {
             fetchTestCasesByProject(activeProject);
             fetchTestSuites(activeProject);
         }
-    }, [activeProject, fetchTestCasesByProject, fetchTestSuites]);
+    }, [
+        activeProject,
+        isCreateModalOpen,
+        isEditRunModalOpen,
+        searchParams,
+        fetchTestCasesByProject,
+        fetchTestSuites,
+    ]);
 
     const handleCreateRun = async (title: string, description: string, caseIds: string[], groupId?: string, tags?: string[]) => {
         if (!activeProject) return;
-        await testRunApi.createTestRun(activeProject, {
+        const createdRun = await testRunApi.createTestRun(activeProject, {
             title,
             description,
             testCaseIds: caseIds,
@@ -245,8 +350,15 @@ const TestRunsPage: React.FC = () => {
             tags,
         });
         toast.success('Test run created!');
+        const listItem = mapRunResponseToListItem(createdRun as unknown as TestRun);
+        setTestRuns((previous) => {
+            if (previous.some((run) => run.id === listItem.id)) {
+                return previous;
+            }
+            return [listItem, ...previous];
+        });
+        setRunsOffset((previous) => previous + 1);
         setSelectedCasesForRun([]);
-        fetchRuns();
         fetchTags();
     };
 
@@ -303,7 +415,8 @@ const TestRunsPage: React.FC = () => {
         try {
             await testRunApi.deleteTestRun(runId);
             toast.success('Test run deleted');
-            fetchRuns();
+            setTestRuns((previous) => previous.filter((run) => run.id !== runId));
+            setRunsOffset((previous) => Math.max(previous - 1, 0));
         } catch (error: unknown) {
             toast.error((error as Error).message || 'Failed to delete');
         }
@@ -311,9 +424,16 @@ const TestRunsPage: React.FC = () => {
 
     const handleCloneRun = async (runId: string) => {
         try {
-            await testRunApi.cloneTestRun(runId);
+            const clonedRun = await testRunApi.cloneTestRun(runId);
             toast.success('Test run cloned');
-            fetchRuns();
+            const listItem = mapRunResponseToListItem(clonedRun as unknown as TestRun);
+            setTestRuns((previous) => {
+                if (previous.some((run) => run.id === listItem.id)) {
+                    return previous;
+                }
+                return [listItem, ...previous];
+            });
+            setRunsOffset((previous) => previous + 1);
         } catch (error: unknown) {
             toast.error((error as Error).message || 'Failed to clone');
         }
@@ -333,7 +453,17 @@ const TestRunsPage: React.FC = () => {
                 additionalTestCaseIds: data.additionalTestCaseIds,
             });
             toast.success('Test run updated');
-            fetchRuns();
+            setTestRuns((previous) => previous.map((run) => (
+                run.id === runId
+                    ? {
+                        ...run,
+                        title: data.title,
+                        groupId: data.groupId || undefined,
+                        tags: data.tags,
+                        updatedAt: new Date().toISOString(),
+                    }
+                    : run
+            )));
             fetchTags();
         } catch (error: unknown) {
             toast.error((error as Error).message || 'Failed to update test run');
@@ -394,7 +524,7 @@ const TestRunsPage: React.FC = () => {
                 // If refresh fails, just close
             }
         }
-        fetchRuns();
+        fetchRuns(true);
     };
 
     const toggleCaseSelection = (caseId: string) => {
@@ -523,7 +653,7 @@ const TestRunsPage: React.FC = () => {
                 </div>
 
                 {/* Test Runs List */}
-                <div className="flex-1 sm:overflow-auto p-4 bg-gray-50/50 dark:bg-gray-900">
+                <div ref={runsListContainerRef} className="flex-1 sm:overflow-auto p-4 bg-gray-50/50 dark:bg-gray-900">
                     {isLoading ? (
                         <div className="flex items-center justify-center h-full">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -663,6 +793,21 @@ const TestRunsPage: React.FC = () => {
                                 </div>
                                 );
                             })}
+                            {hasMoreRuns && (
+                                <div ref={loadMoreSentinelRef} className="flex justify-center py-2">
+                                    {isLoadingMore && (
+                                        <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Loading more runs...
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            <div className="flex justify-end">
+                                <div className="text-xs text-gray-400 dark:text-gray-500">
+                                    Loaded {Math.min(runsOffset, filteredRuns.length)} / {runsTotal || filteredRuns.length} runs
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>

@@ -63,6 +63,12 @@ const calculateFailRate = (passed: number, failed: number): number => {
     return (failed / executedTotal) * 100;
 };
 
+const renderPieLabel = ({ name, percent }: { name?: string; percent?: number }): string => {
+    const percentage = (percent ?? 0) * 100;
+    if (percentage < 4) return '';
+    return `${name ?? ''} ${percentage.toFixed(0)}%`;
+};
+
 const AnalyticsPage: React.FC = () => {
     const { activeProject } = useTestManagerStore();
     const navigate = useNavigate();
@@ -486,9 +492,9 @@ const OverviewTab: React.FC<{ summaryReport: ProjectSummaryReport; trendReport: 
                             <Pie
                                 data={testCaseDistributionData}
                                 cx="50%"
-                                cy="50%"
+                                cy="45%"
                                 labelLine={false}
-                                label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                                label={renderPieLabel}
                                 outerRadius={100}
                                 fill="#8884d8"
                                 dataKey="value"
@@ -498,6 +504,7 @@ const OverviewTab: React.FC<{ summaryReport: ProjectSummaryReport; trendReport: 
                                 ))}
                             </Pie>
                             <Tooltip />
+                            <Legend verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '12px' }} />
                         </PieChart>
                     </ResponsiveContainer>
                 </div>
@@ -510,9 +517,9 @@ const OverviewTab: React.FC<{ summaryReport: ProjectSummaryReport; trendReport: 
                             <Pie
                                 data={passFailDistributionData}
                                 cx="50%"
-                                cy="50%"
+                                cy="45%"
                                 labelLine={false}
-                                label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                                label={renderPieLabel}
                                 outerRadius={100}
                                 fill="#8884d8"
                                 dataKey="value"
@@ -522,6 +529,7 @@ const OverviewTab: React.FC<{ summaryReport: ProjectSummaryReport; trendReport: 
                                 ))}
                             </Pie>
                             <Tooltip />
+                            <Legend verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '12px' }} />
                         </PieChart>
                     </ResponsiveContainer>
                 </div>

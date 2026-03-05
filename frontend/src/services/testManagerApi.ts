@@ -9,6 +9,7 @@ import { API_URL } from "../utils/api";
 import { ProjectSettings } from "../types/testManager";
 import {
   ApiResponse,
+  PaginationMeta,
   ApiErrorResponse,
   ProjectResponse,
   TestSuiteResponse,
@@ -370,6 +371,42 @@ export const getTestCasesByProject = async (
   }
 };
 
+export interface PaginatedTestCasesResult {
+  items: TestCaseResponse[];
+  meta: PaginationMeta;
+}
+
+/**
+ * Get paginated test cases in a project
+ */
+export const getTestCasesByProjectPaginated = async (
+  projectId: string,
+  params: { limit: number; offset: number }
+): Promise<PaginatedTestCasesResult> => {
+  try {
+    const response = await axios.get<ApiResponse<TestCaseResponse[]>>(
+      `${API_URL}/projects/${projectId}/cases`,
+      {
+        params,
+      }
+    );
+
+    const fallbackMeta: PaginationMeta = {
+      total: response.data.data?.length || 0,
+      limit: params.limit,
+      offset: params.offset,
+      hasMore: false,
+    };
+
+    return {
+      items: response.data.data || [],
+      meta: response.data.meta || fallbackMeta,
+    };
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
 /**
  * Get a single test case by ID
  */
@@ -552,6 +589,7 @@ export const testManagerApi = {
   createTestCase,
   getTestCases,
   getTestCasesByProject,
+  getTestCasesByProjectPaginated,
   getTestCase,
   updateTestCase,
   deleteTestCase,

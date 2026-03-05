@@ -144,6 +144,38 @@ export const getTestCasesByProject = async (
   return testCases as unknown as ITestCaseDocument[];
 };
 
+export const getTestCasesByProjectPaginated = async (
+  projectId: string,
+  userId: string,
+  options: { limit: number; offset: number }
+): Promise<{ items: ITestCaseDocument[]; total: number }> => {
+  const hasAccess = await projectService.hasProjectAccess(projectId, userId);
+  if (!hasAccess) {
+    return { items: [], total: 0 };
+  }
+
+  const query = {
+    projectId: new Types.ObjectId(projectId),
+  };
+
+  const [items, total] = await Promise.all([
+    TestCase.find(query)
+      .populate("assignedTester", "name email")
+      .populate("suiteId", "name")
+      .populate("history.userId", "name email")
+      .sort({ suiteId: 1, order: 1, lastModified: -1 })
+      .skip(options.offset)
+      .limit(options.limit)
+      .lean(),
+    TestCase.countDocuments(query),
+  ]);
+
+  return {
+    items: items as unknown as ITestCaseDocument[],
+    total,
+  };
+};
+
 /**
  * Get a single test case by ID
  */

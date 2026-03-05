@@ -81,6 +81,38 @@ export const getTestRunsByProject = async (req: Request, res: Response): Promise
     }
 
     const { projectId } = req.params as Record<string, string>;
+    const rawLimit = req.query.limit;
+    const rawOffset = req.query.offset;
+    const limit = typeof rawLimit === "string" ? Number.parseInt(rawLimit, 10) : undefined;
+    const offset = typeof rawOffset === "string" ? Number.parseInt(rawOffset, 10) : undefined;
+
+    const isPaginatedRequest =
+      Number.isInteger(limit) &&
+      Number.isInteger(offset) &&
+      (limit as number) > 0 &&
+      (offset as number) >= 0;
+
+    if (isPaginatedRequest) {
+      const safeLimit = Math.min(limit as number, 200);
+      const safeOffset = offset as number;
+      const result = await testRunService.getTestRunsByProjectPaginated(projectId, userId, {
+        limit: safeLimit,
+        offset: safeOffset,
+      });
+      const responses = result.items.map(testRunService.formatTestRunListResponse);
+
+      res.status(200).json({
+        success: true,
+        data: responses,
+        meta: {
+          total: result.total,
+          limit: safeLimit,
+          offset: safeOffset,
+          hasMore: safeOffset + responses.length < result.total,
+        },
+      });
+      return;
+    }
 
     const testRuns = await testRunService.getTestRunsByProject(projectId, userId);
     const responses = testRuns.map(testRunService.formatTestRunListResponse);
