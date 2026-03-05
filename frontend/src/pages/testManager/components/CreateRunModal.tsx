@@ -34,13 +34,22 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
     const [description, setDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedSuiteFilter, setSelectedSuiteFilter] = useState<string>('all');
+    const [selectedAreaFilter, setSelectedAreaFilter] = useState<string>('all');
     const [selectedGroupId, setSelectedGroupId] = useState<string>('');
     const [tags, setTags] = useState<string[]>([]);
 
-    // Filter test cases by selected suite
-    const filteredTestCases = selectedSuiteFilter === 'all'
+    // Filter test cases by selected suite, then by selected area
+    const suiteFilteredCases = selectedSuiteFilter === 'all'
         ? testCases
         : testCases.filter(tc => tc.suiteId === selectedSuiteFilter);
+
+    const availableAreas = Array.from(
+        new Set(suiteFilteredCases.map(tc => tc.area || '').filter(a => a !== ''))
+    ).sort();
+
+    const filteredTestCases = selectedAreaFilter === 'all'
+        ? suiteFilteredCases
+        : suiteFilteredCases.filter(tc => (tc.area || '') === selectedAreaFilter);
 
     // Sync title and reset state when modal opens or closes
     useEffect(() => {
@@ -50,6 +59,7 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
             setTitle('');
             setDescription('');
             setSelectedSuiteFilter('all');
+            setSelectedAreaFilter('all');
             setSelectedGroupId('');
             setTags([]);
         }
@@ -73,6 +83,7 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
             setTitle(initialTitle ?? '');
             setDescription('');
             setSelectedSuiteFilter('all');
+            setSelectedAreaFilter('all');
             setSelectedGroupId('');
             setTags([]);
             onClose();
@@ -138,7 +149,7 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Suite</label>
                             <select
                                 value={selectedSuiteFilter}
-                                onChange={(e) => setSelectedSuiteFilter(e.target.value)}
+                                onChange={(e) => { setSelectedSuiteFilter(e.target.value); setSelectedAreaFilter('all'); }}
                                 className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100"
                             >
                                 <option value="all">All Suites</option>
@@ -149,6 +160,23 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
                                 ))}
                             </select>
                         </div>
+                    </div>
+
+                    {/* Filter by Area/Page */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Area/Page</label>
+                        <select
+                            value={selectedAreaFilter}
+                            onChange={(e) => setSelectedAreaFilter(e.target.value)}
+                            className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100"
+                        >
+                            <option value="all">All Areas</option>
+                            {availableAreas.map((area) => (
+                                <option key={area} value={area}>
+                                    {area}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     {/* Tags */}
