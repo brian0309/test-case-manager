@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { shallow } from 'zustand/shallow';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
@@ -34,7 +35,24 @@ import { getRunStatusColor, generateSuiteTitle } from './components/testRunUtils
 
 
 const TestRunsPage: React.FC = () => {
-    const { activeProject, testCases, testSuites, fetchTestCasesByProject, fetchTestSuites, setActiveProject } = useTestManagerStore();
+    const {
+        activeProject,
+        testCases,
+        testSuites,
+        fetchTestCasesByProject,
+        fetchTestSuites,
+        setActiveProject,
+    } = useTestManagerStore(
+        (state) => ({
+            activeProject: state.activeProject,
+            testCases: state.testCases,
+            testSuites: state.testSuites,
+            fetchTestCasesByProject: state.fetchTestCasesByProject,
+            fetchTestSuites: state.fetchTestSuites,
+            setActiveProject: state.setActiveProject,
+        }),
+        shallow
+    );
     const [searchParams, setSearchParams] = useSearchParams();
     const [testRuns, setTestRuns] = useState<TestRunListItem[]>([]);
     const [testRunGroups, setTestRunGroups] = useState<TestRunGroup[]>([]);

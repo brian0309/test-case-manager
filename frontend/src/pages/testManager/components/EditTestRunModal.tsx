@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import toast from 'react-hot-toast';
 import { TestCase, TestRunListItem, TestRunGroup } from '../../../types/testManager';
 import TagInput from '../../../components/testManager/TagInput';
@@ -33,6 +34,7 @@ const EditTestRunModal: React.FC<EditTestRunModalProps> = ({
     const [additionalCaseIds, setAdditionalCaseIds] = useState<string[]>([]);
     const [isLoadingRunDetails, setIsLoadingRunDetails] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const additionalCasesListRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (testRun) {
@@ -63,16 +65,33 @@ const EditTestRunModal: React.FC<EditTestRunModalProps> = ({
         loadRunDetails();
     }, [isOpen, testRun]);
 
-    if (!isOpen || !testRun) return null;
+    const existingCaseIdsSet = useMemo(() => new Set(existingCaseIds), [existingCaseIds]);
+    const additionalCaseIdsSet = useMemo(() => new Set(additionalCaseIds), [additionalCaseIds]);
 
-    const availableAdditionalCases = testCases.filter((testCase) => !existingCaseIds.includes(testCase.id));
-    const filteredAdditionalCases = selectedSuiteFilter === 'all'
-        ? availableAdditionalCases
-        : availableAdditionalCases.filter((testCase) => testCase.suiteId === selectedSuiteFilter);
+    const availableAdditionalCases = useMemo(
+        () => testCases.filter((testCase) => !existingCaseIdsSet.has(testCase.id)),
+        [existingCaseIdsSet, testCases]
+    );
+
+    const filteredAdditionalCases = useMemo(
+        () => selectedSuiteFilter === 'all'
+            ? availableAdditionalCases
+            : availableAdditionalCases.filter((testCase) => testCase.suiteId === selectedSuiteFilter),
+        [availableAdditionalCases, selectedSuiteFilter]
+    );
 
     const allFilteredSelected =
         filteredAdditionalCases.length > 0 &&
-        filteredAdditionalCases.every((testCase) => additionalCaseIds.includes(testCase.id));
+        filteredAdditionalCases.every((testCase) => additionalCaseIdsSet.has(testCase.id));
+
+    const additionalCasesVirtualizer = useVirtualizer({
+        count: filteredAdditionalCases.length,
+        getScrollElement: () => additionalCasesListRef.current,
+        estimateSize: () => 58,
+        overscan: 8,
+    });
+
+    if (!isOpen || !testRun) return null;
 
     const toggleAdditionalCase = (caseId: string) => {
         setAdditionalCaseIds((previous) =>
@@ -195,31 +214,48 @@ const EditTestRunModal: React.FC<EditTestRunModalProps> = ({
                                 {allFilteredSelected ? 'Deselect All' : 'Select All'}
                             </button>
                         </div>
-                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg max-h-56 overflow-y-auto bg-gray-50 dark:bg-gray-800/50">
+                        <div
+                            ref={additionalCasesListRef}
+                            className="border border-gray-200 dark:border-gray-700 rounded-lg max-h-56 overflow-y-auto bg-gray-50 dark:bg-gray-800/50"
+                        >
                             {isLoadingRunDetails ? (
                                 <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">Loading run cases...</div>
                             ) : filteredAdditionalCases.length === 0 ? (
                                 <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">No additional test cases available</div>
                             ) : (
-                                filteredAdditionalCases.map((testCase) => (
-                                    <label
-                                        key={testCase.id}
-                                        className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700/50 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors"
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={additionalCaseIds.includes(testCase.id)}
-                                            onChange={() => toggleAdditionalCase(testCase.id)}
-                                            className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700"
-                                        />
-                                        <div className="flex-1 min-w-0">
-                                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{testCase.title}</div>
-                                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                                                {testCase.suite} • {testCase.area || 'No Area'}
-                                            </div>
-                                        </div>
-                                    </label>
-                                ))
+                                <div
+                                    style={{
+                                        height: `${additionalCasesVirtualizer.getTotalSize()}px`,
+                                        position: 'relative',
+                                        width: '100%',
+                                    }}
+                                >
+                                    {additionalCasesVirtualizer.getVirtualItems().map((virtualRow) => {
+                                        const testCase = filteredAdditionalCases[virtualRow.index];
+                                        if (!testCase) return null;
+
+                                        return (
+                                            <label
+                                                key={testCase.id}
+                                                className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700/50 cursor-pointer border-b border-gray-100 dark:border-gray-700 transition-colors absolute left-0 right-0"
+                                                style={{ transform: `translateY(${virtualRow.start}px)` }}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={additionalCaseIdsSet.has(testCase.id)}
+                                                    onChange={() => toggleAdditionalCase(testCase.id)}
+                                                    className="w-4 h-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500 dark:bg-gray-700"
+                                                />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{testCase.title}</div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                        {testCase.suite} • {testCase.area || 'No Area'}
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
                             )}
                         </div>
                     </div>

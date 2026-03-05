@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { shallow } from 'zustand/shallow';
 import TestCaseTable, { SortInfo } from '../../components/testManager/TestCaseTable';
 import TestCaseModal from '../../components/testManager/TestCaseModal';
 import TestCaseViewModal from '../../components/testManager/TestCaseViewModal';
@@ -49,24 +50,53 @@ const TestCasesPage: React.FC = () => {
         isFilterModalOpen,
         searchQuery,
         clearSearchQuery,
-        // Selection
         isSelectionMode,
         selectedTestCaseIds,
         toggleTestCaseSelection,
         selectAllTestCases,
         clearSelection,
-        // Project settings
         fetchProjectSettings,
         getProjectSettings,
-        // Context setting actions
         setActiveProject,
         setActiveSuiteWithId,
         setActiveArea,
-        // Export callback
         setExportTestCasesCallback,
-        // Import callback
         setImportTestCasesCallback,
-    } = useTestManagerStore();
+    } = useTestManagerStore(
+        (state) => ({
+            testCases: state.testCases,
+            activeSuite: state.activeSuite,
+            activeSuiteId: state.activeSuiteId,
+            activeProject: state.activeProject,
+            activeArea: state.activeArea,
+            updateTestCase: state.updateTestCase,
+            createTestCase: state.createTestCase,
+            cloneTestCase: state.cloneTestCase,
+            fetchProjects: state.fetchProjects,
+            projects: state.projects,
+            testSuites: state.testSuites,
+            fetchTestSuites: state.fetchTestSuites,
+            fetchTestCases: state.fetchTestCases,
+            fetchTestCasesByProject: state.fetchTestCasesByProject,
+            filters: state.filters,
+            isFilterModalOpen: state.isFilterModalOpen,
+            searchQuery: state.searchQuery,
+            clearSearchQuery: state.clearSearchQuery,
+            isSelectionMode: state.isSelectionMode,
+            selectedTestCaseIds: state.selectedTestCaseIds,
+            toggleTestCaseSelection: state.toggleTestCaseSelection,
+            selectAllTestCases: state.selectAllTestCases,
+            clearSelection: state.clearSelection,
+            fetchProjectSettings: state.fetchProjectSettings,
+            getProjectSettings: state.getProjectSettings,
+            setActiveProject: state.setActiveProject,
+            setActiveSuiteWithId: state.setActiveSuiteWithId,
+            setActiveArea: state.setActiveArea,
+            setExportTestCasesCallback: state.setExportTestCasesCallback,
+            setImportTestCasesCallback: state.setImportTestCasesCallback,
+        }),
+        shallow
+    );
 
     // Enable real-time updates for test cases
     useRealtimeTestCases({
