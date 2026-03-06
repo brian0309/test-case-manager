@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, ChevronDown, Folder, Layers, Check, Home, Map, Grid2x2, Table } from 'lucide-react';
 import { useTestManagerStore } from '../../store/testManagerStore';
+import { getAreasByProject, getAreasBySuite } from '../../services/testManagerApi';
 
 interface ContextBreadcrumbProps {
     showSuiteSelector?: boolean;
@@ -40,6 +41,11 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
     const projectRef = useRef<HTMLDivElement>(null);
     const suiteRef = useRef<HTMLDivElement>(null);
     const areaRef = useRef<HTMLDivElement>(null);
+
+    // Areas fetched from API for the project-level (All Cases) view
+    const [projectAreas, setProjectAreas] = useState<string[]>([]);
+    // Areas fetched from API for the suite-level view
+    const [suiteAreas, setSuiteAreas] = useState<string[]>([]);
 
     const currentProject = projects.find(p => p.id === activeProject);
     const currentSuite = testSuites.find(s => s.id === activeSuiteId);
@@ -105,10 +111,60 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
         setIsAreaOpen(false);
     };
 
-    const uniqueAreas = useMemo(
-        () => Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort(),
-        [testCases]
-    );
+    // When no suite is selected, fetch all unique areas for the project from the API
+    // so the filter shows all areas regardless of how many test cases have been loaded.
+    useEffect(() => {
+        if (!activeProject || activeSuiteId) {
+            setProjectAreas([]);
+            return;
+        }
+
+        let cancelled = false;
+        getAreasByProject(activeProject).then((areas) => {
+            if (!cancelled) {
+                setProjectAreas(areas);
+            }
+        }).catch(() => {
+            if (!cancelled) {
+                setProjectAreas([]);
+            }
+        });
+
+        return () => { cancelled = true; };
+    }, [activeProject, activeSuiteId]);
+
+    // When a suite is selected, fetch all unique areas for the suite from the API
+    // so the filter shows all areas regardless of how many test cases have been loaded.
+    useEffect(() => {
+        if (!activeSuiteId) {
+            setSuiteAreas([]);
+            return;
+        }
+
+        let cancelled = false;
+        getAreasBySuite(activeSuiteId).then((areas) => {
+            if (!cancelled) {
+                setSuiteAreas(areas);
+            }
+        }).catch(() => {
+            if (!cancelled) {
+                setSuiteAreas([]);
+            }
+        });
+
+        return () => { cancelled = true; };
+    }, [activeSuiteId]);
+
+    // Merge API-fetched areas with any newly-created areas visible in the currently
+    // loaded test cases to capture additions without requiring a re-fetch.
+    const uniqueAreas = useMemo(() => {
+        const apiAreas = activeSuiteId ? suiteAreas : projectAreas;
+        const combined = new Set<string>([
+            ...apiAreas,
+            ...testCases.map(tc => tc.area).filter((a): a is string => !!a),
+        ]);
+        return Array.from(combined).sort();
+    }, [activeSuiteId, testCases, projectAreas, suiteAreas]);
 
     return (
         <div className="min-h-16 flex flex-wrap items-center justify-between gap-2 sm:gap-3 px-4 sm:px-6 py-2 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">

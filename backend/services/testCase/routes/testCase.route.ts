@@ -3,6 +3,8 @@ import {
   createTestCase,
   getTestCasesBySuite,
   getTestCasesByProject,
+  getAreasByProject,
+  getAreasBySuite,
   getTestCase,
   updateTestCase,
   deleteTestCase,
@@ -35,6 +37,7 @@ export default router;
 // Export routes that need to be mounted under /api/suites/:suiteId
 export const suiteCaseRoutes = express.Router({ mergeParams: true });
 suiteCaseRoutes.use(verifyToken);
+suiteCaseRoutes.get("/areas", getAreasBySuite);
 suiteCaseRoutes.post("/", createTestCase);
 suiteCaseRoutes.get("/", getTestCasesBySuite);
 suiteCaseRoutes.post("/bulk-import", bulkImportTestCases);
@@ -43,5 +46,6 @@ suiteCaseRoutes.patch("/reorder", reorderTestCases);
 // Export routes that need to be mounted under /api/projects/:projectId
 export const projectCaseRoutes = express.Router({ mergeParams: true });
 projectCaseRoutes.use(verifyToken);
+projectCaseRoutes.get("/areas", getAreasByProject);
 projectCaseRoutes.get("/", getTestCasesByProject);
 projectCaseRoutes.post("/bulk-import", bulkImportTestCasesWithSuite);
