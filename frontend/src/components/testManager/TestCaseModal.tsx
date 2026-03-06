@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { useCollaborativeEditing } from '../../hooks/useCollaborativeEditing';
 import { TestCase, Priority, Status, HistoryEntry, CustomFieldDefinition } from '../../types/testManager';
-import { X, Plus, ChevronDown, History, Check, Loader2, Cloud } from 'lucide-react';
+import { X, Plus, ChevronDown, ChevronRight, History, Check, Loader2, Cloud } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 import IdDisplay from './IdDisplay';
 
@@ -740,9 +740,20 @@ const TestCaseModal: React.FC<TestCaseModalProps> = ({ testCase, availableAreas,
                 {/* History Panel */}
                 {showHistory && (
                     <div className="hidden sm:flex w-80 border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex-col overflow-hidden">
-                        <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Edit History</h3>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">View and restore previous versions</p>
+                        <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex items-start justify-between gap-3">
+                            <div>
+                                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Edit History</h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">View and restore previous versions</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowHistory(false)}
+                                className="mt-0.5 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                                title="Collapse history"
+                                aria-label="Collapse history"
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </button>
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-4">

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { shallow } from 'zustand/shallow';
-import { useTestManagerStore } from '../../store/testManagerStore';
+import { mapTestCaseResponse, useTestManagerStore } from '../../store/testManagerStore';
 import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import ConfirmationModal from '../../components/testManager/ConfirmationModal';
@@ -13,6 +13,7 @@ import {
     TestRunGroup,
 } from '../../types/testManager';
 import { testRunApi } from '../../services/testRunApi';
+import { getTestCase } from '../../services/testManagerApi';
 import { useRealtimeTestRuns } from '../../hooks/useRealtimeTestRuns';
 import {
     Play,
@@ -65,6 +66,7 @@ const TestRunsPage: React.FC = () => {
         fetchTestCasesByProject,
         fetchTestSuites,
         setActiveProject,
+        setTestCases,
     } = useTestManagerStore(
         (state) => ({
             activeProject: state.activeProject,
@@ -73,6 +75,7 @@ const TestRunsPage: React.FC = () => {
             fetchTestCasesByProject: state.fetchTestCasesByProject,
             fetchTestSuites: state.fetchTestSuites,
             setActiveProject: state.setActiveProject,
+            setTestCases: state.setTestCases,
         }),
         shallow
     );
@@ -527,6 +530,56 @@ const TestRunsPage: React.FC = () => {
         fetchRuns(true);
     };
 
+    const mergeLatestCaseSnapshot = useCallback((run: TestRun, caseId: string, refreshedCase: ReturnType<typeof mapTestCaseResponse>): TestRun => {
+        return {
+            ...run,
+            items: run.items.map((item) => (
+                item.caseId === caseId
+                    ? {
+                        ...item,
+                        caseSnapshot: {
+                            title: refreshedCase.title,
+                            priority: refreshedCase.priority,
+                            area: refreshedCase.area,
+                            expectedResult: refreshedCase.expectedResult,
+                            testDescription: refreshedCase.testDescription,
+                            stepsContent: refreshedCase.stepsContent,
+                        },
+                    }
+                    : item
+            )),
+        };
+    }, []);
+
+    const handleRefreshRunCase = useCallback(async (caseId: string) => {
+        try {
+            const latestCaseResponse = await getTestCase(caseId);
+            const refreshedCase = mapTestCaseResponse(latestCaseResponse);
+
+            setTestCases((currentCases) => {
+                const hasExistingCase = currentCases.some((testCase) => testCase.id === refreshedCase.id);
+                if (!hasExistingCase) {
+                    return [...currentCases, refreshedCase];
+                }
+
+                return currentCases.map((testCase) => (
+                    testCase.id === refreshedCase.id ? refreshedCase : testCase
+                ));
+            });
+
+            setExecuteRun((currentRun) => (
+                currentRun ? mergeLatestCaseSnapshot(currentRun, caseId, refreshedCase) : currentRun
+            ));
+            setDetailRun((currentRun) => (
+                currentRun ? mergeLatestCaseSnapshot(currentRun, caseId, refreshedCase) : currentRun
+            ));
+        } catch (error: unknown) {
+            const message = (error as Error).message || 'Failed to refresh test case';
+            toast.error(message);
+            throw error;
+        }
+    }, [mergeLatestCaseSnapshot, setTestCases]);
+
     const toggleCaseSelection = (caseId: string) => {
         setSelectedCasesForRun((prev) =>
             prev.includes(caseId) ? prev.filter((id) => id !== caseId) : [...prev, caseId]
@@ -566,6 +619,7 @@ const TestRunsPage: React.FC = () => {
                     }}
                     testRun={executeRun}
                     onUpdateItem={handleUpdateRunItem}
+                    onRefreshCurrentCase={handleRefreshRunCase}
                     onComplete={handleCompleteRun}
                     startIndex={executeStartIndex}
                     itemOrder={executeItemOrder}

@@ -4,20 +4,25 @@ import {
     CheckCircle,
     XCircle,
     AlertCircle,
+    ArrowUpRight,
+    RefreshCw,
     ChevronRight,
     ChevronLeft,
     Layers,
     MapPin,
 } from 'lucide-react';
-import { TestRun, RunItemStatus, TestCase, TestSuite } from '../../../types/testManager';
+import { TestRun, RunItem, RunItemStatus, TestCase, TestSuite } from '../../../types/testManager';
 import RichTextEditor from '../../../components/testManager/RichTextEditor';
 import { getItemStatusColor } from './testRunUtils';
+
+type OptimisticRunItemOverride = Pick<RunItem, 'status' | 'actualResult'>;
 
 export interface ExecuteRunModalProps {
     isOpen: boolean;
     onClose: () => void;
     testRun: TestRun | null;
     onUpdateItem: (itemId: string, status: RunItemStatus, actualResult?: string) => Promise<void>;
+    onRefreshCurrentCase: (caseId: string) => Promise<void>;
     onComplete: () => Promise<void>;
     startIndex?: number;
     itemOrder?: number[];
@@ -30,6 +35,7 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
     onClose,
     testRun,
     onUpdateItem,
+    onRefreshCurrentCase,
     onComplete,
     startIndex = 0,
     itemOrder,
@@ -38,7 +44,9 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
 }) => {
     const [currentIndex, setCurrentIndex] = useState(startIndex);
     const [actualResult, setActualResult] = useState('');
-    const [isUpdating, setIsUpdating] = useState(false);
+    const [isRefreshingCase, setIsRefreshingCase] = useState(false);
+    const [pendingSaveCount, setPendingSaveCount] = useState(0);
+    const [optimisticOverrides, setOptimisticOverrides] = useState<Record<string, OptimisticRunItemOverride>>({});
 
     // Reset index when modal opens with a new startIndex
     useEffect(() => {
@@ -58,6 +66,20 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
     const totalItems = orderedIndices.length;
     const activeItemIndex = totalItems > 0 ? orderedIndices[Math.min(currentIndex, totalItems - 1)] : 0;
 
+    const displayedItems = useMemo(() => {
+        if (!testRun) return [];
+
+        return testRun.items.map((item) => {
+            const override = optimisticOverrides[item.id];
+            if (!override) return item;
+
+            return {
+                ...item,
+                ...override,
+            };
+        });
+    }, [testRun, optimisticOverrides]);
+
     useEffect(() => {
         if (currentIndex >= totalItems && totalItems > 0) {
             setCurrentIndex(totalItems - 1);
@@ -65,10 +87,37 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
     }, [currentIndex, totalItems]);
 
     useEffect(() => {
-        if (testRun && testRun.items[activeItemIndex]) {
-            setActualResult(testRun.items[activeItemIndex].actualResult || '');
+        if (displayedItems[activeItemIndex]) {
+            setActualResult(displayedItems[activeItemIndex].actualResult || '');
         }
-    }, [testRun, activeItemIndex]);
+    }, [displayedItems, activeItemIndex]);
+
+    useEffect(() => {
+        if (!testRun) {
+            setOptimisticOverrides({});
+            return;
+        }
+
+        setOptimisticOverrides((currentOverrides) => {
+            const nextOverrides = { ...currentOverrides };
+            let hasChanges = false;
+
+            testRun.items.forEach((item) => {
+                const override = currentOverrides[item.id];
+                if (!override) return;
+
+                if (
+                    item.status === override.status &&
+                    (item.actualResult || '') === (override.actualResult || '')
+                ) {
+                    delete nextOverrides[item.id];
+                    hasChanges = true;
+                }
+            });
+
+            return hasChanges ? nextOverrides : currentOverrides;
+        });
+    }, [testRun]);
 
     const suiteNameById = useMemo(() => {
         const map = new Map<string, string>();
@@ -84,8 +133,8 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
 
     if (!isOpen || !testRun) return null;
 
-    const currentItem = testRun.items[activeItemIndex];
-    const executedCount = testRun.items.filter(i => i.status !== RunItemStatus.NotRun).length;
+    const currentItem = displayedItems[activeItemIndex];
+    const executedCount = displayedItems.filter(i => i.status !== RunItemStatus.NotRun).length;
 
     const resolvedSuiteName = (() => {
         const itemCase = testCaseById.get(currentItem.caseId);
@@ -98,18 +147,39 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
     const resolvedAreaName = currentItem.caseSnapshot.area || testCaseById.get(currentItem.caseId)?.area || '—';
 
     const handleStatusUpdate = async (status: RunItemStatus) => {
-        setIsUpdating(true);
+        const itemId = currentItem.id;
+        const previousOverride = optimisticOverrides[itemId];
+
+        setOptimisticOverrides((currentOverrides) => ({
+            ...currentOverrides,
+            [itemId]: {
+                status,
+                actualResult,
+            },
+        }));
+
+        if (currentIndex < totalItems - 1) {
+            setCurrentIndex(currentIndex + 1);
+        }
+
+        setPendingSaveCount((count) => count + 1);
         try {
-            await onUpdateItem(currentItem.id, status, actualResult);
-            // Move to next item if not last
-            if (currentIndex < totalItems - 1) {
-                setCurrentIndex(currentIndex + 1);
-                setActualResult('');
-            }
+            await onUpdateItem(itemId, status, actualResult);
         } catch (error: unknown) {
+            setOptimisticOverrides((currentOverrides) => {
+                const nextOverrides = { ...currentOverrides };
+
+                if (previousOverride) {
+                    nextOverrides[itemId] = previousOverride;
+                } else {
+                    delete nextOverrides[itemId];
+                }
+
+                return nextOverrides;
+            });
             toast.error((error as Error).message || 'Failed to update status');
         } finally {
-            setIsUpdating(false);
+            setPendingSaveCount((count) => Math.max(0, count - 1));
         }
     };
 
@@ -123,6 +193,20 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
         }
     };
 
+    const handleRefreshCurrentCase = async () => {
+        setIsRefreshingCase(true);
+        try {
+            await onRefreshCurrentCase(currentItem.caseId);
+            toast.success('Test case updated');
+        } catch {
+            // Parent handler already shows the failure toast.
+        } finally {
+            setIsRefreshingCase(false);
+        }
+    };
+
+    const sourceTestCaseHref = `/test-manager/cases?testCaseId=${currentItem.caseId}`;
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
             <div
@@ -133,7 +217,15 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                 {/* Header */}
                 <div className="px-3 sm:px-6 py-4 sm:py-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
                     <div className="flex-1 min-w-0 pr-2">
-                        <h2 className="text-base sm:text-xl font-semibold text-gray-900 dark:text-gray-100 truncate">{testRun.title}</h2>
+                        <div className="flex items-center gap-2 min-w-0">
+                            <h2 className="truncate text-base font-semibold text-gray-900 dark:text-gray-100 sm:text-xl">{testRun.title}</h2>
+                            {pendingSaveCount > 0 && (
+                                <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 sm:text-sm">
+                                    <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                    Saving
+                                </span>
+                            )}
+                        </div>
                         <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
                             Progress: {executedCount} / {totalItems} ({Math.round((executedCount / totalItems) * 100)}%)
                         </div>
@@ -146,7 +238,7 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                 {/* Progress bar */}
                 <div className="h-2 bg-gray-100 dark:bg-gray-700 flex">
                     {orderedIndices.map((itemIndex, idx) => {
-                        const item = testRun.items[itemIndex];
+                        const item = displayedItems[itemIndex];
                         return (
                         <div
                             key={item.id}
@@ -170,6 +262,16 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                             </span>
                         </div>
                         <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 max-w-[70%]">
+                            <a
+                                href={sourceTestCaseHref}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center rounded-md border border-gray-100 bg-gray-50 p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-blue-600 dark:border-gray-700 dark:bg-gray-700/60 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-blue-400"
+                                title="Open source test case in new tab"
+                                aria-label="Open source test case in new tab"
+                            >
+                                <ArrowUpRight className="h-4 w-4" />
+                            </a>
                             <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700 text-[11px] sm:text-sm text-gray-600 dark:text-gray-400 max-w-[180px] sm:max-w-[260px]">
                                 <Layers className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400 flex-shrink-0" />
                                 <span className="truncate">Suite: {resolvedSuiteName}</span>
@@ -195,9 +297,20 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                         </div>
                     </div>
 
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 sm:mb-4">
-                        {currentItem.caseSnapshot.title}
-                    </h3>
+                    <div className="mb-3 flex items-start justify-between gap-3 sm:mb-4">
+                        <h3 className="min-w-0 flex-1 text-base font-semibold text-gray-900 dark:text-gray-100 sm:text-lg">
+                            {currentItem.caseSnapshot.title}
+                        </h3>
+                        <button
+                            onClick={handleRefreshCurrentCase}
+                            disabled={isRefreshingCase}
+                            className="inline-flex items-center justify-center p-1 text-gray-400 transition-colors hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-500 dark:hover:text-blue-400"
+                            title="Reload latest test case data"
+                            aria-label="Reload latest test case data"
+                        >
+                            <RefreshCw className={`h-4 w-4 ${isRefreshingCase ? 'animate-spin' : ''}`} />
+                        </button>
+                    </div>
 
                     {currentItem.caseSnapshot.testDescription && (
                         <div className="mb-5 sm:mb-6">
@@ -243,7 +356,6 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                         <div className="grid grid-cols-2 gap-2.5">
                             <button
                                 onClick={() => handleStatusUpdate(RunItemStatus.Passed)}
-                                disabled={isUpdating}
                                 className="flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium text-white bg-green-600 rounded-lg active:bg-green-700 disabled:opacity-50"
                             >
                                 <CheckCircle className="w-4 h-4" />
@@ -251,7 +363,6 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                             </button>
                             <button
                                 onClick={() => handleStatusUpdate(RunItemStatus.Failed)}
-                                disabled={isUpdating}
                                 className="flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium text-white bg-red-600 rounded-lg active:bg-red-700 disabled:opacity-50"
                             >
                                 <XCircle className="w-4 h-4" />
@@ -259,7 +370,6 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                             </button>
                             <button
                                 onClick={() => handleStatusUpdate(RunItemStatus.Blocked)}
-                                disabled={isUpdating}
                                 className="flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium text-white bg-orange-600 rounded-lg active:bg-orange-700 disabled:opacity-50"
                             >
                                 <AlertCircle className="w-4 h-4" />
@@ -267,7 +377,6 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                             </button>
                             <button
                                 onClick={() => handleStatusUpdate(RunItemStatus.Skipped)}
-                                disabled={isUpdating}
                                 className="flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg active:bg-gray-300 dark:active:bg-gray-600 disabled:opacity-50"
                             >
                                 Skip
@@ -292,7 +401,6 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                         <div className="flex gap-2">
                             <button
                                 onClick={() => handleStatusUpdate(RunItemStatus.Passed)}
-                                disabled={isUpdating}
                                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
                             >
                                 <CheckCircle className="w-4 h-4" />
@@ -300,7 +408,6 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                             </button>
                             <button
                                 onClick={() => handleStatusUpdate(RunItemStatus.Failed)}
-                                disabled={isUpdating}
                                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
                             >
                                 <XCircle className="w-4 h-4" />
@@ -308,7 +415,6 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                             </button>
                             <button
                                 onClick={() => handleStatusUpdate(RunItemStatus.Blocked)}
-                                disabled={isUpdating}
                                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 disabled:opacity-50"
                             >
                                 <AlertCircle className="w-4 h-4" />
@@ -316,7 +422,6 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                             </button>
                             <button
                                 onClick={() => handleStatusUpdate(RunItemStatus.Skipped)}
-                                disabled={isUpdating}
                                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50"
                             >
                                 Skip

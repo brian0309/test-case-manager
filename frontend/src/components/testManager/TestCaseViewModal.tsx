@@ -223,9 +223,9 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
                 </div>
 
                 {/* Content area: main content + discussion panel side by side */}
-                <div className="flex-1 flex overflow-hidden min-h-0">
+                <div className="relative flex-1 min-h-0 lg:flex lg:overflow-hidden overflow-y-auto">
                     {/* Main Content */}
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                    <div className="flex-1 min-h-0 p-4 md:p-6 lg:overflow-y-auto">
                         <div className="mb-5">
                             <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Title</label>
                             <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{localCase.title}</h1>

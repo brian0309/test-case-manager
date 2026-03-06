@@ -89,7 +89,8 @@ const renderSystemMessageBody = (
 
 const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId }) => {
     const { user } = useAuthStore();
-    const [isOpen, setIsOpen] = useState(true);
+    const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
+    const [isOpen, setIsOpen] = useState(() => window.innerWidth >= 1024);
     const [messages, setMessages] = useState<DiscussionMessage[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -101,6 +102,23 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    useEffect(() => {
+        const handleResize = () => {
+            const desktop = window.innerWidth >= 1024;
+            setIsDesktop((previousIsDesktop) => {
+                if (previousIsDesktop !== desktop) {
+                    setIsOpen(desktop);
+                }
+                return desktop;
+            });
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
 
     const scrollToBottom = useCallback(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -306,6 +324,25 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
 
     // Collapsed state – show slim toggle tab
     if (!isOpen) {
+        if (!isDesktop) {
+            return (
+                <button
+                    onClick={() => setIsOpen(true)}
+                    className="fixed right-4 z-[60] inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-lg backdrop-blur-sm transition-colors hover:bg-gray-50 dark:hover:bg-gray-700"
+                    title="Open Discussion"
+                    style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 4.5rem)' }}
+                >
+                    <MessageSquare className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                    <span>Discussion</span>
+                    {messages.length > 0 && (
+                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                            {messages.length}
+                        </span>
+                    )}
+                </button>
+            );
+        }
+
         return (
             <div className="flex flex-col items-center">
                 <button
@@ -324,7 +361,7 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
 
     return (
         <>
-            <div className="w-full sm:w-80 md:w-96 flex flex-col bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 min-h-0">
+            <div className="absolute inset-0 z-20 flex flex-col bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-2xl min-h-0 lg:static lg:z-auto lg:w-96 lg:flex-shrink-0 lg:border-t-0 lg:border-l lg:shadow-none">
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
                     <div className="flex items-center gap-2">
@@ -356,7 +393,7 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
                             className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                             title="Collapse panel"
                         >
-                            <ChevronRight className="h-4 w-4" />
+                            {isDesktop ? <ChevronRight className="h-4 w-4" /> : <X className="h-4 w-4" />}
                         </button>
                     </div>
                 </div>
