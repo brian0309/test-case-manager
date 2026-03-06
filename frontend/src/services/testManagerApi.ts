@@ -356,6 +356,37 @@ export const getTestCases = async (
 };
 
 /**
+ * Get paginated test cases in a suite
+ */
+export const getTestCasesBySuitePaginated = async (
+  suiteId: string,
+  params: { limit: number; offset: number }
+): Promise<PaginatedTestCasesResult> => {
+  try {
+    const response = await axios.get<ApiResponse<TestCaseResponse[]>>(
+      `${API_URL}/suites/${suiteId}/cases`,
+      {
+        params,
+      }
+    );
+
+    const fallbackMeta: PaginationMeta = {
+      total: response.data.data?.length || 0,
+      limit: params.limit,
+      offset: params.offset,
+      hasMore: false,
+    };
+
+    return {
+      items: response.data.data || [],
+      meta: response.data.meta || fallbackMeta,
+    };
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
+/**
  * Get all test cases in a project
  */
 export const getTestCasesByProject = async (
@@ -588,6 +619,7 @@ export const testManagerApi = {
   // Test Cases
   createTestCase,
   getTestCases,
+  getTestCasesBySuitePaginated,
   getTestCasesByProject,
   getTestCasesByProjectPaginated,
   getTestCase,

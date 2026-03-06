@@ -16,7 +16,7 @@ import { mapTestCaseResponse, useTestManagerStore } from '../../store/testManage
 import { useRealtimeTestCases } from '../../hooks/useRealtimeTestCases';
 import { useProjectPresence } from '../../hooks/useProjectPresence';
 import { TestCase, Status, Priority, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
-import { reorderTestCases, getTestCase, getTestSuite, bulkImportTestCasesWithSuite, getTestCasesByProjectPaginated } from '../../services/testManagerApi';
+import { reorderTestCases, getTestCase, getTestSuite, bulkImportTestCasesWithSuite, getTestCasesByProjectPaginated, getTestCasesBySuitePaginated } from '../../services/testManagerApi';
 import { exportTestCasesToCSV, exportTestCasesToXLSX, ExportColumn } from '../../utils/exportTestCases';
 import { escapeHtml } from '../../utils/sanitize';
 import { CreateTestCaseWithSuiteRequest, UpdateTestCaseRequest } from '../../types/api/testManager.api';
@@ -25,6 +25,7 @@ import { getTagColor } from '../../utils/tagColors';
 
 const getSuiteTagFilterStorageKey = (projectId: string) => `testSuitesTagFilter:${projectId}`;
 const PROJECT_CASES_PAGE_SIZE = 100;
+const STATUS_FILTER_PAGE_SIZE = 100;
 
 type StoredSuiteTagFilter = {
     selectedTags: string[];
@@ -124,12 +125,20 @@ const TestCasesPage: React.FC = () => {
     const [projectCasesHasMore, setProjectCasesHasMore] = useState(false);
     const [projectCasesOffset, setProjectCasesOffset] = useState(0);
     const [projectCasesTotal, setProjectCasesTotal] = useState(0);
+    const [isSuiteCasesLoading, setIsSuiteCasesLoading] = useState(false);
+    const [isSuiteCasesLoadingMore, setIsSuiteCasesLoadingMore] = useState(false);
+    const [suiteCasesHasMore, setSuiteCasesHasMore] = useState(false);
+    const [suiteCasesOffset, setSuiteCasesOffset] = useState(0);
+    const [suiteCasesTotal, setSuiteCasesTotal] = useState(0);
     const [selectedSuiteTags, setSelectedSuiteTags] = useState<string[]>([]);
     const [includeSuitesWithNoTags, setIncludeSuitesWithNoTags] = useState(false);
     const [isSuiteTagFilterOpen, setIsSuiteTagFilterOpen] = useState(false);
     const suiteTagFilterRef = useRef<HTMLDivElement>(null);
     const projectCasesScrollContainerRef = useRef<HTMLDivElement>(null);
     const projectCasesSentinelRef = useRef<HTMLDivElement>(null);
+    const suiteCasesSentinelRef = useRef<HTMLDivElement>(null);
+    const statusFilterSentinelRef = useRef<HTMLDivElement>(null);
+    const [statusFilterVisibleCount, setStatusFilterVisibleCount] = useState(STATUS_FILTER_PAGE_SIZE);
     
     // Track if we've already processed the testCaseId URL parameter
     const processedTestCaseIdRef = useRef<string | null>(null);
@@ -190,6 +199,76 @@ const TestCasesPage: React.FC = () => {
             }
         }
     }, [activeProject, setTestCases]);
+
+    const loadSuiteCases = useCallback(async (reset = true, offsetValue = 0) => {
+        if (!activeSuiteId) return;
+
+        if (reset) {
+            setIsSuiteCasesLoading(true);
+            setTestCases([]);
+            setSuiteCasesOffset(0);
+            setSuiteCasesHasMore(false);
+            setSuiteCasesTotal(0);
+        } else {
+            setIsSuiteCasesLoadingMore(true);
+        }
+
+        try {
+            const currentOffset = reset ? 0 : offsetValue;
+            const result = await getTestCasesBySuitePaginated(activeSuiteId, {
+                limit: PROJECT_CASES_PAGE_SIZE,
+                offset: currentOffset,
+            });
+            const mapped = result.items.map(mapTestCaseResponse);
+
+            setTestCases((previous) => {
+                if (reset) {
+                    return mapped;
+                }
+
+                const existingIds = new Set(previous.map((testCase) => testCase.id));
+                const dedupedIncoming = mapped.filter((testCase) => !existingIds.has(testCase.id));
+                return [...previous, ...dedupedIncoming];
+            });
+
+            const loadedCount = mapped.length;
+            const totalLoaded = currentOffset + loadedCount;
+            setSuiteCasesOffset(totalLoaded);
+            setSuiteCasesTotal(result.meta.total);
+            setSuiteCasesHasMore(result.meta.hasMore && totalLoaded < result.meta.total);
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to load test cases');
+        } finally {
+            if (reset) {
+                setIsSuiteCasesLoading(false);
+            } else {
+                setIsSuiteCasesLoadingMore(false);
+            }
+        }
+    }, [activeSuiteId, setTestCases]);
+
+    const requiresFullSuiteDataset = useMemo(() => (
+        !!activeSuiteId && (
+            !!activeArea ||
+            !!searchQuery ||
+            filters.status.length > 0 ||
+            filters.priority.length > 0 ||
+            !!filters.dateRange.start ||
+            !!filters.dateRange.end ||
+            !!filters.createdAtRange?.start ||
+            !!filters.createdAtRange?.end
+        )
+    ), [
+        activeArea,
+        activeSuiteId,
+        filters.createdAtRange?.end,
+        filters.createdAtRange?.start,
+        filters.dateRange.end,
+        filters.dateRange.start,
+        filters.priority,
+        filters.status,
+        searchQuery,
+    ]);
 
     // Restore suite tag filter state per project (shared with TestSuitesPage)
     useEffect(() => {
@@ -381,9 +460,6 @@ const TestCasesPage: React.FC = () => {
                     
                     // Set the active suite
                     setActiveSuiteWithId(suiteResponse.id, suiteResponse.name);
-                    
-                    // Fetch test cases for the suite
-                    await fetchTestCases(suiteResponse.id);
                 }
                 
                 // Clear the URL parameter
@@ -421,13 +497,42 @@ const TestCasesPage: React.FC = () => {
         if (activeSuiteId) {
             setProjectCasesHasMore(false);
             setProjectCasesOffset(0);
-            // If a specific suite is selected, fetch only that suite's cases
-            fetchTestCases(activeSuiteId);
+            setProjectCasesTotal(0);
+
+            if (requiresFullSuiteDataset) {
+                setSuiteCasesHasMore(false);
+                setSuiteCasesOffset(0);
+                setSuiteCasesTotal(0);
+                fetchTestCases(activeSuiteId);
+            } else {
+                loadSuiteCases(true, 0);
+            }
         } else if (activeProject) {
+            setSuiteCasesHasMore(false);
+            setSuiteCasesOffset(0);
+            setSuiteCasesTotal(0);
             // If no suite is selected but project is, fetch cases in pages
             loadProjectCases(true, 0);
         }
-    }, [activeSuiteId, activeProject, fetchTestCases, fetchTestCasesByProject, searchParams, loadProjectCases]);
+    }, [
+        activeArea,
+        activeProject,
+        activeSuiteId,
+        fetchTestCases,
+        fetchTestCasesByProject,
+        loadProjectCases,
+        loadSuiteCases,
+        requiresFullSuiteDataset,
+        searchParams,
+    ]);
+
+    const handleLoadMoreSuiteCases = useCallback(() => {
+        if (!activeSuiteId || !suiteCasesHasMore || isSuiteCasesLoading || isSuiteCasesLoadingMore) {
+            return;
+        }
+
+        loadSuiteCases(false, suiteCasesOffset);
+    }, [activeSuiteId, isSuiteCasesLoading, isSuiteCasesLoadingMore, loadSuiteCases, suiteCasesHasMore, suiteCasesOffset]);
 
     const handleLoadMoreProjectCases = useCallback(() => {
         if (activeSuiteId || !projectCasesHasMore || isProjectCasesLoading || isProjectCasesLoadingMore) {
@@ -464,6 +569,41 @@ const TestCasesPage: React.FC = () => {
         observer.observe(sentinel);
         return () => observer.disconnect();
     }, [activeSuiteId, handleLoadMoreProjectCases, isProjectCasesLoading, isProjectCasesLoadingMore, projectCasesHasMore]);
+
+    useEffect(() => {
+        if (!activeSuiteId || requiresFullSuiteDataset || !suiteCasesHasMore || isSuiteCasesLoading || isSuiteCasesLoadingMore) {
+            return;
+        }
+
+        const sentinel = suiteCasesSentinelRef.current;
+        if (!sentinel) {
+            return;
+        }
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const first = entries[0];
+                if (first?.isIntersecting) {
+                    handleLoadMoreSuiteCases();
+                }
+            },
+            {
+                root: projectCasesScrollContainerRef.current,
+                rootMargin: '200px 0px',
+                threshold: 0,
+            }
+        );
+
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [
+        activeSuiteId,
+        handleLoadMoreSuiteCases,
+        isSuiteCasesLoading,
+        isSuiteCasesLoadingMore,
+        requiresFullSuiteDataset,
+        suiteCasesHasMore,
+    ]);
 
     // Open modal if navigation state asked for it (from toolbar quick-add)
     useEffect(() => {
@@ -622,6 +762,47 @@ const TestCasesPage: React.FC = () => {
 
         return cases;
     }, [testCases, activeArea, filters, searchQuery]);
+
+    // Client-side pagination for status-filtered suite view
+    const isStatusFilterActive = filters.status.length > 0 && !!activeSuiteId;
+
+    const paginatedDisplayedCases = useMemo(() => {
+        if (isStatusFilterActive) {
+            return displayedCases.slice(0, statusFilterVisibleCount);
+        }
+        return displayedCases;
+    }, [displayedCases, isStatusFilterActive, statusFilterVisibleCount]);
+
+    const statusFilterHasMore = isStatusFilterActive && statusFilterVisibleCount < displayedCases.length;
+
+    // Reset visible count when status filter or active suite changes
+    useEffect(() => {
+        setStatusFilterVisibleCount(STATUS_FILTER_PAGE_SIZE);
+    }, [filters.status, activeSuiteId]);
+
+    // IntersectionObserver for status-filter sentinel
+    useEffect(() => {
+        if (!statusFilterHasMore) return;
+
+        const sentinel = statusFilterSentinelRef.current;
+        if (!sentinel) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0]?.isIntersecting) {
+                    setStatusFilterVisibleCount(prev => prev + STATUS_FILTER_PAGE_SIZE);
+                }
+            },
+            {
+                root: projectCasesScrollContainerRef.current,
+                rootMargin: '200px 0px',
+                threshold: 0,
+            }
+        );
+
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [statusFilterHasMore]);
 
     const handleSelectAll = useCallback((selectAll: boolean) => {
         if (selectAll) {
@@ -938,7 +1119,7 @@ const TestCasesPage: React.FC = () => {
             {/* Test Case Table */}
             <div ref={projectCasesScrollContainerRef} className="flex-1 sm:overflow-auto">
                 <TestCaseTable
-                    data={displayedCases}
+                    data={paginatedDisplayedCases}
                     onRowClick={handleRowClick}
                     onViewClick={handleViewClick}
                     onCloneClick={handleCloneClick}
@@ -981,6 +1162,45 @@ const TestCasesPage: React.FC = () => {
                     <div className="flex justify-end px-4 pb-3">
                         <div className="text-xs text-gray-400 dark:text-gray-500">
                             Loaded {Math.min(projectCasesOffset, displayedCases.length)} / {projectCasesTotal || displayedCases.length} test cases
+                        </div>
+                    </div>
+                )}
+                {activeSuiteId && !requiresFullSuiteDataset && (
+                    <div ref={suiteCasesSentinelRef} className="flex justify-center py-3">
+                        {isSuiteCasesLoading ? (
+                            <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Loading test cases...
+                            </div>
+                        ) : (suiteCasesHasMore && isSuiteCasesLoadingMore) ? (
+                            <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Loading more test cases...
+                            </div>
+                        ) : null}
+                    </div>
+                )}
+                {activeSuiteId && !requiresFullSuiteDataset && (
+                    <div className="flex justify-end px-4 pb-3">
+                        <div className="text-xs text-gray-400 dark:text-gray-500">
+                            Loaded {Math.min(suiteCasesOffset, displayedCases.length)} / {suiteCasesTotal || displayedCases.length} test cases
+                        </div>
+                    </div>
+                )}
+                {isStatusFilterActive && (
+                    <div ref={statusFilterSentinelRef} className="flex justify-center py-3">
+                        {statusFilterHasMore && (
+                            <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Loading more test cases...
+                            </div>
+                        )}
+                    </div>
+                )}
+                {isStatusFilterActive && (
+                    <div className="flex justify-end px-4 pb-3">
+                        <div className="text-xs text-gray-400 dark:text-gray-500">
+                            Showing {paginatedDisplayedCases.length} / {displayedCases.length} test cases
                         </div>
                     </div>
                 )}

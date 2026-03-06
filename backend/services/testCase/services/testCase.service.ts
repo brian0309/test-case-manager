@@ -120,6 +120,46 @@ export const getTestCasesBySuite = async (
   return testCases as unknown as ITestCaseDocument[];
 };
 
+export const getTestCasesBySuitePaginated = async (
+  suiteId: string,
+  userId: string,
+  options: { limit: number; offset: number }
+): Promise<{ items: ITestCaseDocument[]; total: number }> => {
+  const suite = await TestSuite.findById(suiteId);
+  if (!suite) {
+    return { items: [], total: 0 };
+  }
+
+  const hasAccess = await projectService.hasProjectAccess(
+    suite.projectId.toString(),
+    userId
+  );
+  if (!hasAccess) {
+    return { items: [], total: 0 };
+  }
+
+  const query = {
+    suiteId: new Types.ObjectId(suiteId),
+  };
+
+  const [items, total] = await Promise.all([
+    TestCase.find(query)
+      .populate("assignedTester", "name email")
+      .populate("suiteId", "name")
+      .populate("history.userId", "name email")
+      .sort({ order: 1, lastModified: -1 })
+      .skip(options.offset)
+      .limit(options.limit)
+      .lean(),
+    TestCase.countDocuments(query),
+  ]);
+
+  return {
+    items: items as unknown as ITestCaseDocument[],
+    total,
+  };
+};
+
 /**
  * Get all test cases for a project
  */
