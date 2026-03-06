@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, ChevronDown, Folder, Layers, Check, Home, Map, Grid2x2, Table } from 'lucide-react';
 import { useTestManagerStore } from '../../store/testManagerStore';
-import { getAreasByProject } from '../../services/testManagerApi';
+import { getAreasByProject, getAreasBySuite } from '../../services/testManagerApi';
 
 interface ContextBreadcrumbProps {
     showSuiteSelector?: boolean;
@@ -44,6 +44,8 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
 
     // Areas fetched from API for the project-level (All Cases) view
     const [projectAreas, setProjectAreas] = useState<string[]>([]);
+    // Areas fetched from API for the suite-level view
+    const [suiteAreas, setSuiteAreas] = useState<string[]>([]);
 
     const currentProject = projects.find(p => p.id === activeProject);
     const currentSuite = testSuites.find(s => s.id === activeSuiteId);
@@ -131,20 +133,38 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
         return () => { cancelled = true; };
     }, [activeProject, activeSuiteId]);
 
-    // When a suite is selected, derive areas from loaded test cases (suite-level view).
-    // When no suite is selected (All Cases), use the API-fetched areas merged with any
-    // newly-created areas visible in the currently loaded test cases.
-    const uniqueAreas = useMemo(() => {
-        if (activeSuiteId) {
-            return Array.from(new Set(testCases.map(tc => tc.area).filter((a): a is string => !!a))).sort();
+    // When a suite is selected, fetch all unique areas for the suite from the API
+    // so the filter shows all areas regardless of how many test cases have been loaded.
+    useEffect(() => {
+        if (!activeSuiteId) {
+            setSuiteAreas([]);
+            return;
         }
-        // Merge API areas with areas from currently loaded test cases to capture newly added ones
+
+        let cancelled = false;
+        getAreasBySuite(activeSuiteId).then((areas) => {
+            if (!cancelled) {
+                setSuiteAreas(areas);
+            }
+        }).catch(() => {
+            if (!cancelled) {
+                setSuiteAreas([]);
+            }
+        });
+
+        return () => { cancelled = true; };
+    }, [activeSuiteId]);
+
+    // Merge API-fetched areas with any newly-created areas visible in the currently
+    // loaded test cases to capture additions without requiring a re-fetch.
+    const uniqueAreas = useMemo(() => {
+        const apiAreas = activeSuiteId ? suiteAreas : projectAreas;
         const combined = new Set<string>([
-            ...projectAreas,
+            ...apiAreas,
             ...testCases.map(tc => tc.area).filter((a): a is string => !!a),
         ]);
         return Array.from(combined).sort();
-    }, [activeSuiteId, testCases, projectAreas]);
+    }, [activeSuiteId, testCases, projectAreas, suiteAreas]);
 
     return (
         <div className="min-h-16 flex flex-wrap items-center justify-between gap-2 sm:gap-3 px-4 sm:px-6 py-2 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">

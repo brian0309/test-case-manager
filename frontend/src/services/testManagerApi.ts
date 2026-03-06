@@ -453,6 +453,20 @@ export const getAreasByProject = async (projectId: string): Promise<string[]> =>
 };
 
 /**
+ * Get all unique area values for a suite
+ */
+export const getAreasBySuite = async (suiteId: string): Promise<string[]> => {
+  try {
+    const response = await axios.get<ApiResponse<string[]>>(
+      `${API_URL}/suites/${suiteId}/cases/areas`
+    );
+    return response.data.data || [];
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
+/**
  * Get a single test case by ID
  */
 export const getTestCase = async (id: string): Promise<TestCaseResponse> => {

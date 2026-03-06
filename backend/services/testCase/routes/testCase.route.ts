@@ -4,6 +4,7 @@ import {
   getTestCasesBySuite,
   getTestCasesByProject,
   getAreasByProject,
+  getAreasBySuite,
   getTestCase,
   updateTestCase,
   deleteTestCase,
@@ -36,6 +37,7 @@ export default router;
 // Export routes that need to be mounted under /api/suites/:suiteId
 export const suiteCaseRoutes = express.Router({ mergeParams: true });
 suiteCaseRoutes.use(verifyToken);
+suiteCaseRoutes.get("/areas", getAreasBySuite);
 suiteCaseRoutes.post("/", createTestCase);
 suiteCaseRoutes.get("/", getTestCasesBySuite);
 suiteCaseRoutes.post("/bulk-import", bulkImportTestCases);

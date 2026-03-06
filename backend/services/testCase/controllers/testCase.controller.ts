@@ -214,6 +214,28 @@ export const getAreasByProject = async (req: Request, res: Response): Promise<vo
 };
 
 /**
+ * GET /api/suites/:suiteId/cases/areas
+ * Get all unique area values for a suite
+ */
+export const getAreasBySuite = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    const { suiteId } = req.params as Record<string, string>;
+    const areas = await testCaseService.getUniqueAreasBySuite(suiteId, userId);
+
+    res.status(200).json({ success: true, data: areas });
+  } catch (error) {
+    console.error("Error in getAreasBySuite:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+};
+
+/**
  * GET /api/cases/:id
  * Get a single test case by ID
  */

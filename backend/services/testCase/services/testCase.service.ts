@@ -237,6 +237,34 @@ export const getUniqueAreasByProject = async (
 };
 
 /**
+ * Get all unique non-empty area values for a suite
+ */
+export const getUniqueAreasBySuite = async (
+  suiteId: string,
+  userId: string
+): Promise<string[]> => {
+  const suite = await TestSuite.findById(suiteId);
+  if (!suite) {
+    return [];
+  }
+
+  const hasAccess = await projectService.hasProjectAccess(
+    suite.projectId.toString(),
+    userId
+  );
+  if (!hasAccess) {
+    return [];
+  }
+
+  const areas = await TestCase.distinct("area", {
+    suiteId: new Types.ObjectId(suiteId),
+    area: { $exists: true, $ne: "" },
+  });
+
+  return (areas as string[]).filter((a) => typeof a === "string" && a.trim() !== "").sort();
+};
+
+/**
  * Get a single test case by ID
  */
 export const getTestCaseById = async (
