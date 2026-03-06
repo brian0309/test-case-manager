@@ -217,6 +217,26 @@ export const getTestCasesByProjectPaginated = async (
 };
 
 /**
+ * Get all unique non-empty area values for a project
+ */
+export const getUniqueAreasByProject = async (
+  projectId: string,
+  userId: string
+): Promise<string[]> => {
+  const hasAccess = await projectService.hasProjectAccess(projectId, userId);
+  if (!hasAccess) {
+    return [];
+  }
+
+  const areas = await TestCase.distinct("area", {
+    projectId: new Types.ObjectId(projectId),
+    area: { $exists: true, $ne: "" },
+  });
+
+  return (areas as string[]).filter((a) => typeof a === "string" && a.trim() !== "").sort();
+};
+
+/**
  * Get a single test case by ID
  */
 export const getTestCaseById = async (

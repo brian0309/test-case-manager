@@ -3,6 +3,7 @@ import {
   createTestCase,
   getTestCasesBySuite,
   getTestCasesByProject,
+  getAreasByProject,
   getTestCase,
   updateTestCase,
   deleteTestCase,
@@ -43,5 +44,6 @@ suiteCaseRoutes.patch("/reorder", reorderTestCases);
 // Export routes that need to be mounted under /api/projects/:projectId
 export const projectCaseRoutes = express.Router({ mergeParams: true });
 projectCaseRoutes.use(verifyToken);
+projectCaseRoutes.get("/areas", getAreasByProject);
 projectCaseRoutes.get("/", getTestCasesByProject);
 projectCaseRoutes.post("/bulk-import", bulkImportTestCasesWithSuite);
