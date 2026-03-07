@@ -35,7 +35,7 @@ const SignUpPage: React.FC = () => {
 		>
 			<div className='p-8'>
 				<div className='flex justify-center mb-6'>
-					<img src="/logo.svg" alt="Logo" className="w-16 h-16" />
+					<img src="/logo.png" alt="Logo" className="w-16 h-16" />
 				</div>
 				<h2 className='text-3xl font-bold mb-6 text-center text-gray-900 dark:text-gray-100'>
 					Create Account

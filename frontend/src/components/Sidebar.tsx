@@ -105,7 +105,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, toggleSidebar }) => {
       {/* Logo */}
       <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 dark:border-gray-700">
         <div className="flex items-center gap-3">
-          <img src="/logo.svg" alt="Logo" className="w-8 h-8 flex-shrink-0" />
+          <img src="/logo.png" alt="Logo" className="w-8 h-8 flex-shrink-0" />
           {!isCollapsed && <h1 className="text-sm font-semibold text-gray-900 tracking-tight dark:text-gray-100">Test Case Manager</h1>}
         </div>
         <button
