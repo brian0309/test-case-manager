@@ -159,6 +159,8 @@ export interface TestCase {
 export interface CaseSnapshot {
     title: string;
     priority?: string;
+    suiteId?: string;
+    suiteName?: string;
     area?: string;
     expectedResult?: string;
     testDescription?: string;

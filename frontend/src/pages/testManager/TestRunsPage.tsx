@@ -106,6 +106,7 @@ const TestRunsPage: React.FC = () => {
     const [createModalInitialTitle, setCreateModalInitialTitle] = useState('');
     const runsListContainerRef = useRef<HTMLDivElement>(null);
     const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
+    const detailLookupsLoadedForRunIdRef = useRef<string | null>(null);
 
     // Ref to hold suite ID from URL params, resolved once test cases are loaded
     const pendingSuiteIdRef = useRef<string | null>(null);
@@ -343,6 +344,21 @@ const TestRunsPage: React.FC = () => {
         fetchTestSuites,
     ]);
 
+    useEffect(() => {
+        if (!detailRun) {
+            detailLookupsLoadedForRunIdRef.current = null;
+            return;
+        }
+
+        if (detailLookupsLoadedForRunIdRef.current === detailRun.id) {
+            return;
+        }
+
+        detailLookupsLoadedForRunIdRef.current = detailRun.id;
+        void fetchTestCasesByProject(detailRun.projectId);
+        void fetchTestSuites(detailRun.projectId);
+    }, [detailRun, fetchTestCasesByProject, fetchTestSuites]);
+
     const handleCreateRun = async (title: string, description: string, caseIds: string[], groupId?: string, tags?: string[]) => {
         if (!activeProject) return;
         const createdRun = await testRunApi.createTestRun(activeProject, {
@@ -540,6 +556,8 @@ const TestRunsPage: React.FC = () => {
                         caseSnapshot: {
                             title: refreshedCase.title,
                             priority: refreshedCase.priority,
+                            suiteId: refreshedCase.suiteId,
+                            suiteName: refreshedCase.suite,
                             area: refreshedCase.area,
                             expectedResult: refreshedCase.expectedResult,
                             testDescription: refreshedCase.testDescription,

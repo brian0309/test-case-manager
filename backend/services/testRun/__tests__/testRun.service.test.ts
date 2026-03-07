@@ -49,6 +49,7 @@ describe("Test Run Service", () => {
           _id: testCaseId,
           title: "Login Test",
           priority: "High",
+          suiteId: { _id: new Types.ObjectId(testSuiteId), name: "Authentication" },
           area: "Authentication",
           expectedResult: "User is logged in",
           testDescription: "Test login functionality",
@@ -59,8 +60,10 @@ describe("Test Run Service", () => {
       ];
 
       mockTestCase.find = jest.fn().mockReturnValue({
+        populate: jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnValue({
           lean: jest.fn().mockResolvedValue(mockTestCases),
+        }),
         }),
       });
 
@@ -114,6 +117,7 @@ describe("Test Run Service", () => {
       expect(testRun?.title).toBe("Sprint 1 Test Run");
       expect(testRun?.status).toBe(TestRunStatus.Draft);
       expect(testRun?.items).toHaveLength(1);
+      expect(testRun?.items[0].caseSnapshot.suiteId).toBe(testSuiteId);
       expect(mockTestRunDoc.save).toHaveBeenCalled();
     });
 
@@ -130,8 +134,10 @@ describe("Test Run Service", () => {
 
     it("should return null if no test cases are found", async () => {
       mockTestCase.find = jest.fn().mockReturnValue({
+        populate: jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnValue({
           lean: jest.fn().mockResolvedValue([]),
+        }),
         }),
       });
 
@@ -312,7 +318,7 @@ describe("Test Run Service", () => {
           {
             _id: new Types.ObjectId(),
             caseId: new Types.ObjectId(),
-            caseSnapshot: { title: "Test Case 1" },
+            caseSnapshot: { title: "Test Case 1", suiteId: testSuiteId, suiteName: "Test Suite" },
             order: 0,
             status: RunItemStatus.Passed,
           },
@@ -341,6 +347,7 @@ describe("Test Run Service", () => {
       expect(response.suiteName).toBe("Test Suite");
       expect(response.status).toBe(TestRunStatus.InProgress);
       expect(response.items).toHaveLength(1);
+      expect(response.items[0].caseSnapshot.suiteName).toBe("Test Suite");
       expect(response.createdBy.name).toBe("Test User");
     });
 

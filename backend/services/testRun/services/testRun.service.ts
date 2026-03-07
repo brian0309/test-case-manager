@@ -4,6 +4,7 @@ import { TestCase } from "../../../models/testCase.model.js";
 import * as projectService from "../../testCase/services/project.service.js";
 import {
   ITestRunDocument,
+  ICaseSnapshot,
   IRunItem,
   TestRunStatus,
   RunItemStatus,
@@ -16,6 +17,59 @@ import {
   TesterResponse,
   ReorderRunItemsRequest,
 } from "../types/testRun.types.js";
+
+const toOptionalString = (value: unknown): string | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (typeof value === "object" && "toString" in value) {
+    return value.toString();
+  }
+
+  return undefined;
+};
+
+const getSuiteReference = (
+  suiteRef: unknown
+): { suiteId?: string; suiteName?: string } => {
+  if (!suiteRef) {
+    return {};
+  }
+
+  if (typeof suiteRef === "object" && suiteRef !== null && "name" in suiteRef) {
+    const populatedSuite = suiteRef as { _id?: unknown; name?: unknown };
+
+    return {
+      suiteId: toOptionalString(populatedSuite._id),
+      suiteName:
+        typeof populatedSuite.name === "string"
+          ? populatedSuite.name
+          : undefined,
+    };
+  }
+
+  return { suiteId: toOptionalString(suiteRef) };
+};
+
+const buildCaseSnapshot = (testCase: any): ICaseSnapshot => {
+  const { suiteId, suiteName } = getSuiteReference(testCase.suiteId);
+
+  return {
+    title: testCase.title,
+    priority: testCase.priority,
+    suiteId,
+    suiteName,
+    area: testCase.area,
+    expectedResult: testCase.expectedResult,
+    testDescription: testCase.testDescription,
+    stepsContent: testCase.stepsContent,
+  };
+};
 
 /**
  * Create a new test run
@@ -36,6 +90,7 @@ export const createTestRun = async (
     _id: { $in: data.testCaseIds.map((id) => new Types.ObjectId(id)) },
     projectId: new Types.ObjectId(projectId),
   })
+    .populate("suiteId", "name")
     .sort({ order: 1 })
     .lean();
 
@@ -46,14 +101,7 @@ export const createTestRun = async (
   // Create run items with snapshots
   const items: IRunItem[] = testCases.map((tc, index) => ({
     caseId: tc._id as Types.ObjectId,
-    caseSnapshot: {
-      title: tc.title,
-      priority: tc.priority,
-      area: tc.area,
-      expectedResult: tc.expectedResult,
-      testDescription: tc.testDescription,
-      stepsContent: tc.stepsContent,
-    },
+    caseSnapshot: buildCaseSnapshot(tc),
     order: index,
     status: RunItemStatus.NotRun,
     assignedTo: tc.assignedTester,
@@ -229,6 +277,7 @@ export const updateTestRun = async (
         _id: { $in: idsToAdd.map((caseId) => new Types.ObjectId(caseId)) },
         projectId: testRun.projectId,
       })
+        .populate("suiteId", "name")
         .sort({ order: 1 })
         .lean();
 
@@ -237,14 +286,7 @@ export const updateTestRun = async (
       for (const testCase of testCases) {
         testRun.items.push({
           caseId: testCase._id as Types.ObjectId,
-          caseSnapshot: {
-            title: testCase.title,
-            priority: testCase.priority,
-            area: testCase.area,
-            expectedResult: testCase.expectedResult,
-            testDescription: testCase.testDescription,
-            stepsContent: testCase.stepsContent,
-          },
+          caseSnapshot: buildCaseSnapshot(testCase),
           order: nextOrder++,
           status: RunItemStatus.NotRun,
           assignedTo: testCase.assignedTester,
@@ -525,10 +567,19 @@ const formatTesterResponse = (user: any): TesterResponse => {
  * Format run item for API response
  */
 const formatRunItemResponse = (item: any): RunItemResponse => {
+  const caseSnapshot = item.caseSnapshot || {};
+
   return {
     id: item._id?.toString() || "",
     caseId: item.caseId?.toString() || "",
-    caseSnapshot: item.caseSnapshot,
+    caseSnapshot: {
+      ...caseSnapshot,
+      suiteId: toOptionalString(caseSnapshot.suiteId),
+      suiteName:
+        typeof caseSnapshot.suiteName === "string"
+          ? caseSnapshot.suiteName
+          : undefined,
+    },
     order: item.order,
     status: item.status,
     assignedTo: item.assignedTo ? formatTesterResponse(item.assignedTo) : undefined,
@@ -544,21 +595,14 @@ const formatRunItemResponse = (item: any): RunItemResponse => {
  * Format test run for API response (full)
  */
 export const formatTestRunResponse = (testRun: any): TestRunResponse => {
-  const suiteName =
-    typeof testRun.suiteId === "object" && testRun.suiteId?.name
-      ? testRun.suiteId.name
-      : undefined;
+  const { suiteId, suiteName } = getSuiteReference(testRun.suiteId);
 
   return {
     id: testRun._id.toString(),
     title: testRun.title,
     description: testRun.description,
     projectId: testRun.projectId.toString(),
-    suiteId: testRun.suiteId
-      ? typeof testRun.suiteId === "object"
-        ? testRun.suiteId._id?.toString()
-        : testRun.suiteId.toString()
-      : undefined,
+    suiteId,
     suiteName,
     groupId: testRun.groupId?.toString(),
     status: testRun.status,
@@ -578,21 +622,14 @@ export const formatTestRunResponse = (testRun: any): TestRunResponse => {
  * Format test run for API response (list)
  */
 export const formatTestRunListResponse = (testRun: any): TestRunListResponse => {
-  const suiteName =
-    typeof testRun.suiteId === "object" && testRun.suiteId?.name
-      ? testRun.suiteId.name
-      : undefined;
+  const { suiteId, suiteName } = getSuiteReference(testRun.suiteId);
 
   return {
     id: testRun._id.toString(),
     title: testRun.title,
     description: testRun.description,
     projectId: testRun.projectId.toString(),
-    suiteId: testRun.suiteId
-      ? typeof testRun.suiteId === "object"
-        ? testRun.suiteId._id?.toString()
-        : testRun.suiteId.toString()
-      : undefined,
+    suiteId,
     suiteName,
     groupId: testRun.groupId?.toString(),
     status: testRun.status,

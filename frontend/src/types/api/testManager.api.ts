@@ -248,6 +248,8 @@ export enum RunItemStatus {
 export interface CaseSnapshotResponse {
   title: string;
   priority?: string;
+  suiteId?: string;
+  suiteName?: string;
   area?: string;
   expectedResult?: string;
   testDescription?: string;

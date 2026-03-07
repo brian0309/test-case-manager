@@ -10,6 +10,8 @@ const caseSnapshotSchema = new Schema(
   {
     title: { type: String, required: true },
     priority: { type: String },
+    suiteId: { type: String },
+    suiteName: { type: String },
     area: { type: String },
     expectedResult: { type: String },
     testDescription: { type: String },

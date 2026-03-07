@@ -63,6 +63,20 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
     const itemSuiteNameByItemId = useMemo(() => {
         const map = new Map<string, string | null>();
         testRun.items.forEach((item) => {
+            const snapshotSuiteName = item.caseSnapshot.suiteName?.trim();
+            if (snapshotSuiteName) {
+                map.set(item.id, snapshotSuiteName);
+                return;
+            }
+
+            if (item.caseSnapshot.suiteId) {
+                const snapshotSuite = suiteNameById.get(item.caseSnapshot.suiteId);
+                if (snapshotSuite) {
+                    map.set(item.id, snapshotSuite);
+                    return;
+                }
+            }
+
             const itemCase = testCaseById.get(item.caseId);
             if (itemCase?.suiteId) {
                 map.set(item.id, suiteNameById.get(itemCase.suiteId) || itemCase.suite || null);
