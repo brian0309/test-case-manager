@@ -265,9 +265,12 @@ const AnalyticsPage: React.FC = () => {
     return (
         <div className="flex flex-col h-auto sm:h-full bg-gray-50 dark:bg-gray-900">
             {/* Header */}
-            <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3 sm:sticky sm:top-0 sm:z-20">
-                <div className="flex items-center justify-between mb-3">
-                    <ContextBreadcrumb showSuiteSelector={false} />
+            <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sm:sticky sm:top-0 sm:z-20">
+                <div className="flex items-center justify-between gap-3 px-4 py-3">
+                    <ContextBreadcrumb
+                        showSuiteSelector={false}
+                        className="min-h-0 flex-1 min-w-0 border-b-0 px-0 py-0 sm:px-0"
+                    />
                     <div className="flex items-center gap-2">
                         <button
                             onClick={fetchReports}
@@ -286,7 +289,7 @@ const AnalyticsPage: React.FC = () => {
                 </div>
 
                 {/* Filters */}
-                <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap px-4 pb-3">
                     <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                         {(['7d', '30d', '90d', 'all', 'custom'] as const).map((range) => (
                             <button
@@ -352,7 +355,7 @@ const AnalyticsPage: React.FC = () => {
                 </div>
 
                 {/* Tag & Group filters */}
-                <div className="mt-2 flex items-start gap-3 flex-wrap">
+                <div className="mt-2 flex items-start gap-3 flex-wrap px-4 pb-3">
                     <div className="flex-1 min-w-[200px] max-w-md">
                         <TagInput
                             tags={selectedTags}
