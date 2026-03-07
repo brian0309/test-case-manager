@@ -14,9 +14,10 @@ interface ContextBreadcrumbProps {
     rightContent?: React.ReactNode;
     /** Content rendered between breadcrumbs and view-toggle (e.g. tag filter) */
     beforeToggle?: React.ReactNode;
+    className?: string;
 }
 
-const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector = true, filteredSuites, viewToggle, rightContent, beforeToggle }) => {
+const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector = true, filteredSuites, viewToggle, rightContent, beforeToggle, className = '' }) => {
     const {
         projects,
         testSuites,
@@ -167,7 +168,7 @@ const ContextBreadcrumb: React.FC<ContextBreadcrumbProps> = ({ showSuiteSelector
     }, [activeSuiteId, testCases, projectAreas, suiteAreas]);
 
     return (
-        <div className="min-h-16 flex flex-wrap items-center justify-between gap-2 sm:gap-3 px-4 sm:px-6 py-2 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
+        <div className={`min-h-16 flex flex-wrap items-center justify-between gap-2 sm:gap-3 px-4 sm:px-6 py-2 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700 ${className}`.trim()}>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {/* Home / Projects link */}
             <button

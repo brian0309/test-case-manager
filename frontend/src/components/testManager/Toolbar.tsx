@@ -8,6 +8,7 @@ interface ToolbarProps {
     setViewMode: (mode: ViewMode) => void;
     onNew: () => void;
     onNewCase: () => void;
+    hideNewButton?: boolean;
     activeSuite?: string | null;
     activeSuiteId?: string | null;
     activeProject?: string | null;
@@ -30,6 +31,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
         viewMode,
         setViewMode,
         onNew,
+        hideNewButton = false,
         activeSuite,
         showEditToggle,
         isSelectionMode,
@@ -155,13 +157,15 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
                     </button>
                 )}
 
-                <button
-                    onClick={onNew}
-                    className="mac-button ml-2 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-3 py-1 rounded-md shadow-sm active:scale-95 text-sm font-medium"
-                >
-                    <Plus className="h-4 w-4" strokeWidth={2.5} />
-                    <span className="inline">New {getNewButtonText()}</span>
-                </button>
+                {!hideNewButton && (
+                    <button
+                        onClick={onNew}
+                        className="mac-button ml-2 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-3 py-1 rounded-md shadow-sm active:scale-95 text-sm font-medium"
+                    >
+                        <Plus className="h-4 w-4" strokeWidth={2.5} />
+                        <span className="inline">New {getNewButtonText()}</span>
+                    </button>
+                )}
             </div>
         </div>
     );

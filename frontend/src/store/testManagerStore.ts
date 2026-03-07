@@ -87,6 +87,7 @@ const mapTestSuiteResponse = (s: TestSuiteResponse): TestSuite => ({
 interface TestManagerStore {
     // State
     viewMode: ViewMode;
+    isRunDetailViewOpen: boolean;
     activeSuite: string | null;
     activeSuiteId: string | null;
     activeProject: string | null;
@@ -105,6 +106,7 @@ interface TestManagerStore {
 
     // View actions
     setViewMode: (mode: ViewMode) => void;
+    setRunDetailViewOpen: (isOpen: boolean) => void;
     setActiveSuite: (suite: string | null) => void;
     setActiveSuiteId: (suiteId: string | null) => void;
     setActiveTestCaseId: (testCaseId: string | null) => void;
@@ -190,6 +192,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
         (set, get) => ({
             // Initial state
             viewMode: 'projects' as ViewMode,
+            isRunDetailViewOpen: false,
             activeSuite: null as string | null,
             activeSuiteId: null as string | null,
             activeProject: null as string | null,
@@ -208,6 +211,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
 
             // View actions
             setViewMode: (mode) => set({ viewMode: mode }),
+            setRunDetailViewOpen: (isOpen) => set({ isRunDetailViewOpen: isOpen }),
             setActiveSuite: (suite) => set({ activeSuite: suite }),
             setActiveSuiteId: (suiteId) => set({ activeSuiteId: suiteId }),
             setActiveTestCaseId: (testCaseId) => set({ activeTestCaseId: testCaseId }),

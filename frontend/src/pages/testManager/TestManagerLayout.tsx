@@ -8,6 +8,7 @@ import { ViewMode } from '../../types/testManager';
 const TestManagerLayout: React.FC = () => {
     const {
         viewMode,
+        isRunDetailViewOpen,
         setViewMode,
         activeSuite,
         activeSuiteId,
@@ -125,6 +126,7 @@ const TestManagerLayout: React.FC = () => {
                     onDownload={onExportTestCases || undefined}
                     // Import prop
                     onUpload={onImportTestCases || undefined}
+                    hideNewButton={viewMode === 'runs' && isRunDetailViewOpen}
                 />
                 <div className="flex-1 overflow-auto relative">
                     <Outlet />

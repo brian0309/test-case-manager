@@ -251,8 +251,13 @@ const AnalyticsPage: React.FC = () => {
 
     if (isLoading || !summaryReport) {
         return (
-            <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
+            <div className="flex flex-col h-auto sm:h-full bg-white dark:bg-gray-900">
+                <div className="bg-white dark:bg-gray-900 sm:sticky sm:top-0 sm:z-20">
+                    <ContextBreadcrumb showSuiteSelector={false} />
+                </div>
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                </div>
             </div>
         );
     }

@@ -63,6 +63,7 @@ const TestRunsPage: React.FC = () => {
         activeProject,
         testCases,
         testSuites,
+        setRunDetailViewOpen,
         fetchTestCasesByProject,
         fetchTestSuites,
         setActiveProject,
@@ -74,6 +75,7 @@ const TestRunsPage: React.FC = () => {
             activeProject: state.activeProject,
             testCases: state.testCases,
             testSuites: state.testSuites,
+            setRunDetailViewOpen: state.setRunDetailViewOpen,
             fetchTestCasesByProject: state.fetchTestCasesByProject,
             fetchTestSuites: state.fetchTestSuites,
             setActiveProject: state.setActiveProject,
@@ -98,6 +100,7 @@ const TestRunsPage: React.FC = () => {
     const [executeRun, setExecuteRun] = useState<TestRun | null>(null);
     const [isExecuteModalOpen, setIsExecuteModalOpen] = useState(false);
     const [detailRun, setDetailRun] = useState<TestRun | null>(null);
+    const [detailRunId, setDetailRunId] = useState<string | null>(null);
     const [executeStartIndex, setExecuteStartIndex] = useState(0);
     const [executeItemOrder, setExecuteItemOrder] = useState<number[] | undefined>(undefined);
     const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('all');
@@ -111,6 +114,7 @@ const TestRunsPage: React.FC = () => {
     const runsListContainerRef = useRef<HTMLDivElement>(null);
     const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
     const detailLookupsLoadedForRunIdRef = useRef<string | null>(null);
+    const detailRequestSequenceRef = useRef(0);
 
     // Ref to hold suite ID from URL params, resolved once test cases are loaded
     const pendingSuiteIdRef = useRef<string | null>(null);
@@ -121,6 +125,14 @@ const TestRunsPage: React.FC = () => {
         clearSearchQuery();
         return () => clearSearchQuery();
     }, [clearSearchQuery]);
+
+    useEffect(() => {
+        setRunDetailViewOpen(Boolean(detailRunId));
+
+        return () => {
+            setRunDetailViewOpen(false);
+        };
+    }, [detailRunId, setRunDetailViewOpen]);
 
     // Handle URL params: openCreate=true&suiteId=...&suiteName=...&projectId=...
     useEffect(() => {
@@ -181,43 +193,6 @@ const TestRunsPage: React.FC = () => {
         }
     }, [location.state]);
 
-    // Handle deep-link to a specific test run via ?runId= query param
-    // Read from window.location directly to avoid React Router searchParams interference
-    useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const runId = params.get('runId');
-        const itemId = params.get('itemId');
-        const caseId = params.get('caseId');
-        if (!runId) return;
-
-        // Clean the URL immediately so it doesn't re-trigger on refresh
-        const url = new URL(window.location.href);
-        url.searchParams.delete('runId');
-        window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : ''));
-
-        const loadRun = async () => {
-            try {
-                const run = await testRunApi.getTestRun(runId);
-                const typedRun = run as unknown as TestRun;
-                setDetailRun(typedRun);
-
-                const targetItemIndex = typedRun.items.findIndex(
-                    item => item.id === itemId || item.caseId === itemId || item.caseId === caseId
-                );
-
-                if (targetItemIndex >= 0) {
-                    setExecuteRun(typedRun);
-                    setExecuteStartIndex(targetItemIndex);
-                    setExecuteItemOrder(undefined);
-                    setIsExecuteModalOpen(true);
-                }
-            } catch {
-                toast.error('Could not load the linked test run');
-            }
-        };
-        loadRun();
-    }, []);
-
     // Fetch test runs when project changes
     const fetchRuns = useCallback(async (reset = true, offsetValue = 0) => {
         if (!activeProject) return;
@@ -259,6 +234,81 @@ const TestRunsPage: React.FC = () => {
             }
         }
     }, [activeProject]);
+
+    const closeDetailView = useCallback(() => {
+        detailRequestSequenceRef.current += 1;
+        setDetailRunId(null);
+        setDetailRun(null);
+        setExecuteRun(null);
+        setIsExecuteModalOpen(false);
+        setExecuteItemOrder(undefined);
+        fetchRuns();
+    }, [fetchRuns]);
+
+    const loadDetailRun = useCallback(async (
+        runId: string,
+        options?: {
+            itemId?: string | null;
+            caseId?: string | null;
+            errorMessage?: string;
+        }
+    ) => {
+        const requestSequence = detailRequestSequenceRef.current + 1;
+        detailRequestSequenceRef.current = requestSequence;
+
+        setDetailRunId(runId);
+        setDetailRun(null);
+
+        try {
+            const run = await testRunApi.getTestRun(runId);
+            if (detailRequestSequenceRef.current !== requestSequence) {
+                return;
+            }
+
+            const typedRun = run as unknown as TestRun;
+            setDetailRun(typedRun);
+
+            const targetItemIndex = typedRun.items.findIndex(
+                (item) => item.id === options?.itemId || item.caseId === options?.itemId || item.caseId === options?.caseId
+            );
+
+            if (targetItemIndex >= 0) {
+                setExecuteRun(typedRun);
+                setExecuteStartIndex(targetItemIndex);
+                setExecuteItemOrder(undefined);
+                setIsExecuteModalOpen(true);
+            }
+        } catch (error: unknown) {
+            if (detailRequestSequenceRef.current !== requestSequence) {
+                return;
+            }
+
+            setDetailRunId(null);
+            setDetailRun(null);
+            toast.error((error as Error).message || options?.errorMessage || 'Failed to load run');
+        }
+    }, []);
+
+    // Handle deep-link to a specific test run via ?runId= query param
+    // Read from window.location directly to avoid React Router searchParams interference
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const runId = params.get('runId');
+        const itemId = params.get('itemId');
+        const caseId = params.get('caseId');
+        if (!runId) return;
+
+        // Clean the URL immediately so it doesn't re-trigger on refresh
+        const url = new URL(window.location.href);
+        url.searchParams.delete('runId');
+        window.history.replaceState({}, '', url.pathname + (url.searchParams.toString() ? `?${url.searchParams}` : ''));
+
+        void loadDetailRun(runId, {
+            itemId,
+            caseId,
+            errorMessage: 'Could not load the linked test run',
+        });
+    }, [loadDetailRun]);
 
     // Fetch test run groups
     const fetchGroups = useCallback(async () => {
@@ -500,13 +550,7 @@ const TestRunsPage: React.FC = () => {
     };
 
     const handleExecuteRun = async (runId: string) => {
-        try {
-            const run = await testRunApi.getTestRun(runId);
-            const typedRun = run as unknown as TestRun;
-            setDetailRun(typedRun);
-        } catch (error: unknown) {
-            toast.error((error as Error).message || 'Failed to load run');
-        }
+        await loadDetailRun(runId);
     };
 
     const handleOpenExecuteFromDetail = (itemIndex: number, itemOrder?: number[]) => {
@@ -628,23 +672,44 @@ const TestRunsPage: React.FC = () => {
         return filterTestRunsBySearch(groupFilteredRuns, searchQuery, groupNameById);
     }, [testRuns, selectedGroupFilter, searchQuery, groupNameById]);
 
+    const isDetailLoading = Boolean(detailRunId) && (!detailRun || detailRun.id !== detailRunId);
+
     // If a run is selected for detail view, show it regardless of activeProject state
-    if (detailRun) {
+    if (detailRunId) {
         return (
             <>
-                <RunDetailView
-                    testRun={detailRun}
-                    searchQuery={searchQuery}
-                    onBack={() => {
-                        setDetailRun(null);
-                        fetchRuns();
-                    }}
-                    onUpdateItem={handleDetailUpdateItem}
-                    onComplete={handleCompleteRun}
-                    onOpenExecute={handleOpenExecuteFromDetail}
-                    availableTestCases={testCases}
-                    availableSuites={testSuites}
-                />
+                {isDetailLoading ? (
+                    <div className="flex flex-col h-auto sm:h-full bg-white dark:bg-gray-900">
+                        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 sm:sticky sm:top-0 sm:z-20">
+                            <button
+                                onClick={closeDetailView}
+                                className="inline-flex items-center justify-center rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                                aria-label="Back to test runs"
+                            >
+                                <ChevronRight className="h-5 w-5 rotate-180" />
+                            </button>
+                            <div>
+                                <h2 className="text-sm font-medium text-gray-900 dark:text-gray-100">Loading test run</h2>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Fetching run details...</p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-1 items-center justify-center px-6 py-16">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        </div>
+                    </div>
+                ) : detailRun ? (
+                    <RunDetailView
+                        testRun={detailRun}
+                        searchQuery={searchQuery}
+                        onBack={closeDetailView}
+                        onUpdateItem={handleDetailUpdateItem}
+                        onComplete={handleCompleteRun}
+                        onOpenExecute={handleOpenExecuteFromDetail}
+                        availableTestCases={testCases}
+                        availableSuites={testSuites}
+                    />
+                ) : null}
 
                 {/* Execute Run Modal (from detail view) */}
                 <ExecuteRunModal
@@ -689,7 +754,7 @@ const TestRunsPage: React.FC = () => {
                     >
                         <Menu className="w-5 h-5" />
                     </button>
-                    <ContextBreadcrumb showSuiteSelector={false} />
+                    <ContextBreadcrumb showSuiteSelector={false} className="border-b-0" />
                 </div>
             </div>
 
