@@ -4,6 +4,21 @@ import userEvent from '@testing-library/user-event';
 import TestCaseTable from '../components/testManager/TestCaseTable';
 import { Priority, Status, TestCase } from '../types/testManager';
 
+vi.mock('@tanstack/react-virtual', () => ({
+    useVirtualizer: ({ count }: { count: number }) => ({
+        getVirtualItems: () => Array.from({ length: count }, (_, index) => ({
+            index,
+            start: index * 60,
+            end: (index + 1) * 60,
+            key: index,
+        })),
+        getTotalSize: () => count * 60,
+        measure: vi.fn(),
+        measureElement: vi.fn(),
+        scrollToIndex: vi.fn(),
+    }),
+}));
+
 // ----- Mocks for child components and external libraries -----
 
 // Stub the drag-and-drop dependencies so they don't depend on real DOM measurements
@@ -146,8 +161,8 @@ describe('TestCaseTable – virtualized rendering', () => {
         );
         patchScrollContainer(container);
 
-        expect(screen.getByText('Alpha Feature')).toBeInTheDocument();
-        expect(screen.getByText('Beta Feature')).toBeInTheDocument();
+        expect(screen.getAllByText('Alpha Feature').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Beta Feature').length).toBeGreaterThan(0);
     });
 
     it('calls onRowClick when a row is clicked', async () => {
@@ -158,7 +173,7 @@ describe('TestCaseTable – virtualized rendering', () => {
         );
         patchScrollContainer(container);
 
-        const row = screen.getByText('Clickable Row');
+        const row = screen.getAllByText('Clickable Row')[0];
         await userEvent.click(row);
         expect(clickHandler).toHaveBeenCalledTimes(1);
         expect(clickHandler).toHaveBeenCalledWith(expect.objectContaining({ id: 'tc-1' }));
@@ -218,8 +233,8 @@ describe('TestCaseTable – virtualized rendering', () => {
         const grid = container.querySelector('[role="grid"]');
         expect(grid).toBeTruthy();
         const headerCells = grid!.querySelectorAll('thead th');
-        // Default visible columns: ID, Title, Priority, Status, Last Modified, Assignee, Actions
-        expect(headerCells.length).toBe(7);
+        // Default visible columns: ID, Title, Priority, Status, Last Modified, Created Date, Assignee, Actions
+        expect(headerCells.length).toBe(8);
     });
 
     it('reflects selection state via checkbox when in selection mode', () => {
@@ -242,8 +257,7 @@ describe('TestCaseTable – virtualized rendering', () => {
         // In jsdom the virtualizer may skip desktop body rows, but mobile rows
         // always render checkboxes.
         const checkboxes = screen.getAllByRole('checkbox');
-        // At minimum: 1 select-all header + 2 mobile row checkboxes = 3
-        // But if virtualizer doesn't render desktop rows, we still get mobile ones.
-        expect(checkboxes.length).toBeGreaterThanOrEqual(2);
+        expect(checkboxes.length).toBeGreaterThanOrEqual(3);
+        expect(checkboxes.filter((checkbox) => (checkbox as HTMLInputElement).checked).length).toBeGreaterThanOrEqual(1);
     });
 });

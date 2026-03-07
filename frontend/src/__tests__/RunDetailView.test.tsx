@@ -145,7 +145,7 @@ describe('RunDetailView', () => {
             />
         );
 
-        expect(screen.getByText('Login works')).toBeInTheDocument();
+        expect(screen.getAllByText('Login works').length).toBeGreaterThan(0);
         expect(screen.queryByText('Profile saves changes')).not.toBeInTheDocument();
     });
 });

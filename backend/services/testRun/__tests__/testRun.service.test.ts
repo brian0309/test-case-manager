@@ -44,6 +44,7 @@ describe("Test Run Service", () => {
   describe("createTestRun", () => {
     it("should create a test run with valid data", async () => {
       const testCaseId = new Types.ObjectId();
+      const saveMock = jest.fn().mockResolvedValue(true);
       const mockTestCases = [
         {
           _id: testCaseId,
@@ -67,42 +68,11 @@ describe("Test Run Service", () => {
         }),
       });
 
-      const mockTestRunDoc = {
+      (TestRun as any).mockImplementation((payload: any) => ({
         _id: new Types.ObjectId(testRunId),
-        title: "Sprint 1 Test Run",
-        description: "Test run for sprint 1",
-        projectId: new Types.ObjectId(testProjectId),
-        suiteId: new Types.ObjectId(testSuiteId),
-        status: TestRunStatus.Draft,
-        environment: "staging",
-        tags: ["regression"],
-        items: [
-          {
-            caseId: testCaseId,
-            caseSnapshot: {
-              title: "Login Test",
-              priority: "High",
-              area: "Authentication",
-            },
-            order: 0,
-            status: RunItemStatus.NotRun,
-          },
-        ],
-        createdBy: new Types.ObjectId(testUserId),
-        resultsSummary: {
-          total: 1,
-          passed: 0,
-          failed: 0,
-          blocked: 0,
-          skipped: 0,
-          notRun: 1,
-          passRate: 0,
-          totalTimeSpent: 0,
-        },
-        save: jest.fn().mockResolvedValue(true),
-      };
-
-      (TestRun as any).mockImplementation(() => mockTestRunDoc);
+        ...payload,
+        save: saveMock,
+      }));
 
       const testRun = await testRunService.createTestRun(testProjectId, testUserId, {
         title: "Sprint 1 Test Run",
@@ -118,7 +88,8 @@ describe("Test Run Service", () => {
       expect(testRun?.status).toBe(TestRunStatus.Draft);
       expect(testRun?.items).toHaveLength(1);
       expect(testRun?.items[0].caseSnapshot.suiteId).toBe(testSuiteId);
-      expect(mockTestRunDoc.save).toHaveBeenCalled();
+      expect(testRun?.items[0].caseSnapshot.suiteName).toBe("Authentication");
+      expect(saveMock).toHaveBeenCalled();
     });
 
     it("should return null if user has no project access", async () => {

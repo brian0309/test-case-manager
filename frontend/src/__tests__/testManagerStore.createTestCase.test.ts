@@ -4,6 +4,15 @@ import * as testManagerApi from "../services/testManagerApi";
 import { Priority, Status, TestCaseResponse } from "../types/api/testManager.api";
 import { TestCase, Priority as UIPriority, Status as UIStatus } from "../types/testManager";
 
+vi.mock("zustand/middleware", async () => {
+  const actual = await vi.importActual<typeof import("zustand/middleware")>("zustand/middleware");
+
+  return {
+    ...actual,
+    persist: ((stateCreator: unknown) => stateCreator) as typeof actual.persist,
+  };
+});
+
 vi.mock("../services/testManagerApi", () => ({
   createTestCase: vi.fn(),
 }));
@@ -34,8 +43,6 @@ const buildResponse = (overrides: Partial<TestCaseResponse> = {}): TestCaseRespo
 describe("testManagerStore createTestCase", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    localStorage.clear();
-    useTestManagerStore.persist?.clearStorage?.();
     useTestManagerStore.setState({ testCases: [], isLoading: false, error: null });
   });
 
