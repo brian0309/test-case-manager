@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageSquare, Send, Paperclip, X, ChevronRight } from 'lucide-react';
+import { Check, ChevronRight, MessageSquare, MoreHorizontal, Paperclip, Send, Trash2, X } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { socketService, SocketEvents } from '../../services/socket';
 import {
+    deleteDiscussionMessage,
     fetchDiscussionMessages,
     sendDiscussionMessage,
+    updateDiscussionMessageFixState,
     DiscussionMessage,
     DiscussionAttachment,
+    DiscussionMessageFixState,
 } from '../../services/discussionApi';
 import { uploadImage, validateImageFile } from '../../utils/imageUpload';
+import { sanitizeHtml } from '../../utils/sanitize';
 import toast from 'react-hot-toast';
 
 interface DiscussionPanelProps {
@@ -40,6 +44,21 @@ const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const updateMessageInList = (messages: DiscussionMessage[], nextMessage: DiscussionMessage): DiscussionMessage[] => {
+    const index = messages.findIndex((message) => message.id === nextMessage.id);
+    if (index === -1) {
+        return [...messages, nextMessage];
+    }
+
+    const next = [...messages];
+    next[index] = nextMessage;
+    return next;
+};
+
+const removeMessageFromList = (messages: DiscussionMessage[], messageId: string): DiscussionMessage[] => {
+    return messages.filter((message) => message.id !== messageId);
 };
 
 /**
@@ -87,6 +106,40 @@ const renderSystemMessageBody = (
     );
 };
 
+const renderMessageBody = (msg: DiscussionMessage, testCaseId: string, isOwn: boolean): React.ReactNode => {
+    if (msg.bodyFormat === 'html') {
+        const useOwnBubbleColors = isOwn && !msg.fixState && msg.type !== 'system';
+
+        return (
+            <div
+                className={`text-sm break-words whitespace-normal [&_a]:underline [&_img]:max-w-full [&_img]:cursor-zoom-in [&_img]:rounded-md [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 ${
+                    useOwnBubbleColors
+                        ? 'text-white [&_a]:text-white'
+                        : 'text-gray-800 dark:text-gray-100 [&_a]:text-blue-700 dark:[&_a]:text-blue-300'
+                }`}
+                onClick={(event) => {
+                    const target = event.target;
+                    if (target instanceof HTMLImageElement) {
+                        event.preventDefault();
+                        const imageUrl = target.currentSrc || target.src;
+                        if (imageUrl) {
+                            window.dispatchEvent(new CustomEvent('discussion:open-lightbox', { detail: imageUrl }));
+                        }
+                    }
+                }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(msg.body) }}
+            />
+        );
+    }
+
+    if (msg.type === 'system') {
+        const isFailedMessage = /failed in test run/i.test(msg.body);
+        return renderSystemMessageBody(msg.body, testCaseId, isFailedMessage);
+    }
+
+    return <span className="whitespace-pre-wrap">{msg.body}</span>;
+};
+
 const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId }) => {
     const { user } = useAuthStore();
     const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
@@ -95,6 +148,9 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isSending, setIsSending] = useState(false);
+    const [updatingMessageId, setUpdatingMessageId] = useState<string | null>(null);
+    const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
+    const [activeMenuMessageId, setActiveMenuMessageId] = useState<string | null>(null);
     const [pendingAttachments, setPendingAttachments] = useState<DiscussionAttachment[]>([]);
     const [pastedImagePreview, setPastedImagePreview] = useState<string | null>(null);
     const [pastedFile, setPastedFile] = useState<File | null>(null);
@@ -102,6 +158,22 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleOpenLightbox = (event: Event) => {
+            const customEvent = event as CustomEvent<string>;
+            if (customEvent.detail) {
+                setLightboxUrl(customEvent.detail);
+            }
+        };
+
+        window.addEventListener('discussion:open-lightbox', handleOpenLightbox as EventListener);
+
+        return () => {
+            window.removeEventListener('discussion:open-lightbox', handleOpenLightbox as EventListener);
+        };
+    }, []);
 
     useEffect(() => {
         const handleResize = () => {
@@ -119,6 +191,23 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
             window.removeEventListener('resize', handleResize);
         };
     }, []);
+
+    useEffect(() => {
+        if (!activeMenuMessageId) {
+            return;
+        }
+
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setActiveMenuMessageId(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [activeMenuMessageId]);
 
     const scrollToBottom = useCallback(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -162,16 +251,27 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
     useEffect(() => {
         const handleNewMessage = (data: SocketEvents['discussion:created']) => {
             if (data.testCaseId === testCaseId) {
-                setMessages(prev => {
-                    // Avoid duplicates
-                    if (prev.some(m => m.id === data.message.id)) return prev;
-                    return [...prev, data.message];
-                });
+                setMessages((prev) => updateMessageInList(prev, data.message));
+            }
+        };
+        const handleUpdatedMessage = (data: SocketEvents['discussion:updated']) => {
+            if (data.testCaseId === testCaseId) {
+                setMessages((prev) => updateMessageInList(prev, data.message));
+            }
+        };
+        const handleDeletedMessage = (data: SocketEvents['discussion:deleted']) => {
+            if (data.testCaseId === testCaseId) {
+                setMessages((prev) => removeMessageFromList(prev, data.messageId));
+                setActiveMenuMessageId((current) => (current === data.messageId ? null : current));
             }
         };
         socketService.on('discussion:created', handleNewMessage);
+        socketService.on('discussion:updated', handleUpdatedMessage);
+        socketService.on('discussion:deleted', handleDeletedMessage);
         return () => {
             socketService.off('discussion:created', handleNewMessage);
+            socketService.off('discussion:updated', handleUpdatedMessage);
+            socketService.off('discussion:deleted', handleDeletedMessage);
         };
     }, [testCaseId]);
 
@@ -205,10 +305,7 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
             // Immediately add the message to the local state so it appears
             // without waiting for the socket event. The socket listener
             // already deduplicates by id, so no double-render will occur.
-            setMessages(prev => {
-                if (prev.some(m => m.id === sentMessage.id)) return prev;
-                return [...prev, sentMessage];
-            });
+            setMessages((prev) => updateMessageInList(prev, sentMessage));
 
             setInputValue('');
             setPendingAttachments([]);
@@ -291,6 +388,62 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
         }
         setPastedImagePreview(null);
         setPastedFile(null);
+    };
+
+    const handleFixStateChange = async (messageId: string, fixState: DiscussionMessageFixState) => {
+        if (updatingMessageId === messageId) return;
+
+        const currentMessage = messages.find((message) => message.id === messageId);
+        if (!currentMessage || currentMessage.fixState === fixState) {
+            return;
+        }
+
+        const previousMessages = messages;
+        const optimisticMessage = { ...currentMessage, fixState };
+
+        setUpdatingMessageId(messageId);
+        setMessages((prev) => updateMessageInList(prev, optimisticMessage));
+
+        try {
+            const updatedMessage = await updateDiscussionMessageFixState(testCaseId, messageId, projectId, fixState);
+            setMessages((prev) => updateMessageInList(prev, updatedMessage));
+        } catch {
+            setMessages(previousMessages);
+            toast.error('Failed to update fix status');
+        } finally {
+            setUpdatingMessageId((current) => (current === messageId ? null : current));
+        }
+    };
+
+    const handleDeleteMessage = async (messageId: string) => {
+        if (deletingMessageId === messageId) {
+            return;
+        }
+
+        const message = messages.find((entry) => entry.id === messageId);
+        if (!message || message.user.id !== currentUserId) {
+            return;
+        }
+
+        const confirmed = window.confirm('Delete this message?');
+        if (!confirmed) {
+            return;
+        }
+
+        const previousMessages = messages;
+
+        setDeletingMessageId(messageId);
+        setActiveMenuMessageId(null);
+        setMessages((prev) => removeMessageFromList(prev, messageId));
+
+        try {
+            await deleteDiscussionMessage(testCaseId, messageId);
+        } catch {
+            setMessages(previousMessages);
+            toast.error('Failed to delete message');
+        } finally {
+            setDeletingMessageId((current) => (current === messageId ? null : current));
+        }
     };
 
     // Get unique participants from messages
@@ -426,7 +579,7 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
                             </div>
 
                             {group.messages.map(msg => {
-                                if (msg.type === 'system') {
+                                if (msg.type === 'system' && !msg.fixState && msg.bodyFormat !== 'html') {
                                     const isFailedMessage = /failed in test run/i.test(msg.body);
                                     return (
                                         <div key={msg.id} className="flex justify-center my-2">
@@ -442,9 +595,18 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
                                 }
 
                                 const isOwn = msg.user.id === currentUserId;
+                                const canDelete = isOwn;
+                                const isTrackedMessage = Boolean(msg.fixState);
+                                const isUpdatingTrackedMessage = updatingMessageId === msg.id;
+                                const isDeletingThisMessage = deletingMessageId === msg.id;
+                                const trackedMessageToneClass = isTrackedMessage
+                                    ? msg.fixState === 'fixed'
+                                        ? 'border border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100'
+                                        : 'border border-red-200 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950/30 dark:text-red-100'
+                                    : '';
 
                                 return (
-                                    <div key={msg.id} className={`flex gap-2 mb-2 ${isOwn ? 'flex-row-reverse' : ''}`}>
+                                    <div key={msg.id} className={`group flex gap-2 mb-2 ${isOwn ? 'flex-row-reverse' : ''}`}>
                                         {!isOwn && (
                                             <img
                                                 src={msg.user.avatar}
@@ -453,19 +615,99 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
                                             />
                                         )}
                                         <div className={`max-w-[75%] ${isOwn ? 'items-end' : 'items-start'}`}>
-                                            {!isOwn && (
+                                            {!isOwn && msg.type !== 'system' && (
                                                 <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-0.5 block">
                                                     {msg.user.name}
                                                 </span>
                                             )}
-                                            <div
-                                                className={`rounded-lg px-3 py-1.5 text-sm break-words ${
-                                                    isOwn
-                                                        ? 'bg-blue-500 text-white rounded-br-sm'
-                                                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-sm'
-                                                }`}
-                                            >
-                                                {msg.body}
+                                            {isTrackedMessage && (
+                                                <div className={`mb-1 flex items-center justify-between gap-2 rounded-lg border px-2.5 py-1 ${
+                                                    msg.fixState === 'fixed'
+                                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300'
+                                                        : 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300'
+                                                }`}>
+                                                    <span className="text-[11px] font-semibold uppercase tracking-wide">
+                                                        {msg.fixState === 'fixed' ? 'Fixed' : 'Not Fixed'}
+                                                    </span>
+                                                    <div className="flex items-center gap-1">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleFixStateChange(msg.id, 'fixed')}
+                                                            disabled={isUpdatingTrackedMessage}
+                                                            className={`rounded-md p-1 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                                                                msg.fixState === 'fixed'
+                                                                    ? 'bg-emerald-600 text-white'
+                                                                    : 'bg-white/70 text-emerald-700 hover:bg-emerald-100 dark:bg-gray-800/70 dark:text-emerald-300 dark:hover:bg-emerald-900/30'
+                                                            }`}
+                                                            title="Mark fixed"
+                                                        >
+                                                            <Check className="h-3.5 w-3.5" />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleFixStateChange(msg.id, 'not-fixed')}
+                                                            disabled={isUpdatingTrackedMessage}
+                                                            className={`rounded-md p-1 transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                                                                msg.fixState === 'not-fixed'
+                                                                    ? 'bg-red-600 text-white'
+                                                                    : 'bg-white/70 text-red-700 hover:bg-red-100 dark:bg-gray-800/70 dark:text-red-300 dark:hover:bg-red-900/30'
+                                                            }`}
+                                                            title="Mark not fixed"
+                                                        >
+                                                            <X className="h-3.5 w-3.5" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <div className={`relative flex items-start gap-1.5 ${isOwn ? 'justify-end' : ''}`}>
+                                                {canDelete && (
+                                                    <div ref={activeMenuMessageId === msg.id ? menuRef : null} className="relative flex-shrink-0 pt-1">
+                                                        <button
+                                                            type="button"
+                                                            aria-label="Message actions"
+                                                            aria-haspopup="menu"
+                                                            aria-expanded={activeMenuMessageId === msg.id}
+                                                            onClick={() => setActiveMenuMessageId((current) => current === msg.id ? null : msg.id)}
+                                                            className={`rounded-full border border-gray-200 bg-white/95 p-1 text-gray-500 shadow-sm transition-all hover:bg-white hover:text-gray-700 dark:border-gray-600 dark:bg-gray-800/95 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white ${
+                                                                activeMenuMessageId === msg.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'
+                                                            }`}
+                                                            title="Message actions"
+                                                            disabled={isDeletingThisMessage}
+                                                        >
+                                                            <MoreHorizontal className="h-3.5 w-3.5" />
+                                                        </button>
+                                                        {activeMenuMessageId === msg.id && (
+                                                            <div
+                                                                role="menu"
+                                                                className="absolute left-0 top-8 z-20 w-36 rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+                                                            >
+                                                                <button
+                                                                    type="button"
+                                                                    role="menuitem"
+                                                                    onClick={() => handleDeleteMessage(msg.id)}
+                                                                    disabled={isDeletingThisMessage}
+                                                                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-400 dark:hover:bg-red-900/20"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                    {isDeletingThisMessage ? 'Deleting...' : 'Delete message'}
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                <div
+                                                    className={`rounded-lg px-3 py-1.5 text-sm break-words ${
+                                                        isTrackedMessage
+                                                            ? trackedMessageToneClass
+                                                            : msg.type === 'system'
+                                                            ? 'border border-gray-200 bg-white text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200'
+                                                            : isOwn
+                                                            ? 'bg-blue-500 text-white rounded-br-sm'
+                                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-sm'
+                                                    } ${isDeletingThisMessage ? 'opacity-60' : ''}`}
+                                                >
+                                                    {renderMessageBody(msg, testCaseId, isOwn)}
+                                                </div>
                                             </div>
                                             {/* Attachments */}
                                             {msg.attachments?.length > 0 && (
@@ -477,10 +719,22 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
                                                                 <button
                                                                     key={idx}
                                                                     onClick={() => setLightboxUrl(att.url)}
-                                                                    className="block rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 cursor-pointer hover:opacity-90 transition-opacity"
+                                                                    className={`block rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity ${
+                                                                        isTrackedMessage
+                                                                            ? msg.fixState === 'fixed'
+                                                                                ? 'border border-emerald-200 dark:border-emerald-800'
+                                                                                : 'border border-red-200 dark:border-red-800'
+                                                                            : 'border border-gray-200 dark:border-gray-700'
+                                                                    }`}
                                                                 >
                                                                     <img src={att.url} alt={att.filename} className="max-w-[180px] max-h-[120px] object-cover" />
-                                                                    <div className="px-2 py-1 text-[10px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 truncate">
+                                                                    <div className={`px-2 py-1 text-[10px] truncate ${
+                                                                        isTrackedMessage
+                                                                            ? msg.fixState === 'fixed'
+                                                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                                                                                : 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300'
+                                                                            : 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                                                                    }`}>
                                                                         {att.filename} · {formatFileSize(att.fileSize)}
                                                                     </div>
                                                                 </button>
@@ -492,11 +746,35 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
                                                                 href={att.url}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="flex items-center gap-2 px-2 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                                                className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors ${
+                                                                    isTrackedMessage
+                                                                        ? msg.fixState === 'fixed'
+                                                                            ? 'border border-emerald-200 bg-emerald-100/70 text-emerald-800 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200 dark:hover:bg-emerald-950/40'
+                                                                            : 'border border-red-200 bg-red-100/70 text-red-800 hover:bg-red-100 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200 dark:hover:bg-red-950/40'
+                                                                        : 'border border-gray-200 bg-gray-50 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700'
+                                                                }`}
                                                             >
-                                                                <Paperclip className="h-3 w-3 text-gray-400" />
-                                                                <span className="text-xs text-gray-600 dark:text-gray-300 truncate">{att.filename}</span>
-                                                                <span className="text-[10px] text-gray-400">{formatFileSize(att.fileSize)}</span>
+                                                                <Paperclip className={`h-3 w-3 ${
+                                                                    isTrackedMessage
+                                                                        ? msg.fixState === 'fixed'
+                                                                            ? 'text-emerald-500 dark:text-emerald-300'
+                                                                            : 'text-red-500 dark:text-red-300'
+                                                                        : 'text-gray-400'
+                                                                }`} />
+                                                                <span className={`text-xs truncate ${
+                                                                    isTrackedMessage
+                                                                        ? msg.fixState === 'fixed'
+                                                                            ? 'text-emerald-800 dark:text-emerald-200'
+                                                                            : 'text-red-800 dark:text-red-200'
+                                                                        : 'text-gray-600 dark:text-gray-300'
+                                                                }`}>{att.filename}</span>
+                                                                <span className={`text-[10px] ${
+                                                                    isTrackedMessage
+                                                                        ? msg.fixState === 'fixed'
+                                                                            ? 'text-emerald-600 dark:text-emerald-300'
+                                                                            : 'text-red-600 dark:text-red-300'
+                                                                        : 'text-gray-400'
+                                                                }`}>{formatFileSize(att.fileSize)}</span>
                                                             </a>
                                                         );
                                                     })}
@@ -599,7 +877,9 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
                 >
                     <button
                         onClick={() => setLightboxUrl(null)}
-                        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                        className="absolute top-4 right-4 p-2.5 rounded-full border border-white/20 bg-black/75 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-black/90 focus:outline-none focus:ring-2 focus:ring-white/70"
+                        title="Close preview"
+                        aria-label="Close preview"
                     >
                         <X className="h-6 w-6" />
                     </button>

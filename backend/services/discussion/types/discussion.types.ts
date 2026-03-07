@@ -5,6 +5,16 @@ export enum MessageType {
   System = "system",
 }
 
+export enum MessageBodyFormat {
+  Plain = "plain",
+  Html = "html",
+}
+
+export enum MessageFixState {
+  Fixed = "fixed",
+  NotFixed = "not-fixed",
+}
+
 export interface IAttachment {
   url: string;
   filename: string;
@@ -18,6 +28,10 @@ export interface IDiscussionMessage {
   userId: Types.ObjectId;
   type: MessageType;
   body: string;
+  bodyFormat: MessageBodyFormat;
+  fixState?: MessageFixState;
+  relatedRunId?: string;
+  relatedRunItemId?: string;
   attachments: IAttachment[];
   createdAt: Date;
   updatedAt: Date;
@@ -32,6 +46,14 @@ export interface CreateMessageRequest {
   attachments?: IAttachment[];
 }
 
+export interface CreateMessageOptions {
+  type?: MessageType;
+  bodyFormat?: MessageBodyFormat;
+  fixState?: MessageFixState;
+  relatedRunId?: string;
+  relatedRunItemId?: string;
+}
+
 export interface MessageResponse {
   id: string;
   testCaseId: string;
@@ -43,6 +65,10 @@ export interface MessageResponse {
   };
   type: MessageType;
   body: string;
+  bodyFormat: MessageBodyFormat;
+  fixState?: MessageFixState;
+  relatedRunId?: string;
+  relatedRunItemId?: string;
   attachments: IAttachment[];
   createdAt: string;
   updatedAt: string;

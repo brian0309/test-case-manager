@@ -20,6 +20,11 @@ import { TestCase } from "../../../models/testCase.model.js";
 import { Status } from "../../testCase/types/testCase.types.js";
 import * as testCaseService from "../../testCase/services/testCase.service.js";
 import * as discussionService from "../../discussion/services/discussion.service.js";
+import {
+  IAttachment,
+  MessageBodyFormat,
+  MessageFixState,
+} from "../../discussion/types/discussion.types.js";
 
 /**
  * POST /api/projects/:projectId/runs
@@ -290,8 +295,26 @@ export const updateRunItem = async (req: Request, res: Response): Promise<void> 
 
           // Post a system discussion message about the failure
           const runId = (testRun as any)._id.toString();
-          const messageBody = `Failed in test run: ${testRun.title} (ID: ${runId}) (ITEM_ID: ${itemId})`;
-          const message = await discussionService.createSystemMessage(caseId, projectId, userId, messageBody);
+          const messageBody = buildRunFailureDiscussionBody(
+            testRun.title,
+            runId,
+            itemId,
+            caseId,
+            updatedItem.actualResult
+          );
+          const message = await discussionService.createSystemMessage(
+            caseId,
+            projectId,
+            userId,
+            messageBody,
+            mapRunAttachmentsToDiscussionAttachments(updatedItem.attachments),
+            {
+              bodyFormat: MessageBodyFormat.Html,
+              fixState: MessageFixState.NotFixed,
+              relatedRunId: runId,
+              relatedRunItemId: itemId,
+            }
+          );
           socketManager.emitToProject(projectId, "discussion:created", {
             message,
             testCaseId: caseId,
@@ -332,6 +355,74 @@ function buildRunFailComment(
   }
   const appended = header + body;
   return existingComments ? existingComments + appended : appended;
+}
+
+function buildRunFailureDiscussionBody(
+  runTitle: string,
+  runId: string,
+  itemId: string,
+  caseId: string,
+  actualResult: string | undefined
+): string {
+  const runUrl = `/test-manager/runs?runId=${encodeURIComponent(runId)}&itemId=${encodeURIComponent(itemId)}&caseId=${encodeURIComponent(caseId)}`;
+  const summary = `<p><strong>Failed in test run:</strong> <a href="${runUrl}" target="_blank" rel="noopener noreferrer">${escapeHtml(runTitle)}</a></p>`;
+  return actualResult?.trim()
+    ? `${summary}${actualResult}`
+    : `${summary}<p>No execution comments were provided.</p>`;
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function mapRunAttachmentsToDiscussionAttachments(
+  attachments: string[] | undefined
+): IAttachment[] {
+  if (!attachments?.length) {
+    return [];
+  }
+
+  return attachments.map((url, index) => ({
+    url,
+    filename: extractFilenameFromUrl(url, index),
+    fileSize: 0,
+    contentType: inferContentTypeFromUrl(url),
+  }));
+}
+
+function extractFilenameFromUrl(url: string, index: number): string {
+  const pathname = url.split("?")[0] ?? "";
+  const segments = pathname.split("/").filter(Boolean);
+  const fallbackExtension = inferFileExtensionFromUrl(url);
+  return segments[segments.length - 1] || `attachment-${index + 1}.${fallbackExtension}`;
+}
+
+function inferFileExtensionFromUrl(url: string): string {
+  const match = url.match(/\.([a-z0-9]+)(?:\?|$)/i);
+  return match?.[1]?.toLowerCase() ?? "png";
+}
+
+function inferContentTypeFromUrl(url: string): string {
+  const extension = inferFileExtensionFromUrl(url);
+  switch (extension) {
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "gif":
+      return "image/gif";
+    case "webp":
+      return "image/webp";
+    case "svg":
+      return "image/svg+xml";
+    case "png":
+    default:
+      return "image/png";
+  }
 }
 
 /**

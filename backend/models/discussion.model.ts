@@ -1,6 +1,8 @@
 import mongoose, { Schema } from "mongoose";
 import {
   IDiscussionMessageDocument,
+  MessageBodyFormat,
+  MessageFixState,
   MessageType,
 } from "../services/discussion/types/discussion.types.js";
 
@@ -40,6 +42,26 @@ const discussionMessageSchema = new Schema<IDiscussionMessageDocument>(
       type: String,
       required: true,
       maxlength: 5000,
+    },
+    bodyFormat: {
+      type: String,
+      enum: Object.values(MessageBodyFormat),
+      default: MessageBodyFormat.Plain,
+    },
+    fixState: {
+      type: String,
+      enum: Object.values(MessageFixState),
+      required: false,
+    },
+    relatedRunId: {
+      type: String,
+      required: false,
+      maxlength: 64,
+    },
+    relatedRunItemId: {
+      type: String,
+      required: false,
+      maxlength: 64,
     },
     attachments: {
       type: [attachmentSchema],

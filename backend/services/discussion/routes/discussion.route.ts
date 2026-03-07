@@ -2,6 +2,8 @@ import express, { Router } from "express";
 import {
   getDiscussionMessages,
   createDiscussionMessage,
+  deleteDiscussionMessage,
+  updateDiscussionMessageFixState,
 } from "../controllers/discussion.controller.js";
 import { verifyToken } from "../../../middleware/verifyToken.js";
 
@@ -16,5 +18,7 @@ router.use(verifyToken);
  */
 router.get("/", getDiscussionMessages);
 router.post("/", createDiscussionMessage);
+router.delete("/:messageId", deleteDiscussionMessage);
+router.patch("/:messageId/fix-state", updateDiscussionMessageFixState);
 
 export default router;

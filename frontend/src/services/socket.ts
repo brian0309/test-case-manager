@@ -85,10 +85,38 @@ export interface SocketEvents {
       user: { id: string; name: string; avatar: string };
       type: "comment" | "system";
       body: string;
+      bodyFormat: "plain" | "html";
+      fixState?: "fixed" | "not-fixed";
+      relatedRunId?: string;
+      relatedRunItemId?: string;
       attachments: Array<{ url: string; filename: string; fileSize: number; contentType: string }>;
       createdAt: string;
       updatedAt: string;
     };
+    testCaseId: string;
+    projectId: string;
+  };
+  "discussion:updated": {
+    message: {
+      id: string;
+      testCaseId: string;
+      projectId: string;
+      user: { id: string; name: string; avatar: string };
+      type: "comment" | "system";
+      body: string;
+      bodyFormat: "plain" | "html";
+      fixState?: "fixed" | "not-fixed";
+      relatedRunId?: string;
+      relatedRunItemId?: string;
+      attachments: Array<{ url: string; filename: string; fileSize: number; contentType: string }>;
+      createdAt: string;
+      updatedAt: string;
+    };
+    testCaseId: string;
+    projectId: string;
+  };
+  "discussion:deleted": {
+    messageId: string;
     testCaseId: string;
     projectId: string;
   };

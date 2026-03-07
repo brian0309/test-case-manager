@@ -11,6 +11,9 @@ export interface DiscussionAttachment {
   contentType: string;
 }
 
+export type DiscussionMessageBodyFormat = "plain" | "html";
+export type DiscussionMessageFixState = "fixed" | "not-fixed";
+
 export interface DiscussionMessage {
   id: string;
   testCaseId: string;
@@ -22,6 +25,10 @@ export interface DiscussionMessage {
   };
   type: "comment" | "system";
   body: string;
+  bodyFormat: DiscussionMessageBodyFormat;
+  fixState?: DiscussionMessageFixState;
+  relatedRunId?: string;
+  relatedRunItemId?: string;
   attachments: DiscussionAttachment[];
   createdAt: string;
   updatedAt: string;
@@ -31,6 +38,10 @@ interface ApiResponse<T> {
   success: boolean;
   data?: T;
   message?: string;
+}
+
+interface DeleteDiscussionMessageResponse {
+  id: string;
 }
 
 /**
@@ -64,4 +75,37 @@ export const sendDiscussionMessage = async (
     throw new Error(response.data.message || "Failed to send message");
   }
   return response.data.data;
+};
+
+export const updateDiscussionMessageFixState = async (
+  testCaseId: string,
+  messageId: string,
+  projectId: string,
+  fixState: DiscussionMessageFixState
+): Promise<DiscussionMessage> => {
+  const response = await axios.patch<ApiResponse<DiscussionMessage>>(
+    `${API_URL}/cases/${testCaseId}/discussions/${messageId}/fix-state`,
+    { projectId, fixState },
+    { withCredentials: true }
+  );
+  if (!response.data.data) {
+    throw new Error(response.data.message || "Failed to update message");
+  }
+  return response.data.data;
+};
+
+export const deleteDiscussionMessage = async (
+  testCaseId: string,
+  messageId: string
+): Promise<string> => {
+  const response = await axios.delete<ApiResponse<DeleteDiscussionMessageResponse>>(
+    `${API_URL}/cases/${testCaseId}/discussions/${messageId}`,
+    { withCredentials: true }
+  );
+
+  if (!response.data.data?.id) {
+    throw new Error(response.data.message || 'Failed to delete message');
+  }
+
+  return response.data.data.id;
 };

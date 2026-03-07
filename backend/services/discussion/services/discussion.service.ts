@@ -1,7 +1,10 @@
 import { Types } from "mongoose";
 import { DiscussionMessage } from "../../../models/discussion.model.js";
 import {
+  CreateMessageOptions,
   IAttachment,
+  MessageBodyFormat,
+  MessageFixState,
   MessageType,
   MessageResponse,
 } from "../types/discussion.types.js";
@@ -26,6 +29,10 @@ const formatMessage = (msg: any): MessageResponse => {
     },
     type: msg.type,
     body: msg.body,
+    bodyFormat: msg.bodyFormat ?? MessageBodyFormat.Plain,
+    fixState: msg.fixState,
+    relatedRunId: msg.relatedRunId,
+    relatedRunItemId: msg.relatedRunItemId,
     attachments: msg.attachments ?? [],
     createdAt: msg.createdAt.toISOString(),
     updatedAt: msg.updatedAt.toISOString(),
@@ -51,14 +58,18 @@ export const createMessage = async (
   userId: string,
   body: string,
   attachments: IAttachment[] = [],
-  type: MessageType = MessageType.Comment
+  options: CreateMessageOptions = {}
 ): Promise<MessageResponse> => {
   const message = await DiscussionMessage.create({
     testCaseId: new Types.ObjectId(testCaseId),
     projectId: new Types.ObjectId(projectId),
     userId: new Types.ObjectId(userId),
-    type,
+    type: options.type ?? MessageType.Comment,
     body,
+    bodyFormat: options.bodyFormat ?? MessageBodyFormat.Plain,
+    fixState: options.fixState,
+    relatedRunId: options.relatedRunId,
+    relatedRunItemId: options.relatedRunItemId,
     attachments,
   });
 
@@ -73,16 +84,72 @@ export const createSystemMessage = async (
   testCaseId: string,
   projectId: string,
   userId: string,
-  body: string
+  body: string,
+  attachments: IAttachment[] = [],
+  options: Omit<CreateMessageOptions, "type"> = {}
 ): Promise<MessageResponse> => {
   return createMessage(
     testCaseId,
     projectId,
     userId,
     body,
-    [],
-    MessageType.System
+    attachments,
+    {
+      ...options,
+      type: MessageType.System,
+    }
   );
+};
+
+export const getMessageById = async (
+  testCaseId: string,
+  projectId: string,
+  messageId: string
+): Promise<MessageResponse | null> => {
+  const message = await DiscussionMessage.findOne({
+    _id: new Types.ObjectId(messageId),
+    testCaseId: new Types.ObjectId(testCaseId),
+    projectId: new Types.ObjectId(projectId),
+  })
+    .populate("userId", "name profilePicture")
+    .lean();
+
+  return message ? formatMessage(message) : null;
+};
+
+export const updateMessageFixState = async (
+  testCaseId: string,
+  projectId: string,
+  messageId: string,
+  fixState: MessageFixState
+): Promise<MessageResponse | null> => {
+  const updated = await DiscussionMessage.findOneAndUpdate(
+    {
+      _id: new Types.ObjectId(messageId),
+      testCaseId: new Types.ObjectId(testCaseId),
+      projectId: new Types.ObjectId(projectId),
+    },
+    { $set: { fixState } },
+    { new: true }
+  )
+    .populate("userId", "name profilePicture")
+    .lean();
+
+  return updated ? formatMessage(updated) : null;
+};
+
+export const deleteMessage = async (
+  testCaseId: string,
+  projectId: string,
+  messageId: string
+): Promise<boolean> => {
+  const result = await DiscussionMessage.deleteOne({
+    _id: new Types.ObjectId(messageId),
+    testCaseId: new Types.ObjectId(testCaseId),
+    projectId: new Types.ObjectId(projectId),
+  });
+
+  return result.deletedCount === 1;
 };
 
 // Keep User import referenced to avoid tree-shaking

@@ -103,6 +103,16 @@ export interface SocketEvents {
     testCaseId: string;
     projectId: string;
   };
+  "discussion:updated": {
+    message: any;
+    testCaseId: string;
+    projectId: string;
+  };
+  "discussion:deleted": {
+    messageId: string;
+    testCaseId: string;
+    projectId: string;
+  };
 }
 
 class SocketManager {

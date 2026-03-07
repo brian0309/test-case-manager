@@ -20,6 +20,7 @@ import {
   socketManager,
 } from '../../../socket/socketManager';
 import { RunItemStatus } from '../../../services/testRun/types/testRun.types';
+import { MessageBodyFormat, MessageFixState } from '../../../services/discussion/types/discussion.types';
 
 const mockEmitTestRunItemUpdated = emitTestRunItemUpdated as jest.MockedFunction<typeof emitTestRunItemUpdated>;
 const mockEmitTestRunUpdated = emitTestRunUpdated as jest.MockedFunction<typeof emitTestRunUpdated>;
@@ -56,7 +57,9 @@ describe('TestRun Controller - updateRunItem', () => {
 
   const mockDiscussionMessage = {
     id: 'msg-id-1',
-    body: 'Failed in test run: Sprint 1 Regression (ID: run-id-123)',
+    body: '<p><strong>Failed in test run:</strong> <a href="/test-manager/runs?runId=run-id-123&itemId=item-id-456&caseId=case-id-789" target="_blank" rel="noopener noreferrer">Sprint 1 Regression</a></p><p>Button did not respond</p>',
+    bodyFormat: MessageBodyFormat.Html,
+    fixState: MessageFixState.NotFixed,
     testCaseId: 'case-id-789',
     projectId: 'project-id-123',
   };
@@ -145,7 +148,14 @@ describe('TestRun Controller - updateRunItem', () => {
       'case-id-789',
       'project-id-123',
       'user-id-999',
-      expect.stringContaining('Sprint 1 Regression')
+      expect.stringContaining('Sprint 1 Regression'),
+      [],
+      expect.objectContaining({
+        bodyFormat: MessageBodyFormat.Html,
+        fixState: MessageFixState.NotFixed,
+        relatedRunId: 'run-id-123',
+        relatedRunItemId: 'item-id-456',
+      })
     );
   });
 
