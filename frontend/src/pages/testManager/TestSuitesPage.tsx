@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useTestManagerStore } from '../../store/testManagerStore';
@@ -182,15 +182,38 @@ const TestSuitesPage: React.FC = () => {
     }, [activeProject, fetchTestSuites, fetchTestCasesByProject, searchParams]);
 
     // Filter test cases by active project
-    const projectTestCases = activeProject
-        ? testCases.filter(tc => tc.projectId === activeProject)
-        : [];
+    const projectTestCases = useMemo(() => (
+        activeProject
+            ? testCases.filter(tc => tc.projectId === activeProject)
+            : []
+    ), [activeProject, testCases]);
+
+    const availableTestSuites = useMemo<TestSuite[]>(() => {
+        if (testSuites.length > 0) {
+            return testSuites;
+        }
+
+        return Array.from(new Set(projectTestCases.map((testCase) => testCase.suite)))
+            .sort()
+            .map((name) => ({
+                id: name,
+                name,
+                projectId: activeProject ?? '',
+                description: '',
+                tags: [],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            }));
+    }, [activeProject, projectTestCases, testSuites]);
+
+    const normalizedSearchQuery = searchQuery.trim().toLowerCase();
 
     // Filter test suites based on search query
-    const filteredTestSuites = testSuites.filter(suite => {
+    const filteredTestSuites = availableTestSuites.filter(suite => {
         const matchesSearch =
-            suite.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (suite.description && suite.description.toLowerCase().includes(searchQuery.toLowerCase()));
+            normalizedSearchQuery.length === 0 ||
+            suite.name.toLowerCase().includes(normalizedSearchQuery) ||
+            (suite.description && suite.description.toLowerCase().includes(normalizedSearchQuery));
         const suiteHasNoTags = !suite.tags || suite.tags.length === 0;
         const matchesSelectedTags =
             selectedTags.length === 0 ||
@@ -207,6 +230,15 @@ const TestSuitesPage: React.FC = () => {
     ).sort();
     const hasSuitesWithNoTags = testSuites.some(s => !s.tags || s.tags.length === 0);
     const activeTagFilterCount = selectedTags.length + (includeNoTags ? 1 : 0);
+    const hasActiveSuiteFilters = normalizedSearchQuery.length > 0 || activeTagFilterCount > 0;
+    const suiteListEmptyState = filteredTestSuites.length === 0 && hasActiveSuiteFilters
+        ? {
+            title: 'No Test Suites Found',
+            description: normalizedSearchQuery.length > 0
+                ? 'No test suites match your search or filters.'
+                : 'No test suites match the selected filters.',
+        }
+        : undefined;
 
     const selectedSuites = testSuites.filter((suite) => selectedSuiteIds.includes(suite.id));
 
@@ -575,6 +607,8 @@ const TestSuitesPage: React.FC = () => {
                     selectedSuiteIds={selectedSuiteIds}
                     onToggleSuiteSelection={toggleSuiteSelection}
                     onSelectAllSuites={handleSelectAllVisibleSuites}
+                    allowDerivedFallback={false}
+                    emptyState={suiteListEmptyState}
                 />
             </div>
         </div>

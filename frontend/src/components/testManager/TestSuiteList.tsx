@@ -19,6 +19,11 @@ interface TestSuiteListProps {
     selectedSuiteIds: string[];
     onToggleSuiteSelection: (suiteId: string) => void;
     onSelectAllSuites: (checked: boolean, visibleSuiteIds: string[]) => void;
+    allowDerivedFallback?: boolean;
+    emptyState?: {
+        title: string;
+        description: string;
+    };
 }
 
 interface DropdownPosition {
@@ -30,7 +35,21 @@ interface DropdownPosition {
 type SortField = 'name' | 'total' | 'progress' | 'updatedAt';
 type SortOrder = 'asc' | 'desc';
 
-const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, onSuiteClick, onCreate, onEdit, onDelete, viewMode, onViewModeToggle: _onViewModeToggle, selectedSuiteIds, onToggleSuiteSelection, onSelectAllSuites }) => {
+const TestSuiteList: React.FC<TestSuiteListProps> = ({
+    testCases,
+    testSuites,
+    onSuiteClick,
+    onCreate,
+    onEdit,
+    onDelete,
+    viewMode,
+    onViewModeToggle: _onViewModeToggle,
+    selectedSuiteIds,
+    onToggleSuiteSelection,
+    onSelectAllSuites,
+    allowDerivedFallback = true,
+    emptyState,
+}) => {
     const navigate = useNavigate();
     const { setActiveSuiteWithId, setFilters, setActiveArea, activeProject } = useTestManagerStore();
     const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
@@ -66,14 +85,16 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
     // Use testSuites from API if available, otherwise derive from testCases for backwards compatibility
     const suites = testSuites.length > 0
         ? testSuites
-        : Array.from(new Set(testCases.map(tc => tc.suite))).sort().map(name => ({
-            id: name,
-            name,
-            projectId: '',
-            description: '',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        } as TestSuite));
+        : allowDerivedFallback
+            ? Array.from(new Set(testCases.map(tc => tc.suite))).sort().map(name => ({
+                id: name,
+                name,
+                projectId: '',
+                description: '',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            } as TestSuite))
+            : [];
 
     const getSuiteStats = (suiteName: string) => {
         const cases = testCases.filter(c => c.suite === suiteName);
@@ -179,6 +200,18 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({ testCases, testSuites, on
     const visibleSuiteIds = sortedSuites.map((suite) => suite.id);
     const allVisibleSelected = visibleSuiteIds.length > 0 && visibleSuiteIds.every((id) => selectedSuiteIds.includes(id));
     const someVisibleSelected = visibleSuiteIds.some((id) => selectedSuiteIds.includes(id));
+
+    if (sortedSuites.length === 0 && emptyState) {
+        return (
+            <div className="p-6 md:p-8">
+                <div className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 text-center dark:border-gray-700 dark:bg-gray-800/40">
+                    <Folder className="mb-4 h-12 w-12 text-gray-300 dark:text-gray-600" />
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{emptyState.title}</h3>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{emptyState.description}</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>

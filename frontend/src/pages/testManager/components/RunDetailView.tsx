@@ -7,6 +7,7 @@ import {
     getRunStatusColor,
     getRunItemStatusBadgeColor,
     getPriorityColor,
+    matchesRunItemSearch,
 } from './testRunUtils';
 
 export interface RunDetailViewProps {
@@ -17,6 +18,7 @@ export interface RunDetailViewProps {
     onOpenExecute: (itemIndex: number, itemOrder?: number[]) => void;
     availableTestCases?: TestCase[];
     availableSuites?: TestSuite[];
+    searchQuery?: string;
 }
 
 const RunDetailView: React.FC<RunDetailViewProps> = ({
@@ -27,6 +29,7 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
     onOpenExecute,
     availableTestCases = [],
     availableSuites = [],
+    searchQuery = '',
 }) => {
     const [selectedAreaFilter, setSelectedAreaFilter] = useState<string>('all');
     const [selectedSuiteFilter, setSelectedSuiteFilter] = useState<string>('all');
@@ -113,13 +116,21 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
         return testRun.items
             .map((item, index) => ({ item, index }))
             .filter(({ item }) => {
+                const suiteName = itemSuiteNameByItemId.get(item.id) || null;
+                const matchesSearch = matchesRunItemSearch(item, searchQuery, suiteName);
+                if (!matchesSearch) return false;
+
                 const matchesArea = selectedAreaFilter === 'all' || (item.caseSnapshot.area || '') === selectedAreaFilter;
                 if (!matchesArea) return false;
 
                 if (selectedSuiteFilter === 'all') return true;
-                return itemSuiteNameByItemId.get(item.id) === selectedSuiteFilter;
+                return suiteName === selectedSuiteFilter;
             });
-    }, [testRun.items, selectedAreaFilter, selectedSuiteFilter, itemSuiteNameByItemId]);
+    }, [testRun.items, searchQuery, selectedAreaFilter, selectedSuiteFilter, itemSuiteNameByItemId]);
+
+    const noResultsMessage = searchQuery.trim()
+        ? 'No test cases match the current search or filters.'
+        : 'No test cases match the selected filters.';
 
     const sortedItems = useMemo(() => {
         if (sortField === 'none') return filteredItems;
@@ -435,7 +446,7 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
             >
                 {sortedItems.length === 0 ? (
                     <div className="flex items-center justify-center py-8 text-sm text-gray-500 dark:text-gray-400">
-                        No test cases match the selected filters.
+                        {noResultsMessage}
                     </div>
                 ) : (
                 <table className="w-full text-left border-collapse">
@@ -623,7 +634,7 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
             >
                 {sortedItems.length === 0 ? (
                     <div className="text-center py-8 text-sm text-gray-500 dark:text-gray-400">
-                        No test cases match the selected filters.
+                        {noResultsMessage}
                     </div>
                 ) : (
                     <div style={{ height: mobileVirtualizer.getTotalSize(), position: 'relative' }}>

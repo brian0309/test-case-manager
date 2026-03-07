@@ -1,4 +1,4 @@
-import { TestRunStatus, RunItemStatus } from '../../../types/testManager';
+import { TestRunStatus, RunItemStatus, RunItem, TestRunListItem } from '../../../types/testManager';
 
 export const getRunStatusColor = (status: TestRunStatus) => {
     switch (status) {
@@ -65,4 +65,71 @@ export const getPriorityColor = (priority?: string) => {
         case 'Low': return 'bg-blue-400 dark:bg-blue-500';
         default: return 'bg-gray-400 dark:bg-gray-500';
     }
+};
+
+const normalizeSearchQuery = (searchQuery: string) => searchQuery.trim().toLowerCase();
+
+const matchesSearchTerm = (value: string | undefined | null, normalizedQuery: string) => {
+    if (!value) {
+        return false;
+    }
+
+    return value.toLowerCase().includes(normalizedQuery);
+};
+
+export const filterTestRunsBySearch = (
+    runs: TestRunListItem[],
+    searchQuery: string,
+    groupNameById?: ReadonlyMap<string, string>
+) => {
+    const normalizedQuery = normalizeSearchQuery(searchQuery);
+
+    if (!normalizedQuery) {
+        return runs;
+    }
+
+    return runs.filter((run) => {
+        const groupName = run.groupId ? groupNameById?.get(run.groupId) ?? '' : '';
+        const searchableValues = [
+            run.id,
+            run.title,
+            run.description,
+            run.suiteName,
+            run.environment,
+            run.status,
+            run.createdBy?.name,
+            groupName,
+            ...(run.tags ?? []),
+        ];
+
+        return searchableValues.some((value) => matchesSearchTerm(value, normalizedQuery));
+    });
+};
+
+export const matchesRunItemSearch = (
+    item: RunItem,
+    searchQuery: string,
+    suiteName?: string | null
+) => {
+    const normalizedQuery = normalizeSearchQuery(searchQuery);
+
+    if (!normalizedQuery) {
+        return true;
+    }
+
+    const searchableValues = [
+        item.id,
+        item.caseId,
+        item.caseSnapshot.title,
+        item.caseSnapshot.priority,
+        item.caseSnapshot.area,
+        item.caseSnapshot.testDescription,
+        item.caseSnapshot.expectedResult,
+        item.caseSnapshot.stepsContent,
+        item.actualResult,
+        item.status,
+        suiteName,
+    ];
+
+    return searchableValues.some((value) => matchesSearchTerm(value, normalizedQuery));
 };

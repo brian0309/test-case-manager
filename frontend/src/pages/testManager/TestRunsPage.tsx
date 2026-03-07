@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { shallow } from 'zustand/shallow';
@@ -33,7 +33,7 @@ import CreateRunModal from './components/CreateRunModal';
 import EditTestRunModal from './components/EditTestRunModal';
 import ExecuteRunModal from './components/ExecuteRunModal';
 import RunDetailView from './components/RunDetailView';
-import { getRunStatusColor, generateSuiteTitle } from './components/testRunUtils';
+import { filterTestRunsBySearch, getRunStatusColor, generateSuiteTitle } from './components/testRunUtils';
 
 const RUNS_PAGE_SIZE = 40;
 
@@ -67,6 +67,8 @@ const TestRunsPage: React.FC = () => {
         fetchTestSuites,
         setActiveProject,
         setTestCases,
+        searchQuery,
+        clearSearchQuery,
     } = useTestManagerStore(
         (state) => ({
             activeProject: state.activeProject,
@@ -76,6 +78,8 @@ const TestRunsPage: React.FC = () => {
             fetchTestSuites: state.fetchTestSuites,
             setActiveProject: state.setActiveProject,
             setTestCases: state.setTestCases,
+            searchQuery: state.searchQuery,
+            clearSearchQuery: state.clearSearchQuery,
         }),
         shallow
     );
@@ -112,6 +116,11 @@ const TestRunsPage: React.FC = () => {
     const pendingSuiteIdRef = useRef<string | null>(null);
     const pendingSuiteNameRef = useRef<string | null>(null);
     const processedUrlRef = useRef(false);
+
+    useEffect(() => {
+        clearSearchQuery();
+        return () => clearSearchQuery();
+    }, [clearSearchQuery]);
 
     // Handle URL params: openCreate=true&suiteId=...&suiteName=...&projectId=...
     useEffect(() => {
@@ -604,11 +613,20 @@ const TestRunsPage: React.FC = () => {
         );
     };
 
-    const filteredRuns = testRuns.filter(run => {
-        if (selectedGroupFilter === 'all') return true;
-        if (selectedGroupFilter === 'ungrouped') return !run.groupId;
-        return run.groupId === selectedGroupFilter;
-    });
+    const groupNameById = useMemo(
+        () => new Map(testRunGroups.map((group) => [group.id, group.name])),
+        [testRunGroups]
+    );
+
+    const filteredRuns = useMemo(() => {
+        const groupFilteredRuns = testRuns.filter((run) => {
+            if (selectedGroupFilter === 'all') return true;
+            if (selectedGroupFilter === 'ungrouped') return !run.groupId;
+            return run.groupId === selectedGroupFilter;
+        });
+
+        return filterTestRunsBySearch(groupFilteredRuns, searchQuery, groupNameById);
+    }, [testRuns, selectedGroupFilter, searchQuery, groupNameById]);
 
     // If a run is selected for detail view, show it regardless of activeProject state
     if (detailRun) {
@@ -616,6 +634,7 @@ const TestRunsPage: React.FC = () => {
             <>
                 <RunDetailView
                     testRun={detailRun}
+                    searchQuery={searchQuery}
                     onBack={() => {
                         setDetailRun(null);
                         fetchRuns();
@@ -735,7 +754,9 @@ const TestRunsPage: React.FC = () => {
                             <Play className="w-12 h-12 mb-4 text-gray-300 dark:text-gray-600" />
                             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">No Test Runs Found</h3>
                             <p className="text-sm">
-                                {selectedGroupFilter !== 'all'
+                                {searchQuery.trim()
+                                    ? 'No test runs match your search.'
+                                    : selectedGroupFilter !== 'all'
                                     ? "No test runs in this group."
                                     : "Create a test run to start executing your test cases"}
                             </p>

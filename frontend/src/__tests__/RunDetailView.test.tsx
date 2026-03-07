@@ -86,4 +86,66 @@ describe('RunDetailView', () => {
 
         expect(screen.getAllByText('Authentication').length).toBeGreaterThan(0);
     });
+
+    it('filters run items using the shared search query', () => {
+        const testRun: TestRun = {
+            id: 'run-1',
+            title: 'Regression Run',
+            projectId: 'project-1',
+            status: TestRunStatus.Draft,
+            items: [
+                {
+                    id: 'item-1',
+                    caseId: 'case-1',
+                    caseSnapshot: {
+                        title: 'Login works',
+                        priority: 'High',
+                        suiteName: 'Authentication',
+                        area: 'Auth',
+                    },
+                    order: 0,
+                    status: RunItemStatus.NotRun,
+                },
+                {
+                    id: 'item-2',
+                    caseId: 'case-2',
+                    caseSnapshot: {
+                        title: 'Profile saves changes',
+                        priority: 'Medium',
+                        suiteName: 'Profile',
+                        area: 'Settings',
+                    },
+                    order: 1,
+                    status: RunItemStatus.NotRun,
+                },
+            ],
+            createdBy: { id: 'user-1', name: 'QA', avatar: '' },
+            resultsSummary: {
+                total: 2,
+                passed: 0,
+                failed: 0,
+                blocked: 0,
+                skipped: 0,
+                notRun: 2,
+                passRate: 0,
+                totalTimeSpent: 0,
+            },
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+        };
+
+        render(
+            <RunDetailView
+                testRun={testRun}
+                searchQuery="auth"
+                onBack={vi.fn()}
+                onUpdateItem={vi.fn().mockResolvedValue(undefined)}
+                onComplete={vi.fn().mockResolvedValue(undefined)}
+                onOpenExecute={vi.fn()}
+            />
+        );
+
+        expect(screen.getByText('Login works')).toBeInTheDocument();
+        expect(screen.queryByText('Profile saves changes')).not.toBeInTheDocument();
+    });
 });
