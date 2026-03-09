@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import toast from 'react-hot-toast';
-import { ArrowLeft, ChevronRight, Eye, Layers, Map as MapIcon, ChevronDown, ChevronUp, Check, ArrowUpDown } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Eye, Layers, Map as MapIcon, ChevronDown, ChevronUp, Check, ArrowUpDown, CheckCircle2 } from 'lucide-react';
 import { TestRun, RunItemStatus, RunItem, TestCase, TestSuite } from '../../../types/testManager';
 import {
     getRunStatusColor,
@@ -33,12 +33,15 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
 }) => {
     const [selectedAreaFilter, setSelectedAreaFilter] = useState<string>('all');
     const [selectedSuiteFilter, setSelectedSuiteFilter] = useState<string>('all');
+    const [selectedRunStatusFilter, setSelectedRunStatusFilter] = useState<string>('all');
     const [sortField, setSortField] = useState<'none' | 'area' | 'priority' | 'runStatus' | 'suite'>('none');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [isAreaOpen, setIsAreaOpen] = useState(false);
     const [isSuiteOpen, setIsSuiteOpen] = useState(false);
+    const [isRunStatusOpen, setIsRunStatusOpen] = useState(false);
     const areaRef = useRef<HTMLDivElement>(null);
     const suiteRef = useRef<HTMLDivElement>(null);
+    const runStatusRef = useRef<HTMLDivElement>(null);
 
     // Virtualization – desktop table
     const ROW_HEIGHT_ESTIMATE = 52;
@@ -112,6 +115,11 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
         return Array.from(areas).sort((a, b) => a.localeCompare(b));
     }, [testRun.items]);
 
+    const runStatusOptions = useMemo(
+        () => Object.values(RunItemStatus),
+        []
+    );
+
     const filteredItems = useMemo(() => {
         return testRun.items
             .map((item, index) => ({ item, index }))
@@ -123,10 +131,13 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                 const matchesArea = selectedAreaFilter === 'all' || (item.caseSnapshot.area || '') === selectedAreaFilter;
                 if (!matchesArea) return false;
 
+                const matchesRunStatus = selectedRunStatusFilter === 'all' || item.status === selectedRunStatusFilter;
+                if (!matchesRunStatus) return false;
+
                 if (selectedSuiteFilter === 'all') return true;
                 return suiteName === selectedSuiteFilter;
             });
-    }, [testRun.items, searchQuery, selectedAreaFilter, selectedSuiteFilter, itemSuiteNameByItemId]);
+    }, [testRun.items, searchQuery, selectedAreaFilter, selectedRunStatusFilter, selectedSuiteFilter, itemSuiteNameByItemId]);
 
     const noResultsMessage = searchQuery.trim()
         ? 'No test cases match the current search or filters.'
@@ -233,6 +244,9 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
             if (areaRef.current && !areaRef.current.contains(event.target as Node)) {
                 setIsAreaOpen(false);
             }
+            if (runStatusRef.current && !runStatusRef.current.contains(event.target as Node)) {
+                setIsRunStatusOpen(false);
+            }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
@@ -242,6 +256,7 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
     useEffect(() => {
         setSelectedAreaFilter('all');
         setSelectedSuiteFilter('all');
+        setSelectedRunStatusFilter('all');
         setSortField('none');
         setSortDirection('asc');
     }, [testRun.id]);
@@ -390,6 +405,63 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                                                 {areaOptions.length === 0 && (
                                                     <div className="px-3 py-4 text-sm text-gray-400 dark:text-gray-500 text-center">No areas found</div>
                                                 )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="relative" ref={runStatusRef}>
+                                    <button
+                                        onClick={() => setIsRunStatusOpen(!isRunStatusOpen)}
+                                        title={selectedRunStatusFilter === 'all' ? 'All Run Statuses' : selectedRunStatusFilter}
+                                        className={`flex items-center gap-1 px-2 py-0.5 text-sm font-medium rounded-md transition-all ${selectedRunStatusFilter !== 'all'
+                                            ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                            : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                                            }`}
+                                    >
+                                        <CheckCircle2 size={14} className={selectedRunStatusFilter !== 'all' ? 'text-blue-500 dark:text-blue-400 flex-shrink-0' : 'text-gray-400 dark:text-gray-500 flex-shrink-0'} />
+                                        <span className="max-w-[140px] truncate">{selectedRunStatusFilter === 'all' ? 'All Statuses' : selectedRunStatusFilter}</span>
+                                        <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform flex-shrink-0 ${isRunStatusOpen ? 'rotate-180' : ''}`} />
+                                    </button>
+
+                                    {isRunStatusOpen && (
+                                        <div className="absolute top-full left-0 mt-1 w-56 sm:w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                                            <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
+                                                <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter by Run Status</p>
+                                            </div>
+
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedRunStatusFilter('all');
+                                                    setIsRunStatusOpen(false);
+                                                }}
+                                                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedRunStatusFilter === 'all' ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
+                                            >
+                                                <CheckCircle2 size={14} className={selectedRunStatusFilter === 'all' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'} />
+                                                <span className="flex-1">All Statuses</span>
+                                                {selectedRunStatusFilter === 'all' && <Check size={14} />}
+                                            </button>
+
+                                            <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
+
+                                            <div className="max-h-64 overflow-y-auto">
+                                                {runStatusOptions.map((status) => (
+                                                    <button
+                                                        key={status}
+                                                        onClick={() => {
+                                                            setSelectedRunStatusFilter(status);
+                                                            setIsRunStatusOpen(false);
+                                                        }}
+                                                        title={status}
+                                                        className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedRunStatusFilter === status ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
+                                                    >
+                                                        <span className={`inline-flex min-w-[72px] justify-center rounded-full border px-2 py-0.5 text-xs font-semibold ${getRunItemStatusBadgeColor(status)}`}>
+                                                            {status}
+                                                        </span>
+                                                        <span className="truncate flex-1">{status}</span>
+                                                        {selectedRunStatusFilter === status && <Check size={14} />}
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
                                     )}
