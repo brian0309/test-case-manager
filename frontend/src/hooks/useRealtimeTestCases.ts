@@ -6,7 +6,7 @@
 import { useEffect, useCallback, useRef } from "react";
 import { socketService, SocketEvents } from "../services/socket";
 import { useTestManagerStore } from "../store/testManagerStore";
-import { Status } from "../types/testManager";
+import { Status, TestCase } from "../types/testManager";
 
 interface UseRealtimeTestCasesOptions {
   /** Project ID to subscribe to */
@@ -41,10 +41,35 @@ export function useRealtimeTestCases({
   // Track if we've set up listeners to prevent duplicates
   const listenersSetup = useRef(false);
 
+  // Batching for testcase:updated events to reduce re-renders
+  const pendingUpdates = useRef<Map<string, TestCase>>(new Map());
+  const batchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushPendingUpdates = useCallback(() => {
+    const updates = pendingUpdates.current;
+    if (updates.size === 0) return;
+
+    const updatesSnapshot = new Map(updates);
+    updates.clear();
+
+    setTestCases((currentCases) =>
+      currentCases.map((tc) => updatesSnapshot.get(tc.id) ?? tc)
+    );
+  }, [setTestCases]);
+
+  // Cleanup batch timer on unmount
+  useEffect(() => {
+    return () => {
+      if (batchTimer.current) {
+        clearTimeout(batchTimer.current);
+        batchTimer.current = null;
+      }
+    };
+  }, []);
+
   // Handler for project updated
   const handleProjectUpdated = useCallback(
     (data: SocketEvents["project:updated"]) => {
-      console.log("[Realtime] Project updated:", data);
       updateProjectLocal(data.project);
     },
     [updateProjectLocal]
@@ -53,7 +78,6 @@ export function useRealtimeTestCases({
   // Handler for project settings updated
   const handleProjectSettingsUpdated = useCallback(
     (data: SocketEvents["project:settings-updated"]) => {
-      console.log("[Realtime] Project settings updated:", data);
       updateProjectSettingsLocal(data.projectId, data.settings);
     },
     [updateProjectSettingsLocal]
@@ -62,7 +86,6 @@ export function useRealtimeTestCases({
   // Handler for project deleted
   const handleProjectDeleted = useCallback(
     (data: SocketEvents["project:deleted"]) => {
-      console.log("[Realtime] Project deleted:", data);
       deleteProjectLocal(data.projectId);
     },
     [deleteProjectLocal]
@@ -71,7 +94,6 @@ export function useRealtimeTestCases({
   // Handler for test case created
   const handleTestCaseCreated = useCallback(
     (data: SocketEvents["testcase:created"]) => {
-      console.log("[Realtime] Test case created:", data);
 
       // Only update if it's for the current suite we're viewing
       if (activeSuiteId === data.suiteId) {
@@ -86,24 +108,25 @@ export function useRealtimeTestCases({
     [activeSuiteId, setTestCases]
   );
 
-  // Handler for test case updated
+  // Handler for test case updated (batched to reduce re-renders)
   const handleTestCaseUpdated = useCallback(
     (data: SocketEvents["testcase:updated"]) => {
-      console.log("[Realtime] Test case updated:", data);
+      pendingUpdates.current.set(data.testCase.id, data.testCase);
 
-      setTestCases((currentCases) =>
-        currentCases.map((tc) =>
-          tc.id === data.testCase.id ? data.testCase : tc
-        )
-      );
+      if (batchTimer.current) {
+        clearTimeout(batchTimer.current);
+      }
+      batchTimer.current = setTimeout(() => {
+        batchTimer.current = null;
+        flushPendingUpdates();
+      }, 50);
     },
-    [setTestCases]
+    [flushPendingUpdates]
   );
 
   // Handler for test case deleted
   const handleTestCaseDeleted = useCallback(
     (data: SocketEvents["testcase:deleted"]) => {
-      console.log("[Realtime] Test case deleted:", data);
 
       setTestCases((currentCases) => currentCases.filter((tc) => tc.id !== data.testCaseId));
 
@@ -118,7 +141,6 @@ export function useRealtimeTestCases({
   // Handler for test cases reordered
   const handleTestCasesReordered = useCallback(
     (data: SocketEvents["testcase:reordered"]) => {
-      console.log("[Realtime] Test cases reordered:", data);
 
       // Only update if it's for the current suite we're viewing
       if (activeSuiteId === data.suiteId) {
@@ -131,7 +153,6 @@ export function useRealtimeTestCases({
   // Handler for bulk deleted
   const handleTestCasesBulkDeleted = useCallback(
     (data: SocketEvents["testcase:bulk-deleted"]) => {
-      console.log("[Realtime] Test cases bulk deleted:", data);
 
       const deletedSet = new Set(data.testCaseIds);
       setTestCases((currentCases) => currentCases.filter((tc) => !deletedSet.has(tc.id)));
@@ -147,7 +168,6 @@ export function useRealtimeTestCases({
   // Handler for bulk status updated
   const handleTestCasesBulkStatusUpdated = useCallback(
     (data: SocketEvents["testcase:bulk-status-updated"]) => {
-      console.log("[Realtime] Test cases bulk status updated:", data);
 
       const updatedSet = new Set(data.testCaseIds);
       setTestCases((currentCases) =>
@@ -162,7 +182,6 @@ export function useRealtimeTestCases({
   // Handler for test case cloned
   const handleTestCaseCloned = useCallback(
     (data: SocketEvents["testcase:cloned"]) => {
-      console.log("[Realtime] Test case cloned:", data);
 
       // Only update if it's for the current suite we're viewing
       if (activeSuiteId === data.suiteId) {
@@ -180,7 +199,6 @@ export function useRealtimeTestCases({
   // Handler for bulk imported
   const handleTestCasesBulkImported = useCallback(
     (data: SocketEvents["testcase:bulk-imported"]) => {
-      console.log("[Realtime] Test cases bulk imported:", data);
 
       // Only update if it's for the current suite we're viewing
       if (activeSuiteId === data.suiteId) {
@@ -199,7 +217,6 @@ export function useRealtimeTestCases({
   // Handler for test suite created
   const handleTestSuiteCreated = useCallback(
     (data: SocketEvents["testsuite:created"]) => {
-      console.log("[Realtime] Test suite created:", data);
 
       // Use functional update to check against current state (not stale closure)
       setTestSuites((currentSuites) => {
@@ -214,7 +231,6 @@ export function useRealtimeTestCases({
   // Handler for test suite updated
   const handleTestSuiteUpdated = useCallback(
     (data: SocketEvents["testsuite:updated"]) => {
-      console.log("[Realtime] Test suite updated:", data);
 
       setTestSuites((currentSuites) =>
         currentSuites.map((s) =>
@@ -228,7 +244,6 @@ export function useRealtimeTestCases({
   // Handler for test suite deleted
   const handleTestSuiteDeleted = useCallback(
     (data: SocketEvents["testsuite:deleted"]) => {
-      console.log("[Realtime] Test suite deleted:", data);
 
       setTestSuites((currentSuites) => currentSuites.filter((s) => s.id !== data.suiteId));
 
