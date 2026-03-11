@@ -552,13 +552,19 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
 
     // Trigger re-measurement when the dataset changes (e.g. real-time socket updates)
     const previousDataLength = useRef(sortedData.length);
+    const measureRafId = useRef<number>(0);
     useEffect(() => {
         if (sortedData.length !== previousDataLength.current) {
             previousDataLength.current = sortedData.length;
-            requestAnimationFrame(() => {
+            measureRafId.current = requestAnimationFrame(() => {
                 rowVirtualizer.measure();
             });
         }
+        return () => {
+            if (measureRafId.current) {
+                cancelAnimationFrame(measureRafId.current);
+            }
+        };
     }, [sortedData.length, rowVirtualizer]);
 
     // Keyboard navigation for virtual rows

@@ -64,8 +64,10 @@ export function useRealtimeTestCases({
         clearTimeout(batchTimer.current);
         batchTimer.current = null;
       }
+      // Flush any remaining pending updates before unmount
+      flushPendingUpdates();
     };
-  }, []);
+  }, [flushPendingUpdates]);
 
   // Handler for project updated
   const handleProjectUpdated = useCallback(
