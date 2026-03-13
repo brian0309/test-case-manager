@@ -1,8 +1,9 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import toast from 'react-hot-toast';
-import { ArrowLeft, ChevronRight, Eye, Layers, Map as MapIcon, ChevronDown, ChevronUp, Check, ArrowUpDown, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Eye, Layers, Map as MapIcon, ChevronDown, ChevronUp, Check, ArrowUpDown, CheckCircle2, Download, FileText } from 'lucide-react';
 import { TestRun, RunItemStatus, RunItem, TestCase, TestSuite } from '../../../types/testManager';
+import { exportTestRunToCSV, exportTestRunToXLSX } from '../../../utils/exportTestRun';
 import {
     getRunStatusColor,
     getRunItemStatusBadgeColor,
@@ -39,9 +40,11 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
     const [isAreaOpen, setIsAreaOpen] = useState(false);
     const [isSuiteOpen, setIsSuiteOpen] = useState(false);
     const [isRunStatusOpen, setIsRunStatusOpen] = useState(false);
+    const [isExportOpen, setIsExportOpen] = useState(false);
     const areaRef = useRef<HTMLDivElement>(null);
     const suiteRef = useRef<HTMLDivElement>(null);
     const runStatusRef = useRef<HTMLDivElement>(null);
+    const exportRef = useRef<HTMLDivElement>(null);
 
     // Virtualization – desktop table
     const ROW_HEIGHT_ESTIMATE = 52;
@@ -250,6 +253,9 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
             if (runStatusRef.current && !runStatusRef.current.contains(event.target as Node)) {
                 setIsRunStatusOpen(false);
             }
+            if (exportRef.current && !exportRef.current.contains(event.target as Node)) {
+                setIsExportOpen(false);
+            }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
@@ -263,6 +269,24 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
         setSortField('none');
         setSortDirection('asc');
     }, [testRun.id]);
+
+    const handleExportCSV = () => {
+        try {
+            exportTestRunToCSV(testRun, itemSuiteNameByItemId);
+            setIsExportOpen(false);
+        } catch (error: unknown) {
+            toast.error((error as Error).message || 'Failed to export test run as CSV. Please try again.');
+        }
+    };
+
+    const handleExportXLSX = () => {
+        try {
+            exportTestRunToXLSX(testRun, itemSuiteNameByItemId);
+            setIsExportOpen(false);
+        } catch (error: unknown) {
+            toast.error((error as Error).message || 'Failed to export test run as XLSX. Please try again.');
+        }
+    };
 
     const handleStatusChange = async (item: RunItem, newStatus: RunItemStatus) => {
         try {
@@ -482,6 +506,35 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    {/* Export dropdown */}
+                    <div ref={exportRef} className="relative">
+                        <button
+                            onClick={() => setIsExportOpen(prev => !prev)}
+                            className="flex items-center gap-1 p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                            title="Export test run"
+                        >
+                            <Download className="w-4 h-4" />
+                            <ChevronDown className="w-3 h-3" />
+                        </button>
+                        {isExportOpen && (
+                            <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
+                                <button
+                                    onClick={handleExportXLSX}
+                                    className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                    <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                    Export as XLSX
+                                </button>
+                                <button
+                                    onClick={handleExportCSV}
+                                    className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                    <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                    Export as CSV
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     <button
                         onClick={handleComplete}
                         disabled={executedCount < totalItems}
