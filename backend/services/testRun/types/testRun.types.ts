@@ -10,10 +10,13 @@ export enum TestRunStatus {
 
 export enum RunItemStatus {
   NotRun = "Not Run",
+  ReadyForTesting = "Ready for Testing",
+  InProgress = "In Progress",
   Passed = "Passed",
   Failed = "Failed",
   Blocked = "Blocked",
   Skipped = "Skipped",
+  OutOfScope = "Out of Scope",
 }
 
 // Case snapshot for preserving test case state at run creation

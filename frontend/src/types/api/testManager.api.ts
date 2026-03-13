@@ -13,11 +13,15 @@ export enum Priority {
 
 export enum Status {
   Draft = "Draft",
+  ReadyForTesting = "Ready for Testing",
+  InProgress = "In Progress",
   Passed = "Passed",
   Failed = "Failed",
+  Blocked = "Blocked",
   Retest = "Retest",
   PassFixed = "Pass - Fixed",
   Skipped = "Skipped",
+  OutOfScope = "Out of Scope",
 }
 
 // Base API Response
@@ -238,10 +242,13 @@ export enum TestRunStatus {
 
 export enum RunItemStatus {
   NotRun = "Not Run",
+  ReadyForTesting = "Ready for Testing",
+  InProgress = "In Progress",
   Passed = "Passed",
   Failed = "Failed",
   Blocked = "Blocked",
   Skipped = "Skipped",
+  OutOfScope = "Out of Scope",
 }
 
 // Test Run Types

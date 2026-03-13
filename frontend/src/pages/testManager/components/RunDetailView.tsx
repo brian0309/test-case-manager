@@ -155,10 +155,13 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
 
         const statusRank: Record<RunItemStatus, number> = {
             [RunItemStatus.NotRun]: 1,
-            [RunItemStatus.Passed]: 2,
-            [RunItemStatus.Failed]: 3,
-            [RunItemStatus.Blocked]: 4,
-            [RunItemStatus.Skipped]: 5,
+            [RunItemStatus.ReadyForTesting]: 2,
+            [RunItemStatus.InProgress]: 3,
+            [RunItemStatus.Passed]: 4,
+            [RunItemStatus.Failed]: 5,
+            [RunItemStatus.Blocked]: 6,
+            [RunItemStatus.Skipped]: 7,
+            [RunItemStatus.OutOfScope]: 8,
         };
 
         return [...filteredItems].sort((left, right) => {
@@ -640,10 +643,13 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                                             className={`text-xs font-semibold px-2.5 py-1 rounded-full border appearance-none cursor-pointer outline-none transition-colors text-center min-w-[90px] ${getRunItemStatusBadgeColor(item.status)}`}
                                         >
                                             <option value={RunItemStatus.NotRun}>Not Run</option>
+                                            <option value={RunItemStatus.ReadyForTesting}>Ready for Testing</option>
+                                            <option value={RunItemStatus.InProgress}>In Progress</option>
                                             <option value={RunItemStatus.Passed}>Passed</option>
                                             <option value={RunItemStatus.Failed}>Failed</option>
                                             <option value={RunItemStatus.Blocked}>Blocked</option>
                                             <option value={RunItemStatus.Skipped}>Skipped</option>
+                                            <option value={RunItemStatus.OutOfScope}>Out of Scope</option>
                                         </select>
                                     </div>
                                 </td>
@@ -779,10 +785,13 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                                                                 className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border appearance-none cursor-pointer outline-none transition-colors min-w-[80px] ${getRunItemStatusBadgeColor(item.status)}`}
                                                             >
                                                                 <option value={RunItemStatus.NotRun}>Not Run</option>
+                                                                <option value={RunItemStatus.ReadyForTesting}>Ready for Testing</option>
+                                                                <option value={RunItemStatus.InProgress}>In Progress</option>
                                                                 <option value={RunItemStatus.Passed}>Passed</option>
                                                                 <option value={RunItemStatus.Failed}>Failed</option>
                                                                 <option value={RunItemStatus.Blocked}>Blocked</option>
                                                                 <option value={RunItemStatus.Skipped}>Skipped</option>
+                                                                <option value={RunItemStatus.OutOfScope}>Out of Scope</option>
                                                             </select>
                                                         </div>
                                                     </div>

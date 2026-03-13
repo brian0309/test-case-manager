@@ -10,11 +10,15 @@ export enum Priority {
 
 export enum Status {
   Draft = "Draft",
+  ReadyForTesting = "Ready for Testing",
+  InProgress = "In Progress",
   Passed = "Passed",
   Failed = "Failed",
+  Blocked = "Blocked",
   Retest = "Retest",
   PassFixed = "Pass - Fixed",
   Skipped = "Skipped",
+  OutOfScope = "Out of Scope",
 }
 
 // Subdocument interfaces

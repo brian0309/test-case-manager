@@ -25,6 +25,12 @@ export const getItemStatusColor = (status: RunItemStatus) => {
             return 'bg-orange-500';
         case RunItemStatus.Skipped:
             return 'bg-gray-400';
+        case RunItemStatus.ReadyForTesting:
+            return 'bg-blue-400';
+        case RunItemStatus.InProgress:
+            return 'bg-indigo-500';
+        case RunItemStatus.OutOfScope:
+            return 'bg-purple-400';
         case RunItemStatus.NotRun:
         default:
             return 'bg-gray-200';
@@ -51,6 +57,12 @@ export const getRunItemStatusBadgeColor = (status: RunItemStatus) => {
             return 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700';
         case RunItemStatus.Skipped:
             return 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-400 border-gray-200 dark:border-gray-600';
+        case RunItemStatus.ReadyForTesting:
+            return 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700';
+        case RunItemStatus.InProgress:
+            return 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700';
+        case RunItemStatus.OutOfScope:
+            return 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700';
         case RunItemStatus.NotRun:
         default:
             return 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600';

@@ -33,10 +33,13 @@ describe('TestRun Model', () => {
 
     it('should have RunItemStatus enum with correct values', () => {
       expect(RunItemStatus.NotRun).toBe('Not Run');
+      expect(RunItemStatus.ReadyForTesting).toBe('Ready for Testing');
+      expect(RunItemStatus.InProgress).toBe('In Progress');
       expect(RunItemStatus.Passed).toBe('Passed');
       expect(RunItemStatus.Failed).toBe('Failed');
       expect(RunItemStatus.Blocked).toBe('Blocked');
       expect(RunItemStatus.Skipped).toBe('Skipped');
+      expect(RunItemStatus.OutOfScope).toBe('Out of Scope');
     });
 
     it('should have required fields defined for TestRun', () => {
@@ -229,13 +232,16 @@ describe('TestRun Model', () => {
     it('should support all run item status values', () => {
       const allStatuses = [
         RunItemStatus.NotRun,
+        RunItemStatus.ReadyForTesting,
+        RunItemStatus.InProgress,
         RunItemStatus.Passed,
         RunItemStatus.Failed,
         RunItemStatus.Blocked,
         RunItemStatus.Skipped,
+        RunItemStatus.OutOfScope,
       ];
 
-      expect(allStatuses).toHaveLength(5);
+      expect(allStatuses).toHaveLength(8);
     });
   });
 
