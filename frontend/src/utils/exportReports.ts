@@ -448,6 +448,7 @@ export function exportReportToPDF(
     }
 
     const title = projectName ? `Analytics Report – ${projectName}` : 'Analytics Report';
+    const scriptClose = '</scr' + 'ipt>';
 
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -482,7 +483,7 @@ export function exportReportToPDF(
   ${section('Trends', trendsContent)}
   ${section('Suite Comparison', suitesContent)}
   ${section('Test Case Health', healthContent)}
-  <script>window.onload = function() { window.print(); }<\/script>
+  <script>window.onload = function() { window.print(); }${scriptClose}
 </body>
 </html>`;
 
