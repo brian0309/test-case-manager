@@ -483,8 +483,8 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
     };
 
     const selectedIdsSet = useMemo(() => new Set(selectedIds), [selectedIds]);
-    const allSelected = sortedData.length > 0 && sortedData.every(item => selectedIdsSet.has(item.id));
-    const someSelected = sortedData.some(item => selectedIdsSet.has(item.id));
+    const allSelected = useMemo(() => sortedData.length > 0 && sortedData.every(item => selectedIdsSet.has(item.id)), [sortedData, selectedIdsSet]);
+    const someSelected = useMemo(() => sortedData.some(item => selectedIdsSet.has(item.id)), [sortedData, selectedIdsSet]);
 
     const getContextInfo = (item: TestCase) => {
         const showSuite = !activeSuiteId;
@@ -547,16 +547,24 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
         count: sortedData.length,
         getScrollElement: () => tableScrollRef.current,
         estimateSize: () => ROW_HEIGHT_ESTIMATE,
-        overscan: 10,
+        overscan: 5,
     });
 
     // Trigger re-measurement when the dataset changes (e.g. real-time socket updates)
     const previousDataLength = useRef(sortedData.length);
+    const measureRafId = useRef<number>(0);
     useEffect(() => {
         if (sortedData.length !== previousDataLength.current) {
             previousDataLength.current = sortedData.length;
-            rowVirtualizer.measure();
+            measureRafId.current = requestAnimationFrame(() => {
+                rowVirtualizer.measure();
+            });
         }
+        return () => {
+            if (measureRafId.current) {
+                cancelAnimationFrame(measureRafId.current);
+            }
+        };
     }, [sortedData.length, rowVirtualizer]);
 
     // Keyboard navigation for virtual rows
@@ -609,6 +617,9 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
 
     // Determine whether DndContext should be active (only when reorder is possible)
     const isDndEnabled = enableReorder && sortMode === 'custom';
+
+    // Memoize sortable item IDs to avoid creating a new array on every render
+    const sortableItemIds = useMemo(() => sortedData.map((item) => item.id), [sortedData]);
 
     return (
         <div className="flex-1 bg-gray-50 dark:bg-gray-900 flex flex-col">
@@ -788,7 +799,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-900">
                             <SortableContext
-                                items={sortedData.map((item) => item.id)}
+                                items={sortableItemIds}
                                 strategy={verticalListSortingStrategy}
                             >
                                 {/* Spacer row for virtual scroll offset above visible rows */}

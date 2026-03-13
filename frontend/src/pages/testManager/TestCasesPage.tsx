@@ -24,7 +24,7 @@ import { Sparkles, GripVertical, ArrowUp, ArrowDown, RotateCcw, Tag, X, ChevronD
 import { getTagColor } from '../../utils/tagColors';
 
 const getSuiteTagFilterStorageKey = (projectId: string) => `testSuitesTagFilter:${projectId}`;
-const PROJECT_CASES_PAGE_SIZE = 100;
+const PROJECT_CASES_PAGE_SIZE = 30;
 const STATUS_FILTER_PAGE_SIZE = 100;
 
 type StoredSuiteTagFilter = {
