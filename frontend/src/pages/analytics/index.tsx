@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { reportingApi } from '../../services/reportingApi';
 import { testRunApi } from '../../services/testRunApi';
+import { exportReportToCSV, exportReportToPDF } from '../../utils/exportReports';
 import {
     ProjectSummaryReport,
     TrendReport,
@@ -41,6 +42,8 @@ import {
     Target,
     BarChart3,
     Download,
+    FileText,
+    ChevronDown,
 } from 'lucide-react';
 
 const COLORS = {
@@ -70,7 +73,7 @@ const renderPieLabel = ({ name, percent }: { name?: string; percent?: number }):
 };
 
 const AnalyticsPage: React.FC = () => {
-    const { activeProject } = useTestManagerStore();
+    const { activeProject, projects } = useTestManagerStore();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
@@ -101,6 +104,46 @@ const AnalyticsPage: React.FC = () => {
     const [trendReport, setTrendReport] = useState<TrendReport | null>(null);
     const [suiteReport, setSuiteReport] = useState<SuiteComparisonReport | null>(null);
     const [healthReport, setHealthReport] = useState<TestCaseHealthReport | null>(null);
+
+    // Export dropdown
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    const exportMenuRef = useRef<HTMLDivElement>(null);
+
+    // Close export menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+                setShowExportMenu(false);
+            }
+        };
+        if (showExportMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showExportMenu]);
+
+    const projectName = projects.find(p => p.id === activeProject)?.name;
+
+    const handleExportCSV = useCallback(() => {
+        if (!summaryReport) return;
+        try {
+            exportReportToCSV(summaryReport, trendReport, suiteReport, healthReport, projectName);
+            toast.success('Report exported as CSV');
+        } catch {
+            toast.error('Failed to export CSV');
+        }
+        setShowExportMenu(false);
+    }, [summaryReport, trendReport, suiteReport, healthReport, projectName]);
+
+    const handleExportPDF = useCallback(() => {
+        if (!summaryReport) return;
+        try {
+            exportReportToPDF(summaryReport, trendReport, suiteReport, healthReport, projectName);
+        } catch {
+            toast.error('Failed to export PDF');
+        }
+        setShowExportMenu(false);
+    }, [summaryReport, trendReport, suiteReport, healthReport, projectName]);
 
     const handleOpenFailedRunCase = useCallback((runId: string, itemId: string, caseId: string) => {
         const runParam = encodeURIComponent(runId);
@@ -279,12 +322,34 @@ const AnalyticsPage: React.FC = () => {
                         >
                             <Activity className="w-5 h-5" />
                         </button>
-                        <button
-                            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
-                            title="Export Report"
-                        >
-                            <Download className="w-5 h-5" />
-                        </button>
+                        <div ref={exportMenuRef} className="relative">
+                            <button
+                                onClick={() => setShowExportMenu(prev => !prev)}
+                                className="flex items-center gap-1 p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                                title="Export Report"
+                            >
+                                <Download className="w-5 h-5" />
+                                <ChevronDown className="w-3 h-3" />
+                            </button>
+                            {showExportMenu && (
+                                <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
+                                    <button
+                                        onClick={handleExportCSV}
+                                        className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    >
+                                        <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                        Export as CSV
+                                    </button>
+                                    <button
+                                        onClick={handleExportPDF}
+                                        className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    >
+                                        <FileText className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                        Export as PDF
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
