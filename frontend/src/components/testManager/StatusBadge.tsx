@@ -17,6 +17,10 @@ const StatusBadge: React.FC<StatusBadgeProps> = ({ type, value }) => {
         if (value === Status.Skipped) colorClass = 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500';
         if (value === Status.Retest) colorClass = 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400';
         if (value === Status.PassFixed) colorClass = 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400';
+        if (value === Status.ReadyForTesting) colorClass = 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400';
+        if (value === Status.InProgress) colorClass = 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400';
+        if (value === Status.Blocked) colorClass = 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400';
+        if (value === Status.OutOfScope) colorClass = 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400';
 
         return (
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-transparent ${colorClass}`}>

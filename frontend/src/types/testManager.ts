@@ -8,11 +8,15 @@ export enum Priority {
 
 export enum Status {
     Draft = 'Draft',
+    ReadyForTesting = 'Ready for Testing',
+    InProgress = 'In Progress',
     Passed = 'Passed',
     Failed = 'Failed',
+    Blocked = 'Blocked',
     Retest = 'Retest',
     PassFixed = 'Pass - Fixed',
-    Skipped = 'Skipped'
+    Skipped = 'Skipped',
+    OutOfScope = 'Out of Scope',
 }
 
 export enum TestRunStatus {
@@ -24,10 +28,13 @@ export enum TestRunStatus {
 
 export enum RunItemStatus {
     NotRun = 'Not Run',
+    ReadyForTesting = 'Ready for Testing',
+    InProgress = 'In Progress',
     Passed = 'Passed',
     Failed = 'Failed',
     Blocked = 'Blocked',
-    Skipped = 'Skipped'
+    Skipped = 'Skipped',
+    OutOfScope = 'Out of Scope',
 }
 
 export interface Tester {
