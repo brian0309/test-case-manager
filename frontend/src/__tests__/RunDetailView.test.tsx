@@ -3,6 +3,11 @@ import { render, screen } from '@testing-library/react';
 import RunDetailView from '../pages/testManager/components/RunDetailView';
 import { RunItemStatus, TestRunStatus, type TestRun } from '../types/testManager';
 
+vi.mock('../utils/exportTestRun', () => ({
+    exportTestRunToCSV: vi.fn(),
+    exportTestRunToXLSX: vi.fn(),
+}));
+
 vi.mock('@tanstack/react-virtual', () => ({
     useVirtualizer: ({ count }: { count: number }) => ({
         getVirtualItems: () => Array.from({ length: count }, (_, index) => ({
@@ -25,6 +30,9 @@ vi.mock('lucide-react', () => ({
     ChevronUp: () => <span data-testid="icon-chevron-up" />,
     Check: () => <span data-testid="icon-check" />,
     ArrowUpDown: () => <span data-testid="icon-arrow-up-down" />,
+    CheckCircle2: () => <span data-testid="icon-check-circle-2" />,
+    Download: () => <span data-testid="icon-download" />,
+    FileText: () => <span data-testid="icon-file-text" />,
 }));
 
 describe('RunDetailView', () => {
