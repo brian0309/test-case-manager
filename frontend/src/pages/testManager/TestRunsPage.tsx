@@ -26,6 +26,7 @@ import {
     Menu,
     Edit2,
     Loader2,
+    Share2,
 } from 'lucide-react';
 import CreateGroupModal from './components/CreateGroupModal';
 import RunGroupsSidebar from '../../components/testManager/RunGroupsSidebar';
@@ -522,6 +523,18 @@ const TestRunsPage: React.FC = () => {
         setIsEditRunModalOpen(true);
     };
 
+    const handleShareRun = async (e: React.MouseEvent, runId: string) => {
+        e.stopPropagation();
+        const shareUrl = `${window.location.origin}/test-manager/runs?runId=${runId}`;
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            toast.success('Link copied to clipboard');
+        } catch (err) {
+            console.error('Failed to copy link: ', err);
+            toast.error('Failed to copy link');
+        }
+    };
+
     const handleUpdateRun = async (runId: string, data: { title: string; groupId: string | null; tags: string[]; additionalTestCaseIds?: string[] }) => {
         try {
             await testRunApi.updateTestRun(runId, {
@@ -837,7 +850,7 @@ const TestRunsPage: React.FC = () => {
                                 return (
                                 <div
                                     key={run.id}
-                                    className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-4 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] dark:hover:shadow-none transition-shadow cursor-pointer"
+                                    className="group bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-4 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] dark:hover:shadow-none transition-shadow cursor-pointer"
                                     onClick={() => handleExecuteRun(run.id)}
                                 >
                                     <div className="flex items-start justify-between mb-3">
@@ -879,6 +892,14 @@ const TestRunsPage: React.FC = () => {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={(e) => handleShareRun(e, run.id)}
+                                                className="p-2 text-gray-300 dark:text-gray-600 hover:text-blue-500 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors opacity-0 group-hover:opacity-100"
+                                                title="Copy link to Test Run"
+                                                aria-label="Copy link to test run"
+                                            >
+                                                <Share2 className="w-4 h-4" />
+                                            </button>
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
