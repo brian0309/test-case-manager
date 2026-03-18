@@ -22,6 +22,7 @@ const TestRunsPage = React.lazy(() => import("./pages/testManager/TestRunsPage")
 
 // Non-lazy imports (needed immediately)
 import AppLayout from "./components/AppLayout";
+import ErrorBoundary from "./components/ErrorBoundary";
 import LoadingSpinner from "./components/LoadingSpinner";
 import { Toaster } from "react-hot-toast";
 import { useThemeStore } from "./store/themeStore";
@@ -102,82 +103,86 @@ function App() {
       <Toaster position='top-right' />
 
       <Suspense fallback={<LoadingSpinner />}>
-        <Routes>
-          <Route element={<PublicRoute />}>
-            <Route
-              path='/signup'
-              element={
-                <RedirectAuthenticatedUser>
-                  <SignUpPage />
-                </RedirectAuthenticatedUser>
-              }
-            />
-            <Route
-              path='/login'
-              element={
-                <RedirectAuthenticatedUser>
-                  <LoginPage />
-                </RedirectAuthenticatedUser>
-              }
-            />
-            <Route
-              path='/verify-email'
-              element={
-                <RedirectAuthenticatedUser>
-                  <EmailVerificationPage />
-                </RedirectAuthenticatedUser>
-              }
-            />
-            <Route
-              path="/oauth-redirect"
-              element={
-                <RedirectAuthenticatedUser>
-                  <OAuthRedirect />
-                </RedirectAuthenticatedUser>
-              }
-            />
-            <Route
-              path='/forgot-password'
-              element={
-                <RedirectAuthenticatedUser>
-                  <ForgotPasswordPage />
-                </RedirectAuthenticatedUser>
-              }
-            />
-            <Route
-              path='/reset-password/:token'
-              element={
-                <RedirectAuthenticatedUser>
-                  <ResetPasswordPage />
-                </RedirectAuthenticatedUser>
-              }
-            />
-          </Route>
-
-          <Route element={
-            <ProtectedRoute>
-              <AppLayout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<DashboardPage />} />
-            <Route path='dashboard' element={<DashboardPage />} />
-
-            <Route path='analytics' element={<AnalyticsPage />} />
-
-            <Route path='settings' element={<SettingsPage />} />
-
-            {/* Test Manager Routes */}
-            <Route path='test-manager' element={<TestManagerLayout />}>
-              <Route index element={<Navigate to="/test-manager/projects" replace />} />
-              <Route path='projects' element={<ProjectsPage />} />
-              <Route path='cases' element={<TestCasesPage />} />
-              <Route path='suites' element={<TestSuitesPage />} />
-              <Route path='runs' element={<TestRunsPage />} />
+        <ErrorBoundary>
+          <Routes>
+            <Route element={<PublicRoute />}>
+              <Route
+                path='/signup'
+                element={
+                  <RedirectAuthenticatedUser>
+                    <SignUpPage />
+                  </RedirectAuthenticatedUser>
+                }
+              />
+              <Route
+                path='/login'
+                element={
+                  <RedirectAuthenticatedUser>
+                    <LoginPage />
+                  </RedirectAuthenticatedUser>
+                }
+              />
+              <Route
+                path='/verify-email'
+                element={
+                  <RedirectAuthenticatedUser>
+                    <EmailVerificationPage />
+                  </RedirectAuthenticatedUser>
+                }
+              />
+              <Route
+                path="/oauth-redirect"
+                element={
+                  <RedirectAuthenticatedUser>
+                    <OAuthRedirect />
+                  </RedirectAuthenticatedUser>
+                }
+              />
+              <Route
+                path='/forgot-password'
+                element={
+                  <RedirectAuthenticatedUser>
+                    <ForgotPasswordPage />
+                  </RedirectAuthenticatedUser>
+                }
+              />
+              <Route
+                path='/reset-password/:token'
+                element={
+                  <RedirectAuthenticatedUser>
+                    <ResetPasswordPage />
+                  </RedirectAuthenticatedUser>
+                }
+              />
             </Route>
-          </Route>
 
-          <Route path='*' element={<Navigate to='/' replace />} />
-        </Routes>
+            <Route element={
+              <ProtectedRoute>
+                <ErrorBoundary>
+                  <AppLayout />
+                </ErrorBoundary>
+              </ProtectedRoute>
+            }>
+              <Route index element={<DashboardPage />} />
+              <Route path='dashboard' element={<DashboardPage />} />
+
+              <Route path='analytics' element={<AnalyticsPage />} />
+
+              <Route path='settings' element={<SettingsPage />} />
+
+              {/* Test Manager Routes */}
+              <Route path='test-manager' element={<TestManagerLayout />}>
+                <Route index element={<Navigate to="/test-manager/projects" replace />} />
+                <Route path='projects' element={<ProjectsPage />} />
+                <Route path='cases' element={<TestCasesPage />} />
+                <Route path='suites' element={<TestSuitesPage />} />
+                <Route path='runs' element={<TestRunsPage />} />
+              </Route>
+            </Route>
+
+            <Route path='*' element={<Navigate to='/' replace />} />
+          </Routes>
+        </ErrorBoundary>
       </Suspense>
     </>
   );

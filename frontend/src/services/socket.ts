@@ -129,6 +129,9 @@ class SocketService {
   private isConnecting = false;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
+  private joinedProjects = new Set<string>();
+  private joinedSuites = new Set<string>();
+  private joinedTestCases = new Map<string, { projectId: string; user: { id: string; name: string; avatar?: string } }>();
   private currentProjectId: string | null = null;
   private currentSuiteId: string | null = null;
   // Store user info so we can resend it on reconnect
@@ -193,13 +196,18 @@ class SocketService {
       this.isConnecting = false;
       this.reconnectAttempts = 0;
 
-      // Rejoin rooms if we had them before reconnect (with user info for presence)
-      if (this.currentProjectId) {
-        this.joinProject(this.currentProjectId, this.currentUser ?? undefined);
-      }
-      if (this.currentSuiteId) {
-        this.joinSuite(this.currentSuiteId);
-      }
+      // Rejoin tracked rooms after reconnect so live updates continue seamlessly.
+      this.joinedProjects.forEach((projectId) => {
+        this.socket?.emit("join:project", { projectId, user: this.currentUser });
+      });
+
+      this.joinedSuites.forEach((suiteId) => {
+        this.socket?.emit("join:suite", suiteId);
+      });
+
+      this.joinedTestCases.forEach(({ projectId, user }, testCaseId) => {
+        this.socket?.emit("join:testcase", { testCaseId, projectId, user });
+      });
     });
 
     this.socket.on("disconnect", (_reason) => {
@@ -219,6 +227,9 @@ class SocketService {
     if (this.socket) {
       this.socket.disconnect();
       this.socket = null;
+      this.joinedProjects.clear();
+      this.joinedSuites.clear();
+      this.joinedTestCases.clear();
       this.currentProjectId = null;
       this.currentSuiteId = null;
       this.currentUser = null;
@@ -246,6 +257,7 @@ class SocketService {
 
     // Always track the intended project so we can join on (re)connect
     this.currentProjectId = projectId;
+    this.joinedProjects.add(projectId);
 
     // Persist user info so reconnections include presence data
     if (user) {
@@ -267,6 +279,7 @@ class SocketService {
     if (this.socket?.connected) {
       this.socket.emit("leave:project", projectId);
     }
+    this.joinedProjects.delete(projectId);
     if (this.currentProjectId === projectId) {
       this.currentProjectId = null;
     }
@@ -285,6 +298,7 @@ class SocketService {
 
     // Always track the intended suite so we can join on (re)connect
     this.currentSuiteId = suiteId;
+    this.joinedSuites.add(suiteId);
 
     // Only emit if connected; the on("connect") handler will rejoin otherwise
     if (this.socket?.connected) {
@@ -301,6 +315,7 @@ class SocketService {
     if (this.socket?.connected) {
       this.socket.emit("leave:suite", suiteId);
     }
+    this.joinedSuites.delete(suiteId);
     if (this.currentSuiteId === suiteId) {
       this.currentSuiteId = null;
     }
@@ -318,7 +333,11 @@ class SocketService {
     projectId: string,
     user: { id: string; name: string; avatar?: string }
   ): void {
-    if (this.socket?.connected && testCaseId) {
+    if (!testCaseId) return;
+
+    this.joinedTestCases.set(testCaseId, { projectId, user });
+
+    if (this.socket?.connected) {
       this.socket.emit("join:testcase", { testCaseId, projectId, user });
     }
   }
@@ -327,7 +346,11 @@ class SocketService {
    * Leave a test case editing room
    */
   leaveTestCase(testCaseId: string, projectId: string, userId: string): void {
-    if (this.socket?.connected && testCaseId) {
+    if (!testCaseId) return;
+
+    this.joinedTestCases.delete(testCaseId);
+
+    if (this.socket?.connected) {
       this.socket.emit("leave:testcase", { testCaseId, projectId, userId });
     }
   }
