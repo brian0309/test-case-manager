@@ -14,6 +14,21 @@ import {
     UpdateTestCaseRequest,
 } from '../types/api/testManager.api';
 
+// Request deduplication to prevent duplicate concurrent API calls
+const pendingRequests = new Map<string, Promise<unknown>>();
+
+const deduplicateRequest = async <T>(
+    key: string,
+    requestFn: () => Promise<T>
+): Promise<T> => {
+    if (pendingRequests.has(key)) {
+        return pendingRequests.get(key) as Promise<T>;
+    }
+    const promise = requestFn().finally(() => pendingRequests.delete(key));
+    pendingRequests.set(key, promise);
+    return promise;
+};
+
 export interface TestCaseFilters {
     status: Status[];
     priority: Priority[];
@@ -277,13 +292,15 @@ export const useTestManagerStore = create<TestManagerStore>()(
             // PROJECT ACTIONS
             // =========================================================================
             fetchProjects: async () => {
-                set({ error: null });
+                set({ isLoading: true, error: null });
                 try {
-                    const response = await testManagerApi.getProjects();
-                    const projects = response.map(mapProjectResponse);
-                    set({ projects });
+                    const projects = await deduplicateRequest('projects', async () => {
+                        const response = await testManagerApi.getProjects();
+                        return response.map(mapProjectResponse);
+                    });
+                    set({ projects, isLoading: false });
                 } catch (error: unknown) {
-                    set({ error: (error as Error).message });
+                    set({ error: (error as Error).message, isLoading: false });
                 }
             },
 
@@ -403,13 +420,15 @@ export const useTestManagerStore = create<TestManagerStore>()(
             // TEST SUITE ACTIONS
             // =========================================================================
             fetchTestSuites: async (projectId: string) => {
-                set({ error: null });
+                set({ isLoading: true, error: null });
                 try {
-                    const response = await testManagerApi.getTestSuites(projectId);
-                    const testSuites = response.map(mapTestSuiteResponse);
-                    set({ testSuites });
+                    const testSuites = await deduplicateRequest(`testSuites:${projectId}`, async () => {
+                        const response = await testManagerApi.getTestSuites(projectId);
+                        return response.map(mapTestSuiteResponse);
+                    });
+                    set({ testSuites, isLoading: false });
                 } catch (error: unknown) {
-                    set({ error: (error as Error).message });
+                    set({ error: (error as Error).message, isLoading: false });
                 }
             },
 
@@ -465,8 +484,10 @@ export const useTestManagerStore = create<TestManagerStore>()(
             fetchTestCases: async (suiteId: string) => {
                 set({ isLoading: true, error: null });
                 try {
-                    const response = await testManagerApi.getTestCases(suiteId);
-                    const testCases = response.map(mapTestCaseResponse);
+                    const testCases = await deduplicateRequest(`testCases:${suiteId}`, async () => {
+                        const response = await testManagerApi.getTestCases(suiteId);
+                        return response.map(mapTestCaseResponse);
+                    });
                     set({ testCases, isLoading: false });
                 } catch (error: unknown) {
                     set({ error: (error as Error).message, isLoading: false });
@@ -476,8 +497,10 @@ export const useTestManagerStore = create<TestManagerStore>()(
             fetchTestCasesByProject: async (projectId: string) => {
                 set({ isLoading: true, error: null });
                 try {
-                    const response = await testManagerApi.getTestCasesByProject(projectId);
-                    const testCases = response.map(mapTestCaseResponse);
+                    const testCases = await deduplicateRequest(`testCasesByProject:${projectId}`, async () => {
+                        const response = await testManagerApi.getTestCasesByProject(projectId);
+                        return response.map(mapTestCaseResponse);
+                    });
                     set({ testCases, isLoading: false });
                 } catch (error: unknown) {
                     set({ error: (error as Error).message, isLoading: false });
