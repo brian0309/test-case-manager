@@ -1,7 +1,8 @@
-import React, { memo } from "react";
+import React, { memo, useState, useCallback, useEffect } from "react";
 import { useAuthStore } from "../store/authStore";
 import { useTestManagerStore } from "../store/testManagerStore";
 import { useThemeStore } from "../store/themeStore";
+import { useDebouncedCallback } from "../hooks/useDebounce";
 import { Bell, Search, Menu, Moon, Sun } from 'lucide-react';
 
 interface HeaderProps {
@@ -12,6 +13,30 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   const { user } = useAuthStore();
   const { searchQuery, setSearchQuery, clearSearchQuery } = useTestManagerStore();
   const { isDarkMode, toggleTheme } = useThemeStore();
+  
+  // Local state for immediate UI updates
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+  
+  // Sync local state when store's searchQuery changes externally (e.g., page navigation clears it)
+  useEffect(() => {
+    setLocalSearch(searchQuery);
+  }, [searchQuery]);
+  
+  // Debounced search update to store
+  const debouncedSetSearch = useDebouncedCallback((value: string) => {
+    setSearchQuery(value);
+  }, 300);
+  
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLocalSearch(value);
+    debouncedSetSearch(value);
+  }, [debouncedSetSearch]);
+  
+  const handleClearSearch = useCallback(() => {
+    setLocalSearch('');
+    clearSearchQuery();
+  }, [clearSearchQuery]);
 
   return (
     <header className="bg-white dark:bg-gray-900 sticky top-0 z-10 border-b border-gray-100 dark:border-gray-700">
@@ -28,15 +53,15 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
             <input
               type="text"
               placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={localSearch}
+              onChange={handleSearchChange}
               className="searchbar-input w-full min-w-0 pl-4 pr-12 py-2 text-base"
               aria-label="Search"
             />
 
-            {searchQuery && (
+            {localSearch && (
               <button
-                onClick={clearSearchQuery}
+                onClick={handleClearSearch}
                 className="absolute right-9 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors"
               >
                 <span className="sr-only">Clear search</span>
