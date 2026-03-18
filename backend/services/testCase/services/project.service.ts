@@ -130,11 +130,11 @@ export const deleteProject = async (
 };
 
 /**
- * Add a member to a project by email (owner only)
+ * Add a member to a project by email (owner or member)
  */
 export const addProjectMember = async (
   projectId: string,
-  ownerId: string,
+  userId: string,
   memberEmail: string
 ): Promise<IProjectDocument | null> => {
   // Find the user by email
@@ -143,10 +143,15 @@ export const addProjectMember = async (
     throw new Error("User not found with that email");
   }
 
+  // Check if requester has project access (owner or member)
+  const hasAccess = await hasProjectAccess(projectId, userId);
+  if (!hasAccess) {
+    return null;
+  }
+
   const project = await Project.findOneAndUpdate(
     {
       _id: new Types.ObjectId(projectId),
-      ownerId: new Types.ObjectId(ownerId),
       members: { $ne: user._id }, // Not already a member
     },
     {

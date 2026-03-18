@@ -165,7 +165,7 @@ export const deleteProject = async (req: Request, res: Response): Promise<void> 
 
 /**
  * POST /api/projects/:id/members
- * Add a member to a project (owner only)
+ * Add a member to a project (owner or member)
  */
 export const addMember = async (req: Request, res: Response): Promise<void> => {
   try {
