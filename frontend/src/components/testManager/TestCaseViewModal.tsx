@@ -20,7 +20,7 @@ interface TestCaseViewModalProps {
 }
 
 
-const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCases, onClose, onEdit, onUpdate, onNavigate }) => {
+const TestCaseViewModal: React.FC<TestCaseViewModalProps> = React.memo(function TestCaseViewModal({ testCase, testCases, onClose, onEdit, onUpdate, onNavigate }) {
     const [localCase, setLocalCase] = useState<TestCase>(testCase);
     const currentIndex = testCases.findIndex(tc => tc.id === testCase.id);
 
@@ -448,6 +448,6 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = ({ testCase, testCas
             </div>
         </div>
     );
-};
+});
 
 export default TestCaseViewModal;

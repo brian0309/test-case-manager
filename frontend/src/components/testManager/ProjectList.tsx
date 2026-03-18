@@ -22,7 +22,7 @@ interface DropdownPosition {
     right: number;
 }
 
-const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onCreate, onEdit, onSettings, onDelete }) => {
+const ProjectList: React.FC<ProjectListProps> = React.memo(function ProjectList({ projects, onProjectClick, onCreate, onEdit, onSettings, onDelete }) {
     const { user } = useAuthStore();
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
     const [showMembersModal, setShowMembersModal] = useState(false);
@@ -258,6 +258,6 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onProjectClick, onC
             )}
         </>
     );
-};
+});
 
 export default ProjectList;

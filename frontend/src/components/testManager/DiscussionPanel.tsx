@@ -140,7 +140,7 @@ const renderMessageBody = (msg: DiscussionMessage, testCaseId: string, isOwn: bo
     return <span className="whitespace-pre-wrap">{msg.body}</span>;
 };
 
-const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId }) => {
+const DiscussionPanel: React.FC<DiscussionPanelProps> = React.memo(function DiscussionPanel({ testCaseId, projectId }) {
     const { user } = useAuthStore();
     const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
     const [isOpen, setIsOpen] = useState(() => window.innerWidth >= 1024);
@@ -893,6 +893,6 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = ({ testCaseId, projectId
             )}
         </>
     );
-};
+});
 
 export default DiscussionPanel;
