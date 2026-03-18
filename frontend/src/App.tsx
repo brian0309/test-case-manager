@@ -1,32 +1,31 @@
 import { Navigate, Route, Routes, Outlet, useLocation } from "react-router-dom";
 import { Moon, Sun } from "lucide-react";
+import React, { Suspense, useEffect } from "react";
 
-import SignUpPage from "./pages/SignUpPage";
-import LoginPage from "./pages/LoginPage";
-import EmailVerificationPage from "./pages/EmailVerificationPage";
-import DashboardPage from "./pages/DashboardPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
-import SettingsPage from "./pages/SettingsPage";
-import OAuthRedirect from "./pages/OAuthRedirect";
+// Lazy-loaded page components for code splitting
+const SignUpPage = React.lazy(() => import("./pages/SignUpPage"));
+const LoginPage = React.lazy(() => import("./pages/LoginPage"));
+const EmailVerificationPage = React.lazy(() => import("./pages/EmailVerificationPage"));
+const DashboardPage = React.lazy(() => import("./pages/DashboardPage"));
+const ForgotPasswordPage = React.lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = React.lazy(() => import("./pages/ResetPasswordPage"));
+const SettingsPage = React.lazy(() => import("./pages/SettingsPage"));
+const OAuthRedirect = React.lazy(() => import("./pages/OAuthRedirect"));
+const AnalyticsPage = React.lazy(() => import("./pages/analytics"));
+
+// Test Manager Pages (lazy-loaded)
+const TestManagerLayout = React.lazy(() => import("./pages/testManager/TestManagerLayout"));
+const ProjectsPage = React.lazy(() => import("./pages/testManager/ProjectsPage"));
+const TestCasesPage = React.lazy(() => import("./pages/testManager/TestCasesPage"));
+const TestSuitesPage = React.lazy(() => import("./pages/testManager/TestSuitesPage"));
+const TestRunsPage = React.lazy(() => import("./pages/testManager/TestRunsPage"));
+
+// Non-lazy imports (needed immediately)
 import AppLayout from "./components/AppLayout";
 import LoadingSpinner from "./components/LoadingSpinner";
-
-// Import the new page components
-
-import AnalyticsPage from "./pages/analytics";
-
-// Test Manager Pages
-import TestManagerLayout from "./pages/testManager/TestManagerLayout";
-import ProjectsPage from "./pages/testManager/ProjectsPage";
-import TestCasesPage from "./pages/testManager/TestCasesPage";
-import TestSuitesPage from "./pages/testManager/TestSuitesPage";
-import TestRunsPage from "./pages/testManager/TestRunsPage";
-
 import { Toaster } from "react-hot-toast";
 import { useThemeStore } from "./store/themeStore";
 import { useAuthStore } from "./store/authStore";
-import { useEffect } from "react";
 
 // Type for component props
 interface ProtectedRouteProps {
@@ -102,82 +101,84 @@ function App() {
     <>
       <Toaster position='top-right' />
 
-      <Routes>
-        <Route element={<PublicRoute />}>
-          <Route
-            path='/signup'
-            element={
-              <RedirectAuthenticatedUser>
-                <SignUpPage />
-              </RedirectAuthenticatedUser>
-            }
-          />
-          <Route
-            path='/login'
-            element={
-              <RedirectAuthenticatedUser>
-                <LoginPage />
-              </RedirectAuthenticatedUser>
-            }
-          />
-          <Route
-            path='/verify-email'
-            element={
-              <RedirectAuthenticatedUser>
-                <EmailVerificationPage />
-              </RedirectAuthenticatedUser>
-            }
-          />
-          <Route
-            path="/oauth-redirect"
-            element={
-              <RedirectAuthenticatedUser>
-                <OAuthRedirect />
-              </RedirectAuthenticatedUser>
-            }
-          />
-          <Route
-            path='/forgot-password'
-            element={
-              <RedirectAuthenticatedUser>
-                <ForgotPasswordPage />
-              </RedirectAuthenticatedUser>
-            }
-          />
-          <Route
-            path='/reset-password/:token'
-            element={
-              <RedirectAuthenticatedUser>
-                <ResetPasswordPage />
-              </RedirectAuthenticatedUser>
-            }
-          />
-        </Route>
-
-        <Route element={
-          <ProtectedRoute>
-            <AppLayout />
-          </ProtectedRoute>
-        }>
-          <Route index element={<DashboardPage />} />
-          <Route path='dashboard' element={<DashboardPage />} />
-
-          <Route path='analytics' element={<AnalyticsPage />} />
-
-          <Route path='settings' element={<SettingsPage />} />
-
-          {/* Test Manager Routes */}
-          <Route path='test-manager' element={<TestManagerLayout />}>
-            <Route index element={<Navigate to="/test-manager/projects" replace />} />
-            <Route path='projects' element={<ProjectsPage />} />
-            <Route path='cases' element={<TestCasesPage />} />
-            <Route path='suites' element={<TestSuitesPage />} />
-            <Route path='runs' element={<TestRunsPage />} />
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          <Route element={<PublicRoute />}>
+            <Route
+              path='/signup'
+              element={
+                <RedirectAuthenticatedUser>
+                  <SignUpPage />
+                </RedirectAuthenticatedUser>
+              }
+            />
+            <Route
+              path='/login'
+              element={
+                <RedirectAuthenticatedUser>
+                  <LoginPage />
+                </RedirectAuthenticatedUser>
+              }
+            />
+            <Route
+              path='/verify-email'
+              element={
+                <RedirectAuthenticatedUser>
+                  <EmailVerificationPage />
+                </RedirectAuthenticatedUser>
+              }
+            />
+            <Route
+              path="/oauth-redirect"
+              element={
+                <RedirectAuthenticatedUser>
+                  <OAuthRedirect />
+                </RedirectAuthenticatedUser>
+              }
+            />
+            <Route
+              path='/forgot-password'
+              element={
+                <RedirectAuthenticatedUser>
+                  <ForgotPasswordPage />
+                </RedirectAuthenticatedUser>
+              }
+            />
+            <Route
+              path='/reset-password/:token'
+              element={
+                <RedirectAuthenticatedUser>
+                  <ResetPasswordPage />
+                </RedirectAuthenticatedUser>
+              }
+            />
           </Route>
-        </Route>
 
-        <Route path='*' element={<Navigate to='/' replace />} />
-      </Routes>
+          <Route element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }>
+            <Route index element={<DashboardPage />} />
+            <Route path='dashboard' element={<DashboardPage />} />
+
+            <Route path='analytics' element={<AnalyticsPage />} />
+
+            <Route path='settings' element={<SettingsPage />} />
+
+            {/* Test Manager Routes */}
+            <Route path='test-manager' element={<TestManagerLayout />}>
+              <Route index element={<Navigate to="/test-manager/projects" replace />} />
+              <Route path='projects' element={<ProjectsPage />} />
+              <Route path='cases' element={<TestCasesPage />} />
+              <Route path='suites' element={<TestSuitesPage />} />
+              <Route path='runs' element={<TestRunsPage />} />
+            </Route>
+          </Route>
+
+          <Route path='*' element={<Navigate to='/' replace />} />
+        </Routes>
+      </Suspense>
     </>
   );
 }
