@@ -24,6 +24,43 @@ interface PlaceholderTabProps {
     title: string;
 }
 
+type AIProvider = 'gemini' | 'openrouter';
+
+interface ProviderModelOption {
+    value: string;
+    label: string;
+    description?: string;
+    source?: 'api' | 'fallback' | 'custom';
+}
+
+interface GeminiSettingsData {
+    hasApiKey: boolean;
+    model: string;
+    availableModels: ProviderModelOption[];
+    visibleModels: string[];
+    preferredProvider: AIProvider;
+}
+
+interface OpenRouterSettingsData {
+    hasApiKey: boolean;
+    model: string;
+    availableModels: ProviderModelOption[];
+    visibleModels: string[];
+    customModels: string[];
+    preferredProvider: AIProvider;
+}
+
+const parseCustomModelsInput = (value: string): string[] => {
+    const unique = new Set<string>();
+    value
+        .split(/[,\n]/)
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0)
+        .forEach((item) => unique.add(item));
+
+    return Array.from(unique);
+};
+
 const SettingsPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<string>("general");
     const { user } = useAuthStore();
@@ -31,7 +68,7 @@ const SettingsPage: React.FC = () => {
     const tabs: Tab[] = [
         { id: "general", label: "General" },
         { id: "security", label: "Security" },
-        { id: "gemini", label: "Gemini API" },
+        { id: "gemini", label: "AI Providers" },
         { id: "billing", label: "Billing" },
     ];
 
@@ -341,156 +378,513 @@ const PlaceholderTab: React.FC<PlaceholderTabProps> = ({ title }) => {
         </div>
     );
 };
-// Gemini Tab Component
+// AI Providers Tab Component
 const GeminiTab = () => {
-    const [apiKey, setApiKey] = useState("");
-    const [selectedModel, setSelectedModel] = useState("gemini-2.5-flash");
     const [isLoading, setIsLoading] = useState(false);
-    const [hasExistingKey, setHasExistingKey] = useState(false);
+    const [isBootstrapping, setIsBootstrapping] = useState(true);
 
-    // Available Gemini models based on https://ai.google.dev/gemini-api/docs/pricing
-    const geminiModels = [
-        { value: "gemini-2.0-flash-lite", label: "Gemini 2.0 Flash-Lite", description: "Smallest and most cost effective, built for at scale usage" },
-        { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash", description: "Most balanced multimodal model, great for Agents" },
-        { value: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite", description: "Smallest and most cost effective, built for at scale usage" },
-        { value: "gemini-2.5-flash-preview-09-2025", label: "Gemini 2.5 Flash Preview", description: "Best for large scale processing, low-latency, and agentic use cases" },
-        { value: "gemini-2.5-flash", label: "Gemini 2.5 Flash", description: "First hybrid reasoning model with 1M token context and thinking budgets" },
-        { value: "gemini-2.5-pro", label: "Gemini 2.5 Pro", description: "State-of-the-art model, excels at coding and complex reasoning tasks" },
-        { value: "gemini-3-flash-preview", label: "Gemini 3 Flash Preview", description: "Fastest and most efficient model for high-volume tasks" },
-        { value: "gemini-3-pro-preview", label: "Gemini 3 Pro Preview", description: "Best model for multimodal understanding, most powerful agentic model" },
-    ];
+    const [preferredProvider, setPreferredProvider] = useState<AIProvider>('gemini');
 
-    // Fetch current settings on mount
-    React.useEffect(() => {
-        const fetchSettings = async () => {
-            try {
-                const response = await axios.get(`${API_URL}/gemini/settings`, { withCredentials: true });
-                if (response.data.success) {
-                    setHasExistingKey(response.data.data.hasApiKey);
-                    setSelectedModel(response.data.data.model || "gemini-2.5-flash");
-                }
-            } catch (error) {
-                console.error("Error fetching Gemini settings:", error);
+    const [geminiApiKey, setGeminiApiKey] = useState('');
+    const [geminiHasExistingKey, setGeminiHasExistingKey] = useState(false);
+    const [geminiSelectedModel, setGeminiSelectedModel] = useState('gemini-2.5-flash');
+    const [geminiAvailableModels, setGeminiAvailableModels] = useState<ProviderModelOption[]>([]);
+    const [geminiVisibleModels, setGeminiVisibleModels] = useState<string[]>([]);
+
+    const [openRouterApiKey, setOpenRouterApiKey] = useState('');
+    const [openRouterHasExistingKey, setOpenRouterHasExistingKey] = useState(false);
+    const [openRouterSelectedModel, setOpenRouterSelectedModel] = useState('openai/gpt-4o-mini');
+    const [openRouterAvailableModels, setOpenRouterAvailableModels] = useState<ProviderModelOption[]>([]);
+    const [openRouterVisibleModels, setOpenRouterVisibleModels] = useState<string[]>([]);
+    const [openRouterCustomModelsInput, setOpenRouterCustomModelsInput] = useState('');
+    const [openRouterModelSearch, setOpenRouterModelSearch] = useState('');
+
+    const resolveVisibleModelIds = (availableModels: ProviderModelOption[], visibleModels: string[]): string[] => {
+        const availableSet = new Set(availableModels.map((model) => model.value));
+        const filtered = visibleModels.filter((modelId) => availableSet.has(modelId));
+        if (filtered.length > 0) {
+            return filtered;
+        }
+
+        return availableModels.slice(0, 8).map((model) => model.value);
+    };
+
+    const getSelectableModels = (availableModels: ProviderModelOption[], visibleModels: string[]): ProviderModelOption[] => {
+        if (availableModels.length === 0) {
+            return [];
+        }
+
+        if (visibleModels.length === 0) {
+            return availableModels;
+        }
+
+        const visibleSet = new Set(visibleModels);
+        const filtered = availableModels.filter((model) => visibleSet.has(model.value));
+        return filtered.length > 0 ? filtered : availableModels;
+    };
+
+    const fetchSettings = React.useCallback(async () => {
+        setIsBootstrapping(true);
+        try {
+            const [geminiResponse, openRouterResponse] = await Promise.all([
+                axios.get(`${API_URL}/gemini/settings`, { withCredentials: true }),
+                axios.get(`${API_URL}/openrouter/settings`, { withCredentials: true }),
+            ]);
+
+            if (geminiResponse.data?.success) {
+                const geminiData = geminiResponse.data.data as GeminiSettingsData;
+                const available = Array.isArray(geminiData.availableModels) ? geminiData.availableModels : [];
+                const visible = resolveVisibleModelIds(available, geminiData.visibleModels || []);
+                const selectable = getSelectableModels(available, visible);
+
+                setGeminiHasExistingKey(Boolean(geminiData.hasApiKey));
+                setGeminiAvailableModels(available);
+                setGeminiVisibleModels(visible);
+                setGeminiSelectedModel(
+                    selectable.some((model) => model.value === geminiData.model)
+                        ? geminiData.model
+                        : selectable[0]?.value || 'gemini-2.5-flash'
+                );
+                setPreferredProvider(geminiData.preferredProvider || 'gemini');
             }
-        };
-        fetchSettings();
+
+            if (openRouterResponse.data?.success) {
+                const openRouterData = openRouterResponse.data.data as OpenRouterSettingsData;
+                const available = Array.isArray(openRouterData.availableModels) ? openRouterData.availableModels : [];
+                const visible = resolveVisibleModelIds(available, openRouterData.visibleModels || []);
+                const selectable = getSelectableModels(available, visible);
+
+                setOpenRouterHasExistingKey(Boolean(openRouterData.hasApiKey));
+                setOpenRouterAvailableModels(available);
+                setOpenRouterVisibleModels(visible);
+                setOpenRouterSelectedModel(
+                    selectable.some((model) => model.value === openRouterData.model)
+                        ? openRouterData.model
+                        : selectable[0]?.value || 'openai/gpt-4o-mini'
+                );
+                setOpenRouterCustomModelsInput((openRouterData.customModels || []).join('\n'));
+                if (!geminiResponse.data?.success) {
+                    setPreferredProvider(openRouterData.preferredProvider || 'gemini');
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching AI provider settings:', error);
+            toast.error('Failed to load AI provider settings');
+        } finally {
+            setIsBootstrapping(false);
+        }
     }, []);
 
-    const handleSave = async (e: React.FormEvent) => {
-        e.preventDefault();
+    React.useEffect(() => {
+        fetchSettings();
+    }, [fetchSettings]);
 
-        // Validate that either API key exists or user is providing a new one
-        if (!hasExistingKey && !apiKey) {
-            toast.error("Please enter an API Key");
+    const toggleVisibleModel = (
+        provider: AIProvider,
+        modelId: string
+    ) => {
+        if (provider === 'gemini') {
+            setGeminiVisibleModels((previous) => {
+                const exists = previous.includes(modelId);
+                if (exists && previous.length === 1) {
+                    toast.error('At least one Gemini model must remain visible');
+                    return previous;
+                }
+
+                return exists
+                    ? previous.filter((id) => id !== modelId)
+                    : [...previous, modelId];
+            });
             return;
         }
 
+        setOpenRouterVisibleModels((previous) => {
+            const exists = previous.includes(modelId);
+            if (exists && previous.length === 1) {
+                toast.error('At least one OpenRouter model must remain visible');
+                return previous;
+            }
+
+            return exists
+                ? previous.filter((id) => id !== modelId)
+                : [...previous, modelId];
+        });
+    };
+
+    const handleSaveProviderPreference = async () => {
         setIsLoading(true);
         try {
-            console.log("Saving API Key and Model");
-
-            const payload: { model: string; apiKey?: string } = { model: selectedModel };
-            if (apiKey) {
-                payload.apiKey = apiKey;
-            }
-
-            const response = await axios.post(`${API_URL}/gemini/key`, payload, { withCredentials: true });
-
-            if (response.data.success) {
-                toast.success("Gemini API settings saved successfully");
-                setApiKey("");
-                setHasExistingKey(true);
-            }
+            await axios.post(
+                `${API_URL}/gemini/key`,
+                { preferredProvider },
+                { withCredentials: true }
+            );
+            toast.success('Preferred AI provider updated');
         } catch (error: unknown) {
             console.error(error);
             const axiosError = error as { response?: { data?: { message?: string } } };
-            toast.error(axiosError.response?.data?.message || "Failed to save API settings");
+            toast.error(axiosError.response?.data?.message || 'Failed to save preferred provider');
         } finally {
             setIsLoading(false);
         }
     };
 
+    const handleSaveGeminiSettings = async () => {
+        if (!geminiHasExistingKey && !geminiApiKey.trim()) {
+            toast.error('Please enter your Gemini API key');
+            return;
+        }
+
+        if (!geminiSelectedModel) {
+            toast.error('Please select a Gemini model');
+            return;
+        }
+
+        if (geminiVisibleModels.length === 0) {
+            toast.error('At least one Gemini model must be visible');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const payload: {
+                model: string;
+                visibleModels: string[];
+                preferredProvider: AIProvider;
+                apiKey?: string;
+            } = {
+                model: geminiSelectedModel,
+                visibleModels: geminiVisibleModels,
+                preferredProvider,
+            };
+
+            if (geminiApiKey.trim()) {
+                payload.apiKey = geminiApiKey.trim();
+            }
+
+            await axios.post(`${API_URL}/gemini/key`, payload, { withCredentials: true });
+            toast.success('Gemini settings saved successfully');
+            setGeminiApiKey('');
+            setGeminiHasExistingKey(true);
+            await fetchSettings();
+        } catch (error: unknown) {
+            console.error(error);
+            const axiosError = error as { response?: { data?: { message?: string } } };
+            toast.error(axiosError.response?.data?.message || 'Failed to save Gemini settings');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSaveOpenRouterSettings = async () => {
+        if (!openRouterHasExistingKey && !openRouterApiKey.trim()) {
+            toast.error('Please enter your OpenRouter API key');
+            return;
+        }
+
+        if (!openRouterSelectedModel) {
+            toast.error('Please select an OpenRouter model');
+            return;
+        }
+
+        if (openRouterVisibleModels.length === 0) {
+            toast.error('At least one OpenRouter model must be visible');
+            return;
+        }
+
+        const customModels = parseCustomModelsInput(openRouterCustomModelsInput);
+
+        setIsLoading(true);
+        try {
+            const payload: {
+                model: string;
+                visibleModels: string[];
+                customModels: string[];
+                preferredProvider: AIProvider;
+                apiKey?: string;
+            } = {
+                model: openRouterSelectedModel,
+                visibleModels: openRouterVisibleModels,
+                customModels,
+                preferredProvider,
+            };
+
+            if (openRouterApiKey.trim()) {
+                payload.apiKey = openRouterApiKey.trim();
+            }
+
+            await axios.post(`${API_URL}/openrouter/key`, payload, { withCredentials: true });
+            toast.success('OpenRouter settings saved successfully');
+            setOpenRouterApiKey('');
+            setOpenRouterHasExistingKey(true);
+            await fetchSettings();
+        } catch (error: unknown) {
+            console.error(error);
+            const axiosError = error as { response?: { data?: { message?: string } } };
+            toast.error(axiosError.response?.data?.message || 'Failed to save OpenRouter settings');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const geminiSelectableModels = getSelectableModels(geminiAvailableModels, geminiVisibleModels);
+    const openRouterSelectableModels = getSelectableModels(openRouterAvailableModels, openRouterVisibleModels);
+    const filteredOpenRouterModels = openRouterAvailableModels.filter((model) => {
+        const query = openRouterModelSearch.trim().toLowerCase();
+        if (!query) {
+            return true;
+        }
+
+        return (
+            model.label.toLowerCase().includes(query)
+            || model.value.toLowerCase().includes(query)
+            || (model.description || '').toLowerCase().includes(query)
+        );
+    });
+
+    React.useEffect(() => {
+        if (geminiSelectableModels.length === 0) {
+            return;
+        }
+
+        if (!geminiSelectableModels.some((model) => model.value === geminiSelectedModel)) {
+            setGeminiSelectedModel(geminiSelectableModels[0].value);
+        }
+    }, [geminiSelectableModels, geminiSelectedModel]);
+
+    React.useEffect(() => {
+        if (openRouterSelectableModels.length === 0) {
+            return;
+        }
+
+        if (!openRouterSelectableModels.some((model) => model.value === openRouterSelectedModel)) {
+            setOpenRouterSelectedModel(openRouterSelectableModels[0].value);
+        }
+    }, [openRouterSelectableModels, openRouterSelectedModel]);
+
     return (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none p-6">
-            <div className="max-w-2xl">
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Gemini API Configuration</h2>
-                <p className="text-sm text-gray-500 mb-6 dark:text-gray-400">
-                    Configure your Google Gemini API key to enable AI-powered test case generation.
-                    Your key is encrypted before being stored.
-                </p>
+            <div className="max-w-3xl space-y-8">
+                <div>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">AI Provider Configuration</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Configure Gemini and OpenRouter keys, control visible models, and set your default provider for generation.
+                    </p>
+                </div>
 
-                <form onSubmit={handleSave} className="space-y-6">
-                    <div>
-                        <label htmlFor="apiKey" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            API Key {hasExistingKey ? "(Optional - Update)" : ""}
-                        </label>
-                        {hasExistingKey && (
-                            <div className="mb-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 text-sm rounded-md flex items-start gap-2">
-                                <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
-                                <div>
-                                    <p className="font-medium">API Key is configured</p>
-                                    <p className="text-xs mt-1">Leave blank to keep your current key, or enter a new one to update it.</p>
+                {isBootstrapping ? (
+                    <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300">
+                        Loading AI provider settings...
+                    </div>
+                ) : (
+                    <>
+                        <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+                            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Default Generation Provider</h3>
+                            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                                <select
+                                    value={preferredProvider}
+                                    onChange={(event) => setPreferredProvider(event.target.value as AIProvider)}
+                                    className="w-full sm:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                >
+                                    <option value="gemini">Gemini</option>
+                                    <option value="openrouter">OpenRouter</option>
+                                </select>
+                                <button
+                                    type="button"
+                                    onClick={handleSaveProviderPreference}
+                                    disabled={isLoading}
+                                    className="px-4 py-2 text-sm font-medium rounded-md bg-system-blue hover:bg-system-darkBlue text-white disabled:opacity-60"
+                                >
+                                    Save Preference
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-5">
+                            <div>
+                                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Gemini</h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Configure your Google AI Studio key and control which Gemini models appear in selectors.
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Gemini API Key {geminiHasExistingKey ? '(Optional - Update)' : ''}
+                                </label>
+                                <Input
+                                    id="geminiApiKey"
+                                    icon={Lock}
+                                    type="password"
+                                    placeholder={geminiHasExistingKey ? 'Leave blank to keep current key' : 'Enter your Gemini API key'}
+                                    value={geminiApiKey}
+                                    onChange={(event) => setGeminiApiKey(event.target.value)}
+                                    required={!geminiHasExistingKey}
+                                    className="w-full"
+                                />
+                                {!geminiHasExistingKey && (
+                                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                        Generate a key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-system-blue hover:text-system-darkBlue dark:text-system-darkBlue">Google AI Studio</a>.
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Default Gemini Model</label>
+                                <select
+                                    value={geminiSelectedModel}
+                                    onChange={(event) => setGeminiSelectedModel(event.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                >
+                                    {geminiSelectableModels.map((model) => (
+                                        <option key={model.value} value={model.value}>{model.label}</option>
+                                    ))}
+                                </select>
+                                {geminiSelectableModels.find((model) => model.value === geminiSelectedModel)?.description && (
+                                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                        {geminiSelectableModels.find((model) => model.value === geminiSelectedModel)?.description}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Visible Gemini Models</label>
+                                <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-3 space-y-2">
+                                    {geminiAvailableModels.map((model) => (
+                                        <label key={model.value} className="flex items-start gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={geminiVisibleModels.includes(model.value)}
+                                                onChange={() => toggleVisibleModel('gemini', model.value)}
+                                                className="mt-0.5 h-4 w-4 text-system-blue rounded border-gray-300 dark:border-gray-600 focus:ring-system-blue dark:bg-gray-700"
+                                            />
+                                            <div>
+                                                <p className="text-sm text-gray-900 dark:text-gray-100">{model.label}</p>
+                                                {model.description && (
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">{model.description}</p>
+                                                )}
+                                            </div>
+                                        </label>
+                                    ))}
                                 </div>
                             </div>
-                        )}
-                        <div className="relative">
-                            <Input
-                                id="apiKey"
-                                icon={Lock}
-                                type="password"
-                                placeholder={hasExistingKey ? "Leave blank to keep current key" : "Enter your Gemini API Key"}
-                                value={apiKey}
-                                onChange={(e) => setApiKey(e.target.value)}
-                                required={!hasExistingKey}
-                                className="w-full"
-                            />
+
+                            <div>
+                                <button
+                                    type="button"
+                                    onClick={handleSaveGeminiSettings}
+                                    disabled={isLoading}
+                                    className="px-5 py-2.5 text-sm font-medium rounded-md bg-system-blue hover:bg-system-darkBlue text-white disabled:opacity-60"
+                                >
+                                    Save Gemini Settings
+                                </button>
+                            </div>
                         </div>
-                        {!hasExistingKey && (
-                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                You can generate an API key from the <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-system-blue hover:text-system-darkBlue dark:text-system-darkBlue">Google AI Studio</a>.
-                            </p>
-                        )}
-                    </div>
 
-                    <div>
-                        <label htmlFor="geminiModel" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Gemini Model
-                        </label>
-                        <select
-                            id="geminiModel"
-                            value={selectedModel}
-                            onChange={(e) => setSelectedModel(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                        >
-                            {geminiModels.map((model) => (
-                                <option key={model.value} value={model.value}>
-                                    {model.label}
-                                </option>
-                            ))}
-                        </select>
-                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                            {geminiModels.find(m => m.value === selectedModel)?.description}.
-                            See <a href="https://ai.google.dev/gemini-api/docs/pricing" target="_blank" rel="noopener noreferrer" className="text-system-blue hover:text-system-darkBlue dark:text-system-darkBlue">pricing details</a>.
-                        </p>
-                    </div>
+                        <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-5">
+                            <div>
+                                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">OpenRouter</h3>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    Configure your OpenRouter key, add custom model IDs, and control visible models for selectors.
+                                </p>
+                            </div>
 
-                    <div className="pt-2">
-                        <motion.button
-                            whileHover={{ scale: 1.01 }}
-                            whileTap={{ scale: 0.99 }}
-                            type="submit"
-                            disabled={isLoading}
-                            className={`px-6 py-2.5 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${isLoading
-                                ? 'bg-gray-400 dark:bg-gray-600'
-                                : 'bg-system-blue hover:bg-system-darkBlue'
-                                } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-system-blue`}
-                        >
-                            {isLoading ? 'Saving...' : hasExistingKey ? 'Update Settings' : 'Save API Settings'}
-                        </motion.button>
-                    </div>
-                </form>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    OpenRouter API Key {openRouterHasExistingKey ? '(Optional - Update)' : ''}
+                                </label>
+                                <Input
+                                    id="openRouterApiKey"
+                                    icon={Lock}
+                                    type="password"
+                                    placeholder={openRouterHasExistingKey ? 'Leave blank to keep current key' : 'Enter your OpenRouter API key'}
+                                    value={openRouterApiKey}
+                                    onChange={(event) => setOpenRouterApiKey(event.target.value)}
+                                    required={!openRouterHasExistingKey}
+                                    className="w-full"
+                                />
+                                {!openRouterHasExistingKey && (
+                                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                        Generate a key from <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-system-blue hover:text-system-darkBlue dark:text-system-darkBlue">OpenRouter</a>.
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Custom OpenRouter Model IDs</label>
+                                <textarea
+                                    value={openRouterCustomModelsInput}
+                                    onChange={(event) => setOpenRouterCustomModelsInput(event.target.value)}
+                                    rows={4}
+                                    placeholder={'Add one model ID per line or comma-separated\nExample: anthropic/claude-3.5-sonnet'}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Default OpenRouter Model</label>
+                                <select
+                                    value={openRouterSelectedModel}
+                                    onChange={(event) => setOpenRouterSelectedModel(event.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                >
+                                    {openRouterSelectableModels.map((model) => (
+                                        <option key={model.value} value={model.value}>{model.label}</option>
+                                    ))}
+                                </select>
+                                {openRouterSelectableModels.find((model) => model.value === openRouterSelectedModel)?.description && (
+                                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                        {openRouterSelectableModels.find((model) => model.value === openRouterSelectedModel)?.description}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Visible OpenRouter Models</label>
+                                <input
+                                    type="text"
+                                    value={openRouterModelSearch}
+                                    onChange={(event) => setOpenRouterModelSearch(event.target.value)}
+                                    placeholder="Search models by name or ID"
+                                    className="mb-3 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                />
+                                <div className="max-h-52 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-3 space-y-2">
+                                    {filteredOpenRouterModels.map((model) => (
+                                        <label key={model.value} className="flex items-start gap-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={openRouterVisibleModels.includes(model.value)}
+                                                onChange={() => toggleVisibleModel('openrouter', model.value)}
+                                                className="mt-0.5 h-4 w-4 text-system-blue rounded border-gray-300 dark:border-gray-600 focus:ring-system-blue dark:bg-gray-700"
+                                            />
+                                            <div>
+                                                <p className="text-sm text-gray-900 dark:text-gray-100">{model.label}</p>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">{model.value}</p>
+                                                {model.description && (
+                                                    <p className="text-xs text-gray-500 dark:text-gray-400">{model.description}</p>
+                                                )}
+                                            </div>
+                                        </label>
+                                    ))}
+                                    {filteredOpenRouterModels.length === 0 && (
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">No models match your search.</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div>
+                                <button
+                                    type="button"
+                                    onClick={handleSaveOpenRouterSettings}
+                                    disabled={isLoading}
+                                    className="px-5 py-2.5 text-sm font-medium rounded-md bg-system-blue hover:bg-system-darkBlue text-white disabled:opacity-60"
+                                >
+                                    Save OpenRouter Settings
+                                </button>
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );

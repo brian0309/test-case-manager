@@ -38,6 +38,7 @@ import runRoutes, { projectRunRoutes, projectRunGroupRoutes, runGroupRoutes } fr
 import uploadRoutes from "./services/upload/routes/upload.route.js";
 import statisticsRoutes from "./services/statistics/routes/statistics.route.js";
 import geminiRoutes from "./services/geminigen/gemini.route.js";
+import openrouterRoutes from "./services/openrouter/routes/openrouter.route.js";
 import reportingRoutes from "./services/reporting/routes/reporting.route.js";
 import discussionRoutes from "./services/discussion/routes/discussion.route.js";
 import { getCorsOptions } from "./config/dynamicCors.js";
@@ -59,6 +60,7 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/statistics", statisticsRoutes);
 app.use("/api/gemini", geminiRoutes);
+app.use("/api/openrouter", openrouterRoutes);
 app.use("/api/reports", reportingRoutes);
 
 // Test Case Management Routes

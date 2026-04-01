@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, ChevronDown, ChevronUp, Loader2, Eye, EyeOff } from 'lucide-react';
-import { API_URL } from '../../utils/api';
+import React, { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronDown, ChevronUp, Eye, EyeOff, Loader2, Sparkles, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { TestCase, Status, Priority } from '../../types/testManager';
 import ImagePreviewUploader from '../ImagePreviewUploader';
+import { API_URL } from '../../utils/api';
+import { Priority, Status, TestCase } from '../../types/testManager';
 
 interface GeminiGenerationModalProps {
     onClose: () => void;
@@ -26,6 +26,107 @@ interface GeneratedCase {
     selected: boolean;
 }
 
+type AIProvider = 'gemini' | 'openrouter';
+
+interface ProviderModelOption {
+    value: string;
+    label: string;
+    description?: string;
+    source?: 'api' | 'fallback' | 'custom';
+}
+
+interface ProviderSettingsData {
+    hasApiKey: boolean;
+    model: string;
+    availableModels: ProviderModelOption[];
+    visibleModels: string[];
+    preferredProvider?: AIProvider;
+}
+
+const pickVisibleModelOptions = (
+    availableModels: ProviderModelOption[],
+    visibleModels: string[]
+): ProviderModelOption[] => {
+    if (!Array.isArray(availableModels) || availableModels.length === 0) {
+        return [];
+    }
+
+    if (!Array.isArray(visibleModels) || visibleModels.length === 0) {
+        return availableModels;
+    }
+
+    const visibleSet = new Set(visibleModels);
+    const filtered = availableModels.filter((model) => visibleSet.has(model.value));
+    return filtered.length > 0 ? filtered : availableModels;
+};
+
+const toSelectableCases = (input: unknown[]): GeneratedCase[] => {
+    return input
+        .filter((item): item is Record<string, unknown> => item !== null && typeof item === 'object')
+        .map((item) => ({
+            title: typeof item.title === 'string' ? item.title : '',
+            description: typeof item.description === 'string' ? item.description : '',
+            preconditions: typeof item.preconditions === 'string' ? item.preconditions : '',
+            steps: Array.isArray(item.steps)
+                ? item.steps
+                    .filter((step): step is Record<string, unknown> => step !== null && typeof step === 'object')
+                    .map((step) => ({
+                        action: typeof step.action === 'string' ? step.action : '',
+                        expectedResult: typeof step.expectedResult === 'string' ? step.expectedResult : '',
+                    }))
+                : [],
+            area: typeof item.area === 'string' ? item.area : '',
+            expectedResult: typeof item.expectedResult === 'string' ? item.expectedResult : '',
+            selected: true,
+        }))
+        .filter((item) => item.title.trim().length > 0);
+};
+
+const extractGeneratedCases = (parsed: unknown): GeneratedCase[] => {
+    if (Array.isArray(parsed)) {
+        return toSelectableCases(parsed);
+    }
+
+    if (parsed && typeof parsed === 'object') {
+        const payload = parsed as Record<string, unknown>;
+        const nested = payload.testCases || payload.cases || payload.data;
+        if (Array.isArray(nested)) {
+            return toSelectableCases(nested);
+        }
+    }
+
+    return [];
+};
+
+const parseStreamedJson = (rawText: string): GeneratedCase[] => {
+    let cleanText = rawText.trim();
+    cleanText = cleanText.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+
+    if (!cleanText) {
+        return [];
+    }
+
+    try {
+        const parsed = JSON.parse(cleanText);
+        return extractGeneratedCases(parsed);
+    } catch {
+        if (cleanText.startsWith('[')) {
+            const lastObjectEnd = cleanText.lastIndexOf('}');
+            if (lastObjectEnd > 0) {
+                try {
+                    const recovered = `${cleanText.substring(0, lastObjectEnd + 1)}]`;
+                    const parsed = JSON.parse(recovered);
+                    return extractGeneratedCases(parsed);
+                } catch {
+                    return [];
+                }
+            }
+        }
+
+        return [];
+    }
+};
+
 const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
     onClose,
     onAddCases,
@@ -33,9 +134,23 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
     suiteContext,
     projectId,
     suiteId,
-    existingTestCases
+    existingTestCases,
 }) => {
-    const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash');
+    const [selectedProvider, setSelectedProvider] = useState<AIProvider>('gemini');
+    const [providerHasApiKey, setProviderHasApiKey] = useState<Record<AIProvider, boolean>>({
+        gemini: false,
+        openrouter: false,
+    });
+    const [providerModels, setProviderModels] = useState<Record<AIProvider, ProviderModelOption[]>>({
+        gemini: [],
+        openrouter: [],
+    });
+    const [selectedModels, setSelectedModels] = useState<Record<AIProvider, string>>({
+        gemini: 'gemini-2.5-flash',
+        openrouter: 'openai/gpt-4o-mini',
+    });
+    const [isLoadingSettings, setIsLoadingSettings] = useState<boolean>(true);
+
     const [selectedFields, setSelectedFields] = useState({
         area: true,
         steps: true,
@@ -47,43 +162,89 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedCases, setGeneratedCases] = useState<GeneratedCase[]>([]);
     const [expandedCaseIndex, setExpandedCaseIndex] = useState<number | null>(null);
-    
-    // Streaming state
+
     const [streamingText, setStreamingText] = useState('');
     const [showLivePreview, setShowLivePreview] = useState(true);
     const streamingTextRef = useRef('');
     const livePreviewRef = useRef<HTMLPreElement>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    // Fetch user's default model preference on mount
     useEffect(() => {
-        const fetchModelPreference = async () => {
+        const fetchProviderSettings = async () => {
+            setIsLoadingSettings(true);
             try {
-                const response = await fetch(`${API_URL}/gemini/settings`, {
-                    credentials: 'include',
-                });
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success && result.data && result.data.model) {
-                        setSelectedModel(result.data.model);
+                const readSettings = async (url: string): Promise<ProviderSettingsData | null> => {
+                    const response = await fetch(url, { credentials: 'include' });
+                    if (!response.ok) {
+                        return null;
                     }
-                }
+
+                    const result = await response.json();
+                    if (!result?.success || !result?.data) {
+                        return null;
+                    }
+
+                    return result.data as ProviderSettingsData;
+                };
+
+                const [geminiSettings, openRouterSettings] = await Promise.all([
+                    readSettings(`${API_URL}/gemini/settings`),
+                    readSettings(`${API_URL}/openrouter/settings`),
+                ]);
+
+                const geminiOptions = pickVisibleModelOptions(
+                    geminiSettings?.availableModels || [],
+                    geminiSettings?.visibleModels || []
+                );
+                const openRouterOptions = pickVisibleModelOptions(
+                    openRouterSettings?.availableModels || [],
+                    openRouterSettings?.visibleModels || []
+                );
+
+                const geminiModel = geminiSettings?.model
+                    && geminiOptions.some((model) => model.value === geminiSettings.model)
+                    ? geminiSettings.model
+                    : geminiOptions[0]?.value || 'gemini-2.5-flash';
+
+                const openRouterModel = openRouterSettings?.model
+                    && openRouterOptions.some((model) => model.value === openRouterSettings.model)
+                    ? openRouterSettings.model
+                    : openRouterOptions[0]?.value || 'openai/gpt-4o-mini';
+
+                setProviderHasApiKey({
+                    gemini: Boolean(geminiSettings?.hasApiKey),
+                    openrouter: Boolean(openRouterSettings?.hasApiKey),
+                });
+
+                setProviderModels({
+                    gemini: geminiOptions,
+                    openrouter: openRouterOptions,
+                });
+
+                setSelectedModels({
+                    gemini: geminiModel,
+                    openrouter: openRouterModel,
+                });
+
+                const preferredProvider = geminiSettings?.preferredProvider || openRouterSettings?.preferredProvider || 'gemini';
+                setSelectedProvider(preferredProvider);
             } catch (error) {
-                console.error('Failed to fetch model preference:', error);
-                // Keep default 'gemini-2.5-flash'
+                console.error('Failed to fetch provider settings:', error);
+                toast.error('Unable to load AI provider settings.');
+            } finally {
+                setIsLoadingSettings(false);
             }
         };
-        fetchModelPreference();
+
+        fetchProviderSettings();
     }, []);
 
-    // Auto-scroll live preview to bottom
     useEffect(() => {
         if (livePreviewRef.current && showLivePreview) {
             livePreviewRef.current.scrollTop = livePreviewRef.current.scrollHeight;
         }
     }, [streamingText, showLivePreview]);
 
-    // Cleanup on unmount
     useEffect(() => {
         return () => {
             if (abortControllerRef.current) {
@@ -92,54 +253,33 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
         };
     }, []);
 
-    /**
-     * Parse the accumulated JSON text and extract test cases
-     */
-    const parseStreamedJson = (text: string): GeneratedCase[] => {
-        // Clean up the text - remove markdown code blocks if present
-        let cleanText = text.trim();
-        cleanText = cleanText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
-        
-        try {
-            const parsed = JSON.parse(cleanText);
-            return Array.isArray(parsed) ? parsed.map((c: GeneratedCase) => ({ ...c, selected: true })) : [];
-        } catch {
-            // Try to recover truncated JSON by finding the last complete object
-            if (cleanText.startsWith('[')) {
-                const closingBraces: number[] = [];
-                let pos = cleanText.indexOf('}');
-                while (pos !== -1) {
-                    closingBraces.push(pos);
-                    pos = cleanText.indexOf('}', pos + 1);
-                }
-                
-                // Try the last few closing braces
-                for (let i = closingBraces.length - 1; i >= Math.max(0, closingBraces.length - 5); i--) {
-                    const cutPos = closingBraces[i];
-                    const recovered = cleanText.substring(0, cutPos + 1) + ']';
-                    try {
-                        const parsed = JSON.parse(recovered);
-                        return Array.isArray(parsed) ? parsed.map((c: GeneratedCase) => ({ ...c, selected: true })) : [];
-                    } catch {
-                        // Continue trying
-                    }
-                }
-            }
-            return [];
-        }
-    };
-
     const handleGenerate = async () => {
+        const selectedModel = selectedModels[selectedProvider];
+        const activeModels = providerModels[selectedProvider];
+
+        if (!providerHasApiKey[selectedProvider]) {
+            const providerLabel = selectedProvider === 'gemini' ? 'Gemini' : 'OpenRouter';
+            toast.error(`${providerLabel} API key is not configured in Settings.`);
+            return;
+        }
+
+        if (!selectedModel || activeModels.length === 0) {
+            toast.error('No visible model is available for the selected provider.');
+            return;
+        }
+
         setIsGenerating(true);
         setStreamingText('');
         setGeneratedCases([]);
         streamingTextRef.current = '';
-        
-        // Create abort controller for cancellation
         abortControllerRef.current = new AbortController();
-        
+
         try {
-            const response = await fetch(`${API_URL}/gemini/generate-stream`, {
+            const endpoint = selectedProvider === 'openrouter'
+                ? `${API_URL}/openrouter/generate-stream`
+                : `${API_URL}/gemini/generate-stream`;
+
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -150,9 +290,9 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                     selectedFields,
                     existingTestCases,
                     imageUrls: contextImages,
-                    model: selectedModel
+                    model: selectedModel,
                 }),
-                signal: abortControllerRef.current.signal
+                signal: abortControllerRef.current.signal,
             });
 
             if (!response.ok) {
@@ -167,74 +307,58 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
 
             const decoder = new TextDecoder();
             let buffer = '';
+            let didReceiveDone = false;
 
             // eslint-disable-next-line no-constant-condition
             while (true) {
                 const { done, value } = await reader.read();
-                
-                if (done) break;
+                if (done) {
+                    break;
+                }
 
                 buffer += decoder.decode(value, { stream: true });
-                
-                // Process SSE events (format: "data: {...}\n\n")
-                const lines = buffer.split('\n\n');
-                buffer = lines.pop() || ''; // Keep incomplete line in buffer
+                const events = buffer.split('\n\n');
+                buffer = events.pop() || '';
 
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        try {
-                            const data = JSON.parse(line.slice(6));
-                            
-                            if (data.type === 'chunk') {
-                                streamingTextRef.current += data.content;
-                                setStreamingText(streamingTextRef.current);
-                            } else if (data.type === 'done') {
-                                // Parse the final result
-                                const cases = parseStreamedJson(streamingTextRef.current);
-                                setGeneratedCases(cases);
-                            } else if (data.type === 'error') {
-                                throw new Error(data.message);
-                            }
-                        } catch (e) {
-                            if (e instanceof SyntaxError) {
-                                console.warn('Failed to parse SSE data:', line);
-                            } else {
-                                throw e;
-                            }
+                for (const event of events) {
+                    if (!event.startsWith('data: ')) {
+                        continue;
+                    }
+
+                    try {
+                        const data = JSON.parse(event.slice(6));
+
+                        if (data.type === 'chunk') {
+                            const chunkContent = typeof data.content === 'string' ? data.content : '';
+                            streamingTextRef.current += chunkContent;
+                            setStreamingText(streamingTextRef.current);
+                        } else if (data.type === 'done') {
+                            didReceiveDone = true;
+                            const parsedCases = parseStreamedJson(streamingTextRef.current);
+                            setGeneratedCases(parsedCases);
+                        } else if (data.type === 'error') {
+                            throw new Error(data.message || 'AI generation failed');
+                        }
+                    } catch (error) {
+                        if (error instanceof SyntaxError) {
+                            console.warn('Failed to parse SSE chunk:', event);
+                        } else {
+                            throw error;
                         }
                     }
                 }
             }
 
-            // Handle any remaining buffer
-            if (buffer.startsWith('data: ')) {
-                try {
-                    const data = JSON.parse(buffer.slice(6));
-                    if (data.type === 'chunk') {
-                        streamingTextRef.current += data.content;
-                        setStreamingText(streamingTextRef.current);
-                    }
-                } catch {
-                    // Ignore incomplete data
-                }
+            if (!didReceiveDone && streamingTextRef.current.trim().length > 0) {
+                const parsedCases = parseStreamedJson(streamingTextRef.current);
+                setGeneratedCases(parsedCases);
             }
-
-            // Final parse if we haven't gotten a 'done' event
-            if (generatedCases.length === 0 && streamingTextRef.current) {
-                const cases = parseStreamedJson(streamingTextRef.current);
-                setGeneratedCases(cases);
-            }
-
         } catch (error: unknown) {
             const errorObj = error as { name?: string; message?: string; error?: { message?: string } };
             if (errorObj.name === 'AbortError') {
                 toast.error('Generation cancelled');
             } else {
-                console.error('Generation error:', error);
-                // Extract simplified message from error
-                let errorMessage = "Failed to generate test cases";
-                
-                // Try to get the error message from various possible locations
+                let errorMessage = 'Failed to generate test cases';
                 if (typeof error === 'string') {
                     errorMessage = error;
                 } else if (errorObj?.message) {
@@ -242,15 +366,12 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                 } else if (errorObj?.error?.message) {
                     errorMessage = errorObj.error.message;
                 }
-                
-                // Limit error message length for toasts
+
                 if (errorMessage.length > 150) {
-                    errorMessage = errorMessage.substring(0, 147) + '...';
+                    errorMessage = `${errorMessage.substring(0, 147)}...`;
                 }
-                
-                toast.error(errorMessage, {
-                    duration: 5000
-                });
+
+                toast.error(errorMessage, { duration: 5000 });
             }
         } finally {
             setIsGenerating(false);
@@ -265,39 +386,40 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
     };
 
     const handleAddSelected = () => {
-        const selected = generatedCases.filter(c => c.selected);
-        const newTestCases: TestCase[] = selected.map((c, index) => ({
+        const selected = generatedCases.filter((testCase) => testCase.selected);
+
+        const newTestCases: TestCase[] = selected.map((testCase, index) => ({
             id: `gen-${Date.now()}-${index}`,
-            title: c.title,
+            title: testCase.title,
             priority: Priority.Medium,
             status: Status.Draft,
             createdAt: new Date().toISOString(),
             lastModified: new Date().toISOString(),
             assignedTester: {
-                id: 'u-current', // Placeholder, backend might override or frontend store handles it
+                id: 'u-current',
                 name: 'You',
-                avatar: 'https://ui-avatars.com/api/?name=You&background=0D8ABC&color=fff'
+                avatar: 'https://ui-avatars.com/api/?name=You&background=0D8ABC&color=fff',
             },
-            suite: suiteId, // Use ID or Name? The store uses ID usually but let's check. 
-            // In TestCasesPage, createTestCase takes suiteId. 
-            // But the TestCase object has `suite` property which seems to be the ID or Name depending on usage.
-            // Looking at `TestCase` type in `frontend/src/types/testManager.ts` (implied), it's likely a string.
-            // We'll pass the suiteId here.
-            projectId: projectId,
-            area: c.area || '',
-            steps: c.steps ? c.steps.map((s, i) => ({
-                id: `step-${i}`,
-                action: s.action,
-                expectedResult: s.expectedResult
-            })) : [],
-            testDescription: c.description || '',
-            preconditions: c.preconditions,
-            expectedResult: c.expectedResult || ''
+            suite: suiteId,
+            projectId,
+            area: testCase.area || '',
+            steps: (testCase.steps || []).map((step, stepIndex) => ({
+                id: `step-${stepIndex}`,
+                action: step.action,
+                expectedResult: step.expectedResult,
+            })),
+            testDescription: testCase.description || '',
+            preconditions: testCase.preconditions,
+            expectedResult: testCase.expectedResult || '',
         } as TestCase));
 
         onAddCases(newTestCases);
         onClose();
     };
+
+    const activeProviderModels = providerModels[selectedProvider];
+    const selectedModel = selectedModels[selectedProvider] || '';
+    const selectedModelDescription = activeProviderModels.find((model) => model.value === selectedModel)?.description;
 
     return (
         <AnimatePresence>
@@ -312,7 +434,6 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="relative w-full max-w-2xl bg-white dark:bg-gray-800 sm:rounded-xl shadow-xl flex flex-col max-h-[90vh] overflow-hidden"
                 >
-                    {/* Header */}
                     <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
                         <div className="flex items-center space-x-2">
                             <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -323,30 +444,68 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                         </button>
                     </div>
 
-                    {/* Content */}
                     <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                        {/* Configuration */}
                         <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    AI Model
-                                </label>
-                                <select
-                                    value={selectedModel}
-                                    onChange={(e) => setSelectedModel(e.target.value)}
-                                    disabled={isGenerating}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
-                                    <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
-                                    <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
-                                    <option value="gemini-2.5-flash-preview-09-2025">Gemini 2.5 Flash Preview</option>
-                                    <option value="gemini-2.5-flash">Gemini 2.5 Flash (Recommended)</option>
-                                    <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
-                                    <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
-                                    <option value="gemini-3-pro-preview">Gemini 3 Pro Preview</option>
-                                </select>
-                            </div>
+                            {isLoadingSettings ? (
+                                <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 text-sm text-gray-600 dark:text-gray-300">
+                                    Loading provider settings...
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                AI Provider
+                                            </label>
+                                            <select
+                                                value={selectedProvider}
+                                                onChange={(event) => setSelectedProvider(event.target.value as AIProvider)}
+                                                disabled={isGenerating}
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <option value="gemini">Gemini</option>
+                                                <option value="openrouter">OpenRouter</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                AI Model
+                                            </label>
+                                            <select
+                                                value={selectedModel}
+                                                onChange={(event) => {
+                                                    const nextValue = event.target.value;
+                                                    setSelectedModels((previous) => ({
+                                                        ...previous,
+                                                        [selectedProvider]: nextValue,
+                                                    }));
+                                                }}
+                                                disabled={isGenerating || activeProviderModels.length === 0}
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {activeProviderModels.length === 0 && (
+                                                    <option value="">No visible models available</option>
+                                                )}
+                                                {activeProviderModels.map((model) => (
+                                                    <option key={model.value} value={model.value}>
+                                                        {model.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {!providerHasApiKey[selectedProvider] && (
+                                        <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 p-3 text-sm text-amber-700 dark:text-amber-300">
+                                            Configure a {selectedProvider === 'gemini' ? 'Gemini' : 'OpenRouter'} API key in Settings before generating.
+                                        </div>
+                                    )}
+
+                                    {selectedModelDescription && (
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">{selectedModelDescription}</p>
+                                    )}
+                                </>
+                            )}
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -361,7 +520,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                     />
                                     <textarea
                                         value={context}
-                                        onChange={(e) => setContext(e.target.value)}
+                                        onChange={(event) => setContext(event.target.value)}
                                         rows={4}
                                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400"
                                         placeholder="Describe what you want to test..."
@@ -378,7 +537,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                         <input
                                             type="checkbox"
                                             checked={selectedFields.area}
-                                            onChange={(e) => setSelectedFields(prev => ({ ...prev, area: e.target.checked }))}
+                                            onChange={(event) => setSelectedFields((previous) => ({ ...previous, area: event.target.checked }))}
                                             className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:bg-gray-700"
                                         />
                                         <span className="text-sm text-gray-700 dark:text-gray-300">Page / Area</span>
@@ -387,7 +546,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                         <input
                                             type="checkbox"
                                             checked={selectedFields.steps}
-                                            onChange={(e) => setSelectedFields(prev => ({ ...prev, steps: e.target.checked }))}
+                                            onChange={(event) => setSelectedFields((previous) => ({ ...previous, steps: event.target.checked }))}
                                             className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:bg-gray-700"
                                         />
                                         <span className="text-sm text-gray-700 dark:text-gray-300">Test Steps</span>
@@ -396,19 +555,18 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                         <input
                                             type="checkbox"
                                             checked={selectedFields.expected}
-                                            onChange={(e) => setSelectedFields(prev => ({ ...prev, expected: e.target.checked }))}
+                                            onChange={(event) => setSelectedFields((previous) => ({ ...previous, expected: event.target.checked }))}
                                             className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:bg-gray-700"
                                         />
                                         <span className="text-sm text-gray-700 dark:text-gray-300">Expected Result (Summary)</span>
                                     </label>
-                                    {/* Test Description is required and always included; no checkbox */}
                                 </div>
                             </div>
 
                             <div className="flex gap-2">
                                 <button
                                     onClick={handleGenerate}
-                                    disabled={isGenerating}
+                                    disabled={isGenerating || isLoadingSettings || activeProviderModels.length === 0}
                                     className="flex-1 flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-500 dark:to-purple-500 text-white py-2.5 rounded-lg hover:from-blue-700 hover:to-purple-700 dark:hover:from-blue-600 dark:hover:to-purple-600 transition-all disabled:opacity-50"
                                 >
                                     {isGenerating ? (
@@ -434,7 +592,6 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                             </div>
                         </div>
 
-                        {/* Live Preview - Streaming Output */}
                         {(isGenerating || streamingText) && (
                             <div className="space-y-2 pt-4 border-t border-gray-100 dark:border-gray-700">
                                 <div className="flex items-center justify-between">
@@ -470,7 +627,6 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                             </div>
                         )}
 
-                        {/* Results */}
                         {generatedCases.length > 0 && (
                             <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700">
                                 <h3 className="text-sm font-medium text-gray-900 dark:text-white">Generated Results</h3>
@@ -482,10 +638,10 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                                     <input
                                                         type="checkbox"
                                                         checked={testCase.selected}
-                                                        onChange={(e) => {
-                                                            const newCases = [...generatedCases];
-                                                            newCases[index].selected = e.target.checked;
-                                                            setGeneratedCases(newCases);
+                                                        onChange={(event) => {
+                                                            const nextCases = [...generatedCases];
+                                                            nextCases[index].selected = event.target.checked;
+                                                            setGeneratedCases(nextCases);
                                                         }}
                                                         className="h-4 w-4 text-blue-600 rounded border-gray-300 dark:border-gray-600 focus:ring-blue-500 dark:bg-gray-700"
                                                     />
@@ -506,9 +662,9 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                                         <div>
                                                             <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Steps</h4>
                                                             <div className="space-y-2">
-                                                                {testCase.steps.map((step, i) => (
-                                                                    <div key={i} className="flex text-sm">
-                                                                        <span className="w-6 text-gray-400 dark:text-gray-500">{i + 1}.</span>
+                                                                {testCase.steps.map((step, stepIndex) => (
+                                                                    <div key={stepIndex} className="flex text-sm">
+                                                                        <span className="w-6 text-gray-400 dark:text-gray-500">{stepIndex + 1}.</span>
                                                                         <div className="flex-1 grid grid-cols-2 gap-4">
                                                                             <span className="text-gray-900 dark:text-white">{step.action}</span>
                                                                             <span className="text-gray-600 dark:text-gray-400 italic">{step.expectedResult}</span>
@@ -539,7 +695,6 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                         )}
                     </div>
 
-                    {/* Footer */}
                     <div className="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex justify-end space-x-3">
                         <button
                             onClick={onClose}
@@ -549,7 +704,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                         </button>
                         <button
                             onClick={handleAddSelected}
-                            disabled={generatedCases.filter(c => c.selected).length === 0}
+                            disabled={generatedCases.filter((testCase) => testCase.selected).length === 0}
                             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             Add Selected Cases

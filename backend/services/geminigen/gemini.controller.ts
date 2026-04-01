@@ -1,10 +1,59 @@
 import { Request, Response } from "express";
 import { User } from "../../models/user.model.js";
-import { encryptApiKey, decryptApiKey, generateTestCaseDetails, generateTestCaseDetailsStream, simplifyGeminiError } from "./gemini.service.js";
+import {
+    encryptApiKey,
+    decryptApiKey,
+    generateTestCaseDetails,
+    generateTestCaseDetailsStream,
+    simplifyGeminiError,
+    listGeminiModels,
+    getGeminiFallbackModelValues,
+    ProviderModelOption,
+} from "./gemini.service.js";
+
+type PreferredProvider = 'gemini' | 'openrouter';
+
+const isPreferredProvider = (value: unknown): value is PreferredProvider => {
+    return value === 'gemini' || value === 'openrouter';
+};
+
+const sanitizeModelIds = (value: unknown): string[] => {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    const unique = new Set<string>();
+    value.forEach((item) => {
+        if (typeof item === 'string') {
+            const trimmed = item.trim();
+            if (trimmed.length > 0) {
+                unique.add(trimmed);
+            }
+        }
+    });
+
+    return Array.from(unique);
+};
+
+const resolveVisibleModels = (savedVisibleModels: string[] | undefined, availableModels: ProviderModelOption[]): string[] => {
+    const availableSet = new Set(availableModels.map((model) => model.value));
+    const persisted = (savedVisibleModels || []).filter((modelId) => availableSet.has(modelId));
+
+    if (persisted.length > 0) {
+        return persisted;
+    }
+
+    const fallbackVisible = getGeminiFallbackModelValues().filter((modelId) => availableSet.has(modelId));
+    if (fallbackVisible.length > 0) {
+        return fallbackVisible;
+    }
+
+    return availableModels.slice(0, 8).map((model) => model.value);
+};
 
 export const saveGeminiKey = async (req: Request, res: Response) => {
     try {
-        const { apiKey, model } = req.body;
+        const { apiKey, model, visibleModels, preferredProvider } = req.body;
         const userId = req.userId;
 
         const updateData: any = {};
@@ -20,9 +69,21 @@ export const saveGeminiKey = async (req: Request, res: Response) => {
             updateData.geminiModel = model;
         }
 
+        if (visibleModels !== undefined) {
+            updateData.geminiVisibleModels = sanitizeModelIds(visibleModels);
+        }
+
+        if (preferredProvider !== undefined) {
+            if (!isPreferredProvider(preferredProvider)) {
+                return res.status(400).json({ success: false, message: "Invalid preferred provider" });
+            }
+
+            updateData.preferredAiProvider = preferredProvider;
+        }
+
         // If neither is provided, return error
         if (Object.keys(updateData).length === 0) {
-            return res.status(400).json({ success: false, message: "API Key or Model must be provided" });
+            return res.status(400).json({ success: false, message: "At least one Gemini setting must be provided" });
         }
 
         await User.findByIdAndUpdate(userId, updateData);
@@ -40,21 +101,75 @@ export const getGeminiSettings = async (req: Request, res: Response) => {
 
         // geminiApiKey is select:false, so we must explicitly include it to compute hasApiKey.
         // We still do NOT return the key to the client.
-        const user = await User.findById(userId).select('+geminiApiKey geminiModel');
+        const user = await User.findById(userId).select('+geminiApiKey geminiModel geminiVisibleModels preferredAiProvider');
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
+        const hasApiKey = typeof user.geminiApiKey === 'string' && user.geminiApiKey.length > 0;
+
+        let decryptedApiKey: string | undefined;
+        if (hasApiKey) {
+            try {
+                decryptedApiKey = decryptApiKey(user.geminiApiKey as string);
+            } catch (error) {
+                console.error('Failed to decrypt Gemini API key for model listing:', error);
+            }
+        }
+
+        const availableModels = await listGeminiModels(decryptedApiKey);
+        const visibleModels = resolveVisibleModels(user.geminiVisibleModels, availableModels);
+
         res.status(200).json({ 
             success: true, 
             data: {
-                hasApiKey: typeof user.geminiApiKey === 'string' && user.geminiApiKey.length > 0,
-                model: user.geminiModel || 'gemini-2.5-flash'
+                hasApiKey,
+                model: user.geminiModel || 'gemini-2.5-flash',
+                availableModels,
+                visibleModels,
+                preferredProvider: user.preferredAiProvider || 'gemini',
             }
         });
     } catch (error: any) {
         console.error("Error fetching Gemini settings:", error);
         res.status(500).json({ success: false, message: "Server error" });
+    }
+};
+
+export const getGeminiModels = async (req: Request, res: Response) => {
+    try {
+        const userId = req.userId;
+        const user = await User.findById(userId).select('+geminiApiKey geminiVisibleModels');
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        const hasApiKey = typeof user.geminiApiKey === 'string' && user.geminiApiKey.length > 0;
+        let decryptedApiKey: string | undefined;
+
+        if (hasApiKey) {
+            try {
+                decryptedApiKey = decryptApiKey(user.geminiApiKey as string);
+            } catch (error) {
+                console.error('Failed to decrypt Gemini API key for model listing:', error);
+            }
+        }
+
+        const availableModels = await listGeminiModels(decryptedApiKey);
+        const visibleModels = resolveVisibleModels(user.geminiVisibleModels, availableModels);
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                hasApiKey,
+                availableModels,
+                visibleModels,
+            },
+        });
+    } catch (error: any) {
+        console.error("Error fetching Gemini models:", error);
+        return res.status(500).json({ success: false, message: "Server error" });
     }
 };
 

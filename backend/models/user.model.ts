@@ -52,6 +52,46 @@ const userSchema = new Schema<IUserDocument>(
 		geminiModel: {
 			type: String,
 			default: 'gemini-2.5-flash'
+		},
+		geminiVisibleModels: {
+			type: [String],
+			default: [
+				'gemini-2.0-flash-lite',
+				'gemini-2.0-flash',
+				'gemini-2.5-flash-lite',
+				'gemini-2.5-flash-preview-09-2025',
+				'gemini-2.5-flash',
+				'gemini-2.5-pro',
+				'gemini-3-flash-preview',
+				'gemini-3-pro-preview'
+			]
+		},
+		preferredAiProvider: {
+			type: String,
+			enum: ['gemini', 'openrouter'],
+			default: 'gemini'
+		},
+		openrouterApiKey: {
+			type: String,
+			select: false // Always exclude by default for security
+		},
+		openrouterModel: {
+			type: String,
+			default: 'openai/gpt-4o-mini'
+		},
+		openrouterVisibleModels: {
+			type: [String],
+			default: [
+				'openai/gpt-4o-mini',
+				'openai/gpt-4.1-mini',
+				'anthropic/claude-3.5-sonnet',
+				'google/gemini-2.5-flash',
+				'deepseek/deepseek-r1'
+			]
+		},
+		openrouterCustomModels: {
+			type: [String],
+			default: []
 		}
 	},
 	{ timestamps: true }

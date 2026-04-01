@@ -12,6 +12,12 @@ export interface IUser {
   profilePicture?: string;
   geminiApiKey?: string;
   geminiModel?: string;
+  geminiVisibleModels?: string[];
+  preferredAiProvider?: 'gemini' | 'openrouter';
+  openrouterApiKey?: string;
+  openrouterModel?: string;
+  openrouterVisibleModels?: string[];
+  openrouterCustomModels?: string[];
   isVerified: boolean;
   lastLogin: Date;
   resetPasswordToken?: string;

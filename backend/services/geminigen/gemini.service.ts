@@ -7,6 +7,166 @@ const ALGORITHM = 'aes-256-cbc';
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || '';
 const IV_LENGTH = 16;
 
+const GEMINI_MODELS_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
+const GEMINI_MODEL_CACHE_TTL_MS = 10 * 60 * 1000;
+
+const GEMINI_FALLBACK_MODELS = [
+    {
+        value: 'gemini-2.0-flash-lite',
+        label: 'Gemini 2.0 Flash-Lite',
+        description: 'Smallest and most cost effective, built for at scale usage'
+    },
+    {
+        value: 'gemini-2.0-flash',
+        label: 'Gemini 2.0 Flash',
+        description: 'Most balanced multimodal model, great for Agents'
+    },
+    {
+        value: 'gemini-2.5-flash-lite',
+        label: 'Gemini 2.5 Flash-Lite',
+        description: 'Smallest and most cost effective, built for at scale usage'
+    },
+    {
+        value: 'gemini-2.5-flash-preview-09-2025',
+        label: 'Gemini 2.5 Flash Preview',
+        description: 'Best for large scale processing, low-latency, and agentic use cases'
+    },
+    {
+        value: 'gemini-2.5-flash',
+        label: 'Gemini 2.5 Flash',
+        description: 'First hybrid reasoning model with 1M token context and thinking budgets'
+    },
+    {
+        value: 'gemini-2.5-pro',
+        label: 'Gemini 2.5 Pro',
+        description: 'State-of-the-art model, excels at coding and complex reasoning tasks'
+    },
+    {
+        value: 'gemini-3-flash-preview',
+        label: 'Gemini 3 Flash Preview',
+        description: 'Fastest and most efficient model for high-volume tasks'
+    },
+    {
+        value: 'gemini-3-pro-preview',
+        label: 'Gemini 3 Pro Preview',
+        description: 'Best model for multimodal understanding, most powerful agentic model'
+    }
+] as const;
+
+interface GeminiModelListItem {
+    name?: string;
+    baseModelId?: string;
+    displayName?: string;
+    description?: string;
+    supportedGenerationMethods?: string[];
+}
+
+interface GeminiModelListResponse {
+    models?: GeminiModelListItem[];
+}
+
+interface GeminiModelCache {
+    expiresAt: number;
+    models: ProviderModelOption[];
+}
+
+let geminiModelCache: GeminiModelCache | null = null;
+
+export interface ProviderModelOption {
+    value: string;
+    label: string;
+    description?: string;
+    source?: 'api' | 'fallback' | 'custom';
+}
+
+const normalizeGeminiModelName = (name?: string): string | null => {
+    if (!name || typeof name !== 'string') {
+        return null;
+    }
+
+    return name.startsWith('models/') ? name.replace('models/', '') : name;
+};
+
+const supportsGenerateContent = (model: GeminiModelListItem): boolean => {
+    if (!Array.isArray(model.supportedGenerationMethods) || model.supportedGenerationMethods.length === 0) {
+        return true;
+    }
+
+    return model.supportedGenerationMethods.includes('generateContent');
+};
+
+const fallbackGeminiModels = (): ProviderModelOption[] => {
+    return GEMINI_FALLBACK_MODELS.map((model) => ({
+        value: model.value,
+        label: model.label,
+        description: model.description,
+        source: 'fallback' as const,
+    }));
+};
+
+export const getGeminiFallbackModelValues = (): string[] => {
+    return GEMINI_FALLBACK_MODELS.map((model) => model.value);
+};
+
+export const listGeminiModels = async (apiKey?: string, forceRefresh: boolean = false): Promise<ProviderModelOption[]> => {
+    const now = Date.now();
+    if (!forceRefresh && geminiModelCache && geminiModelCache.expiresAt > now) {
+        return geminiModelCache.models;
+    }
+
+    if (!apiKey) {
+        return fallbackGeminiModels();
+    }
+
+    try {
+        const response = await fetch(`${GEMINI_MODELS_ENDPOINT}?key=${encodeURIComponent(apiKey)}`);
+
+        if (!response.ok) {
+            throw new Error(`Gemini model list request failed with status ${response.status}`);
+        }
+
+        const data = await response.json() as GeminiModelListResponse;
+        const apiModels = Array.isArray(data.models) ? data.models : [];
+
+        const normalizedModels = apiModels
+            .filter(supportsGenerateContent)
+            .map((model): ProviderModelOption | null => {
+                const value = normalizeGeminiModelName(model.name || model.baseModelId);
+                if (!value) {
+                    return null;
+                }
+
+                return {
+                    value,
+                    label: model.displayName || value,
+                    ...(model.description ? { description: model.description } : {}),
+                    source: 'api' as const,
+                };
+            })
+            .filter((model): model is ProviderModelOption => model !== null);
+
+        if (normalizedModels.length === 0) {
+            return fallbackGeminiModels();
+        }
+
+        const deduped = new Map<string, ProviderModelOption>();
+        normalizedModels.forEach((model) => {
+            deduped.set(model.value, model);
+        });
+
+        const result = Array.from(deduped.values()).sort((a, b) => a.label.localeCompare(b.label));
+        geminiModelCache = {
+            expiresAt: now + GEMINI_MODEL_CACHE_TTL_MS,
+            models: result,
+        };
+
+        return result;
+    } catch (error) {
+        console.error('Failed to fetch Gemini model list:', error);
+        return fallbackGeminiModels();
+    }
+};
+
 if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 32) {
     console.warn("WARNING: ENCRYPTION_KEY is missing or not 32 characters. Secure storage will fail.");
 }
