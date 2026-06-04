@@ -10,6 +10,9 @@
    <a href="https://github.com/brian0309/test-case-manager/actions/workflows/typecheck.yml">
       <img src="https://github.com/brian0309/test-case-manager/actions/workflows/typecheck.yml/badge.svg" alt="Type Check Status" />
    </a>
+   <a href="https://github.com/brian0309/test-case-manager/actions/workflows/deploy.yml">
+      <img src="https://github.com/brian0309/test-case-manager/actions/workflows/deploy.yml/badge.svg" alt="Deploy Status" />
+   </a>
 </p>
 
 <p align="center">
@@ -496,6 +499,30 @@ Deploy frontend and backend as **separate Vercel projects** for maximum flexibil
 📖 **[Complete Guide: Separate Vercel Deployment →](./Documentation/Deployment/VERCEL_SEPARATE_DEPLOYMENT.md)**
 
 > 🔧 **Troubleshooting Connection Issues?** See the [Vercel Connection Fix Guide](./Documentation/VERCEL_CONNECTION_FIX.md) for common issues and solutions.
+
+#### 🐳 CapRover Deployment
+
+Deploy to your own CapRover instance with automated CI/CD via GitHub Actions.
+
+**Required GitHub Secrets:**
+
+| Secret | Description |
+|--------|-------------|
+| `CAPROVER_SERVER` | Your CapRover server URL (e.g., `https://captain.your-domain.com`) |
+| `APP_NAME` | Your CapRover app name |
+| `APP_TOKEN` | Deploy token from CapRover dashboard |
+
+**CI/CD Pipeline:**
+
+On push to `main`, the workflow:
+1. Runs all tests (lint, type-check, unit/integration tests)
+2. Builds the Docker image
+3. Pushes to GitHub Container Registry (GHCR)
+4. Deploys to CapRover
+
+**Files:**
+- `captain-definition` - CapRover deployment config
+- `.github/workflows/deploy.yml` - GitHub Actions workflow
 
 #### 🔄 Traditional Hosting
 
