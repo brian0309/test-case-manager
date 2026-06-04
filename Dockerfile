@@ -1,11 +1,11 @@
 FROM node:20-alpine AS base
-
 WORKDIR /app
 
-FROM base AS backend-build
-WORKDIR /app
-COPY backend/package*.json ./backend/
-RUN npm install --prefix backend
+FROM base AS deps
+COPY package*.json ./
+RUN npm install
+
+FROM deps AS backend-build
 COPY backend/ ./backend/
 RUN npx tsc -p backend/tsconfig.json
 
@@ -19,11 +19,8 @@ RUN npm run build
 FROM base AS production
 ENV NODE_ENV=production
 WORKDIR /app
-
 COPY package*.json ./
-COPY backend/package*.json ./backend/
-RUN npm install --omit=dev --prefix backend
-
+RUN npm install --omit=dev
 COPY --from=backend-build /app/dist ./dist
 COPY --from=backend-build /app/backend/mailtrap ./backend/mailtrap
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
