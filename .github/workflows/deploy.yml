@@ -39,7 +39,7 @@ jobs:
           tags: ${{ env.IMAGE }}
 
       - name: Deploy to CapRover
-        uses: caprover/deploy-from-github@v1
+        uses: caprover/deploy-from-github@v1.1.2
         with:
           server: ${{ secrets.CAPROVER_SERVER }}
           app: ${{ secrets.APP_NAME }}
