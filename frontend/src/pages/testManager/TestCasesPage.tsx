@@ -1143,6 +1143,7 @@ const TestCasesPage: React.FC = () => {
                     onSortInfoChange={setSortInfo}
                     activeArea={activeArea}
                     activeSuiteId={activeSuiteId}
+                    loading={isProjectCasesLoading || isSuiteCasesLoading}
                 />
                 {!activeSuiteId && activeProject && (
                     <div ref={projectCasesSentinelRef} className="flex justify-center py-3">

@@ -20,7 +20,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { TestCase, Priority, Status, CustomFieldDefinition, HiddenDefaultColumns } from '../../types/testManager';
 import StatusBadge from './StatusBadge';
-import { Edit, Copy, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, ChevronRight } from 'lucide-react';
+import { Edit, Copy, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, RotateCcw, ChevronRight, Loader2 } from 'lucide-react';
 import IdDisplay from './IdDisplay';
 
 
@@ -61,6 +61,8 @@ interface TestCaseTableProps {
     // Context info
     activeArea?: string | null;
     activeSuiteId?: string | null;
+    // Loading state
+    loading?: boolean;
 }
 
 
@@ -384,6 +386,7 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
     onSortInfoChange,
     activeArea,
     activeSuiteId,
+    loading = false,
 }) => {
     // Sorting state
     const [sortMode, setSortMode] = useState<'custom' | 'standard'>('custom');
@@ -672,7 +675,14 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
             >
                 {sortedData.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                        <p className="text-sm">No test cases to display</p>
+                        {loading ? (
+                            <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Loading test cases...
+                            </div>
+                        ) : (
+                            <p className="text-sm">No test cases to display</p>
+                        )}
                     </div>
                 ) : isDndEnabled ? (
                 <DndContext
@@ -979,7 +989,14 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
             >
                 {sortedData.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-40 text-gray-400 dark:text-gray-500">
-                        <p>No test cases found</p>
+                        {loading ? (
+                            <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Loading test cases...
+                            </div>
+                        ) : (
+                            <p>No test cases found</p>
+                        )}
                     </div>
                 ) : (
                     <div style={{ height: mobileVirtualizer.getTotalSize(), position: 'relative' }}>
