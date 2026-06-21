@@ -1147,12 +1147,7 @@ const TestCasesPage: React.FC = () => {
                 />
                 {!activeSuiteId && activeProject && (
                     <div ref={projectCasesSentinelRef} className="flex justify-center py-3">
-                        {isProjectCasesLoading ? (
-                            <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Loading test cases...
-                            </div>
-                        ) : (projectCasesHasMore && isProjectCasesLoadingMore) ? (
+                        {(projectCasesHasMore && isProjectCasesLoadingMore) ? (
                             <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 Loading more test cases...
@@ -1169,12 +1164,7 @@ const TestCasesPage: React.FC = () => {
                 )}
                 {activeSuiteId && !requiresFullSuiteDataset && (
                     <div ref={suiteCasesSentinelRef} className="flex justify-center py-3">
-                        {isSuiteCasesLoading ? (
-                            <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                Loading test cases...
-                            </div>
-                        ) : (suiteCasesHasMore && isSuiteCasesLoadingMore) ? (
+                        {(suiteCasesHasMore && isSuiteCasesLoadingMore) ? (
                             <div className="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 Loading more test cases...
