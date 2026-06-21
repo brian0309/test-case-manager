@@ -75,6 +75,41 @@ export const getProjects = async (): Promise<ProjectResponse[]> => {
   }
 };
 
+export interface PaginatedProjectsResult {
+  items: ProjectResponse[];
+  meta: PaginationMeta;
+}
+
+/**
+ * Get paginated projects for the current user (newest first)
+ */
+export const getProjectsPaginated = async (
+  params: { limit: number; offset: number }
+): Promise<PaginatedProjectsResult> => {
+  try {
+    const response = await axios.get<ApiResponse<ProjectResponse[]>>(
+      `${API_URL}/projects`,
+      {
+        params,
+      }
+    );
+
+    const fallbackMeta: PaginationMeta = {
+      total: response.data.data?.length || 0,
+      limit: params.limit,
+      offset: params.offset,
+      hasMore: false,
+    };
+
+    return {
+      items: response.data.data || [],
+      meta: response.data.meta || fallbackMeta,
+    };
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
 /**
  * Get a single project by ID
  */
@@ -633,6 +668,7 @@ export const testManagerApi = {
   // Projects
   createProject,
   getProjects,
+  getProjectsPaginated,
   getProject,
   updateProject,
   deleteProject,

@@ -99,6 +99,8 @@ const mapTestSuiteResponse = (s: TestSuiteResponse): TestSuite => ({
     updatedAt: s.updatedAt,
 });
 
+const PROJECTS_PAGE_SIZE = 20;
+
 const UNKNOWN_TESTER: Tester = {
     id: 'unknown',
     name: 'Unassigned',
@@ -155,8 +157,15 @@ interface TestManagerStore {
     onImportTestCases: (() => void) | null;
     setImportTestCasesCallback: (callback: (() => void) | null) => void;
 
+    // Project pagination state
+    projectsHasMore: boolean;
+    projectsOffset: number;
+    projectsTotal: number;
+    isProjectsLoadingMore: boolean;
+
     // Project actions
     fetchProjects: () => Promise<void>;
+    fetchMoreProjects: () => Promise<void>;
     createProject: (data: CreateProjectRequest) => Promise<Project>;
     updateProject: (id: string, data: UpdateProjectRequest) => Promise<Project>;
     deleteProject: (id: string) => Promise<void>;
@@ -221,6 +230,10 @@ export const useTestManagerStore = create<TestManagerStore>()(
             activeTestCaseId: null as string | null,
             testCases: [] as TestCase[],
             projects: [] as Project[],
+            projectsHasMore: false,
+            projectsOffset: 0,
+            projectsTotal: 0,
+            isProjectsLoadingMore: false,
             testSuites: [] as TestSuite[],
             isLoading: false,
             error: null as string | null,
@@ -300,13 +313,54 @@ export const useTestManagerStore = create<TestManagerStore>()(
             fetchProjects: async () => {
                 set({ isLoading: true, error: null });
                 try {
-                    const projects = await deduplicateRequest('projects', async () => {
-                        const response = await testManagerApi.getProjects();
-                        return response.map(mapProjectResponse);
+                    const result = await deduplicateRequest('projects', async () => {
+                        const response = await testManagerApi.getProjectsPaginated({
+                            limit: PROJECTS_PAGE_SIZE,
+                            offset: 0,
+                        });
+                        return {
+                            items: response.items.map(mapProjectResponse),
+                            meta: response.meta,
+                        };
                     });
-                    set({ projects, isLoading: false });
+                    set({
+                        projects: result.items,
+                        projectsOffset: result.items.length,
+                        projectsTotal: result.meta.total,
+                        projectsHasMore: result.meta.hasMore,
+                        isLoading: false,
+                    });
                 } catch (error: unknown) {
                     set({ error: (error as Error).message, isLoading: false });
+                }
+            },
+
+            fetchMoreProjects: async () => {
+                const { projectsHasMore, isProjectsLoadingMore, projectsOffset } = get();
+                if (!projectsHasMore || isProjectsLoadingMore) return;
+
+                set({ isProjectsLoadingMore: true });
+                try {
+                    const response = await testManagerApi.getProjectsPaginated({
+                        limit: PROJECTS_PAGE_SIZE,
+                        offset: projectsOffset,
+                    });
+                    const mapped = response.items.map(mapProjectResponse);
+
+                    set((state) => {
+                        const existingIds = new Set(state.projects.map((p) => p.id));
+                        const dedupedIncoming = mapped.filter((p) => !existingIds.has(p.id));
+                        const totalLoaded = state.projects.length + dedupedIncoming.length;
+                        return {
+                            projects: [...state.projects, ...dedupedIncoming],
+                            projectsOffset: totalLoaded,
+                            projectsTotal: response.meta.total,
+                            projectsHasMore: response.meta.hasMore && totalLoaded < response.meta.total,
+                            isProjectsLoadingMore: false,
+                        };
+                    });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isProjectsLoadingMore: false });
                 }
             },
 

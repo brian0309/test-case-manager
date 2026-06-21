@@ -52,6 +52,36 @@ export const getProjectsByUser = async (
 };
 
 /**
+ * Get projects for a user with pagination (newest first by createdAt)
+ */
+export const getProjectsByUserPaginated = async (
+  userId: string,
+  options: { limit: number; offset: number }
+): Promise<{ items: IProjectDocument[]; total: number }> => {
+  const query = {
+    $or: [
+      { ownerId: new Types.ObjectId(userId) },
+      { members: new Types.ObjectId(userId) },
+    ],
+  };
+
+  const [items, total] = await Promise.all([
+    Project.find(query)
+      .sort({ createdAt: -1 })
+      .populate("members", "name email")
+      .skip(options.offset)
+      .limit(options.limit)
+      .lean(),
+    Project.countDocuments(query),
+  ]);
+
+  return {
+    items: items as unknown as IProjectDocument[],
+    total,
+  };
+};
+
+/**
  * Get a single project by ID (with access check)
  */
 export const getProjectById = async (
