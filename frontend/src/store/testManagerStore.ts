@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ViewMode, TestCase, Project, TestSuite, Priority, Status, Tester, HistoryEntry, ProjectSettings } from '../types/testManager';
+import { ViewMode, TestCase, Project, TestSuite, Priority, Status, Tester, HistoryEntry, ProjectSettings, Ticket, TicketStatus as TicketStatusEnum } from '../types/testManager';
 import * as testManagerApi from '../services/testManagerApi';
+import * as ticketApi from '../services/ticketApi';
 import {
     ProjectResponse,
     TestSuiteResponse,
@@ -12,6 +13,9 @@ import {
     UpdateTestSuiteRequest,
     CreateTestCaseRequest,
     UpdateTestCaseRequest,
+    TicketListResponse,
+    CreateTicketRequest,
+    UpdateTicketRequest,
 } from '../types/api/testManager.api';
 
 // Request deduplication to prevent duplicate concurrent API calls
@@ -97,6 +101,23 @@ const mapTestSuiteResponse = (s: TestSuiteResponse): TestSuite => ({
     projectId: s.projectId,
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
+});
+
+export const mapTicketResponse = (t: TicketListResponse): Ticket => ({
+    id: t.id,
+    title: t.title,
+    description: t.description,
+    projectId: t.projectId,
+    status: t.status as TicketStatusEnum,
+    priority: t.priority as any,
+    severity: t.severity as any,
+    assignedTo: t.assignedTo as Tester | undefined,
+    createdBy: t.createdBy as Tester,
+    relatedRunId: t.relatedRunId,
+    attachments: [],
+    tags: t.tags || [],
+    createdAt: t.createdAt,
+    updatedAt: t.updatedAt,
 });
 
 const PROJECTS_PAGE_SIZE = 20;
@@ -215,6 +236,19 @@ interface TestManagerStore {
     deleteProjectLocal: (projectId: string) => void;
     setProjects: (projects: Project[]) => void;
     addProject: (project: Project) => void;
+
+    // Ticket State
+    tickets: Ticket[];
+    isTicketDetailViewOpen: boolean;
+    activeTicket: Ticket | null;
+
+    // Ticket Actions
+    fetchTickets: (projectId: string) => Promise<void>;
+    createTicket: (projectId: string, data: CreateTicketRequest) => Promise<Ticket>;
+    updateTicket: (projectId: string, id: string, data: UpdateTicketRequest) => Promise<Ticket>;
+    deleteTicket: (projectId: string, id: string) => Promise<void>;
+    setActiveTicket: (ticket: Ticket | null) => void;
+    setTicketDetailViewOpen: (isOpen: boolean) => void;
 }
 
 export const useTestManagerStore = create<TestManagerStore>()(
@@ -238,6 +272,11 @@ export const useTestManagerStore = create<TestManagerStore>()(
             isLoading: false,
             error: null as string | null,
             projectSettings: {} as Record<string, ProjectSettings>,
+
+            // Ticket State
+            tickets: [] as Ticket[],
+            isTicketDetailViewOpen: false,
+            activeTicket: null as Ticket | null,
 
             // Filter State
             isFilterModalOpen: false,
@@ -868,6 +907,98 @@ export const useTestManagerStore = create<TestManagerStore>()(
             })),
             setProjects: (projects: Project[]) => set({ projects }),
             addProject: (project: Project) => set((state) => ({ projects: [project, ...state.projects] })),
+
+            // =========================================================================
+            // TICKET ACTIONS
+            // =========================================================================
+            setActiveTicket: (ticket) => set({ activeTicket: ticket }),
+            setTicketDetailViewOpen: (isOpen) => set({ isTicketDetailViewOpen: isOpen }),
+            fetchTickets: async (projectId) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await ticketApi.getTickets(projectId);
+                    set({ tickets: response.map(mapTicketResponse), isLoading: false });
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
+                }
+            },
+            createTicket: async (projectId, data) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await ticketApi.createTicket(projectId, data);
+                    const ticket: Ticket = {
+                        id: response.id,
+                        title: response.title,
+                        description: response.description,
+                        projectId: response.projectId,
+                        status: response.status as TicketStatusEnum,
+                        priority: response.priority as any,
+                        severity: response.severity as any,
+                        assignedTo: response.assignedTo as Tester | undefined,
+                        createdBy: response.createdBy as Tester,
+                        relatedRunId: response.relatedRunId,
+                        relatedRunItemId: response.relatedRunItemId,
+                        attachments: response.attachments as any,
+                        tags: response.tags || [],
+                        createdAt: response.createdAt,
+                        updatedAt: response.updatedAt,
+                    };
+                    set((state) => ({
+                        tickets: [ticket, ...state.tickets],
+                        isLoading: false,
+                    }));
+                    return ticket;
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
+                    throw error;
+                }
+            },
+            updateTicket: async (projectId, id, data) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await ticketApi.updateTicket(projectId, id, data);
+                    const ticket: Ticket = {
+                        id: response.id,
+                        title: response.title,
+                        description: response.description,
+                        projectId: response.projectId,
+                        status: response.status as TicketStatusEnum,
+                        priority: response.priority as any,
+                        severity: response.severity as any,
+                        assignedTo: response.assignedTo as Tester | undefined,
+                        createdBy: response.createdBy as Tester,
+                        relatedRunId: response.relatedRunId,
+                        relatedRunItemId: response.relatedRunItemId,
+                        attachments: response.attachments as any,
+                        tags: response.tags || [],
+                        createdAt: response.createdAt,
+                        updatedAt: response.updatedAt,
+                    };
+                    set((state) => ({
+                        tickets: state.tickets.map((t) => (t.id === id ? ticket : t)),
+                        activeTicket: state.activeTicket?.id === id ? ticket : state.activeTicket,
+                        isLoading: false,
+                    }));
+                    return ticket;
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
+                    throw error;
+                }
+            },
+            deleteTicket: async (projectId, id) => {
+                set({ isLoading: true, error: null });
+                try {
+                    await ticketApi.deleteTicket(projectId, id);
+                    set((state) => ({
+                        tickets: state.tickets.filter((t) => t.id !== id),
+                        activeTicket: state.activeTicket?.id === id ? null : state.activeTicket,
+                        isLoading: false,
+                    }));
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
+                    throw error;
+                }
+            },
         }),
         {
             name: 'test-manager-storage', // localStorage key

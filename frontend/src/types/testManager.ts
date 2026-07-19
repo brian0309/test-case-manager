@@ -483,4 +483,54 @@ export interface RunTimelineEntry {
     details: string;
 }
 
-export type ViewMode = 'projects' | 'cases' | 'suites' | 'runs';
+// ===== Ticket Types =====
+
+export enum TicketStatus {
+    Open = 'Open',
+    InProgress = 'In Progress',
+    Resolved = 'Resolved',
+    Closed = 'Closed',
+    Reopened = 'Reopened',
+}
+
+export enum TicketPriority {
+    Low = 'Low',
+    Medium = 'Medium',
+    High = 'High',
+    Critical = 'Critical',
+}
+
+export enum TicketSeverity {
+    Trivial = 'Trivial',
+    Minor = 'Minor',
+    Major = 'Major',
+    Critical = 'Critical',
+    Blocker = 'Blocker',
+}
+
+export interface TicketAttachment {
+    url: string;
+    filename: string;
+    fileSize: number;
+    contentType: string;
+}
+
+export interface Ticket {
+    id: string;
+    title: string;
+    description?: string;
+    projectId: string;
+    status: TicketStatus;
+    priority: TicketPriority;
+    severity: TicketSeverity;
+    assignedTo?: Tester;
+    createdBy: Tester;
+    relatedRunId?: string;
+    relatedRunItemId?: string;
+    attachments: TicketAttachment[];
+    tags: string[];
+    createdAt: string;
+    updatedAt: string;
+}
+
+export type ViewMode = 'projects' | 'cases' | 'suites' | 'runs' | 'tickets';

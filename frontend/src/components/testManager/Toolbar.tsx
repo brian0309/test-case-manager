@@ -47,6 +47,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
             case 'projects': return 'Projects';
             case 'suites': return 'Test Suites';
             case 'runs': return 'Test Runs';
+            case 'tickets': return 'Tickets';
             case 'cases':
                 // Show suite name if selected, otherwise "All Test Cases"
                 return activeSuite || 'Test Cases';
@@ -62,6 +63,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
         if (viewMode === 'projects') return 'Project';
         if (viewMode === 'suites') return 'Suite';
         if (viewMode === 'runs') return 'Run';
+        if (viewMode === 'tickets') return 'Ticket';
         return 'Case';
     };
 
@@ -76,7 +78,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
                 {/* Segmented control compact on mobile */}
                 <div className="ml-2 bg-gray-100 dark:bg-gray-700 p-0.5 rounded-full flex items-center h-8 overflow-x-auto">
                     <div className="flex items-center gap-1 px-1">
-                        {(['projects', 'cases', 'suites', 'runs'] as ViewMode[]).map((mode) => (
+                        {(['projects', 'cases', 'suites', 'runs', 'tickets'] as ViewMode[]).map((mode) => (
                             <button
                                 key={mode}
                                 onClick={() => setViewMode(mode)}
@@ -85,7 +87,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
                                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                                     }`}
                             >
-                                {mode === 'runs' ? 'Runs' : mode}
+                                {mode === 'runs' ? 'Runs' : mode === 'tickets' ? 'Tickets' : mode}
                             </button>
                         ))}
                     </div>

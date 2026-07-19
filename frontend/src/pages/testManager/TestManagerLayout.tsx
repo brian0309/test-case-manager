@@ -9,6 +9,7 @@ const TestManagerLayout: React.FC = () => {
     const {
         viewMode,
         isRunDetailViewOpen,
+        isTicketDetailViewOpen,
         setViewMode,
         activeSuite,
         activeSuiteId,
@@ -36,6 +37,7 @@ const TestManagerLayout: React.FC = () => {
         else if (path.includes('/cases')) setViewMode('cases');
         else if (path.includes('/suites')) setViewMode('suites');
         else if (path.includes('/runs')) setViewMode('runs');
+        else if (path.includes('/tickets')) setViewMode('tickets');
     }, [location.pathname, setViewMode]);
 
     const handleViewChange = (mode: ViewMode) => {
@@ -73,6 +75,12 @@ const TestManagerLayout: React.FC = () => {
         if (viewMode === 'runs') {
             // Open the new test run modal on the runs page
             navigate('/test-manager/runs', { state: { openNewRun: true } });
+            return;
+        }
+
+        if (viewMode === 'tickets') {
+            // Open the new ticket modal on the tickets page
+            navigate('/test-manager/tickets', { state: { openNewTicket: true } });
             return;
         }
 
@@ -126,7 +134,7 @@ const TestManagerLayout: React.FC = () => {
                     onDownload={onExportTestCases || undefined}
                     // Import prop
                     onUpload={onImportTestCases || undefined}
-                    hideNewButton={viewMode === 'runs' && isRunDetailViewOpen}
+                    hideNewButton={(viewMode === 'runs' && isRunDetailViewOpen) || (viewMode === 'tickets' && isTicketDetailViewOpen)}
                 />
                 <div className="flex-1 overflow-auto relative">
                     <Outlet />

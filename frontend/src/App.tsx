@@ -19,6 +19,7 @@ const ProjectsPage = React.lazy(() => import("./pages/testManager/ProjectsPage")
 const TestCasesPage = React.lazy(() => import("./pages/testManager/TestCasesPage"));
 const TestSuitesPage = React.lazy(() => import("./pages/testManager/TestSuitesPage"));
 const TestRunsPage = React.lazy(() => import("./pages/testManager/TestRunsPage"));
+const TicketsPage = React.lazy(() => import("./pages/testManager/TicketsPage"));
 
 // Non-lazy imports (needed immediately)
 import AppLayout from "./components/AppLayout";
@@ -177,6 +178,7 @@ function App() {
                 <Route path='cases' element={<TestCasesPage />} />
                 <Route path='suites' element={<TestSuitesPage />} />
                 <Route path='runs' element={<TestRunsPage />} />
+                <Route path='tickets' element={<TicketsPage />} />
               </Route>
             </Route>
 

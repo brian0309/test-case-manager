@@ -393,3 +393,96 @@ export interface ApiErrorResponse {
   success: false;
 }
 
+// ============================================================================
+// TICKET TYPES
+// ============================================================================
+
+export enum TicketStatus {
+  Open = "Open",
+  InProgress = "In Progress",
+  Resolved = "Resolved",
+  Closed = "Closed",
+  Reopened = "Reopened",
+}
+
+export enum TicketPriority {
+  Low = "Low",
+  Medium = "Medium",
+  High = "High",
+  Critical = "Critical",
+}
+
+export enum TicketSeverity {
+  Trivial = "Trivial",
+  Minor = "Minor",
+  Major = "Major",
+  Critical = "Critical",
+  Blocker = "Blocker",
+}
+
+export interface TicketResponse {
+  id: string;
+  title: string;
+  description?: string;
+  projectId: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  severity: TicketSeverity;
+  assignedTo?: TesterResponse;
+  createdBy: TesterResponse;
+  relatedRunId?: string;
+  relatedRunItemId?: string;
+  attachments: AttachmentResponse[];
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TicketListResponse {
+  id: string;
+  title: string;
+  description?: string;
+  projectId: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  severity: TicketSeverity;
+  assignedTo?: TesterResponse;
+  createdBy: TesterResponse;
+  relatedRunId?: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AttachmentResponse {
+  url: string;
+  filename: string;
+  fileSize: number;
+  contentType: string;
+}
+
+export interface CreateTicketRequest {
+  title: string;
+  description?: string;
+  priority: TicketPriority;
+  severity: TicketSeverity;
+  assignedToId?: string;
+  relatedRunId?: string;
+  relatedRunItemId?: string;
+  tags?: string[];
+  attachments?: AttachmentResponse[];
+}
+
+export interface UpdateTicketRequest {
+  title?: string;
+  description?: string;
+  status?: TicketStatus;
+  priority?: TicketPriority;
+  severity?: TicketSeverity;
+  assignedToId?: string | null;
+  relatedRunId?: string;
+  relatedRunItemId?: string;
+  tags?: string[];
+  attachments?: AttachmentResponse[];
+}
+
