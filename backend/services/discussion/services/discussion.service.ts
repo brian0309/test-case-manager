@@ -10,6 +10,7 @@ import {
 } from "../types/discussion.types.js";
 import { User } from "../../../models/user.model.js";
 import { TestCase } from "../../../models/testCase.model.js";
+import { Ticket } from "../../../models/ticket.model.js";
 
 const DEFAULT_AVATAR =
   "https://ui-avatars.com/api/?background=random&color=fff&name=";
@@ -18,7 +19,8 @@ const formatMessage = (msg: any): MessageResponse => {
   const user = msg.userId;
   return {
     id: msg._id.toString(),
-    testCaseId: msg.testCaseId.toString(),
+    testCaseId: msg.testCaseId?.toString(),
+    ticketId: msg.ticketId?.toString(),
     projectId: msg.projectId.toString(),
     user: {
       id: user?._id?.toString() ?? msg.userId.toString(),
@@ -38,6 +40,8 @@ const formatMessage = (msg: any): MessageResponse => {
     updatedAt: msg.updatedAt.toISOString(),
   };
 };
+
+// ===== Test Case Discussion Functions =====
 
 export const getMessages = async (
   testCaseId: string
@@ -152,9 +156,6 @@ export const deleteMessage = async (
   return result.deletedCount === 1;
 };
 
-// Keep User import referenced to avoid tree-shaking
-void User;
-
 /**
  * Look up the projectId for a given test case
  */
@@ -164,3 +165,131 @@ export const getProjectIdForTestCase = async (
   const tc = await TestCase.findById(testCaseId).select("projectId").lean();
   return tc ? tc.projectId.toString() : null;
 };
+
+// ===== Ticket Discussion Functions =====
+
+/**
+ * Look up the projectId for a given ticket
+ */
+export const getProjectIdForTicket = async (
+  ticketId: string
+): Promise<string | null> => {
+  const ticket = await Ticket.findById(ticketId).select("projectId").lean();
+  return ticket ? ticket.projectId.toString() : null;
+};
+
+export const getMessagesByTicket = async (
+  ticketId: string
+): Promise<MessageResponse[]> => {
+  const messages = await DiscussionMessage.find({
+    ticketId: new Types.ObjectId(ticketId),
+  })
+    .populate("userId", "name profilePicture")
+    .sort({ createdAt: 1 })
+    .lean();
+
+  return messages.map(formatMessage);
+};
+
+export const createMessageForTicket = async (
+  ticketId: string,
+  projectId: string,
+  userId: string,
+  body: string,
+  attachments: IAttachment[] = [],
+  options: CreateMessageOptions = {}
+): Promise<MessageResponse> => {
+  const message = await DiscussionMessage.create({
+    ticketId: new Types.ObjectId(ticketId),
+    projectId: new Types.ObjectId(projectId),
+    userId: new Types.ObjectId(userId),
+    type: options.type ?? MessageType.Comment,
+    body,
+    bodyFormat: options.bodyFormat ?? MessageBodyFormat.Plain,
+    fixState: options.fixState,
+    relatedRunId: options.relatedRunId,
+    relatedRunItemId: options.relatedRunItemId,
+    attachments,
+  });
+
+  const populated = await DiscussionMessage.findById(message._id)
+    .populate("userId", "name profilePicture")
+    .lean();
+
+  return formatMessage(populated);
+};
+
+export const createSystemMessageForTicket = async (
+  ticketId: string,
+  projectId: string,
+  userId: string,
+  body: string,
+  attachments: IAttachment[] = [],
+  options: Omit<CreateMessageOptions, "type"> = {}
+): Promise<MessageResponse> => {
+  return createMessageForTicket(
+    ticketId,
+    projectId,
+    userId,
+    body,
+    attachments,
+    {
+      ...options,
+      type: MessageType.System,
+    }
+  );
+};
+
+export const getMessageByIdForTicket = async (
+  ticketId: string,
+  projectId: string,
+  messageId: string
+): Promise<MessageResponse | null> => {
+  const message = await DiscussionMessage.findOne({
+    _id: new Types.ObjectId(messageId),
+    ticketId: new Types.ObjectId(ticketId),
+    projectId: new Types.ObjectId(projectId),
+  })
+    .populate("userId", "name profilePicture")
+    .lean();
+
+  return message ? formatMessage(message) : null;
+};
+
+export const updateMessageFixStateForTicket = async (
+  ticketId: string,
+  projectId: string,
+  messageId: string,
+  fixState: MessageFixState
+): Promise<MessageResponse | null> => {
+  const updated = await DiscussionMessage.findOneAndUpdate(
+    {
+      _id: new Types.ObjectId(messageId),
+      ticketId: new Types.ObjectId(ticketId),
+      projectId: new Types.ObjectId(projectId),
+    },
+    { $set: { fixState } },
+    { new: true }
+  )
+    .populate("userId", "name profilePicture")
+    .lean();
+
+  return updated ? formatMessage(updated) : null;
+};
+
+export const deleteMessageForTicket = async (
+  ticketId: string,
+  projectId: string,
+  messageId: string
+): Promise<boolean> => {
+  const result = await DiscussionMessage.deleteOne({
+    _id: new Types.ObjectId(messageId),
+    ticketId: new Types.ObjectId(ticketId),
+    projectId: new Types.ObjectId(projectId),
+  });
+
+  return result.deletedCount === 1;
+};
+
+// Keep User import referenced to avoid tree-shaking
+void User;

@@ -28,6 +28,16 @@ vi.mock('../services/discussionApi', () => ({
     fetchDiscussionMessages,
     sendDiscussionMessage,
     updateDiscussionMessageFixState,
+    DiscussionMessage: {},
+    DiscussionAttachment: {},
+    DiscussionMessageFixState: {},
+}));
+
+vi.mock('../services/ticketDiscussionApi', () => ({
+    deleteTicketDiscussionMessage: vi.fn(),
+    fetchTicketDiscussionMessages: vi.fn(),
+    sendTicketDiscussionMessage: vi.fn(),
+    updateTicketDiscussionMessageFixState: vi.fn(),
 }));
 
 vi.mock('../services/socket', () => ({
@@ -116,8 +126,7 @@ describe('DiscussionPanel', () => {
     });
 
     it('renders HTML discussion bodies and tracked fix state controls', async () => {
-        render(<DiscussionPanel testCaseId="case-1" projectId="project-1" />);
-
+        render(<DiscussionPanel entityId="case-1" projectId="project-1" entityType="testCase" />);
         expect(await screen.findByText('Formatted failure')).toBeInTheDocument();
         expect(screen.getByText('rich text', { exact: false })).toBeInTheDocument();
         expect(screen.getByText('Not Fixed')).toBeInTheDocument();
@@ -128,8 +137,7 @@ describe('DiscussionPanel', () => {
     it('updates the tracked fix state when the check button is pressed', async () => {
         const user = userEvent.setup();
 
-        render(<DiscussionPanel testCaseId="case-1" projectId="project-1" />);
-
+        render(<DiscussionPanel entityId="case-1" projectId="project-1" entityType="testCase" />);
         await screen.findByText('Formatted failure');
         await user.click(screen.getByTitle('Mark fixed'));
 
@@ -141,8 +149,7 @@ describe('DiscussionPanel', () => {
     });
 
     it('only shows the message actions menu for the message owner', async () => {
-        render(<DiscussionPanel testCaseId="case-1" projectId="project-1" />);
-
+        render(<DiscussionPanel entityId="case-1" projectId="project-1" entityType="testCase" />);
         await screen.findByText('Owner message');
 
         expect(screen.getAllByTitle('Message actions')).toHaveLength(1);
@@ -152,8 +159,7 @@ describe('DiscussionPanel', () => {
     it('deletes an owned message from the thread', async () => {
         const user = userEvent.setup();
 
-        render(<DiscussionPanel testCaseId="case-1" projectId="project-1" />);
-
+        render(<DiscussionPanel entityId="case-1" projectId="project-1" entityType="testCase" />);
         await screen.findByText('Owner message');
         await user.click(screen.getByTitle('Message actions'));
         await user.click(screen.getByRole('menuitem', { name: 'Delete message' }));

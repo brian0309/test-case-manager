@@ -3,6 +3,7 @@ import * as discussionService from "../services/discussion.service.js";
 import * as projectService from "../../testCase/services/project.service.js";
 import { socketManager } from "../../../socket/socketManager.js";
 import { MessageFixState } from "../types/discussion.types.js";
+import * as ticketService from "../../ticket/services/ticket.service.js";
 
 /**
  * GET /api/cases/:testCaseId/discussions
@@ -240,6 +241,248 @@ export const deleteDiscussionMessage = async (
     res.status(200).json({ success: true, data: { id: messageId } });
   } catch (error) {
     console.error("Error deleting discussion message:", error);
+    res.status(500).json({ success: false, message: "Failed to delete message" });
+  }
+};
+
+// ===== Ticket Discussion Handlers =====
+
+/**
+ * GET /api/tickets/:ticketId/discussions
+ * Get all discussion messages for a ticket
+ */
+export const getTicketDiscussionMessages = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const ticketId = req.params.ticketId as string;
+    const userId = req.userId;
+
+    if (!ticketId) {
+      res.status(400).json({ success: false, message: "Ticket ID is required" });
+      return;
+    }
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    // Verify the user has access to the project this ticket belongs to
+    const projectId = await discussionService.getProjectIdForTicket(ticketId);
+    if (!projectId) {
+      res.status(404).json({ success: false, message: "Ticket not found" });
+      return;
+    }
+
+    const hasAccess = await projectService.hasProjectAccess(projectId, userId);
+    if (!hasAccess) {
+      res.status(403).json({ success: false, message: "Access denied" });
+      return;
+    }
+
+    const messages = await discussionService.getMessagesByTicket(ticketId);
+    res.status(200).json({ success: true, data: messages });
+  } catch (error) {
+    console.error("Error fetching ticket discussion messages:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch messages" });
+  }
+};
+
+/**
+ * POST /api/tickets/:ticketId/discussions
+ * Create a new discussion message for a ticket
+ */
+export const createTicketDiscussionMessage = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const ticketId = req.params.ticketId as string;
+    const userId = req.userId;
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    if (!ticketId) {
+      res.status(400).json({ success: false, message: "Ticket ID is required" });
+      return;
+    }
+
+    const { body, attachments, projectId } = req.body;
+
+    if (!body || !body.trim()) {
+      res.status(400).json({ success: false, message: "Message body is required" });
+      return;
+    }
+
+    if (!projectId) {
+      res.status(400).json({ success: false, message: "Project ID is required" });
+      return;
+    }
+
+    // Verify the user has access to this project
+    const hasAccess = await projectService.hasProjectAccess(projectId, userId);
+    if (!hasAccess) {
+      res.status(403).json({ success: false, message: "Access denied" });
+      return;
+    }
+
+    const message = await discussionService.createMessageForTicket(
+      ticketId,
+      projectId,
+      userId,
+      body.trim(),
+      attachments ?? []
+    );
+
+    // Emit real-time event to all users viewing this ticket's project
+    socketManager.emitToProject(projectId, "discussion:created", {
+      message,
+      ticketId,
+      projectId,
+    });
+
+    res.status(201).json({ success: true, data: message });
+  } catch (error) {
+    console.error("Error creating ticket discussion message:", error);
+    res.status(500).json({ success: false, message: "Failed to create message" });
+  }
+};
+
+/**
+ * PATCH /api/tickets/:ticketId/discussions/:messageId/fix-state
+ * Update the tracked fix state for a ticket discussion message.
+ */
+export const updateTicketDiscussionMessageFixState = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const ticketId = req.params.ticketId as string;
+    const messageId = req.params.messageId as string;
+    const userId = req.userId;
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    if (!ticketId || !messageId) {
+      res.status(400).json({ success: false, message: "Ticket ID and message ID are required" });
+      return;
+    }
+
+    const { projectId, fixState } = req.body as {
+      projectId?: string;
+      fixState?: MessageFixState;
+    };
+
+    if (!projectId) {
+      res.status(400).json({ success: false, message: "Project ID is required" });
+      return;
+    }
+
+    if (!fixState || !Object.values(MessageFixState).includes(fixState)) {
+      res.status(400).json({ success: false, message: "A valid fix state is required" });
+      return;
+    }
+
+    const hasAccess = await projectService.hasProjectAccess(projectId, userId);
+    if (!hasAccess) {
+      res.status(403).json({ success: false, message: "Access denied" });
+      return;
+    }
+
+    const message = await discussionService.updateMessageFixStateForTicket(
+      ticketId,
+      projectId,
+      messageId,
+      fixState
+    );
+
+    if (!message) {
+      res.status(404).json({ success: false, message: "Discussion message not found" });
+      return;
+    }
+
+    socketManager.emitToProject(projectId, "discussion:updated", {
+      message,
+      ticketId,
+      projectId,
+    });
+
+    res.status(200).json({ success: true, data: message });
+  } catch (error) {
+    console.error("Error updating ticket discussion message fix state:", error);
+    res.status(500).json({ success: false, message: "Failed to update message" });
+  }
+};
+
+/**
+ * DELETE /api/tickets/:ticketId/discussions/:messageId
+ * Delete a ticket discussion message authored by the current user.
+ */
+export const deleteTicketDiscussionMessage = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const ticketId = req.params.ticketId as string;
+    const messageId = req.params.messageId as string;
+    const userId = req.userId;
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    if (!ticketId || !messageId) {
+      res.status(400).json({ success: false, message: "Ticket ID and message ID are required" });
+      return;
+    }
+
+    const projectId = await discussionService.getProjectIdForTicket(ticketId);
+    if (!projectId) {
+      res.status(404).json({ success: false, message: "Ticket not found" });
+      return;
+    }
+
+    const hasAccess = await projectService.hasProjectAccess(projectId, userId);
+    if (!hasAccess) {
+      res.status(403).json({ success: false, message: "Access denied" });
+      return;
+    }
+
+    const message = await discussionService.getMessageByIdForTicket(ticketId, projectId, messageId);
+    if (!message) {
+      res.status(404).json({ success: false, message: "Discussion message not found" });
+      return;
+    }
+
+    if (message.user.id !== userId) {
+      res.status(403).json({ success: false, message: "You can only delete your own messages" });
+      return;
+    }
+
+    const deleted = await discussionService.deleteMessageForTicket(ticketId, projectId, messageId);
+    if (!deleted) {
+      res.status(404).json({ success: false, message: "Discussion message not found" });
+      return;
+    }
+
+    socketManager.emitToProject(projectId, "discussion:deleted", {
+      messageId,
+      ticketId,
+      projectId,
+    });
+
+    res.status(200).json({ success: true, data: { id: messageId } });
+  } catch (error) {
+    console.error("Error deleting ticket discussion message:", error);
     res.status(500).json({ success: false, message: "Failed to delete message" });
   }
 };

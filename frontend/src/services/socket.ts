@@ -80,7 +80,8 @@ export interface SocketEvents {
   "discussion:created": {
     message: {
       id: string;
-      testCaseId: string;
+      testCaseId?: string;
+      ticketId?: string;
       projectId: string;
       user: { id: string; name: string; avatar: string };
       type: "comment" | "system";
@@ -93,13 +94,15 @@ export interface SocketEvents {
       createdAt: string;
       updatedAt: string;
     };
-    testCaseId: string;
+    testCaseId?: string;
+    ticketId?: string;
     projectId: string;
   };
   "discussion:updated": {
     message: {
       id: string;
-      testCaseId: string;
+      testCaseId?: string;
+      ticketId?: string;
       projectId: string;
       user: { id: string; name: string; avatar: string };
       type: "comment" | "system";
@@ -112,12 +115,14 @@ export interface SocketEvents {
       createdAt: string;
       updatedAt: string;
     };
-    testCaseId: string;
+    testCaseId?: string;
+    ticketId?: string;
     projectId: string;
   };
   "discussion:deleted": {
     messageId: string;
-    testCaseId: string;
+    testCaseId?: string;
+    ticketId?: string;
     projectId: string;
   };
 }

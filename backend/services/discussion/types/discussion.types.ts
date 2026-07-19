@@ -23,7 +23,8 @@ export interface IAttachment {
 }
 
 export interface IDiscussionMessage {
-  testCaseId: Types.ObjectId;
+  testCaseId?: Types.ObjectId;
+  ticketId?: Types.ObjectId;
   projectId: Types.ObjectId;
   userId: Types.ObjectId;
   type: MessageType;
@@ -56,7 +57,8 @@ export interface CreateMessageOptions {
 
 export interface MessageResponse {
   id: string;
-  testCaseId: string;
+  testCaseId?: string;
+  ticketId?: string;
   projectId: string;
   user: {
     id: string;

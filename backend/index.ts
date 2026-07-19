@@ -41,6 +41,7 @@ import geminiRoutes from "./services/geminigen/gemini.route.js";
 import openrouterRoutes from "./services/openrouter/routes/openrouter.route.js";
 import reportingRoutes from "./services/reporting/routes/reporting.route.js";
 import discussionRoutes from "./services/discussion/routes/discussion.route.js";
+import ticketDiscussionRoutes from "./services/discussion/routes/ticketDiscussion.route.js";
 import ticketRoutes from "./services/ticket/routes/ticket.route.js";
 import { getCorsOptions } from "./config/dynamicCors.js";
 
@@ -74,6 +75,7 @@ app.use("/api/suites", suiteRoutes);
 app.use("/api/suites/:suiteId/cases", suiteCaseRoutes);
 app.use("/api/cases", caseRoutes);
 app.use("/api/cases/:testCaseId/discussions", discussionRoutes);
+app.use("/api/tickets/:ticketId/discussions", ticketDiscussionRoutes);
 app.use("/api/runs", runRoutes);
 app.use("/api/run-groups", runGroupRoutes);
 app.use("/api/projects/:projectId/tickets", ticketRoutes);

@@ -2,6 +2,9 @@ import { Request, Response } from "express";
 import * as ticketService from "../services/ticket.service.js";
 import * as projectService from "../../testCase/services/project.service.js";
 import { TicketPriority, TicketSeverity } from "../types/ticket.types.js";
+import * as discussionService from "../../discussion/services/discussion.service.js";
+import { socketManager } from "../../../socket/socketManager.js";
+import { User } from "../../../models/user.model.js";
 
 /**
  * GET  /api/projects/:projectId/tickets
@@ -185,6 +188,28 @@ export const updateTicket = async (
     if (!ticket) {
       res.status(404).json({ success: false, message: "Ticket not found" });
       return;
+    }
+
+    // If status changed, post a system message to the ticket discussion panel
+    if (req.body.status && req.body.status !== existing.status) {
+      try {
+        const userDoc = await User.findById(userId).select("name").lean();
+        const userName = userDoc?.name ?? "Unknown";
+        const message = await discussionService.createSystemMessageForTicket(
+          id,
+          projectId,
+          userId,
+          `Status changed to ${req.body.status} by ${userName}`
+        );
+        socketManager.emitToProject(projectId, "discussion:created", {
+          message,
+          ticketId: id,
+          projectId,
+        });
+      } catch (err) {
+        // Non-blocking: log but don't fail the update
+        console.error("Error posting status change system message:", err);
+      }
     }
 
     res.status(200).json({ success: true, data: ticket });

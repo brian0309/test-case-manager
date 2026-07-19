@@ -421,7 +421,7 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = React.memo(function 
                     </div>
 
                     {/* Discussion Panel */}
-                    <DiscussionPanel testCaseId={testCase.id} projectId={testCase.projectId} />
+                    <DiscussionPanel entityId={testCase.id} projectId={testCase.projectId} entityType="testCase" mode="sidebar" />
                 </div>
 
                 {/* Modal Footer */}

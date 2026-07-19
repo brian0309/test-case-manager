@@ -100,17 +100,20 @@ export interface SocketEvents {
   // Discussion Events
   "discussion:created": {
     message: any;
-    testCaseId: string;
+    testCaseId?: string;
+    ticketId?: string;
     projectId: string;
   };
   "discussion:updated": {
     message: any;
-    testCaseId: string;
+    testCaseId?: string;
+    ticketId?: string;
     projectId: string;
   };
   "discussion:deleted": {
     messageId: string;
-    testCaseId: string;
+    testCaseId?: string;
+    ticketId?: string;
     projectId: string;
   };
 }

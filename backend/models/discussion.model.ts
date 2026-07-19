@@ -21,7 +21,12 @@ const discussionMessageSchema = new Schema<IDiscussionMessageDocument>(
     testCaseId: {
       type: Schema.Types.ObjectId,
       ref: "TestCase",
-      required: true,
+      required: false,
+    },
+    ticketId: {
+      type: Schema.Types.ObjectId,
+      ref: "Ticket",
+      required: false,
     },
     projectId: {
       type: Schema.Types.ObjectId,
@@ -73,6 +78,7 @@ const discussionMessageSchema = new Schema<IDiscussionMessageDocument>(
 
 // Indexes for efficient querying
 discussionMessageSchema.index({ testCaseId: 1, createdAt: 1 });
+discussionMessageSchema.index({ ticketId: 1, createdAt: 1 });
 discussionMessageSchema.index({ projectId: 1 });
 
 export const DiscussionMessage = mongoose.model<IDiscussionMessageDocument>(

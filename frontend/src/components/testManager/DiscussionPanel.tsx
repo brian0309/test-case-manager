@@ -11,13 +11,21 @@ import {
     DiscussionAttachment,
     DiscussionMessageFixState,
 } from '../../services/discussionApi';
+import {
+    deleteTicketDiscussionMessage,
+    fetchTicketDiscussionMessages,
+    sendTicketDiscussionMessage,
+    updateTicketDiscussionMessageFixState,
+} from '../../services/ticketDiscussionApi';
 import { uploadImage, validateImageFile } from '../../utils/imageUpload';
 import { sanitizeHtml } from '../../utils/sanitize';
 import toast from 'react-hot-toast';
 
 interface DiscussionPanelProps {
-    testCaseId: string;
+    entityId: string;
     projectId: string;
+    entityType: 'testCase' | 'ticket';
+    mode?: 'sidebar' | 'inline';
 }
 
 // Group messages by date label
@@ -63,13 +71,20 @@ const removeMessageFromList = (messages: DiscussionMessage[], messageId: string)
 
 /**
  * Parse a system message body and return React nodes with the run ID hyperlinked.
+ * For ticket discussions, render as plain text (no run ID hyperlinks).
  * Matches the pattern: (ID: <mongoId>)
  */
 const renderSystemMessageBody = (
     body: string,
-    testCaseId: string,
+    entityId: string,
     isFailedMessage: boolean,
+    entityType: 'testCase' | 'ticket',
 ): React.ReactNode => {
+    // For ticket discussions, system messages render as plain text
+    if (entityType === 'ticket') {
+        return body;
+    }
+
     const runMatch = body.match(/\(ID:\s*([a-f0-9]{24})\)/i);
     if (!runMatch) return body;
 
@@ -80,8 +95,8 @@ const renderSystemMessageBody = (
     const [before, afterRaw] = body.split(idToken);
     const after = itemMatch ? afterRaw.replace(itemMatch[0], '') : afterRaw;
     const href = itemId
-        ? `/test-manager/runs?runId=${runId}&itemId=${itemId}&caseId=${testCaseId}`
-        : `/test-manager/runs?runId=${runId}&caseId=${testCaseId}`;
+        ? `/test-manager/runs?runId=${runId}&itemId=${itemId}&caseId=${entityId}`
+        : `/test-manager/runs?runId=${runId}&caseId=${entityId}`;
 
     return (
         <>
@@ -106,7 +121,7 @@ const renderSystemMessageBody = (
     );
 };
 
-const renderMessageBody = (msg: DiscussionMessage, testCaseId: string, isOwn: boolean): React.ReactNode => {
+const renderMessageBody = (msg: DiscussionMessage, entityId: string, isOwn: boolean, entityType: 'testCase' | 'ticket'): React.ReactNode => {
     if (msg.bodyFormat === 'html') {
         const useOwnBubbleColors = isOwn && !msg.fixState && msg.type !== 'system';
 
@@ -134,13 +149,13 @@ const renderMessageBody = (msg: DiscussionMessage, testCaseId: string, isOwn: bo
 
     if (msg.type === 'system') {
         const isFailedMessage = /failed in test run/i.test(msg.body);
-        return renderSystemMessageBody(msg.body, testCaseId, isFailedMessage);
+        return renderSystemMessageBody(msg.body, entityId, isFailedMessage, entityType);
     }
 
     return <span className="whitespace-pre-wrap">{msg.body}</span>;
 };
 
-const DiscussionPanel: React.FC<DiscussionPanelProps> = React.memo(function DiscussionPanel({ testCaseId, projectId }) {
+const DiscussionPanel: React.FC<DiscussionPanelProps> = React.memo(function DiscussionPanel({ entityId, projectId, entityType, mode = 'sidebar' }) {
     const { user } = useAuthStore();
     const [isDesktop, setIsDesktop] = useState(() => window.innerWidth >= 1024);
     const [isOpen, setIsOpen] = useState(() => window.innerWidth >= 1024);
@@ -213,12 +228,14 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = React.memo(function Disc
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, []);
 
-    // Fetch messages on mount/testCaseId change
+    // Fetch messages on mount/entityId change
     useEffect(() => {
         const loadMessages = async () => {
             setIsLoading(true);
             try {
-                const msgs = await fetchDiscussionMessages(testCaseId);
+                const msgs = entityType === 'ticket'
+                    ? await fetchTicketDiscussionMessages(entityId)
+                    : await fetchDiscussionMessages(entityId);
                 setMessages(msgs);
             } catch {
                 console.error('Failed to load discussion messages');
@@ -227,7 +244,7 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = React.memo(function Disc
             }
         };
         loadMessages();
-    }, [testCaseId]);
+    }, [entityId, entityType]);
 
     // Scroll to bottom when messages change
     useEffect(() => {
@@ -250,17 +267,26 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = React.memo(function Disc
     // Real-time socket listener
     useEffect(() => {
         const handleNewMessage = (data: SocketEvents['discussion:created']) => {
-            if (data.testCaseId === testCaseId) {
+            const matches = entityType === 'ticket'
+                ? data.ticketId === entityId
+                : data.testCaseId === entityId;
+            if (matches) {
                 setMessages((prev) => updateMessageInList(prev, data.message));
             }
         };
         const handleUpdatedMessage = (data: SocketEvents['discussion:updated']) => {
-            if (data.testCaseId === testCaseId) {
+            const matches = entityType === 'ticket'
+                ? data.ticketId === entityId
+                : data.testCaseId === entityId;
+            if (matches) {
                 setMessages((prev) => updateMessageInList(prev, data.message));
             }
         };
         const handleDeletedMessage = (data: SocketEvents['discussion:deleted']) => {
-            if (data.testCaseId === testCaseId) {
+            const matches = entityType === 'ticket'
+                ? data.ticketId === entityId
+                : data.testCaseId === entityId;
+            if (matches) {
                 setMessages((prev) => removeMessageFromList(prev, data.messageId));
                 setActiveMenuMessageId((current) => (current === data.messageId ? null : current));
             }
@@ -273,7 +299,7 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = React.memo(function Disc
             socketService.off('discussion:updated', handleUpdatedMessage);
             socketService.off('discussion:deleted', handleDeletedMessage);
         };
-    }, [testCaseId]);
+    }, [entityId, entityType]);
 
     const handleSend = async () => {
         const body = inputValue.trim();
@@ -295,8 +321,15 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = React.memo(function Disc
                 });
             }
 
-            const sentMessage = await sendDiscussionMessage(
-                testCaseId,
+            const sentMessage = entityType === 'ticket'
+                ? await sendTicketDiscussionMessage(
+                    entityId,
+                    projectId,
+                    body || (allAttachments.length > 0 ? '(attachment)' : ''),
+                    allAttachments
+                )
+                : await sendDiscussionMessage(
+                entityId,
                 projectId,
                 body || (allAttachments.length > 0 ? '(attachment)' : ''),
                 allAttachments
@@ -405,7 +438,9 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = React.memo(function Disc
         setMessages((prev) => updateMessageInList(prev, optimisticMessage));
 
         try {
-            const updatedMessage = await updateDiscussionMessageFixState(testCaseId, messageId, projectId, fixState);
+            const updatedMessage = entityType === 'ticket'
+                ? await updateTicketDiscussionMessageFixState(entityId, messageId, projectId, fixState)
+                : await updateDiscussionMessageFixState(entityId, messageId, projectId, fixState);
             setMessages((prev) => updateMessageInList(prev, updatedMessage));
         } catch {
             setMessages(previousMessages);
@@ -437,7 +472,11 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = React.memo(function Disc
         setMessages((prev) => removeMessageFromList(prev, messageId));
 
         try {
-            await deleteDiscussionMessage(testCaseId, messageId);
+            if (entityType === 'ticket') {
+                await deleteTicketDiscussionMessage(entityId, messageId);
+            } else {
+                await deleteDiscussionMessage(entityId, messageId);
+            }
         } catch {
             setMessages(previousMessages);
             toast.error('Failed to delete message');
@@ -477,6 +516,24 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = React.memo(function Disc
 
     // Collapsed state – show slim toggle tab
     if (!isOpen) {
+        if (mode === 'inline') {
+            return (
+                <button
+                    onClick={() => setIsOpen(true)}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                    <MessageSquare className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                    <span>Discussion</span>
+                    {messages.length > 0 && (
+                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                            {messages.length}
+                        </span>
+                    )}
+                    <ChevronRight className="h-4 w-4 ml-auto text-gray-400" />
+                </button>
+            );
+        }
+
         if (!isDesktop) {
             return (
                 <button
@@ -514,7 +571,11 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = React.memo(function Disc
 
     return (
         <>
-            <div className="absolute inset-0 z-20 flex flex-col bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-2xl min-h-0 lg:static lg:z-auto lg:w-96 lg:flex-shrink-0 lg:border-t-0 lg:border-l lg:shadow-none">
+            <div className={
+                mode === 'inline'
+                    ? "flex flex-col bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 min-h-0"
+                    : "absolute inset-0 z-20 flex flex-col bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-2xl min-h-0 lg:static lg:z-auto lg:w-96 lg:flex-shrink-0 lg:border-t-0 lg:border-l lg:shadow-none"
+            }>
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/80">
                     <div className="flex items-center gap-2">
@@ -588,7 +649,7 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = React.memo(function Disc
                                                     ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
                                                     : 'text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800/50'
                                             }`}>
-                                                {renderSystemMessageBody(msg.body, testCaseId, isFailedMessage)}
+                                                {renderSystemMessageBody(msg.body, entityId, isFailedMessage, entityType)}
                                             </span>
                                         </div>
                                     );
@@ -706,7 +767,7 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = React.memo(function Disc
                                                             : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-sm'
                                                     } ${isDeletingThisMessage ? 'opacity-60' : ''}`}
                                                 >
-                                                    {renderMessageBody(msg, testCaseId, isOwn)}
+                                                    {renderMessageBody(msg, entityId, isOwn, entityType)}
                                                 </div>
                                             </div>
                                             {/* Attachments */}

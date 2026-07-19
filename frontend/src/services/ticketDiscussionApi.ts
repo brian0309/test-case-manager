@@ -1,39 +1,13 @@
 import axios from "axios";
 import { API_URL } from "../utils/api";
+import type {
+  DiscussionAttachment,
+  DiscussionMessage,
+  DiscussionMessageFixState,
+} from "./discussionApi";
 
 // Configure axios to send credentials with all requests
 axios.defaults.withCredentials = true;
-
-export interface DiscussionAttachment {
-  url: string;
-  filename: string;
-  fileSize: number;
-  contentType: string;
-}
-
-export type DiscussionMessageBodyFormat = "plain" | "html";
-export type DiscussionMessageFixState = "fixed" | "not-fixed";
-
-export interface DiscussionMessage {
-  id: string;
-  testCaseId?: string;
-  ticketId?: string;
-  projectId: string;
-  user: {
-    id: string;
-    name: string;
-    avatar: string;
-  };
-  type: "comment" | "system";
-  body: string;
-  bodyFormat: DiscussionMessageBodyFormat;
-  fixState?: DiscussionMessageFixState;
-  relatedRunId?: string;
-  relatedRunItemId?: string;
-  attachments: DiscussionAttachment[];
-  createdAt: string;
-  updatedAt: string;
-}
 
 interface ApiResponse<T> {
   success: boolean;
@@ -46,29 +20,29 @@ interface DeleteDiscussionMessageResponse {
 }
 
 /**
- * Get all discussion messages for a test case
+ * Get all discussion messages for a ticket
  */
-export const fetchDiscussionMessages = async (
-  testCaseId: string
+export const fetchTicketDiscussionMessages = async (
+  ticketId: string
 ): Promise<DiscussionMessage[]> => {
   const response = await axios.get<ApiResponse<DiscussionMessage[]>>(
-    `${API_URL}/cases/${testCaseId}/discussions`,
+    `${API_URL}/tickets/${ticketId}/discussions`,
     { withCredentials: true }
   );
   return response.data.data ?? [];
 };
 
 /**
- * Create a new discussion message
+ * Create a new discussion message for a ticket
  */
-export const sendDiscussionMessage = async (
-  testCaseId: string,
+export const sendTicketDiscussionMessage = async (
+  ticketId: string,
   projectId: string,
   body: string,
   attachments: DiscussionAttachment[] = []
 ): Promise<DiscussionMessage> => {
   const response = await axios.post<ApiResponse<DiscussionMessage>>(
-    `${API_URL}/cases/${testCaseId}/discussions`,
+    `${API_URL}/tickets/${ticketId}/discussions`,
     { body, projectId, attachments },
     { withCredentials: true }
   );
@@ -78,14 +52,14 @@ export const sendDiscussionMessage = async (
   return response.data.data;
 };
 
-export const updateDiscussionMessageFixState = async (
-  testCaseId: string,
+export const updateTicketDiscussionMessageFixState = async (
+  ticketId: string,
   messageId: string,
   projectId: string,
   fixState: DiscussionMessageFixState
 ): Promise<DiscussionMessage> => {
   const response = await axios.patch<ApiResponse<DiscussionMessage>>(
-    `${API_URL}/cases/${testCaseId}/discussions/${messageId}/fix-state`,
+    `${API_URL}/tickets/${ticketId}/discussions/${messageId}/fix-state`,
     { projectId, fixState },
     { withCredentials: true }
   );
@@ -95,12 +69,12 @@ export const updateDiscussionMessageFixState = async (
   return response.data.data;
 };
 
-export const deleteDiscussionMessage = async (
-  testCaseId: string,
+export const deleteTicketDiscussionMessage = async (
+  ticketId: string,
   messageId: string
 ): Promise<string> => {
   const response = await axios.delete<ApiResponse<DeleteDiscussionMessageResponse>>(
-    `${API_URL}/cases/${testCaseId}/discussions/${messageId}`,
+    `${API_URL}/tickets/${ticketId}/discussions/${messageId}`,
     { withCredentials: true }
   );
 
