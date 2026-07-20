@@ -34,6 +34,38 @@ export const getTickets = async (
       return;
     }
 
+    const rawLimit = req.query.limit;
+    const rawOffset = req.query.offset;
+    const limit = typeof rawLimit === "string" ? Number.parseInt(rawLimit, 10) : undefined;
+    const offset = typeof rawOffset === "string" ? Number.parseInt(rawOffset, 10) : undefined;
+
+    const isPaginatedRequest =
+      Number.isInteger(limit) &&
+      Number.isInteger(offset) &&
+      (limit as number) > 0 &&
+      (offset as number) >= 0;
+
+    if (isPaginatedRequest) {
+      const safeLimit = Math.min(limit as number, 200);
+      const safeOffset = offset as number;
+      const result = await ticketService.getTicketsPaginated(projectId, {
+        limit: safeLimit,
+        offset: safeOffset,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: result.items,
+        meta: {
+          total: result.total,
+          limit: safeLimit,
+          offset: safeOffset,
+          hasMore: safeOffset + result.items.length < result.total,
+        },
+      });
+      return;
+    }
+
     const tickets = await ticketService.getTickets(projectId);
     res.status(200).json({ success: true, data: tickets });
   } catch (error) {
@@ -287,6 +319,38 @@ export const getTicketsByRun = async (
     const hasAccess = await projectService.hasProjectAccess(projectId, userId);
     if (!hasAccess) {
       res.status(403).json({ success: false, message: "Access denied" });
+      return;
+    }
+
+    const rawLimit = req.query.limit;
+    const rawOffset = req.query.offset;
+    const limit = typeof rawLimit === "string" ? Number.parseInt(rawLimit, 10) : undefined;
+    const offset = typeof rawOffset === "string" ? Number.parseInt(rawOffset, 10) : undefined;
+
+    const isPaginatedRequest =
+      Number.isInteger(limit) &&
+      Number.isInteger(offset) &&
+      (limit as number) > 0 &&
+      (offset as number) >= 0;
+
+    if (isPaginatedRequest) {
+      const safeLimit = Math.min(limit as number, 200);
+      const safeOffset = offset as number;
+      const result = await ticketService.getTicketsByRunPaginated(runId, {
+        limit: safeLimit,
+        offset: safeOffset,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: result.items,
+        meta: {
+          total: result.total,
+          limit: safeLimit,
+          offset: safeOffset,
+          hasMore: safeOffset + result.items.length < result.total,
+        },
+      });
       return;
     }
 

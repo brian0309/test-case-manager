@@ -24,10 +24,12 @@ const ProjectsPage: React.FC = () => {
 
     // Fetch projects when this page mounts so the list is populated after reload
     useEffect(() => {
-        fetchProjects();
+        if (projects.length === 0) {
+            fetchProjects();
+        }
         clearSearchQuery(); // Clear search when entering the page
         return () => clearSearchQuery(); // Clear search when leaving
-    }, [fetchProjects, clearSearchQuery]);
+    }, [projects.length, fetchProjects, clearSearchQuery]);
 
     // Open the create modal if navigation state requested it (from toolbar)
     useEffect(() => {

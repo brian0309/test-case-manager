@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { shallow } from 'zustand/shallow';
 import toast from 'react-hot-toast';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { useRealtimeTestCases } from '../../hooks/useRealtimeTestCases';
@@ -24,7 +25,26 @@ type StoredSuiteTagFilter = {
 };
 
 const TestSuitesPage: React.FC = () => {
-    const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchTestCasesByProject, fetchProjects, updateTestSuite, deleteTestSuite, setActiveProject, setActiveArea, clearFilters, searchQuery, clearSearchQuery } = useTestManagerStore();
+    const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchProjects, updateTestSuite, deleteTestSuite, setActiveProject, setActiveArea, clearFilters, searchQuery, clearSearchQuery } = useTestManagerStore(
+        (state) => ({
+            activeProject: state.activeProject,
+            testCases: state.testCases,
+            testSuites: state.testSuites,
+            projects: state.projects,
+            setActiveSuiteWithId: state.setActiveSuiteWithId,
+            fetchTestCases: state.fetchTestCases,
+            fetchTestSuites: state.fetchTestSuites,
+            fetchProjects: state.fetchProjects,
+            updateTestSuite: state.updateTestSuite,
+            deleteTestSuite: state.deleteTestSuite,
+            setActiveProject: state.setActiveProject,
+            setActiveArea: state.setActiveArea,
+            clearFilters: state.clearFilters,
+            searchQuery: state.searchQuery,
+            clearSearchQuery: state.clearSearchQuery,
+        }),
+        shallow
+    );
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -174,12 +194,10 @@ const TestSuitesPage: React.FC = () => {
             fetchTestSuites(activeProject).finally(() => {
                 setIsSuitesLoading(false);
             });
-            // Fetch test cases in parallel but don't block UI on it
-            fetchTestCasesByProject(activeProject);
         } else {
             setIsSuitesLoading(false);
         }
-    }, [activeProject, fetchTestSuites, fetchTestCasesByProject, searchParams]);
+    }, [activeProject, fetchTestSuites, searchParams]);
 
     // Filter test cases by active project
     const projectTestCases = useMemo(() => (

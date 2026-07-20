@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { X, Bug, User, Calendar, Tag, ArrowLeft, Edit3, Trash2 } from 'lucide-react';
+import { X, Bug, User, Calendar, Tag, ArrowLeft, Edit3, Trash2, ChevronDown } from 'lucide-react';
 import { Ticket, TicketStatus, TicketPriority, TicketSeverity } from '../../../types/testManager';
 import { getTagColor } from '../../../utils/tagColors';
 import {
-    getTicketStatusColor,
-    getTicketPriorityColor,
-    getTicketSeverityColor,
+    getTicketStatusSelectColor,
+    getTicketPrioritySelectColor,
+    getTicketSeveritySelectColor,
 } from '../../../utils/ticketColors';
 import TicketModal from '../../../components/testManager/TicketModal';
 import DiscussionPanel from '../../../components/testManager/DiscussionPanel';
@@ -40,6 +40,35 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+    const [savingField, setSavingField] = useState<string | null>(null);
+
+    const handleStatusChange = async (status: TicketStatus) => {
+        setSavingField('status');
+        try {
+            await onUpdate({ status });
+        } finally {
+            setSavingField(null);
+        }
+    };
+
+    const handlePriorityChange = async (priority: TicketPriority) => {
+        setSavingField('priority');
+        try {
+            await onUpdate({ priority });
+        } finally {
+            setSavingField(null);
+        }
+    };
+
+    const handleSeverityChange = async (severity: TicketSeverity) => {
+        setSavingField('severity');
+        try {
+            await onUpdate({ severity });
+        } finally {
+            setSavingField(null);
+        }
+    };
 
     const formatDate = (dateStr: string) => {
         return new Date(dateStr).toLocaleDateString('en-US', {
@@ -117,17 +146,47 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                     <div className="relative flex-1 min-h-0 lg:flex lg:overflow-hidden overflow-y-auto">
                         {/* Main Content */}
                         <div className="flex-1 min-h-0 p-6 space-y-6 lg:overflow-y-auto">
-                            {/* Status, Priority, Severity badges */}
+                            {/* Status, Priority, Severity inline edit dropdowns */}
                             <div className="flex flex-wrap gap-2">
-                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getTicketStatusColor(ticket.status)}`}>
-                                    {ticket.status}
-                                </span>
-                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getTicketPriorityColor(ticket.priority)}`}>
-                                    {ticket.priority}
-                                </span>
-                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getTicketSeverityColor(ticket.severity)}`}>
-                                    {ticket.severity}
-                                </span>
+                                <div className="relative">
+                                    <select
+                                        value={ticket.status}
+                                        onChange={(e) => handleStatusChange(e.target.value as TicketStatus)}
+                                        disabled={savingField === 'status'}
+                                        className={`appearance-none rounded-lg py-1.5 pl-2.5 pr-7 text-xs font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 disabled:opacity-60 ${getTicketStatusSelectColor(ticket.status)}`}
+                                    >
+                                        {Object.values(TicketStatus).map(s => (
+                                            <option key={s} value={s}>{s}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                                </div>
+                                <div className="relative">
+                                    <select
+                                        value={ticket.priority}
+                                        onChange={(e) => handlePriorityChange(e.target.value as TicketPriority)}
+                                        disabled={savingField === 'priority'}
+                                        className={`appearance-none rounded-lg py-1.5 pl-2.5 pr-7 text-xs font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 disabled:opacity-60 ${getTicketPrioritySelectColor(ticket.priority)}`}
+                                    >
+                                        {Object.values(TicketPriority).map(p => (
+                                            <option key={p} value={p}>{p}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                                </div>
+                                <div className="relative">
+                                    <select
+                                        value={ticket.severity}
+                                        onChange={(e) => handleSeverityChange(e.target.value as TicketSeverity)}
+                                        disabled={savingField === 'severity'}
+                                        className={`appearance-none rounded-lg py-1.5 pl-2.5 pr-7 text-xs font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 disabled:opacity-60 ${getTicketSeveritySelectColor(ticket.severity)}`}
+                                    >
+                                        {Object.values(TicketSeverity).map(s => (
+                                            <option key={s} value={s}>{s}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                                </div>
                             </div>
 
                             {/* Description (HTML rendered) */}
@@ -137,7 +196,17 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                                         Description
                                     </h3>
                                     <div
-                                        className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+                                        className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700 [&_img]:cursor-zoom-in [&_img]:rounded-md"
+                                        onClick={(e) => {
+                                            const target = e.target;
+                                            if (target instanceof HTMLImageElement) {
+                                                e.preventDefault();
+                                                const imageUrl = target.currentSrc || target.src;
+                                                if (imageUrl) {
+                                                    setLightboxUrl(imageUrl);
+                                                }
+                                            }
+                                        }}
                                         dangerouslySetInnerHTML={{ __html: ticket.description }}
                                     />
                                 </div>
@@ -268,6 +337,29 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                     </div>
                 </div>
             </div>
+
+            {/* Fullscreen Image Lightbox */}
+            {lightboxUrl && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                    onClick={() => setLightboxUrl(null)}
+                >
+                    <button
+                        onClick={() => setLightboxUrl(null)}
+                        className="absolute top-4 right-4 p-2.5 rounded-full border border-white/20 bg-black/75 text-white shadow-lg backdrop-blur-sm transition-colors hover:bg-black/90 focus:outline-none focus:ring-2 focus:ring-white/70"
+                        title="Close preview"
+                        aria-label="Close preview"
+                    >
+                        <X className="h-6 w-6" />
+                    </button>
+                    <img
+                        src={lightboxUrl}
+                        alt="Preview"
+                        className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
 
             {/* Edit Ticket Modal */}
             {isEditModalOpen && (

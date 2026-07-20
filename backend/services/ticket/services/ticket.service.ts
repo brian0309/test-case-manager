@@ -83,6 +83,32 @@ export const getTickets = async (
 };
 
 /**
+ * Get tickets for a project with pagination
+ */
+export const getTicketsPaginated = async (
+  projectId: string,
+  options: { limit: number; offset: number }
+): Promise<{ items: TicketListResponse[]; total: number }> => {
+  const query = { projectId: new Types.ObjectId(projectId) };
+
+  const [tickets, total] = await Promise.all([
+    Ticket.find(query)
+      .populate("createdBy", "name profilePicture")
+      .populate("assignedTo", "name profilePicture")
+      .sort({ createdAt: -1 })
+      .skip(options.offset)
+      .limit(options.limit)
+      .lean(),
+    Ticket.countDocuments(query),
+  ]);
+
+  return {
+    items: tickets.map(formatTicketList),
+    total,
+  };
+};
+
+/**
  * Get a single ticket by ID
  */
 export const getTicket = async (id: string): Promise<TicketResponse | null> => {
@@ -189,6 +215,32 @@ export const getTicketsByRun = async (
     .lean();
 
   return tickets.map(formatTicketList);
+};
+
+/**
+ * Get tickets linked to a specific test run with pagination
+ */
+export const getTicketsByRunPaginated = async (
+  runId: string,
+  options: { limit: number; offset: number }
+): Promise<{ items: TicketListResponse[]; total: number }> => {
+  const query = { relatedRunId: runId };
+
+  const [tickets, total] = await Promise.all([
+    Ticket.find(query)
+      .populate("createdBy", "name profilePicture")
+      .populate("assignedTo", "name profilePicture")
+      .sort({ createdAt: -1 })
+      .skip(options.offset)
+      .limit(options.limit)
+      .lean(),
+    Ticket.countDocuments(query),
+  ]);
+
+  return {
+    items: tickets.map(formatTicketList),
+    total,
+  };
 };
 
 // Keep User import referenced to avoid tree-shaking

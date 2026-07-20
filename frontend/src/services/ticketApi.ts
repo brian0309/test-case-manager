@@ -8,6 +8,7 @@ import { API_URL } from "../utils/api";
 import {
   ApiResponse,
   ApiErrorResponse,
+  PaginationMeta,
   TicketResponse,
   TicketListResponse,
   CreateTicketRequest,
@@ -22,6 +23,11 @@ const getErrorMessage = (error: unknown): string => {
   const axiosError = error as AxiosError<ApiErrorResponse>;
   return axiosError.response?.data?.message || "An unexpected error occurred";
 };
+
+export interface PaginatedTicketsResult {
+  items: TicketListResponse[];
+  meta: PaginationMeta;
+}
 
 // ============================================================================
 // TICKET API
@@ -59,6 +65,35 @@ export const getTickets = async (
       `${API_URL}/projects/${projectId}/tickets`
     );
     return response.data.data || [];
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
+/**
+ * Get paginated tickets for a project
+ */
+export const getTicketsPaginated = async (
+  projectId: string,
+  params: { limit: number; offset: number }
+): Promise<PaginatedTicketsResult> => {
+  try {
+    const response = await axios.get<ApiResponse<TicketListResponse[]>>(
+      `${API_URL}/projects/${projectId}/tickets`,
+      { params }
+    );
+
+    const fallbackMeta: PaginationMeta = {
+      total: response.data.data?.length || 0,
+      limit: params.limit,
+      offset: params.offset,
+      hasMore: false,
+    };
+
+    return {
+      items: response.data.data || [],
+      meta: response.data.meta || fallbackMeta,
+    };
   } catch (error) {
     throw new Error(getErrorMessage(error));
   }
@@ -141,6 +176,7 @@ export const getTicketsByRun = async (
 export const ticketApi = {
   createTicket,
   getTickets,
+  getTicketsPaginated,
   getTicket,
   updateTicket,
   deleteTicket,

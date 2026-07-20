@@ -47,7 +47,6 @@ const TestCasesPage: React.FC = () => {
         testSuites,
         fetchTestSuites,
         fetchTestCases,
-        fetchTestCasesByProject,
         filters,
         isFilterModalOpen,
         searchQuery,
@@ -80,7 +79,6 @@ const TestCasesPage: React.FC = () => {
             testSuites: state.testSuites,
             fetchTestSuites: state.fetchTestSuites,
             fetchTestCases: state.fetchTestCases,
-            fetchTestCasesByProject: state.fetchTestCasesByProject,
             filters: state.filters,
             isFilterModalOpen: state.isFilterModalOpen,
             searchQuery: state.searchQuery,
@@ -352,10 +350,12 @@ const TestCasesPage: React.FC = () => {
 
     // Ensure projects are loaded when this page is visited directly
     useEffect(() => {
-        fetchProjects?.();
+        if (projects.length === 0) {
+            fetchProjects?.();
+        }
         clearSearchQuery(); // Clear search when entering
         return () => clearSearchQuery(); // Clear search when leaving
-    }, [fetchProjects, clearSearchQuery]);
+    }, [projects.length, fetchProjects, clearSearchQuery]);
     
     // Handle testCaseId URL parameter for direct links
     useEffect(() => {
@@ -519,7 +519,6 @@ const TestCasesPage: React.FC = () => {
         activeProject,
         activeSuiteId,
         fetchTestCases,
-        fetchTestCasesByProject,
         loadProjectCases,
         loadSuiteCases,
         requiresFullSuiteDataset,

@@ -350,9 +350,9 @@ export const useTestManagerStore = create<TestManagerStore>()(
             // PROJECT ACTIONS
             // =========================================================================
             fetchProjects: async () => {
-                set({ isLoading: true, error: null });
                 try {
                     const result = await deduplicateRequest('projects', async () => {
+                        set({ isLoading: true, error: null });
                         const response = await testManagerApi.getProjectsPaginated({
                             limit: PROJECTS_PAGE_SIZE,
                             offset: 0,
@@ -576,9 +576,9 @@ export const useTestManagerStore = create<TestManagerStore>()(
             // TEST SUITE ACTIONS
             // =========================================================================
             fetchTestSuites: async (projectId: string) => {
-                set({ isLoading: true, error: null });
                 try {
                     const testSuites = await deduplicateRequest(`testSuites:${projectId}`, async () => {
+                        set({ isLoading: true, error: null });
                         const response = await testManagerApi.getTestSuites(projectId);
                         return response.map(mapTestSuiteResponse);
                     });
@@ -686,9 +686,9 @@ export const useTestManagerStore = create<TestManagerStore>()(
             // TEST CASE ACTIONS
             // =========================================================================
             fetchTestCases: async (suiteId: string) => {
-                set({ isLoading: true, error: null });
                 try {
                     const testCases = await deduplicateRequest(`testCases:${suiteId}`, async () => {
+                        set({ isLoading: true, error: null });
                         const response = await testManagerApi.getTestCases(suiteId);
                         return response.map(mapTestCaseResponse);
                     });
@@ -699,9 +699,9 @@ export const useTestManagerStore = create<TestManagerStore>()(
             },
 
             fetchTestCasesByProject: async (projectId: string) => {
-                set({ isLoading: true, error: null });
                 try {
                     const testCases = await deduplicateRequest(`testCasesByProject:${projectId}`, async () => {
+                        set({ isLoading: true, error: null });
                         const response = await testManagerApi.getTestCasesByProject(projectId);
                         return response.map(mapTestCaseResponse);
                     });
