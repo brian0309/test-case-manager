@@ -175,6 +175,15 @@ const DiscussionPanel: React.FC<DiscussionPanelProps> = React.memo(function Disc
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
 
+    // Revoke blob URL on unmount to prevent memory leak from pasted image previews
+    useEffect(() => {
+        return () => {
+            if (pastedImagePreview) {
+                URL.revokeObjectURL(pastedImagePreview);
+            }
+        };
+    }, [pastedImagePreview]);
+
     useEffect(() => {
         const handleOpenLightbox = (event: Event) => {
             const customEvent = event as CustomEvent<string>;

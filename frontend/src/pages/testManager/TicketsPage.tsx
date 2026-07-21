@@ -82,6 +82,14 @@ const TicketsPage: React.FC = () => {
 
     const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
     const listContainerRef = useRef<HTMLDivElement>(null);
+    const ticketsHasMoreRef = useRef(ticketsHasMore);
+    const isLoadingMoreRef = useRef(isLoadingMore);
+    const isLoadingRef = useRef(isLoading);
+    const ticketsOffsetRef = useRef(ticketsOffset);
+    ticketsHasMoreRef.current = ticketsHasMore;
+    isLoadingMoreRef.current = isLoadingMore;
+    isLoadingRef.current = isLoading;
+    ticketsOffsetRef.current = ticketsOffset;
 
     const currentProject = projects.find((p) => p.id === activeProject);
     const projectMembers = currentProject?.members || [];
@@ -170,6 +178,9 @@ const TicketsPage: React.FC = () => {
         }
     }, [activeProject]);
 
+    const loadTicketsRef = useRef(loadTickets);
+    loadTicketsRef.current = loadTickets;
+
     // Fetch tickets and test runs when project changes
     useEffect(() => {
         if (activeProject) {
@@ -181,10 +192,12 @@ const TicketsPage: React.FC = () => {
         }
     }, [activeProject, loadTickets]);
 
+    // Stable ref-based load-more handler — avoids recreating the IntersectionObserver
+    // on every pagination load, preventing disconnect/reconnect churn.
     const handleLoadMoreTickets = useCallback(() => {
-        if (!ticketsHasMore || isLoadingMore || isLoading) return;
-        loadTickets(false, ticketsOffset);
-    }, [loadTickets, ticketsHasMore, isLoadingMore, isLoading, ticketsOffset]);
+        if (!ticketsHasMoreRef.current || isLoadingMoreRef.current || isLoadingRef.current) return;
+        loadTicketsRef.current(false, ticketsOffsetRef.current);
+    }, []);
 
     // IntersectionObserver for infinite scroll
     useEffect(() => {
@@ -213,7 +226,7 @@ const TicketsPage: React.FC = () => {
 
         observer.observe(sentinel);
         return () => observer.disconnect();
-    }, [handleLoadMoreTickets, ticketsHasMore, isLoading, isLoadingMore]);
+    }, [ticketsHasMore, isLoading, isLoadingMore, handleLoadMoreTickets]);
 
     // Close filter dropdowns on outside click
     useEffect(() => {
