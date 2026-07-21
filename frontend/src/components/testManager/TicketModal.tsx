@@ -86,7 +86,7 @@ const TicketModal: React.FC<TicketModalProps> = ({
                 severity,
                 ...(isEditMode ? { status } : {}),
                 assignedToId: assignedToId || undefined,
-                relatedRunId: relatedRunId || undefined,
+                relatedRunId: isEditMode ? relatedRunId : (relatedRunId || undefined),
                 tags: tags.length > 0 ? tags : undefined,
             });
             setSaveStatus('saved');

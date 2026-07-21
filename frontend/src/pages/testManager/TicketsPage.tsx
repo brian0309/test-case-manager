@@ -263,6 +263,7 @@ const TicketsPage: React.FC = () => {
         priority?: TicketPriority;
         severity?: TicketSeverity;
         assignedToId?: string;
+        relatedRunId?: string;
         tags?: string[];
     }) => {
         if (!activeProject || !activeTicket) return;
@@ -273,6 +274,7 @@ const TicketsPage: React.FC = () => {
             priority: data.priority,
             severity: data.severity,
             assignedToId: data.assignedToId,
+            relatedRunId: data.relatedRunId,
             tags: data.tags,
         };
         await updateTicket(activeProject, activeTicket.id, request);

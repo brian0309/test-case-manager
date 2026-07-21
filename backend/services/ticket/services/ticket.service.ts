@@ -59,6 +59,7 @@ const formatTicketList = (ticket: any): TicketListResponse => {
     assignedTo: assignedTo ? formatUser(assignedTo) : undefined,
     createdBy: formatUser(createdBy),
     relatedRunId: ticket.relatedRunId,
+    relatedRunItemId: ticket.relatedRunItemId,
     tags: ticket.tags ?? [],
     createdAt: ticket.createdAt.toISOString(),
     updatedAt: ticket.updatedAt.toISOString(),

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, Bug, User, Calendar, Tag, ArrowLeft, Edit3, Trash2, ChevronDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { X, Bug, User, Calendar, Tag, ArrowLeft, Edit3, Trash2, ChevronDown, ExternalLink } from 'lucide-react';
 import { Ticket, TicketStatus, TicketPriority, TicketSeverity } from '../../../types/testManager';
 import { getTagColor } from '../../../utils/tagColors';
 import {
@@ -20,6 +21,8 @@ interface TicketDetailViewProps {
         priority?: TicketPriority;
         severity?: TicketSeverity;
         assignedToId?: string;
+        relatedRunId?: string;
+        relatedRunItemId?: string;
         tags?: string[];
     }) => Promise<void>;
     onDelete: () => Promise<void>;
@@ -42,6 +45,21 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
     const [isDeleting, setIsDeleting] = useState(false);
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
     const [savingField, setSavingField] = useState<string | null>(null);
+    const navigate = useNavigate();
+
+    const relatedRunTitle = ticket.relatedRunId
+        ? testRuns.find((r) => r.id === ticket.relatedRunId)?.title
+        : undefined;
+
+    const handleOpenRelatedRun = () => {
+        if (!ticket.relatedRunId) return;
+        const params = new URLSearchParams({ runId: ticket.relatedRunId });
+        if (ticket.relatedRunItemId) {
+            params.set('itemId', ticket.relatedRunItemId);
+        }
+        onClose();
+        navigate(`/test-manager/runs?${params.toString()}`);
+    };
 
     const handleStatusChange = async (status: TicketStatus) => {
         setSavingField('status');
@@ -97,6 +115,7 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
             priority: data.priority,
             severity: data.severity,
             assignedToId: data.assignedToId,
+            relatedRunId: data.relatedRunId,
             tags: data.tags,
         });
         setIsEditModalOpen(false);
@@ -258,9 +277,15 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                                     <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
                                         Related Test Run
                                     </h3>
-                                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800">
-                                        {ticket.relatedRunId}
-                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={handleOpenRelatedRun}
+                                        title={ticket.relatedRunItemId ? 'Open the linked test in this run' : 'Open this test run'}
+                                        className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
+                                    >
+                                        <span className="truncate max-w-xs">{relatedRunTitle || ticket.relatedRunId}</span>
+                                        <ExternalLink className="h-3 w-3 opacity-70 group-hover:opacity-100" />
+                                    </button>
                                 </div>
                             )}
 

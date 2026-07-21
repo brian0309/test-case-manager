@@ -449,6 +449,7 @@ export interface TicketListResponse {
   assignedTo?: TesterResponse;
   createdBy: TesterResponse;
   relatedRunId?: string;
+  relatedRunItemId?: string;
   tags: string[];
   createdAt: string;
   updatedAt: string;

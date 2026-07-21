@@ -114,6 +114,7 @@ export const mapTicketResponse = (t: TicketListResponse): Ticket => ({
     assignedTo: t.assignedTo as Tester | undefined,
     createdBy: t.createdBy as Tester,
     relatedRunId: t.relatedRunId,
+    relatedRunItemId: t.relatedRunItemId,
     attachments: [],
     tags: t.tags || [],
     createdAt: t.createdAt,
