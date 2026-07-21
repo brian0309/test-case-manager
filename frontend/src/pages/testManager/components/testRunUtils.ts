@@ -1,4 +1,4 @@
-import { TestRunStatus, RunItemStatus, RunItem, TestRunListItem } from '../../../types/testManager';
+import { TestRunStatus, RunItemStatus, RunItem, TestRunListItem, TicketPriority, TicketSeverity } from '../../../types/testManager';
 
 export const getRunStatusColor = (status: TestRunStatus) => {
     switch (status) {
@@ -144,4 +144,25 @@ export const matchesRunItemSearch = (
     ];
 
     return searchableValues.some((value) => matchesSearchTerm(value, normalizedQuery));
+};
+
+/**
+ * Maps a test case priority (e.g. "Critical", "High") to a sensible default
+ * bug ticket priority and severity for the auto-generated bug flow. The tester
+ * can still override these defaults in the bug panel.
+ */
+export const mapCasePriorityToTicketDefaults = (
+    casePriority?: string
+): { priority: TicketPriority; severity: TicketSeverity } => {
+    switch ((casePriority || '').toLowerCase()) {
+        case 'critical':
+            return { priority: TicketPriority.Critical, severity: TicketSeverity.Major };
+        case 'high':
+            return { priority: TicketPriority.High, severity: TicketSeverity.Major };
+        case 'low':
+            return { priority: TicketPriority.Low, severity: TicketSeverity.Minor };
+        case 'medium':
+        default:
+            return { priority: TicketPriority.Medium, severity: TicketSeverity.Minor };
+    }
 };

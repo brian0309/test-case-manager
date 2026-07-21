@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { ViewMode, TestCase, Project, TestSuite, Priority, Status, Tester, HistoryEntry, ProjectSettings, Ticket, TicketStatus as TicketStatusEnum } from '../types/testManager';
+import { ViewMode, TestCase, Project, TestSuite, Priority, Status, Tester, HistoryEntry, ProjectSettings, Ticket, TicketStatus as TicketStatusEnum, TicketPriority as TicketPriorityEnum, TicketSeverity as TicketSeverityEnum, TicketAttachment } from '../types/testManager';
 import * as testManagerApi from '../services/testManagerApi';
 import * as ticketApi from '../services/ticketApi';
 import {
@@ -109,8 +109,8 @@ export const mapTicketResponse = (t: TicketListResponse): Ticket => ({
     description: t.description,
     projectId: t.projectId,
     status: t.status as TicketStatusEnum,
-    priority: t.priority as any,
-    severity: t.severity as any,
+    priority: t.priority as unknown as TicketPriorityEnum,
+    severity: t.severity as unknown as TicketSeverityEnum,
     assignedTo: t.assignedTo as Tester | undefined,
     createdBy: t.createdBy as Tester,
     relatedRunId: t.relatedRunId,
@@ -932,13 +932,13 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         description: response.description,
                         projectId: response.projectId,
                         status: response.status as TicketStatusEnum,
-                        priority: response.priority as any,
-                        severity: response.severity as any,
+                        priority: response.priority as unknown as TicketPriorityEnum,
+                        severity: response.severity as unknown as TicketSeverityEnum,
                         assignedTo: response.assignedTo as Tester | undefined,
                         createdBy: response.createdBy as Tester,
                         relatedRunId: response.relatedRunId,
                         relatedRunItemId: response.relatedRunItemId,
-                        attachments: response.attachments as any,
+                        attachments: response.attachments as TicketAttachment[],
                         tags: response.tags || [],
                         createdAt: response.createdAt,
                         updatedAt: response.updatedAt,
@@ -963,13 +963,13 @@ export const useTestManagerStore = create<TestManagerStore>()(
                         description: response.description,
                         projectId: response.projectId,
                         status: response.status as TicketStatusEnum,
-                        priority: response.priority as any,
-                        severity: response.severity as any,
+                        priority: response.priority as unknown as TicketPriorityEnum,
+                        severity: response.severity as unknown as TicketSeverityEnum,
                         assignedTo: response.assignedTo as Tester | undefined,
                         createdBy: response.createdBy as Tester,
                         relatedRunId: response.relatedRunId,
                         relatedRunItemId: response.relatedRunItemId,
-                        attachments: response.attachments as any,
+                        attachments: response.attachments as TicketAttachment[],
                         tags: response.tags || [],
                         createdAt: response.createdAt,
                         updatedAt: response.updatedAt,

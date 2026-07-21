@@ -11,11 +11,20 @@ import {
     Layers,
     MapPin,
 } from 'lucide-react';
-import { TestRun, RunItem, RunItemStatus, TestCase, TestSuite } from '../../../types/testManager';
+import { TestRun, RunItem, RunItemStatus, TestCase, TestSuite, CaseSnapshot } from '../../../types/testManager';
+import { CreateTicketRequest } from '../../../types/api/testManager.api';
 import RichTextEditor from '../../../components/testManager/RichTextEditor';
+import FailBugPrompt, { FailBugPromptData } from './FailBugPrompt';
 import { getItemStatusColor } from './testRunUtils';
 
 type OptimisticRunItemOverride = Pick<RunItem, 'status' | 'actualResult'>;
+
+interface PendingFail {
+    itemId: string;
+    caseSnapshot: CaseSnapshot;
+    actualResult: string;
+    index: number;
+}
 
 export interface ExecuteRunModalProps {
     isOpen: boolean;
@@ -24,10 +33,12 @@ export interface ExecuteRunModalProps {
     onUpdateItem: (itemId: string, status: RunItemStatus, actualResult?: string) => Promise<void>;
     onRefreshCurrentCase: (caseId: string) => Promise<void>;
     onComplete: () => Promise<void>;
+    onCreateTicket: (data: CreateTicketRequest) => Promise<void>;
     startIndex?: number;
     itemOrder?: number[];
     availableTestCases?: TestCase[];
     availableSuites?: TestSuite[];
+    tagSuggestions?: string[];
 }
 
 const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
@@ -37,21 +48,29 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
     onUpdateItem,
     onRefreshCurrentCase,
     onComplete,
+    onCreateTicket,
     startIndex = 0,
     itemOrder,
     availableTestCases = [],
     availableSuites = [],
+    tagSuggestions = [],
 }) => {
     const [currentIndex, setCurrentIndex] = useState(startIndex);
     const [actualResult, setActualResult] = useState('');
     const [isRefreshingCase, setIsRefreshingCase] = useState(false);
     const [pendingSaveCount, setPendingSaveCount] = useState(0);
     const [optimisticOverrides, setOptimisticOverrides] = useState<Record<string, OptimisticRunItemOverride>>({});
+    const [pendingFail, setPendingFail] = useState<PendingFail | null>(null);
+    const [bugSubmitting, setBugSubmitting] = useState(false);
+    const [bugError, setBugError] = useState<string | null>(null);
 
     // Reset index when modal opens with a new startIndex
     useEffect(() => {
         if (isOpen) {
             setCurrentIndex(startIndex);
+            setPendingFail(null);
+            setBugError(null);
+            setBugSubmitting(false);
         }
     }, [isOpen, startIndex]);
 
@@ -146,25 +165,29 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
 
     const resolvedAreaName = currentItem.caseSnapshot.area || testCaseById.get(currentItem.caseId)?.area || '—';
 
-    const handleStatusUpdate = async (status: RunItemStatus) => {
-        const itemId = currentItem.id;
+    const commitStatusAndAdvance = async (
+        itemId: string,
+        status: RunItemStatus,
+        resultText: string,
+        indexAtCommit: number
+    ) => {
         const previousOverride = optimisticOverrides[itemId];
 
         setOptimisticOverrides((currentOverrides) => ({
             ...currentOverrides,
             [itemId]: {
                 status,
-                actualResult,
+                actualResult: resultText,
             },
         }));
 
-        if (currentIndex < totalItems - 1) {
-            setCurrentIndex(currentIndex + 1);
+        if (indexAtCommit < totalItems - 1) {
+            setCurrentIndex(indexAtCommit + 1);
         }
 
         setPendingSaveCount((count) => count + 1);
         try {
-            await onUpdateItem(itemId, status, actualResult);
+            await onUpdateItem(itemId, status, resultText);
         } catch (error: unknown) {
             setOptimisticOverrides((currentOverrides) => {
                 const nextOverrides = { ...currentOverrides };
@@ -181,6 +204,63 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
         } finally {
             setPendingSaveCount((count) => Math.max(0, count - 1));
         }
+    };
+
+    const handleStatusUpdate = (status: RunItemStatus) => {
+        // Failing a case opens the guided bug-logging flow instead of
+        // committing immediately. The status is committed once the tester
+        // creates a ticket or explicitly skips.
+        if (status === RunItemStatus.Failed) {
+            setBugError(null);
+            setPendingFail({
+                itemId: currentItem.id,
+                caseSnapshot: currentItem.caseSnapshot,
+                actualResult,
+                index: currentIndex,
+            });
+            return;
+        }
+
+        void commitStatusAndAdvance(currentItem.id, status, actualResult, currentIndex);
+    };
+
+    const handleCreateBug = async (data: FailBugPromptData) => {
+        if (!pendingFail || !testRun) return;
+
+        setBugSubmitting(true);
+        setBugError(null);
+        try {
+            await onCreateTicket({
+                title: data.title,
+                description: data.description || undefined,
+                priority: data.priority,
+                severity: data.severity,
+                relatedRunId: testRun.id,
+                relatedRunItemId: pendingFail.itemId,
+                tags: data.tags.length > 0 ? data.tags : undefined,
+            });
+            toast.success('Bug logged');
+            const fail = pendingFail;
+            setPendingFail(null);
+            await commitStatusAndAdvance(fail.itemId, RunItemStatus.Failed, fail.actualResult, fail.index);
+        } catch (error: unknown) {
+            setBugError((error as Error).message || 'Failed to create bug ticket');
+        } finally {
+            setBugSubmitting(false);
+        }
+    };
+
+    const handleSkipBug = () => {
+        if (!pendingFail) return;
+        const fail = pendingFail;
+        setPendingFail(null);
+        setBugError(null);
+        void commitStatusAndAdvance(fail.itemId, RunItemStatus.Failed, fail.actualResult, fail.index);
+    };
+
+    const handleCancelBug = () => {
+        setPendingFail(null);
+        setBugError(null);
     };
 
     const handleComplete = async () => {
@@ -440,6 +520,20 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                         </button>
                     </div>
                 </div>
+
+                {pendingFail && (
+                    <FailBugPrompt
+                        caseSnapshot={pendingFail.caseSnapshot}
+                        initialDescription={pendingFail.actualResult}
+                        runTitle={testRun.title}
+                        onCreate={handleCreateBug}
+                        onSkip={handleSkipBug}
+                        onCancel={handleCancelBug}
+                        isSubmitting={bugSubmitting}
+                        error={bugError}
+                        tagSuggestions={tagSuggestions}
+                    />
+                )}
             </div>
         </div>
     );

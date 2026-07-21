@@ -12,6 +12,7 @@ import {
     TestRun,
     TestRunGroup,
 } from '../../types/testManager';
+import { CreateTicketRequest } from '../../types/api/testManager.api';
 import { testRunApi } from '../../services/testRunApi';
 import { getTestCase } from '../../services/testManagerApi';
 import { useRealtimeTestRuns } from '../../hooks/useRealtimeTestRuns';
@@ -71,6 +72,7 @@ const TestRunsPage: React.FC = () => {
         setTestCases,
         searchQuery,
         clearSearchQuery,
+        createTicket,
     } = useTestManagerStore(
         (state) => ({
             activeProject: state.activeProject,
@@ -83,6 +85,7 @@ const TestRunsPage: React.FC = () => {
             setTestCases: state.setTestCases,
             searchQuery: state.searchQuery,
             clearSearchQuery: state.clearSearchQuery,
+            createTicket: state.createTicket,
         }),
         shallow
     );
@@ -664,6 +667,13 @@ const TestRunsPage: React.FC = () => {
         }
     }, [mergeLatestCaseSnapshot, setTestCases]);
 
+    const handleCreateBugFromRun = useCallback(async (data: CreateTicketRequest) => {
+        if (!activeProject) {
+            throw new Error('No active project selected');
+        }
+        await createTicket(activeProject, data);
+    }, [activeProject, createTicket]);
+
     const toggleCaseSelection = (caseId: string) => {
         setSelectedCasesForRun((prev) =>
             prev.includes(caseId) ? prev.filter((id) => id !== caseId) : [...prev, caseId]
@@ -736,6 +746,7 @@ const TestRunsPage: React.FC = () => {
                     onUpdateItem={handleUpdateRunItem}
                     onRefreshCurrentCase={handleRefreshRunCase}
                     onComplete={handleCompleteRun}
+                    onCreateTicket={handleCreateBugFromRun}
                     startIndex={executeStartIndex}
                     itemOrder={executeItemOrder}
                     availableTestCases={testCases}

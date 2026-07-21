@@ -112,7 +112,7 @@ const TicketsPage: React.FC = () => {
 
     // Check for URL state to open create modal
     useEffect(() => {
-        if (location.state && (location.state as any).openNewTicket) {
+        if (location.state && (location.state as { openNewTicket?: boolean }).openNewTicket) {
             setIsCreateModalOpen(true);
             window.history.replaceState({}, document.title);
         }
