@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { shallow } from 'zustand/shallow';
 import toast from 'react-hot-toast';
 import { useTestManagerStore, mapTicketResponse } from '../../store/testManagerStore';
@@ -21,7 +21,7 @@ import {
     ChevronDown,
     Filter,
 } from 'lucide-react';
-import { CreateTicketRequest, UpdateTicketRequest } from '../../types/api/testManager.api';
+import { CreateTicketRequest, UpdateTicketRequest, TicketListResponse } from '../../types/api/testManager.api';
 import { ticketApi } from '../../services/ticketApi';
 import { testRunApi } from '../../services/testRunApi';
 import { getTagColor } from '../../utils/tagColors';
@@ -44,6 +44,7 @@ const TicketsPage: React.FC = () => {
         setActiveTicket,
         activeTicket,
         setTicketDetailViewOpen,
+        setActiveProject,
         projects,
     } = useTestManagerStore(
         (state) => ({
@@ -56,13 +57,16 @@ const TicketsPage: React.FC = () => {
             setActiveTicket: state.setActiveTicket,
             activeTicket: state.activeTicket,
             setTicketDetailViewOpen: state.setTicketDetailViewOpen,
+            setActiveProject: state.setActiveProject,
             projects: state.projects,
         }),
         shallow
     );
 
     const location = useLocation();
+    const [searchParams, setSearchParams] = useSearchParams();
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const processedTicketIdRef = useRef<string | null>(null);
     const [testRunOptions, setTestRunOptions] = useState<{ id: string; title: string }[]>([]);
 
     // Quick filter state
@@ -125,6 +129,39 @@ const TicketsPage: React.FC = () => {
             window.history.replaceState({}, document.title);
         }
     }, [location.state]);
+
+    // Handle ticketId URL parameter for direct links
+    useEffect(() => {
+        const ticketId = searchParams.get('ticketId');
+
+        if (!ticketId || processedTicketIdRef.current === ticketId) {
+            return;
+        }
+
+        processedTicketIdRef.current = ticketId;
+
+        const loadTicketFromUrl = async () => {
+            try {
+                const ticketResponse = await ticketApi.getTicketById(ticketId);
+                const mappedTicket = mapTicketResponse(ticketResponse as TicketListResponse);
+
+                if (ticketResponse.projectId) {
+                    setActiveProject(ticketResponse.projectId);
+                }
+
+                setActiveTicket(mappedTicket);
+                setTicketDetailViewOpen(true);
+
+                setSearchParams({}, { replace: true });
+            } catch (error) {
+                console.error('Failed to load ticket from URL:', error);
+                toast.error('Failed to load ticket. It may not exist or you may not have access.');
+                setSearchParams({}, { replace: true });
+            }
+        };
+
+        loadTicketFromUrl();
+    }, [searchParams, setSearchParams, setActiveProject, setActiveTicket, setTicketDetailViewOpen]);
 
     // Fetch tickets (paginated) when project changes
     const loadTickets = useCallback(async (reset = true, offsetValue = 0) => {
@@ -323,9 +360,9 @@ const TicketsPage: React.FC = () => {
     }
 
     return (
-        <div className="h-full flex flex-col">
+        <div className="flex flex-col h-auto sm:h-full bg-white dark:bg-gray-900">
             {/* Header area with quick filters */}
-            <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-gray-700">
+            <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900">
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
                         <Bug size={18} className="text-red-500" />

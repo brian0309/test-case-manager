@@ -117,6 +117,48 @@ export const getTicket = async (
 };
 
 /**
+ * GET  /api/tickets/:id
+ * Get a single ticket by ID (without projectId in path).
+ * Derives projectId from the ticket document for access control.
+ */
+export const getTicketById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const id = req.params.id as string;
+    const userId = req.userId;
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    if (!id) {
+      res.status(400).json({ success: false, message: "Ticket ID is required" });
+      return;
+    }
+
+    const ticket = await ticketService.getTicket(id);
+    if (!ticket) {
+      res.status(404).json({ success: false, message: "Ticket not found" });
+      return;
+    }
+
+    const hasAccess = await projectService.hasProjectAccess(ticket.projectId, userId);
+    if (!hasAccess) {
+      res.status(403).json({ success: false, message: "Access denied" });
+      return;
+    }
+
+    res.status(200).json({ success: true, data: ticket });
+  } catch (error) {
+    console.error("Error fetching ticket by ID:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch ticket" });
+  }
+};
+
+/**
  * POST  /api/projects/:projectId/tickets
  * Create a new ticket
  */

@@ -100,7 +100,7 @@ export const getTicketsPaginated = async (
 };
 
 /**
- * Get a single ticket by ID
+ * Get a single ticket by ID (requires projectId)
  */
 export const getTicket = async (
   projectId: string,
@@ -109,6 +109,26 @@ export const getTicket = async (
   try {
     const response = await axios.get<ApiResponse<TicketResponse>>(
       `${API_URL}/projects/${projectId}/tickets/${id}`
+    );
+    if (!response.data.data) {
+      throw new Error("Ticket not found");
+    }
+    return response.data.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
+/**
+ * Get a single ticket by ID directly (without projectId).
+ * The backend derives projectId from the ticket document for access control.
+ */
+export const getTicketById = async (
+  id: string
+): Promise<TicketResponse> => {
+  try {
+    const response = await axios.get<ApiResponse<TicketResponse>>(
+      `${API_URL}/tickets/${id}`
     );
     if (!response.data.data) {
       throw new Error("Ticket not found");
@@ -178,6 +198,7 @@ export const ticketApi = {
   getTickets,
   getTicketsPaginated,
   getTicket,
+  getTicketById,
   updateTicket,
   deleteTicket,
   getTicketsByRun,

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Bug, User, Calendar, Tag, ArrowLeft, Edit3, Trash2, ChevronDown, ExternalLink } from 'lucide-react';
+import { X, User, Calendar, Tag, Share2, Edit2, Trash2, ChevronDown, ExternalLink } from 'lucide-react';
 import { Ticket, TicketStatus, TicketPriority, TicketSeverity } from '../../../types/testManager';
 import { getTagColor } from '../../../utils/tagColors';
 import {
@@ -10,6 +10,8 @@ import {
 } from '../../../utils/ticketColors';
 import TicketModal from '../../../components/testManager/TicketModal';
 import DiscussionPanel from '../../../components/testManager/DiscussionPanel';
+import IdDisplay from '../../../components/testManager/IdDisplay';
+import toast from 'react-hot-toast';
 
 interface TicketDetailViewProps {
     ticket: Ticket;
@@ -98,6 +100,22 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
         });
     };
 
+    const handleShareClick = async () => {
+        const shareUrl = `${window.location.origin}/test-manager/tickets?ticketId=${ticket.id}`;
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            toast.success('Link copied to clipboard');
+        } catch {
+            const textArea = document.createElement('textarea');
+            textArea.value = shareUrl;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            toast.success('Link copied to clipboard');
+        }
+    };
+
     const handleEditSubmit = async (data: {
         title: string;
         description?: string;
@@ -139,78 +157,109 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                 />
 
                 <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-7xl mx-4 max-h-[85vh] flex flex-col overflow-hidden animate-[scaleIn_0.2s_ease-out]">
-                    {/* Header */}
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10 rounded-t-2xl">
-                        <div className="flex items-center gap-3 min-w-0">
+                    {/* Modal Header */}
+                    <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 sm:py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                        <div className="flex items-center gap-3">
+                            <IdDisplay
+                                id={ticket.id}
+                                className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md"
+                            />
+                            <span className="text-xs text-gray-400 dark:text-gray-500">View Mode</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleShareClick}
+                                className="px-3 py-1.5 rounded-lg text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-1.5"
+                                title="Copy link to clipboard"
+                            >
+                                <Share2 className="h-4 w-4" />
+                                Share
+                            </button>
+                            <button
+                                onClick={() => setIsEditModalOpen(true)}
+                                className="px-3 py-1.5 rounded-lg text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors flex items-center gap-1.5"
+                                title="Edit Ticket"
+                            >
+                                <Edit2 className="h-4 w-4" />
+                                Edit
+                            </button>
                             <button
                                 onClick={onClose}
-                                className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-300 dark:hover:bg-gray-700 flex-shrink-0"
+                                className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-400 transition-colors"
                             >
-                                <ArrowLeft size={20} />
+                                <X className="h-5 w-5" />
                             </button>
-                            <Bug size={20} className="text-red-500 flex-shrink-0" />
-                            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
-                                {ticket.title}
-                            </h2>
                         </div>
-                        <button
-                            onClick={onClose}
-                            className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-300 dark:hover:bg-gray-700 flex-shrink-0"
-                        >
-                            <X size={20} />
-                        </button>
                     </div>
 
                     {/* Content area: main content + discussion panel side by side */}
                     <div className="relative flex-1 min-h-0 lg:flex lg:overflow-hidden overflow-y-auto">
                         {/* Main Content */}
-                        <div className="flex-1 min-h-0 p-6 space-y-6 lg:overflow-y-auto">
-                            {/* Status, Priority, Severity inline edit dropdowns */}
-                            <div className="flex flex-wrap gap-2">
-                                <div className="relative">
-                                    <select
-                                        value={ticket.status}
-                                        onChange={(e) => handleStatusChange(e.target.value as TicketStatus)}
-                                        disabled={savingField === 'status'}
-                                        className={`appearance-none rounded-lg py-1.5 pl-2.5 pr-7 text-xs font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 disabled:opacity-60 ${getTicketStatusSelectColor(ticket.status)}`}
-                                    >
-                                        {Object.values(TicketStatus).map(s => (
-                                            <option key={s} value={s}>{s}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                        <div className="flex-1 min-h-0 p-4 md:p-6 lg:overflow-y-auto">
+                            <div className="mb-5">
+                                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Title</label>
+                                <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{ticket.title}</h1>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+                                {/* Status */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Status</label>
+                                    <div className="relative">
+                                        <select
+                                            value={ticket.status}
+                                            onChange={(e) => handleStatusChange(e.target.value as TicketStatus)}
+                                            disabled={savingField === 'status'}
+                                            className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 disabled:opacity-60 ${getTicketStatusSelectColor(ticket.status)}`}
+                                        >
+                                            {Object.values(TicketStatus).map(s => (
+                                                <option key={s} value={s}>{s}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                                    </div>
                                 </div>
-                                <div className="relative">
-                                    <select
-                                        value={ticket.priority}
-                                        onChange={(e) => handlePriorityChange(e.target.value as TicketPriority)}
-                                        disabled={savingField === 'priority'}
-                                        className={`appearance-none rounded-lg py-1.5 pl-2.5 pr-7 text-xs font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 disabled:opacity-60 ${getTicketPrioritySelectColor(ticket.priority)}`}
-                                    >
-                                        {Object.values(TicketPriority).map(p => (
-                                            <option key={p} value={p}>{p}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+
+                                {/* Priority */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Priority</label>
+                                    <div className="relative">
+                                        <select
+                                            value={ticket.priority}
+                                            onChange={(e) => handlePriorityChange(e.target.value as TicketPriority)}
+                                            disabled={savingField === 'priority'}
+                                            className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 disabled:opacity-60 ${getTicketPrioritySelectColor(ticket.priority)}`}
+                                        >
+                                            {Object.values(TicketPriority).map(p => (
+                                                <option key={p} value={p}>{p}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                                    </div>
                                 </div>
-                                <div className="relative">
-                                    <select
-                                        value={ticket.severity}
-                                        onChange={(e) => handleSeverityChange(e.target.value as TicketSeverity)}
-                                        disabled={savingField === 'severity'}
-                                        className={`appearance-none rounded-lg py-1.5 pl-2.5 pr-7 text-xs font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 disabled:opacity-60 ${getTicketSeveritySelectColor(ticket.severity)}`}
-                                    >
-                                        {Object.values(TicketSeverity).map(s => (
-                                            <option key={s} value={s}>{s}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+
+                                {/* Severity */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Severity</label>
+                                    <div className="relative">
+                                        <select
+                                            value={ticket.severity}
+                                            onChange={(e) => handleSeverityChange(e.target.value as TicketSeverity)}
+                                            disabled={savingField === 'severity'}
+                                            className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 disabled:opacity-60 ${getTicketSeveritySelectColor(ticket.severity)}`}
+                                        >
+                                            {Object.values(TicketSeverity).map(s => (
+                                                <option key={s} value={s}>{s}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Description (HTML rendered) */}
                             {ticket.description ? (
-                                <div>
+                                <div className="mb-5">
                                     <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
                                         Description
                                     </h3>
@@ -230,7 +279,7 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                                     />
                                 </div>
                             ) : (
-                                <div>
+                                <div className="mb-5">
                                     <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
                                         Description
                                     </h3>
@@ -241,39 +290,39 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                             )}
 
                             {/* Details grid */}
-                            <div>
+                            <div className="mb-5">
                                 <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
                                     Details
                                 </h3>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                                         <User size={14} className="text-gray-400 flex-shrink-0" />
-                                        <span className="text-gray-500 dark:text-gray-500">Created by:</span>
+                                        <span className="text-gray-500 dark:text-gray-500 flex-shrink-0">Created by:</span>
                                         <span className="text-gray-900 dark:text-gray-100 font-medium truncate">{ticket.createdBy.name}</span>
                                     </div>
                                     {ticket.assignedTo && (
                                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                                             <User size={14} className="text-gray-400 flex-shrink-0" />
-                                            <span className="text-gray-500 dark:text-gray-500">Assigned to:</span>
+                                            <span className="text-gray-500 dark:text-gray-500 flex-shrink-0">Assigned to:</span>
                                             <span className="text-gray-900 dark:text-gray-100 font-medium truncate">{ticket.assignedTo.name}</span>
                                         </div>
                                     )}
                                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                                         <Calendar size={14} className="text-gray-400 flex-shrink-0" />
-                                        <span className="text-gray-500 dark:text-gray-500">Created:</span>
-                                        <span className="text-gray-900 dark:text-gray-100">{formatDate(ticket.createdAt)}</span>
+                                        <span className="text-gray-500 dark:text-gray-500 flex-shrink-0">Created:</span>
+                                        <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap">{formatDate(ticket.createdAt)}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                                         <Calendar size={14} className="text-gray-400 flex-shrink-0" />
-                                        <span className="text-gray-500 dark:text-gray-500">Updated:</span>
-                                        <span className="text-gray-900 dark:text-gray-100">{formatDate(ticket.updatedAt)}</span>
+                                        <span className="text-gray-500 dark:text-gray-500 flex-shrink-0">Updated:</span>
+                                        <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap">{formatDate(ticket.updatedAt)}</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Related Test Run */}
                             {ticket.relatedRunId && (
-                                <div>
+                                <div className="mb-5">
                                     <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
                                         Related Test Run
                                     </h3>
@@ -291,7 +340,7 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
 
                             {/* Tags */}
                             {ticket.tags.length > 0 && (
-                                <div>
+                                <div className="mb-5">
                                     <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">
                                         Tags
                                     </h3>
@@ -309,21 +358,14 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                                 </div>
                             )}
 
-                            {/* Actions */}
-                            <div className="flex justify-between items-center pt-4 border-t border-gray-100 dark:border-gray-700">
+                            {/* Delete */}
+                            <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
                                 <button
                                     onClick={() => setShowDeleteConfirm(true)}
                                     className="px-3 py-1.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex items-center gap-1.5"
                                 >
                                     <Trash2 size={14} />
                                     Delete Ticket
-                                </button>
-                                <button
-                                    onClick={() => setIsEditModalOpen(true)}
-                                    className="px-4 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1.5"
-                                >
-                                    <Edit3 size={14} />
-                                    Edit
                                 </button>
                             </div>
 

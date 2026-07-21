@@ -2,6 +2,7 @@ import express, { Router } from "express";
 import {
   getTickets,
   getTicket,
+  getTicketById,
   createTicket,
   updateTicket,
   deleteTicket,
@@ -36,5 +37,15 @@ router.get("/by-run/:runId", getTicketsByRun);
 router.get("/:id", getTicket);
 router.put("/:id", updateTicket);
 router.delete("/:id", deleteTicket);
+
+/**
+ * Direct ticket routes (without projectId in path).
+ * Derived from the ticket document for access control.
+ */
+export const ticketDirectRoutes: Router = express.Router();
+ticketDirectRoutes.use(verifyToken);
+ticketDirectRoutes.use(apiRateLimiter);
+
+ticketDirectRoutes.get("/:id", getTicketById);
 
 export default router;
