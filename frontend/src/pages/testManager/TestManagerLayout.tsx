@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Toolbar from '../../components/testManager/Toolbar';
+import TestSuiteSidebar from '../../components/testManager/TestSuiteSidebar';
 import ConfirmationModal from '../../components/testManager/ConfirmationModal';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { ViewMode } from '../../types/testManager';
@@ -15,7 +16,11 @@ const TestManagerLayout: React.FC = () => {
         activeSuiteId,
         setActiveSuite,
         setActiveSuiteId,
+        setActiveSuiteWithId,
+        setActiveArea,
+        clearFilters,
         activeProject,
+        testSuites,
         // Selection state
         isSelectionMode,
         setSelectionMode,
@@ -113,6 +118,21 @@ const TestManagerLayout: React.FC = () => {
         }
     };
 
+    const handleSuiteSelect = (suiteId: string | null) => {
+        if (suiteId === null) {
+            setActiveSuite(null);
+            setActiveSuiteId(null);
+        } else {
+            const suite = testSuites.find(s => s.id === suiteId);
+            setActiveSuiteWithId(suiteId, suite?.name ?? '');
+        }
+        setActiveArea(null);
+        clearFilters();
+    };
+
+    const showSuiteSidebar = viewMode === 'cases' && !!activeProject;
+    const totalProjectCaseCount = testSuites.reduce((sum, s) => sum + (s.caseCount ?? 0), 0);
+
     return (
         <div className="flex flex-col h-full font-sans text-gray-900 dark:text-gray-100">
             <main className="mac-card flex-1 flex flex-col min-w-0 overflow-hidden relative">
@@ -136,8 +156,19 @@ const TestManagerLayout: React.FC = () => {
                     onUpload={onImportTestCases || undefined}
                     hideNewButton={(viewMode === 'runs' && isRunDetailViewOpen) || (viewMode === 'tickets' && isTicketDetailViewOpen)}
                 />
-                <div className="flex-1 overflow-auto relative">
-                    <Outlet />
+                <div className="flex-1 flex overflow-hidden">
+                    {showSuiteSidebar && (
+                        <TestSuiteSidebar
+                            testSuites={testSuites}
+                            activeSuiteId={activeSuiteId}
+                            projectCaseCount={totalProjectCaseCount}
+                            onSuiteSelect={handleSuiteSelect}
+                            onCreateSuite={() => navigate('/test-manager/suites', { state: { openNewSuite: true } })}
+                        />
+                    )}
+                    <div className="flex-1 overflow-auto relative">
+                        <Outlet />
+                    </div>
                 </div>
             </main>
 

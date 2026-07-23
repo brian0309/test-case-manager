@@ -123,6 +123,7 @@ export interface TestSuite {
     description?: string;
     tags?: string[];
     projectId: string;
+    caseCount?: number;
     createdAt: string;
     updatedAt: string;
 }

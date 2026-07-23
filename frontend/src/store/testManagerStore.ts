@@ -99,6 +99,7 @@ const mapTestSuiteResponse = (s: TestSuiteResponse): TestSuite => ({
     description: s.description,
     tags: s.tags || [],
     projectId: s.projectId,
+    caseCount: s.caseCount,
     createdAt: s.createdAt,
     updatedAt: s.updatedAt,
 });
