@@ -25,7 +25,7 @@ type StoredSuiteTagFilter = {
 };
 
 const TestSuitesPage: React.FC = () => {
-    const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestSuites, fetchProjects, updateTestSuite, deleteTestSuite, setActiveProject, setActiveArea, clearFilters, searchQuery, clearSearchQuery } = useTestManagerStore(
+    const { activeProject, testCases, testSuites, projects, setActiveSuiteWithId, fetchTestCases, fetchTestCasesByProject, fetchTestSuites, fetchProjects, updateTestSuite, deleteTestSuite, setActiveProject, setActiveArea, clearFilters, searchQuery, clearSearchQuery } = useTestManagerStore(
         (state) => ({
             activeProject: state.activeProject,
             testCases: state.testCases,
@@ -33,6 +33,7 @@ const TestSuitesPage: React.FC = () => {
             projects: state.projects,
             setActiveSuiteWithId: state.setActiveSuiteWithId,
             fetchTestCases: state.fetchTestCases,
+            fetchTestCasesByProject: state.fetchTestCasesByProject,
             fetchTestSuites: state.fetchTestSuites,
             fetchProjects: state.fetchProjects,
             updateTestSuite: state.updateTestSuite,
@@ -190,14 +191,17 @@ const TestSuitesPage: React.FC = () => {
 
         if (activeProject) {
             setIsSuitesLoading(true);
-            // Fetch suites first (faster), then cases in background for stats
-            fetchTestSuites(activeProject).finally(() => {
+            // Fetch suites and test cases in parallel for stats
+            Promise.all([
+                fetchTestSuites(activeProject),
+                fetchTestCasesByProject(activeProject),
+            ]).finally(() => {
                 setIsSuitesLoading(false);
             });
         } else {
             setIsSuitesLoading(false);
         }
-    }, [activeProject, fetchTestSuites, searchParams]);
+    }, [activeProject, fetchTestSuites, fetchTestCasesByProject, searchParams]);
 
     // Filter test cases by active project
     const projectTestCases = useMemo(() => (
