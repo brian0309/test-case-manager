@@ -437,17 +437,17 @@ describe("Test Case Management Services", () => {
       const updateSpy = jest.spyOn(testCaseService, 'updateTestCase')
         .mockResolvedValueOnce({
           _id: new Types.ObjectId(case1Id),
-          status: Status.Passed,
+          status: Status.Ready,
         } as any)
         .mockResolvedValueOnce({
           _id: new Types.ObjectId(case2Id),
-          status: Status.Passed,
+          status: Status.Ready,
         } as any);
 
       const updatedCount = await testCaseService.bulkUpdateStatus(
         [case1Id, case2Id],
         testUserId,
-        Status.Passed
+        Status.Ready
       );
 
       expect(updatedCount).toBe(2);
