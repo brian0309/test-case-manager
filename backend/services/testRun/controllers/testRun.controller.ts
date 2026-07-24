@@ -6,24 +6,19 @@ import {
   UpdateTestRunRequest,
   UpdateRunItemRequest,
   ReorderRunItemsRequest,
-  RunItemStatus,
 } from "../types/testRun.types.js";
 import {
   emitTestRunCreated,
   emitTestRunUpdated,
   emitTestRunDeleted,
   emitTestRunItemUpdated,
-  emitTestCaseUpdated,
   socketManager,
 } from "../../../socket/socketManager.js";
 import { TestCase } from "../../../models/testCase.model.js";
-import { Status } from "../../testCase/types/testCase.types.js";
-import * as testCaseService from "../../testCase/services/testCase.service.js";
 import * as discussionService from "../../discussion/services/discussion.service.js";
 import {
   IAttachment,
   MessageBodyFormat,
-  MessageFixState,
 } from "../../discussion/types/discussion.types.js";
 
 /**
@@ -266,40 +261,23 @@ export const updateRunItem = async (req: Request, res: Response): Promise<void> 
     // Also emit full update for list views that might need stats update
     emitTestRunUpdated(testRun.projectId.toString(), response);
 
-    // Propagate failure to source test case
-    if (data.status === RunItemStatus.Failed && updatedItem) {
+    // Log run result to test case discussion chat
+    if (updatedItem) {
       try {
         const caseId = updatedItem.caseId.toString();
-        const sourceCase = await TestCase.findById(caseId).select("comments suiteId projectId status").lean();
+        const sourceCase = await TestCase.findById(caseId).select("suiteId projectId").lean();
 
         if (sourceCase) {
           const projectId = testRun.projectId.toString();
-          const suiteId = (sourceCase.suiteId as Types.ObjectId).toString();
-
-          // Build update: always mark as Failed; append actualResult to comments if provided
-          const updateData: { status: Status; comments?: string } = { status: Status.Failed };
-          if (updatedItem.actualResult?.trim() || (updatedItem.attachments?.length ?? 0) > 0) {
-            updateData.comments = buildRunFailComment(
-              testRun.title,
-              sourceCase.comments,
-              updatedItem.actualResult,
-              updatedItem.attachments
-            );
-          }
-
-          const updatedTestCase = await testCaseService.updateTestCase(caseId, userId, updateData);
-          if (updatedTestCase) {
-            const formattedCase = testCaseService.formatTestCaseResponse(updatedTestCase);
-            emitTestCaseUpdated(projectId, suiteId, formattedCase);
-          }
-
-          // Post a system discussion message about the failure
           const runId = (testRun as any)._id.toString();
-          const messageBody = buildRunFailureDiscussionBody(
+          const statusLabel = updatedItem.status;
+
+          const messageBody = buildRunDiscussionBody(
             testRun.title,
             runId,
             itemId,
             caseId,
+            statusLabel,
             updatedItem.actualResult
           );
           const message = await discussionService.createSystemMessage(
@@ -310,7 +288,6 @@ export const updateRunItem = async (req: Request, res: Response): Promise<void> 
             mapRunAttachmentsToDiscussionAttachments(updatedItem.attachments),
             {
               bodyFormat: MessageBodyFormat.Html,
-              fixState: MessageFixState.NotFixed,
               relatedRunId: runId,
               relatedRunItemId: itemId,
             }
@@ -322,7 +299,7 @@ export const updateRunItem = async (req: Request, res: Response): Promise<void> 
           });
         }
       } catch (err) {
-        console.error("Error propagating test failure to source test case:", err);
+        console.error("Error logging test run result to discussion:", err);
       }
     }
 
@@ -333,39 +310,16 @@ export const updateRunItem = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-/**
- * Build the HTML block to append to a test case's comments when it fails in a run.
- */
-function buildRunFailComment(
-  runTitle: string,
-  existingComments: string | undefined,
-  actualResult: string | undefined,
-  attachments: string[] | undefined
-): string {
-  const header = `<p><strong>________ Test run: ${runTitle} ________</strong></p>`;
-  let body = "";
-  if (actualResult?.trim()) {
-    body += actualResult;
-  }
-  if (attachments?.length) {
-    const imgs = attachments
-      .map((url) => `<img src="${url}" style="max-width:100%;" />`)
-      .join("");
-    body += `<p>${imgs}</p>`;
-  }
-  const appended = header + body;
-  return existingComments ? existingComments + appended : appended;
-}
-
-function buildRunFailureDiscussionBody(
+function buildRunDiscussionBody(
   runTitle: string,
   runId: string,
   itemId: string,
   caseId: string,
+  statusLabel: string,
   actualResult: string | undefined
 ): string {
   const runUrl = `/test-manager/runs?runId=${encodeURIComponent(runId)}&itemId=${encodeURIComponent(itemId)}&caseId=${encodeURIComponent(caseId)}`;
-  const summary = `<p><strong>Failed in test run:</strong> <a href="${runUrl}" target="_blank" rel="noopener noreferrer">${escapeHtml(runTitle)}</a></p>`;
+  const summary = `<p><strong>${escapeHtml(statusLabel)} in test run:</strong> <a href="${runUrl}" target="_blank" rel="noopener noreferrer">${escapeHtml(runTitle)}</a></p>`;
   return actualResult?.trim()
     ? `${summary}${actualResult}`
     : `${summary}<p>No execution comments were provided.</p>`;

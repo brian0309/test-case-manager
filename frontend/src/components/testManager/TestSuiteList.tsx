@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { TestCase, TestSuite, Status } from '../../types/testManager';
-import { Folder, MoreHorizontal, PieChart, AlertCircle, Plus, Pencil, Trash2, Share2, ArrowUp, ArrowDown, Tag, Play } from 'lucide-react';
+import { Folder, MoreHorizontal, PieChart, Plus, Pencil, Trash2, Share2, ArrowUp, ArrowDown, Tag, Play } from 'lucide-react';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { getTagColor } from '../../utils/tagColors';
 
@@ -100,16 +100,15 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({
         const cases = testCases.filter(c => c.suite === suiteName);
         const total = cases.length;
 
-        const passed = cases.filter(c => [Status.Passed, Status.PassFixed].includes(c.status)).length;
-        const failed = cases.filter(c => c.status === Status.Failed).length;
-        const retest = cases.filter(c => c.status === Status.Retest).length;
-        const skipped = cases.filter(c => c.status === Status.Skipped).length;
+        const ready = cases.filter(c => c.status === Status.Ready).length;
+        const inReview = cases.filter(c => c.status === Status.InReview).length;
         const draft = cases.filter(c => c.status === Status.Draft).length;
+        const updated = cases.filter(c => c.status === Status.Updated).length;
+        const archived = cases.filter(c => c.status === Status.Archived).length;
 
-        const executed = passed + failed + retest;
-        const progress = total === 0 ? 0 : Math.round((passed / total) * 100);
+        const progress = total === 0 ? 0 : Math.round((ready / total) * 100);
 
-        return { total, passed, failed, retest, skipped, draft, executed, progress };
+        return { total, ready, inReview, draft, updated, archived, progress };
     };
 
     const getSortedSuites = () => {
@@ -188,10 +187,7 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({
     const handleStatusClick = (e: React.MouseEvent, suite: TestSuite, status: Status) => {
         e.stopPropagation();
         setActiveSuiteWithId(suite.id, suite.name);
-        const statusFilter = status === Status.Passed 
-            ? [Status.Passed, Status.PassFixed] 
-            : [status];
-        setFilters({ status: statusFilter });
+        setFilters({ status: [status] });
         setActiveArea(null);
         navigate('/test-manager/cases');
     };
@@ -305,25 +301,18 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({
                                     </div>
 
                                     <div className="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden flex">
-                                        {/* Passed - Green */}
-                                        {stats.passed > 0 && (
+                                        {/* Ready - Green */}
+                                        {stats.ready > 0 && (
                                             <div
                                                 className="bg-green-500 h-full transition-all duration-500"
-                                                style={{ width: `${(stats.passed / stats.total) * 100}%` }}
+                                                style={{ width: `${(stats.ready / stats.total) * 100}%` }}
                                             />
                                         )}
-                                        {/* Failed - Red */}
-                                        {stats.failed > 0 && (
+                                        {/* In Review - Yellow */}
+                                        {stats.inReview > 0 && (
                                             <div
-                                                className="bg-red-500 h-full transition-all duration-500"
-                                                style={{ width: `${(stats.failed / stats.total) * 100}%` }}
-                                            />
-                                        )}
-                                        {/* Retest - Orange */}
-                                        {stats.retest > 0 && (
-                                            <div
-                                                className="bg-orange-500 h-full transition-all duration-500"
-                                                style={{ width: `${(stats.retest / stats.total) * 100}%` }}
+                                                className="bg-yellow-500 h-full transition-all duration-500"
+                                                style={{ width: `${(stats.inReview / stats.total) * 100}%` }}
                                             />
                                         )}
                                         {/* Draft - Gray */}
@@ -333,11 +322,18 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({
                                                 style={{ width: `${(stats.draft / stats.total) * 100}%` }}
                                             />
                                         )}
-                                        {/* Skipped - Blue */}
-                                        {stats.skipped > 0 && (
+                                        {/* Updated - Blue */}
+                                        {stats.updated > 0 && (
                                             <div
                                                 className="bg-blue-500 h-full transition-all duration-500"
-                                                style={{ width: `${(stats.skipped / stats.total) * 100}%` }}
+                                                style={{ width: `${(stats.updated / stats.total) * 100}%` }}
+                                            />
+                                        )}
+                                        {/* Archived - Gray */}
+                                        {stats.archived > 0 && (
+                                            <div
+                                                className="bg-gray-300 dark:bg-gray-600 h-full transition-all duration-500"
+                                                style={{ width: `${(stats.archived / stats.total) * 100}%` }}
                                             />
                                         )}
                                     </div>
@@ -345,31 +341,22 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({
                             </div>
 
                             <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-50 dark:border-gray-700 mt-4">
-                                {stats.passed > 0 && (
+                                {stats.ready > 0 && (
                                     <button
-                                        onClick={(e) => handleStatusClick(e, suite, Status.Passed)}
+                                        onClick={(e) => handleStatusClick(e, suite, Status.Ready)}
                                         className="flex items-center gap-1.5 text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2.5 py-1.5 rounded-full hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors cursor-pointer"
                                     >
                                         <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                                        {stats.passed} Passed
+                                        {stats.ready} Ready
                                     </button>
                                 )}
-                                {stats.failed > 0 && (
+                                {stats.inReview > 0 && (
                                     <button
-                                        onClick={(e) => handleStatusClick(e, suite, Status.Failed)}
-                                        className="flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-2.5 py-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors cursor-pointer"
+                                        onClick={(e) => handleStatusClick(e, suite, Status.InReview)}
+                                        className="flex items-center gap-1.5 text-xs font-medium text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30 px-2.5 py-1.5 rounded-full hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-colors cursor-pointer"
                                     >
-                                        <AlertCircle className="h-3.5 w-3.5" />
-                                        {stats.failed} Failed
-                                    </button>
-                                )}
-                                {stats.retest > 0 && (
-                                    <button
-                                        onClick={(e) => handleStatusClick(e, suite, Status.Retest)}
-                                        className="flex items-center gap-1.5 text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2.5 py-1.5 rounded-full hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors cursor-pointer"
-                                    >
-                                        <div className="h-1.5 w-1.5 rounded-full bg-orange-500" />
-                                        {stats.retest} Retest
+                                        <div className="h-1.5 w-1.5 rounded-full bg-yellow-500" />
+                                        {stats.inReview} In Review
                                     </button>
                                 )}
                                 {stats.draft > 0 && (
@@ -381,13 +368,22 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({
                                         {stats.draft} Draft
                                     </button>
                                 )}
-                                {stats.skipped > 0 && (
+                                {stats.updated > 0 && (
                                     <button
-                                        onClick={(e) => handleStatusClick(e, suite, Status.Skipped)}
-                                        className="flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
+                                        onClick={(e) => handleStatusClick(e, suite, Status.Updated)}
+                                        className="flex items-center gap-1.5 text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
                                     >
                                         <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                                        {stats.skipped} Skipped
+                                        {stats.updated} Updated
+                                    </button>
+                                )}
+                                {stats.archived > 0 && (
+                                    <button
+                                        onClick={(e) => handleStatusClick(e, suite, Status.Archived)}
+                                        className="flex items-center gap-1.5 text-xs font-medium text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 px-2.5 py-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                    >
+                                        <div className="h-1.5 w-1.5 rounded-full bg-gray-300" />
+                                        {stats.archived} Archived
                                     </button>
                                 )}
                                 {stats.total === 0 && (
@@ -512,22 +508,16 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({
                                             <div className="flex items-center gap-2">
                                                 <span className={`text-sm font-semibold ${stats.progress === 100 ? 'text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-white'}`}>{stats.progress}%</span>
                                                 <div className="w-16 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 overflow-hidden flex">
-                                                    {stats.passed > 0 && (
+                                                    {stats.ready > 0 && (
                                                         <div
                                                             className="bg-green-500 h-full transition-all duration-500"
-                                                            style={{ width: `${(stats.passed / stats.total) * 100}%` }}
+                                                            style={{ width: `${(stats.ready / stats.total) * 100}%` }}
                                                         />
                                                     )}
-                                                    {stats.failed > 0 && (
+                                                    {stats.inReview > 0 && (
                                                         <div
-                                                            className="bg-red-500 h-full transition-all duration-500"
-                                                            style={{ width: `${(stats.failed / stats.total) * 100}%` }}
-                                                        />
-                                                    )}
-                                                    {stats.retest > 0 && (
-                                                        <div
-                                                            className="bg-orange-500 h-full transition-all duration-500"
-                                                            style={{ width: `${(stats.retest / stats.total) * 100}%` }}
+                                                            className="bg-yellow-500 h-full transition-all duration-500"
+                                                            style={{ width: `${(stats.inReview / stats.total) * 100}%` }}
                                                         />
                                                     )}
                                                     {stats.draft > 0 && (
@@ -536,10 +526,16 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({
                                                             style={{ width: `${(stats.draft / stats.total) * 100}%` }}
                                                         />
                                                     )}
-                                                    {stats.skipped > 0 && (
+                                                    {stats.updated > 0 && (
                                                         <div
                                                             className="bg-blue-500 h-full transition-all duration-500"
-                                                            style={{ width: `${(stats.skipped / stats.total) * 100}%` }}
+                                                            style={{ width: `${(stats.updated / stats.total) * 100}%` }}
+                                                        />
+                                                    )}
+                                                    {stats.archived > 0 && (
+                                                        <div
+                                                            className="bg-gray-300 dark:bg-gray-600 h-full transition-all duration-500"
+                                                            style={{ width: `${(stats.archived / stats.total) * 100}%` }}
                                                         />
                                                     )}
                                                 </div>
@@ -547,31 +543,22 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({
                                         </td>
                                         <td className="py-4 px-4">
                                             <div className="flex flex-wrap gap-1.5">
-                                                {stats.passed > 0 && (
+                                                {stats.ready > 0 && (
                                                     <button
-                                                        onClick={(e) => handleStatusClick(e, suite, Status.Passed)}
+                                                        onClick={(e) => handleStatusClick(e, suite, Status.Ready)}
                                                         className="flex items-center gap-1 text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors cursor-pointer"
                                                     >
                                                         <div className="h-1 w-1 rounded-full bg-green-500" />
-                                                        {stats.passed} Passed
+                                                        {stats.ready} Ready
                                                     </button>
                                                 )}
-                                                {stats.failed > 0 && (
+                                                {stats.inReview > 0 && (
                                                     <button
-                                                        onClick={(e) => handleStatusClick(e, suite, Status.Failed)}
-                                                        className="flex items-center gap-1 text-xs font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-2 py-1 rounded hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors cursor-pointer"
+                                                        onClick={(e) => handleStatusClick(e, suite, Status.InReview)}
+                                                        className="flex items-center gap-1 text-xs font-medium text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/30 px-2 py-1 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-colors cursor-pointer"
                                                     >
-                                                        <AlertCircle className="h-3 w-3" />
-                                                        {stats.failed} Failed
-                                                    </button>
-                                                )}
-                                                {stats.retest > 0 && (
-                                                    <button
-                                                        onClick={(e) => handleStatusClick(e, suite, Status.Retest)}
-                                                        className="flex items-center gap-1 text-xs font-medium text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 px-2 py-1 rounded hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-colors cursor-pointer"
-                                                    >
-                                                        <div className="h-1 w-1 rounded-full bg-orange-500" />
-                                                        {stats.retest} Retest
+                                                        <div className="h-1 w-1 rounded-full bg-yellow-500" />
+                                                        {stats.inReview} In Review
                                                     </button>
                                                 )}
                                                 {stats.draft > 0 && (
@@ -583,13 +570,22 @@ const TestSuiteList: React.FC<TestSuiteListProps> = ({
                                                         {stats.draft} Draft
                                                     </button>
                                                 )}
-                                                {stats.skipped > 0 && (
+                                                {stats.updated > 0 && (
                                                     <button
-                                                        onClick={(e) => handleStatusClick(e, suite, Status.Skipped)}
-                                                        className="flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
+                                                        onClick={(e) => handleStatusClick(e, suite, Status.Updated)}
+                                                        className="flex items-center gap-1 text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
                                                     >
                                                         <div className="h-1 w-1 rounded-full bg-blue-500" />
-                                                        {stats.skipped} Skipped
+                                                        {stats.updated} Updated
+                                                    </button>
+                                                )}
+                                                {stats.archived > 0 && (
+                                                    <button
+                                                        onClick={(e) => handleStatusClick(e, suite, Status.Archived)}
+                                                        className="flex items-center gap-1 text-xs font-medium text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                                                    >
+                                                        <div className="h-1 w-1 rounded-full bg-gray-300" />
+                                                        {stats.archived} Archived
                                                     </button>
                                                 )}
                                                 {stats.total === 0 && (

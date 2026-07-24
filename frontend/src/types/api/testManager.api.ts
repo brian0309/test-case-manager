@@ -13,15 +13,10 @@ export enum Priority {
 
 export enum Status {
   Draft = "Draft",
-  ReadyForTesting = "Ready for Testing",
-  InProgress = "In Progress",
-  Passed = "Passed",
-  Failed = "Failed",
-  Blocked = "Blocked",
-  Retest = "Retest",
-  PassFixed = "Pass - Fixed",
-  Skipped = "Skipped",
-  OutOfScope = "Out of Scope",
+  InReview = "In Review",
+  Ready = "Ready",
+  Updated = "Updated",
+  Archived = "Archived",
 }
 
 // Base API Response

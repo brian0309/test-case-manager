@@ -242,16 +242,9 @@ const SortableRow: React.FC<SortableRowProps> = React.memo(({
                             onChange={(e) => onStatusChange?.(item.id, e.target.value as Status)}
                             className={`text-xs font-semibold px-2.5 py-1 rounded-full border appearance-none cursor-pointer outline-none transition-colors text-center min-w-[90px] ${getStatusColor(item.status)}`}
                         >
-                            <option value={Status.Draft}>Draft</option>
-                            <option value={Status.ReadyForTesting}>Ready for Testing</option>
-                            <option value={Status.InProgress}>In Progress</option>
-                            {item.status !== Status.Failed && <option value={Status.Passed}>Passed</option>}
-                            <option value={Status.Failed}>Failed</option>
-                            <option value={Status.Blocked}>Blocked</option>
-                            <option value={Status.PassFixed}>Pass - Fixed</option>
-                            <option value={Status.Retest}>Retest</option>
-                            <option value={Status.Skipped}>Skipped</option>
-                            <option value={Status.OutOfScope}>Out of Scope</option>
+                            {Object.values(Status).map(s => (
+                                <option key={s} value={s}>{s}</option>
+                            ))}
                         </select>
                     </div>
                 </td>
@@ -422,16 +415,11 @@ const TestCaseTable: React.FC<TestCaseTableProps> = ({
 
     const getStatusColor = useCallback((status: Status) => {
         switch (status) {
-            case Status.Passed: return 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700';
-            case Status.PassFixed: return 'bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-700';
-            case Status.Failed: return 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700';
-            case Status.Retest: return 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700';
-            case Status.Skipped: return 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-400 border-gray-200 dark:border-gray-600';
             case Status.Draft: return 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600';
-            case Status.ReadyForTesting: return 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700';
-            case Status.InProgress: return 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-700';
-            case Status.Blocked: return 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-700';
-            case Status.OutOfScope: return 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700';
+            case Status.InReview: return 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-700';
+            case Status.Ready: return 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700';
+            case Status.Updated: return 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700';
+            case Status.Archived: return 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-400 border-gray-200 dark:border-gray-600';
             default: return 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-400 border-transparent dark:border-gray-600';
         }
     }, []);

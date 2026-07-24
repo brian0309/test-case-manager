@@ -16,15 +16,13 @@ import { TestCase } from '../../../models/testCase.model';
 import {
   emitTestRunItemUpdated,
   emitTestRunUpdated,
-  emitTestCaseUpdated,
   socketManager,
 } from '../../../socket/socketManager';
 import { RunItemStatus } from '../../../services/testRun/types/testRun.types';
-import { MessageBodyFormat, MessageFixState } from '../../../services/discussion/types/discussion.types';
+import { MessageBodyFormat } from '../../../services/discussion/types/discussion.types';
 
 const mockEmitTestRunItemUpdated = emitTestRunItemUpdated as jest.MockedFunction<typeof emitTestRunItemUpdated>;
 const mockEmitTestRunUpdated = emitTestRunUpdated as jest.MockedFunction<typeof emitTestRunUpdated>;
-const mockEmitTestCaseUpdated = emitTestCaseUpdated as jest.MockedFunction<typeof emitTestCaseUpdated>;
 const mockSocketManager = socketManager as jest.Mocked<typeof socketManager>;
 
 describe('TestRun Controller - updateRunItem', () => {
@@ -51,25 +49,14 @@ describe('TestRun Controller - updateRunItem', () => {
     _id: 'case-id-789',
     suiteId: { toString: () => 'suite-id-111' },
     projectId: { toString: () => 'project-id-123' },
-    status: 'Draft',
-    comments: '<p>Existing comment</p>',
   };
 
   const mockDiscussionMessage = {
     id: 'msg-id-1',
     body: '<p><strong>Failed in test run:</strong> <a href="/test-manager/runs?runId=run-id-123&itemId=item-id-456&caseId=case-id-789" target="_blank" rel="noopener noreferrer">Sprint 1 Regression</a></p><p>Button did not respond</p>',
     bodyFormat: MessageBodyFormat.Html,
-    fixState: MessageFixState.NotFixed,
     testCaseId: 'case-id-789',
     projectId: 'project-id-123',
-  };
-
-  const mockUpdatedTestCase = {
-    _id: 'case-id-789',
-    status: 'Failed',
-    suiteId: { toString: () => 'suite-id-111' },
-    projectId: { toString: () => 'project-id-123' },
-    comments: '<p>Existing comment</p><p><strong>________ Test run: Sprint 1 Regression ________</strong></p><p>Button did not respond</p>',
   };
 
   beforeEach(() => {
@@ -93,55 +80,25 @@ describe('TestRun Controller - updateRunItem', () => {
       }),
     });
 
-    (testCaseService.updateTestCase as jest.MockedFunction<typeof testCaseService.updateTestCase>)
-      .mockResolvedValue(mockUpdatedTestCase as any);
-    (testCaseService.formatTestCaseResponse as jest.MockedFunction<typeof testCaseService.formatTestCaseResponse>)
-      .mockReturnValue({ id: 'case-id-789', status: 'Failed' } as any);
-
     (discussionService.createSystemMessage as jest.MockedFunction<typeof discussionService.createSystemMessage>)
       .mockResolvedValue(mockDiscussionMessage as any);
 
     mockEmitTestRunItemUpdated.mockImplementation(() => {});
     mockEmitTestRunUpdated.mockImplementation(() => {});
-    mockEmitTestCaseUpdated.mockImplementation(() => {});
     (mockSocketManager.emitToProject as jest.MockedFunction<any>).mockImplementation(() => {});
   });
 
-  it('should update the source test case status to Failed when run item is marked Failed', async () => {
+  it('should NOT update the source test case status when run item is marked Failed', async () => {
     await testRunController.updateRunItem(mockRequest, mockResponse as any);
 
-    expect(testCaseService.updateTestCase).toHaveBeenCalledWith(
-      'case-id-789',
-      'user-id-999',
-      expect.objectContaining({ status: 'Failed' })
-    );
+    expect(testCaseService.updateTestCase).not.toHaveBeenCalled();
     expect(mockResponse.status).toHaveBeenCalledWith(200);
     expect(mockResponse.json).toHaveBeenCalledWith(
       expect.objectContaining({ success: true })
     );
   });
 
-  it('should append actualResult to source test case comments when failing', async () => {
-    await testRunController.updateRunItem(mockRequest, mockResponse as any);
-
-    expect(testCaseService.updateTestCase).toHaveBeenCalledWith(
-      'case-id-789',
-      'user-id-999',
-      expect.objectContaining({
-        status: 'Failed',
-        comments: expect.stringContaining('________ Test run: Sprint 1 Regression ________'),
-      })
-    );
-    expect(testCaseService.updateTestCase).toHaveBeenCalledWith(
-      'case-id-789',
-      'user-id-999',
-      expect.objectContaining({
-        comments: expect.stringContaining('<p>Existing comment</p>'),
-      })
-    );
-  });
-
-  it('should post a system discussion message about the failure', async () => {
+  it('should post a system discussion message about the run result', async () => {
     await testRunController.updateRunItem(mockRequest, mockResponse as any);
 
     expect(discussionService.createSystemMessage).toHaveBeenCalledWith(
@@ -152,7 +109,30 @@ describe('TestRun Controller - updateRunItem', () => {
       [],
       expect.objectContaining({
         bodyFormat: MessageBodyFormat.Html,
-        fixState: MessageFixState.NotFixed,
+        relatedRunId: 'run-id-123',
+        relatedRunItemId: 'item-id-456',
+      })
+    );
+  });
+
+  it('should post discussion message for Passed status', async () => {
+    mockRequest.body = { status: RunItemStatus.Passed, actualResult: 'Test passed successfully' };
+    (testRunService.updateRunItem as jest.MockedFunction<typeof testRunService.updateRunItem>)
+      .mockResolvedValue({
+        ...mockTestRun,
+        items: [{ ...mockTestRun.items[0], status: RunItemStatus.Passed, actualResult: 'Test passed successfully' }],
+      } as any);
+
+    await testRunController.updateRunItem(mockRequest, mockResponse as any);
+
+    expect(discussionService.createSystemMessage).toHaveBeenCalledWith(
+      'case-id-789',
+      'project-id-123',
+      'user-id-999',
+      expect.stringContaining('Passed in test run'),
+      [],
+      expect.objectContaining({
+        bodyFormat: MessageBodyFormat.Html,
         relatedRunId: 'run-id-123',
         relatedRunItemId: 'item-id-456',
       })
@@ -169,48 +149,7 @@ describe('TestRun Controller - updateRunItem', () => {
     );
   });
 
-  it('should emit testcase:updated socket event after updating test case', async () => {
-    await testRunController.updateRunItem(mockRequest, mockResponse as any);
-
-    expect(mockEmitTestCaseUpdated).toHaveBeenCalledWith(
-      'project-id-123',
-      'suite-id-111',
-      expect.objectContaining({ id: 'case-id-789' })
-    );
-  });
-
-  it('should NOT update the source test case when status is Passed', async () => {
-    mockRequest.body = { status: RunItemStatus.Passed };
-    (testRunService.updateRunItem as jest.MockedFunction<typeof testRunService.updateRunItem>)
-      .mockResolvedValue({
-        ...mockTestRun,
-        items: [{ ...mockTestRun.items[0], status: RunItemStatus.Passed }],
-      } as any);
-
-    await testRunController.updateRunItem(mockRequest, mockResponse as any);
-
-    expect(testCaseService.updateTestCase).not.toHaveBeenCalled();
-    expect(discussionService.createSystemMessage).not.toHaveBeenCalled();
-  });
-
-  it('should NOT append comments when actualResult is empty', async () => {
-    mockRequest.body = { status: RunItemStatus.Failed, actualResult: '' };
-    (testRunService.updateRunItem as jest.MockedFunction<typeof testRunService.updateRunItem>)
-      .mockResolvedValue({
-        ...mockTestRun,
-        items: [{ ...mockTestRun.items[0], actualResult: '', attachments: [] }],
-      } as any);
-
-    await testRunController.updateRunItem(mockRequest, mockResponse as any);
-
-    expect(testCaseService.updateTestCase).toHaveBeenCalledWith(
-      'case-id-789',
-      'user-id-999',
-      expect.not.objectContaining({ comments: expect.anything() })
-    );
-  });
-
-  it('should still return success even if source test case propagation fails', async () => {
+  it('should still return success even if discussion posting fails', async () => {
     (TestCase.findById as jest.MockedFunction<any>).mockReturnValue({
       select: (jest.fn() as any).mockReturnValue({
         lean: (jest.fn() as any).mockRejectedValue(new Error('DB error')),
@@ -231,7 +170,7 @@ describe('TestRun Controller - updateRunItem', () => {
     await testRunController.updateRunItem(mockRequest, mockResponse as any);
 
     expect(mockResponse.status).toHaveBeenCalledWith(401);
-    expect(testCaseService.updateTestCase).not.toHaveBeenCalled();
+    expect(discussionService.createSystemMessage).not.toHaveBeenCalled();
   });
 
   it('should return 404 if test run or item not found', async () => {
@@ -241,6 +180,6 @@ describe('TestRun Controller - updateRunItem', () => {
     await testRunController.updateRunItem(mockRequest, mockResponse as any);
 
     expect(mockResponse.status).toHaveBeenCalledWith(404);
-    expect(testCaseService.updateTestCase).not.toHaveBeenCalled();
+    expect(discussionService.createSystemMessage).not.toHaveBeenCalled();
   });
 });

@@ -114,10 +114,26 @@ const ImportTestCasesModal: React.FC<ImportTestCasesModalProps> = ({
         if (!trimmedValue) return '';
 
         const normalizedValue = trimmedValue.toLowerCase();
-        if (normalizedValue === 'pass') return Status.Passed;
-        if (normalizedValue === 'fail') return Status.Failed;
 
-        return trimmedValue as Status;
+        // Map old status values to new ones
+        if (normalizedValue === 'pass' || normalizedValue === 'passed') return Status.Ready;
+        if (normalizedValue === 'fail' || normalizedValue === 'failed') return Status.Ready;
+        if (normalizedValue === 'ready for testing' || normalizedValue === 'ready') return Status.Ready;
+        if (normalizedValue === 'in progress') return Status.InReview;
+        if (normalizedValue === 'blocked' || normalizedValue === 'retest' || normalizedValue === 'pass - fixed' || normalizedValue === 'passfixed') return Status.Ready;
+        if (normalizedValue === 'skipped' || normalizedValue === 'out of scope' || normalizedValue === 'outofscope') return Status.Archived;
+        if (normalizedValue === 'draft') return Status.Draft;
+        if (normalizedValue === 'in review' || normalizedValue === 'inreview') return Status.InReview;
+        if (normalizedValue === 'updated') return Status.Updated;
+        if (normalizedValue === 'archived') return Status.Archived;
+
+        // If it's already a valid new status, return it
+        if (Object.values(Status).includes(trimmedValue as Status)) {
+            return trimmedValue as Status;
+        }
+
+        // Default to Ready for unrecognized values
+        return Status.Ready;
     };
 
     const autoDetectMappings = (headers: string[]): ColumnMapping[] => {
