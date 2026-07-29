@@ -240,6 +240,7 @@ export interface TestRunGroup {
     name: string;
     description?: string;
     projectId: string;
+    parentId?: string | null;
     color?: string;
     createdBy: Tester;
     createdAt: string;

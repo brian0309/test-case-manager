@@ -47,6 +47,7 @@ export const createTestRunGroup = async (
         name: data.name,
         description: data.description,
         projectId: new Types.ObjectId(projectId),
+        parentId: data.parentId ? new Types.ObjectId(data.parentId) : undefined,
         color: data.color || "bg-blue-500",
         createdBy: new Types.ObjectId(userId),
     });
@@ -126,6 +127,7 @@ export const updateTestRunGroup = async (
 
     if (data.name) group.name = data.name;
     if (data.description !== undefined) group.description = data.description;
+    if (data.parentId !== undefined) group.parentId = data.parentId ? new Types.ObjectId(data.parentId) : undefined as any;
     if (data.color !== undefined) group.color = data.color;
 
     await group.save();
@@ -153,6 +155,15 @@ export const deleteTestRunGroup = async (
         return false;
     }
 
+    // Reparent child groups to the deleted group's parent (or make them root)
+    const groupToDelete = await TestRunGroup.findById(groupId);
+    const parentOfDeleted = groupToDelete?.parentId || null;
+
+    await TestRunGroup.updateMany(
+        { parentId: new Types.ObjectId(groupId) },
+        { $set: { parentId: parentOfDeleted } }
+    );
+
     await TestRunGroup.deleteOne({ _id: new Types.ObjectId(groupId) });
     return true;
 };
@@ -166,6 +177,7 @@ export const formatTestRunGroupResponse = (group: any): TestRunGroupResponse => 
         name: group.name,
         description: group.description,
         projectId: group.projectId.toString(),
+        parentId: group.parentId ? group.parentId.toString() : null,
         color: group.color,
         createdBy: formatTesterResponse(group.createdBy),
         createdAt: group.createdAt?.toISOString?.() || group.createdAt,

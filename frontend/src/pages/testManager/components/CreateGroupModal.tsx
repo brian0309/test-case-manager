@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X } from 'lucide-react';
 import { TestRunGroup } from '../../../types/testManager';
 
 interface CreateGroupModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (name: string, description: string, color: string) => Promise<void>;
+    onSubmit: (name: string, description: string, color: string, parentId?: string | null) => Promise<void>;
     initialData?: TestRunGroup;
+    allGroups: TestRunGroup[];
     mode: 'create' | 'edit';
 }
 
@@ -26,10 +27,12 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     onClose,
     onSubmit,
     initialData,
+    allGroups,
     mode
 }) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
+    const [parentId, setParentId] = useState<string>('');
     const [color, setColor] = useState(COLORS[0].value);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -37,13 +40,22 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
         if (isOpen && initialData && mode === 'edit') {
             setName(initialData.name);
             setDescription(initialData.description || '');
+            setParentId(initialData.parentId || '');
             setColor(initialData.color || COLORS[0].value);
         } else if (isOpen && mode === 'create') {
             setName('');
             setDescription('');
+            setParentId('');
             setColor(COLORS[0].value);
         }
     }, [isOpen, initialData, mode]);
+
+    const availableParents = useMemo(() => {
+        if (mode === 'edit' && initialData) {
+            return allGroups.filter(g => g.id !== initialData.id);
+        }
+        return allGroups;
+    }, [allGroups, mode, initialData]);
 
     if (!isOpen) return null;
 
@@ -53,11 +65,15 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
 
         setIsSubmitting(true);
         try {
-            await onSubmit(name, description, color);
+            await onSubmit(name, description, color, parentId || null);
             onClose();
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const getParentName = (id: string) => {
+        return allGroups.find(g => g.id === id)?.name || 'Unknown';
     };
 
     return (
@@ -89,6 +105,29 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                             placeholder="e.g., Sprint 24, Regression Suite"
                             required
                         />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Parent Folder
+                        </label>
+                        <select
+                            value={parentId}
+                            onChange={(e) => setParentId(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        >
+                            <option value="">No Parent (Root Level)</option>
+                            {availableParents
+                                .filter(g => !g.parentId)
+                                .map((group) => (
+                                    <option key={group.id} value={group.id}>
+                                        {group.name}
+                                    </option>
+                                ))}
+                        </select>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            {parentId ? `Subfolder of: ${getParentName(parentId)}` : 'This group will be at the root level'}
+                        </p>
                     </div>
 
                     <div>

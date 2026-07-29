@@ -324,6 +324,7 @@ const TestRunsPage: React.FC = () => {
                 name: g.name,
                 description: g.description,
                 projectId: g.projectId,
+                parentId: g.parentId,
                 color: g.color,
                 createdBy: g.createdBy,
                 createdAt: g.createdAt,
@@ -444,10 +445,10 @@ const TestRunsPage: React.FC = () => {
         fetchTags();
     };
 
-    const handleCreateGroup = async (name: string, description: string, color: string) => {
+    const handleCreateGroup = async (name: string, description: string, color: string, parentId?: string | null) => {
         if (!activeProject) return;
         try {
-            await testRunApi.createTestRunGroup(activeProject, { name, description, color });
+            await testRunApi.createTestRunGroup(activeProject, { name, description, parentId, color });
             toast.success('Group created!');
             fetchGroups();
         } catch (error: unknown) {
@@ -456,10 +457,10 @@ const TestRunsPage: React.FC = () => {
         }
     };
 
-    const handleUpdateGroup = async (name: string, description: string, color: string) => {
+    const handleUpdateGroup = async (name: string, description: string, color: string, parentId?: string | null) => {
         if (!editingGroup) return;
         try {
-            await testRunApi.updateTestRunGroup(editingGroup.id, { name, description, color });
+            await testRunApi.updateTestRunGroup(editingGroup.id, { name, description, parentId, color });
             toast.success('Group updated!');
             fetchGroups();
             setEditingGroup(undefined);
@@ -685,15 +686,26 @@ const TestRunsPage: React.FC = () => {
         [testRunGroups]
     );
 
+    const allDescendantGroupIds = useCallback((groupId: string): Set<string> => {
+        const ids = new Set<string>([groupId]);
+        const children = testRunGroups.filter(g => g.parentId === groupId);
+        for (const child of children) {
+            const childDescendants = allDescendantGroupIds(child.id);
+            childDescendants.forEach(id => ids.add(id));
+        }
+        return ids;
+    }, [testRunGroups]);
+
     const filteredRuns = useMemo(() => {
         const groupFilteredRuns = testRuns.filter((run) => {
             if (selectedGroupFilter === 'all') return true;
             if (selectedGroupFilter === 'ungrouped') return !run.groupId;
-            return run.groupId === selectedGroupFilter;
+            const groupIds = allDescendantGroupIds(selectedGroupFilter);
+            return run.groupId ? groupIds.has(run.groupId) : false;
         });
 
         return filterTestRunsBySearch(groupFilteredRuns, searchQuery, groupNameById);
-    }, [testRuns, selectedGroupFilter, searchQuery, groupNameById]);
+    }, [testRuns, selectedGroupFilter, searchQuery, groupNameById, allDescendantGroupIds]);
 
     const isDetailLoading = Boolean(detailRunId) && (!detailRun || detailRun.id !== detailRunId);
 
@@ -1037,6 +1049,7 @@ const TestRunsPage: React.FC = () => {
                 }}
                 onSubmit={editingGroup ? handleUpdateGroup : handleCreateGroup}
                 initialData={editingGroup}
+                allGroups={testRunGroups}
                 mode={editingGroup ? 'edit' : 'create'}
             />
 

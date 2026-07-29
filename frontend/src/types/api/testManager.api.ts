@@ -364,6 +364,7 @@ export interface TestRunGroupResponse {
   name: string;
   description?: string;
   projectId: string;
+  parentId?: string | null;
   color?: string;
   createdBy: TesterResponse;
   createdAt: string;
@@ -373,12 +374,14 @@ export interface TestRunGroupResponse {
 export interface CreateTestRunGroupRequest {
   name: string;
   description?: string;
+  parentId?: string | null;
   color?: string;
 }
 
 export interface UpdateTestRunGroupRequest {
   name?: string;
   description?: string;
+  parentId?: string | null;
   color?: string;
 }
 

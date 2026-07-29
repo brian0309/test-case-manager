@@ -3,6 +3,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import toast from 'react-hot-toast';
 import { TestCase, TestRunGroup } from '../../../types/testManager';
 import TagInput from '../../../components/testManager/TagInput';
+import { getIndentedGroupOptions } from './testRunUtils';
 
 export interface CreateRunModalProps {
     isOpen: boolean;
@@ -158,9 +159,9 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
                                 className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100"
                             >
                                 <option value="">No Group</option>
-                                {testRunGroups.map((group) => (
-                                    <option key={group.id} value={group.id}>
-                                        {group.name}
+                                {getIndentedGroupOptions(testRunGroups).map((opt) => (
+                                    <option key={opt.id} value={opt.id}>
+                                        {opt.label}
                                     </option>
                                 ))}
                             </select>

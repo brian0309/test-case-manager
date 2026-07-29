@@ -19,6 +19,11 @@ const testRunGroupSchema = new Schema<ITestRunGroupDocument>(
             ref: "Project",
             required: true,
         },
+        parentId: {
+            type: Schema.Types.ObjectId,
+            ref: "TestRunGroup",
+            default: null,
+        },
         color: {
             type: String,
             default: "bg-blue-500",
@@ -36,5 +41,6 @@ const testRunGroupSchema = new Schema<ITestRunGroupDocument>(
 testRunGroupSchema.index({ projectId: 1 });
 testRunGroupSchema.index({ projectId: 1, createdAt: -1 });
 testRunGroupSchema.index({ createdBy: 1 });
+testRunGroupSchema.index({ parentId: 1 });
 
 export const TestRunGroup = mongoose.model<ITestRunGroupDocument>("TestRunGroup", testRunGroupSchema);

@@ -1,4 +1,4 @@
-import { TestRunStatus, RunItemStatus, RunItem, TestRunListItem, TicketPriority, TicketSeverity } from '../../../types/testManager';
+import { TestRunStatus, RunItemStatus, RunItem, TestRunListItem, TestRunGroup, TicketPriority, TicketSeverity } from '../../../types/testManager';
 
 export const getRunStatusColor = (status: TestRunStatus) => {
     switch (status) {
@@ -165,4 +165,35 @@ export const mapCasePriorityToTicketDefaults = (
         default:
             return { priority: TicketPriority.Medium, severity: TicketSeverity.Minor };
     }
+};
+
+/**
+ * Builds a flat list of group options with indentation prefixes for select dropdowns.
+ */
+export const getIndentedGroupOptions = (groups: TestRunGroup[]): { id: string; label: string }[] => {
+    const childrenMap = new Map<string, TestRunGroup[]>();
+    const roots: TestRunGroup[] = [];
+
+    for (const group of groups) {
+        if (group.parentId) {
+            const siblings = childrenMap.get(group.parentId) || [];
+            siblings.push(group);
+            childrenMap.set(group.parentId, siblings);
+        } else {
+            roots.push(group);
+        }
+    }
+
+    const result: { id: string; label: string }[] = [];
+
+    const walk = (parentGroups: TestRunGroup[], depth: number) => {
+        for (const group of parentGroups) {
+            const prefix = '\u00A0\u00A0\u00A0\u00A0'.repeat(depth);
+            result.push({ id: group.id, label: `${prefix}${group.name}` });
+            walk(childrenMap.get(group.id) || [], depth + 1);
+        }
+    };
+
+    walk(roots, 0);
+    return result;
 };

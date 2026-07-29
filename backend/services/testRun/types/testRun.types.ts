@@ -212,6 +212,7 @@ export interface ITestRunGroup {
   name: string;
   description?: string;
   projectId: Types.ObjectId;
+  parentId?: Types.ObjectId | null;
   color?: string;
   createdBy: Types.ObjectId;
   createdAt: Date;
@@ -225,6 +226,7 @@ export interface TestRunGroupResponse {
   name: string;
   description?: string;
   projectId: string;
+  parentId?: string | null;
   color?: string;
   createdBy: TesterResponse;
   createdAt: string;
@@ -234,12 +236,14 @@ export interface TestRunGroupResponse {
 export interface CreateTestRunGroupRequest {
   name: string;
   description?: string;
+  parentId?: string | null;
   color?: string;
 }
 
 export interface UpdateTestRunGroupRequest {
   name?: string;
   description?: string;
+  parentId?: string | null;
   color?: string;
 }
 
