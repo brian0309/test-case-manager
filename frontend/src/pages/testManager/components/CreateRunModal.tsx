@@ -17,6 +17,7 @@ export interface CreateRunModalProps {
     onSelectAll: (selectAll: boolean, filteredCases: TestCase[]) => void;
     tagSuggestions: string[];
     initialTitle?: string;
+    initialGroupId?: string;
 }
 
 const CreateRunModal: React.FC<CreateRunModalProps> = ({
@@ -31,6 +32,7 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
     onSelectAll,
     tagSuggestions,
     initialTitle,
+    initialGroupId,
 }) => {
     const [title, setTitle] = useState(initialTitle ?? '');
     const [description, setDescription] = useState('');
@@ -69,6 +71,11 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
     useEffect(() => {
         if (isOpen) {
             setTitle(initialTitle ?? '');
+            if (initialGroupId && testRunGroups.some(g => g.id === initialGroupId)) {
+                setSelectedGroupId(initialGroupId);
+            } else {
+                setSelectedGroupId('');
+            }
         } else {
             setTitle('');
             setDescription('');
@@ -77,7 +84,7 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
             setSelectedGroupId('');
             setTags([]);
         }
-    }, [isOpen, initialTitle]);
+    }, [isOpen, initialTitle, initialGroupId, testRunGroups]);
 
     const allFilteredSelected = filteredTestCases.length > 0 && filteredTestCases.every((testCase) => selectedCaseIdsSet.has(testCase.id));
 

@@ -1038,6 +1038,7 @@ const TestRunsPage: React.FC = () => {
                 }}
                 tagSuggestions={tagSuggestions}
                 initialTitle={createModalInitialTitle}
+                initialGroupId={selectedGroupFilter !== 'all' && selectedGroupFilter !== 'ungrouped' ? selectedGroupFilter : undefined}
             />
 
             {/* Create/Edit Group Modal */}
