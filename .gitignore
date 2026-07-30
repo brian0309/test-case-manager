@@ -22,6 +22,9 @@ dist-ssr
 coverage
 *.lcov
 
+# playwright-cli
+.playwright-cli/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

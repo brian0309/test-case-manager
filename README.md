@@ -22,7 +22,9 @@
    <img alt="Real-Time" src="https://img.shields.io/badge/Real--Time-Socket.io-brightgreen" />
 </p>
 
-![Demo App](/frontend/public/screenshot-for-readme.png)
+![ChatGPT Homepage Suite - Test Cases](./screenshots/04-cases.png)
+
+> 📸 See the [Screenshots Guide](./Documentation/SCREENSHOTS.md) for a complete walkthrough from dashboard to ticket creation.
 
 A full-stack **test case management system** built with the MERN stack (MongoDB, Express, React, Node.js). Organize your QA workflow with projects, test suites, test cases, and test runs—featuring real-time collaborative editing, AI-powered test generation, comprehensive reporting, and a modern dashboard UI.
 
