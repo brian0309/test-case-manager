@@ -100,7 +100,7 @@ const TestRunsPage: React.FC = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
     const [editingGroup, setEditingGroup] = useState<TestRunGroup | undefined>(undefined);
-    const [selectedCasesForRun, setSelectedCasesForRun] = useState<string[]>([]);
+    const [preselectedCaseIds, setPreselectedCaseIds] = useState<string[]>([]);
     const [executeRun, setExecuteRun] = useState<TestRun | null>(null);
     const [isExecuteModalOpen, setIsExecuteModalOpen] = useState(false);
     const [detailRun, setDetailRun] = useState<TestRun | null>(null);
@@ -157,6 +157,7 @@ const TestRunsPage: React.FC = () => {
             pendingSuiteIdRef.current = suiteId;
             pendingSuiteNameRef.current = suiteName;
         } else {
+            setPreselectedCaseIds([]);
             setIsCreateModalOpen(true);
         }
 
@@ -173,7 +174,7 @@ const TestRunsPage: React.FC = () => {
         pendingSuiteIdRef.current = null;
         pendingSuiteNameRef.current = null;
         const ids = testCases.filter(tc => tc.suiteId === suiteId).map(tc => tc.id);
-        setSelectedCasesForRun(ids);
+        setPreselectedCaseIds(ids);
         if (suiteName) {
             setCreateModalInitialTitle(generateSuiteTitle(suiteName));
         }
@@ -192,6 +193,7 @@ const TestRunsPage: React.FC = () => {
     // Handle navigation state for opening new run modal
     useEffect(() => {
         if (location.state?.openNewRun) {
+            setPreselectedCaseIds([]);
             setIsCreateModalOpen(true);
             window.history.replaceState({}, document.title);
         }
@@ -441,7 +443,6 @@ const TestRunsPage: React.FC = () => {
             return [listItem, ...previous];
         });
         setRunsOffset((previous) => previous + 1);
-        setSelectedCasesForRun([]);
         fetchTags();
     };
 
@@ -674,12 +675,6 @@ const TestRunsPage: React.FC = () => {
         }
         await createTicket(activeProject, data);
     }, [activeProject, createTicket]);
-
-    const toggleCaseSelection = (caseId: string) => {
-        setSelectedCasesForRun((prev) =>
-            prev.includes(caseId) ? prev.filter((id) => id !== caseId) : [...prev, caseId]
-        );
-    };
 
     const groupNameById = useMemo(
         () => new Map(testRunGroups.map((group) => [group.id, group.name])),
@@ -1020,25 +1015,17 @@ const TestRunsPage: React.FC = () => {
                 isOpen={isCreateModalOpen}
                 onClose={() => {
                     setIsCreateModalOpen(false);
-                    setSelectedCasesForRun([]);
+                    setPreselectedCaseIds([]);
                     setCreateModalInitialTitle('');
                 }}
                 onSubmit={handleCreateRun}
                 testCases={testCases}
                 testSuites={testSuites.map(s => ({ id: s.id, name: s.name }))}
                 testRunGroups={testRunGroups}
-                selectedCases={selectedCasesForRun}
-                onToggleCase={toggleCaseSelection}
-                onSelectAll={(selectAll, filteredCases) => {
-                    if (selectAll) {
-                        setSelectedCasesForRun(filteredCases.map((tc) => tc.id));
-                    } else {
-                        setSelectedCasesForRun([]);
-                    }
-                }}
                 tagSuggestions={tagSuggestions}
                 initialTitle={createModalInitialTitle}
                 initialGroupId={selectedGroupFilter !== 'all' && selectedGroupFilter !== 'ungrouped' ? selectedGroupFilter : undefined}
+                initialSelectedCaseIds={preselectedCaseIds}
             />
 
             {/* Create/Edit Group Modal */}
