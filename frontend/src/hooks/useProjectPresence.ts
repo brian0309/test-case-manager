@@ -40,8 +40,14 @@ export function useProjectPresence({
     (data: SocketEvents["project:presence"]) => {
       if (data.projectId !== projectId) return;
 
-      // Filter out current user from presence list
-      const otherUsers = data.users.filter((u) => u.id !== user?._id);
+      // Filter out current user from presence list and dedupe by id
+      // (the backend can report the same user once per socket connection)
+      const seen = new Set<string>();
+      const otherUsers = data.users.filter((u) => {
+        if (u.id === user?._id || seen.has(u.id)) return false;
+        seen.add(u.id);
+        return true;
+      });
       setProjectUsers(otherUsers);
     },
     [projectId, user?._id]

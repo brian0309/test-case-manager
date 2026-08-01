@@ -28,7 +28,7 @@ export interface CreateRunModalProps {
     initialSelectedCaseIds?: string[];
 }
 
-type SelectionTab = 'individual' | 'suite' | 'area';
+type SelectionTab = 'suite' | 'area' | 'individual';
 
 const FILTER_CHIP_BASE = 'px-2.5 py-1 text-xs font-medium rounded-full border transition-colors cursor-pointer';
 const FILTER_CHIP_ACTIVE = 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700';
@@ -68,7 +68,7 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedGroupId, setSelectedGroupId] = useState<string>('');
     const [tags, setTags] = useState<string[]>([]);
-    const [activeTab, setActiveTab] = useState<SelectionTab>('individual');
+    const [activeTab, setActiveTab] = useState<SelectionTab>('suite');
 
     const [selectedIds, setSelectedIds] = useState<string[]>(() => initialSelectedCaseIds ?? []);
 
@@ -95,7 +95,7 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
             } else {
                 setSelectedGroupId('');
             }
-            setActiveTab('individual');
+            setActiveTab('suite');
             setSuiteFilters(new Set());
             setAreaFilters(new Set());
             setSearchQuery('');
@@ -726,12 +726,6 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
                     <div>
                         <div className="flex gap-1 mb-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1">
                             <button
-                                onClick={() => setActiveTab('individual')}
-                                className={`${TAB_BASE} ${activeTab === 'individual' ? TAB_ACTIVE : TAB_INACTIVE}`}
-                            >
-                                Individual Cases
-                            </button>
-                            <button
                                 onClick={() => setActiveTab('suite')}
                                 className={`${TAB_BASE} ${activeTab === 'suite' ? TAB_ACTIVE : TAB_INACTIVE}`}
                             >
@@ -743,10 +737,16 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
                             >
                                 By Area
                             </button>
+                            <button
+                                onClick={() => setActiveTab('individual')}
+                                className={`${TAB_BASE} ${activeTab === 'individual' ? TAB_ACTIVE : TAB_INACTIVE}`}
+                            >
+                                Individual Cases
+                            </button>
                         </div>
-                        {activeTab === 'individual' && renderIndividualTab()}
                         {activeTab === 'suite' && renderSuiteTab()}
                         {activeTab === 'area' && renderAreaTab()}
+                        {activeTab === 'individual' && renderIndividualTab()}
                     </div>
                 </div>
 

@@ -253,12 +253,13 @@ class SocketManager {
             });
             
             // Send current presence list to the joining user
-            const usersArray = Array.from(projectUsers.values()).map(u => ({
-              id: u.id,
-              name: u.name,
-              avatar: u.avatar,
-            }));
-            socket.emit("project:presence", { projectId, users: usersArray });
+            // A user may hold multiple sockets (multiple tabs, reconnects), so
+            // report each user id only once.
+            const uniqueUsers = new Map<string, { id: string; name: string; avatar?: string }>();
+            for (const u of projectUsers.values()) {
+              uniqueUsers.set(u.id, { id: u.id, name: u.name, avatar: u.avatar });
+            }
+            socket.emit("project:presence", { projectId, users: Array.from(uniqueUsers.values()) });
           }
         }
       });

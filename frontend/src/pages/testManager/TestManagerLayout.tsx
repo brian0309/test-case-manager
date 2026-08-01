@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Toolbar from '../../components/testManager/Toolbar';
 import TestSuiteSidebar from '../../components/testManager/TestSuiteSidebar';
 import TestSuiteSidebarDrawer from '../../components/testManager/TestSuiteSidebarDrawer';
+import TestSuiteSidebarToggle from '../../components/testManager/TestSuiteSidebarToggle';
 import ConfirmationModal from '../../components/testManager/ConfirmationModal';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -37,14 +38,14 @@ const TestManagerLayout: React.FC = () => {
     const location = useLocation();
     const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
     const isMobile = useMediaQuery('(max-width: 767px)');
-    const [isSuiteSidebarOpen, setIsSuiteSidebarOpen] = React.useState(false);
+    const [isSuiteSidebarOpen, setIsSuiteSidebarOpen] = React.useState(() => !isMobile);
 
     // Close the mobile suite sidebar when leaving the cases view
     React.useEffect(() => {
-        if (!location.pathname.includes('/cases')) {
+        if (isMobile && !location.pathname.includes('/cases')) {
             setIsSuiteSidebarOpen(false);
         }
-    }, [location.pathname]);
+    }, [location.pathname, isMobile]);
 
     // Sync URL with store
     React.useEffect(() => {
@@ -57,7 +58,9 @@ const TestManagerLayout: React.FC = () => {
     }, [location.pathname, setViewMode]);
 
     const handleViewChange = (mode: ViewMode) => {
-        setIsSuiteSidebarOpen(false);
+        if (isMobile) {
+            setIsSuiteSidebarOpen(false);
+        }
         setViewMode(mode);
         // Only clear suite when going to projects view
         if (mode === 'projects') {
@@ -148,6 +151,17 @@ const TestManagerLayout: React.FC = () => {
     const showSuiteSidebar = viewMode === 'cases' && !!activeProject;
     const totalProjectCaseCount = testSuites.reduce((sum, s) => sum + (s.caseCount ?? 0), 0);
 
+    // Auto-hide the desktop sidebar toggle after 3s while the sidebar is open
+    const [isToggleVisible, setIsToggleVisible] = React.useState(true);
+    React.useEffect(() => {
+        if (isMobile || !showSuiteSidebar || !isSuiteSidebarOpen) {
+            setIsToggleVisible(true);
+            return;
+        }
+        const timer = setTimeout(() => setIsToggleVisible(false), 3000);
+        return () => clearTimeout(timer);
+    }, [isMobile, showSuiteSidebar, isSuiteSidebarOpen, isToggleVisible]);
+
     return (
         <div className="flex flex-col h-full font-sans text-gray-900 dark:text-gray-100">
             <main className="mac-card flex-1 flex flex-col min-w-0 overflow-hidden relative">
@@ -173,13 +187,30 @@ const TestManagerLayout: React.FC = () => {
                 />
                 <div className="flex-1 flex overflow-hidden">
                     {showSuiteSidebar && !isMobile && (
-                        <TestSuiteSidebar
-                            testSuites={testSuites}
-                            activeSuiteId={activeSuiteId}
-                            projectCaseCount={totalProjectCaseCount}
-                            onSuiteSelect={handleSuiteSelect}
-                            onCreateSuite={() => navigate('/test-manager/suites', { state: { openNewSuite: true } })}
-                        />
+                        <>
+                            {isSuiteSidebarOpen && (
+                                <div
+                                    className="flex-shrink-0"
+                                    onMouseMove={() => setIsToggleVisible(true)}
+                                >
+                                    <TestSuiteSidebar
+                                        testSuites={testSuites}
+                                        activeSuiteId={activeSuiteId}
+                                        projectCaseCount={totalProjectCaseCount}
+                                        onSuiteSelect={handleSuiteSelect}
+                                        onCreateSuite={() => navigate('/test-manager/suites', { state: { openNewSuite: true } })}
+                                    />
+                                </div>
+                            )}
+                            <TestSuiteSidebarToggle
+                                isOpen={isSuiteSidebarOpen}
+                                onToggle={() => setIsSuiteSidebarOpen(prev => !prev)}
+                                openOffsetClass="translate-x-56"
+                                size="sm"
+                                visible={isSuiteSidebarOpen ? isToggleVisible : true}
+                                onReveal={() => setIsToggleVisible(true)}
+                            />
+                        </>
                     )}
                     <div className="flex-1 overflow-auto relative">
                         <Outlet />

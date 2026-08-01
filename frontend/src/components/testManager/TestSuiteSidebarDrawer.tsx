@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useRef } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import TestSuiteSidebarToggle from './TestSuiteSidebarToggle';
 
 interface TestSuiteSidebarDrawerProps {
     isOpen: boolean;
@@ -80,24 +80,13 @@ const TestSuiteSidebarDrawer: React.FC<TestSuiteSidebarDrawerProps> = ({
             </div>
 
             {/* Floating edge toggle */}
-            <button
-                ref={toggleRef}
-                type="button"
-                data-testid="suite-sidebar-toggle"
-                onClick={onToggle}
-                aria-label={isOpen ? 'Close test suites' : 'Open test suites'}
-                aria-expanded={isOpen}
-                aria-controls={drawerId}
-                className={`absolute left-0 top-1/2 -translate-y-1/2 z-40 flex h-12 w-9 items-center justify-center rounded-r-xl bg-system-blue text-white shadow-lg hover:bg-system-darkBlue active:scale-95 transition-transform duration-300 ease-in-out motion-reduce:transition-none ${
-                    isOpen ? 'translate-x-72' : ''
-                }`}
-            >
-                {isOpen ? (
-                    <ChevronLeft className="h-5 w-5" />
-                ) : (
-                    <ChevronRight className="h-5 w-5" />
-                )}
-            </button>
+            <TestSuiteSidebarToggle
+                isOpen={isOpen}
+                onToggle={onToggle}
+                controlsId={drawerId}
+                openOffsetClass="translate-x-72"
+                buttonRef={toggleRef}
+            />
         </>
     );
 };
