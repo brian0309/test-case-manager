@@ -34,9 +34,10 @@ A full-stack **test case management system** built with the MERN stack (MongoDB,
 - 📝 **Test Cases** – Create, edit, clone, and bulk-manage test cases with priority, status, steps, and expected results
 - ⚡ **Virtualized Tables** – TanStack React Virtual keeps large test case lists fast and responsive
 - 🚀 **Test Runs** – Execute test cases, track results (Pass/Fail/Blocked/Skipped), and record actual outcomes
+- 🎫 **Tickets & Discussions** – Track bugs with full lifecycle management and thread comments on cases and tickets
 - 📊 **Reports & Analytics** – Visual dashboards with execution statistics, pass rates, and trend analysis
 - 👥 **Real-Time Collaboration** – Google Docs-style live editing with presence indicators via Socket.io
-- 🤖 **AI-Powered Generation** – Generate test cases automatically using Gemini AI
+- 🤖 **Multi-Provider AI Generation** – Generate test cases automatically using Gemini, OpenAI, OpenRouter, Anthropic, or DeepSeek
 - 🔐 **Secure Authentication** – JWT-based auth with email/password and Google OAuth 2.0
 
 ### Installation
@@ -66,26 +67,40 @@ This project covers:
 ### Test Management Features
 
 -   📁 **Projects** – Create and manage testing projects with custom fields and member collaboration
+-   👥 **Project Members** – Add/remove members who share access to a project
+-   ⚙️ **Project Settings** – Hide default fields/columns and define custom fields (text, long text, dropdown, rich text) per project
 -   📂 **Test Suites** – Organize test cases into logical groupings within projects
--   📝 **Test Cases** – Full CRUD with priority, status, steps, expected results, and custom fields
+-   📝 **Test Cases** – Full CRUD with priority, status, steps, expected results, custom fields, areas, tags, and assigned testers
 -   🔄 **Bulk Operations** – Clone, move, delete, and reorder multiple test cases at once
+-   📥 **Import Test Cases** – Bulk import test cases from CSV/Excel, with or without creating a suite
+-   📤 **Export Test Cases** – Export test cases with selectable columns to CSV/Excel
 -   🚀 **Test Runs** – Execute test cases and record Pass/Fail/Blocked/Skipped results
--   📊 **Reports & Analytics** – Visual dashboards with execution statistics and trends
--   🤖 **AI Generation** – Generate test cases automatically using Gemini AI
--   📜 **History Tracking** – Full audit trail of test case changes with snapshots
+-   🏃 **Run Execution Wizard** – Step-by-step guided execution with pass/fail/skip/retry; failing an item prompts instant bug-ticket creation
+-   📁 **Run Groups** – Organize test runs into nested, color-coded groups (children reparent on group deletion)
+-   🏷️ **Tags & Environments** – Tag test runs and track execution environments (staging, production, etc.)
+-   ⏱️ **Run Item Details** – Track time spent, attachments, assignees, and execution timestamps per test run item
+-   🎫 **Tickets** – Bug/defect tracking with status, priority, severity, assignee, tags, attachments, and links to related run items
+-   💬 **Discussions** – Threaded comments on test cases and tickets with fix-state tracking and attachments
+-   ⚙️ **System Messages** – Run item executions and ticket status changes automatically post status updates to discussions
+-   📊 **Reports & Analytics** – Visual dashboards with execution statistics, trends, suite comparisons, and test case health (flaky tests, never executed); exportable to CSV/PDF
+-   📈 **Dashboard Statistics** – Aggregated project overview stats via `/api/statistics`
+-   🖼️ **Rich Text Editing** – Tiptap-based WYSIWYG editor with image uploads to S3-compatible storage
+-   🤖 **AI Generation** – Generate test cases automatically from **multiple AI providers**: Gemini, OpenAI, OpenRouter, Anthropic Claude, and DeepSeek
+-   📜 **History Tracking** – Full audit trail of test case changes with snapshots, viewable and **restorable** to any previous version
 
 ### Real-Time Collaboration
 
 -   📡 **WebSocket Integration** – Socket.io for instant updates across all clients
--   👥 **Live Presence** – See who's viewing and editing in real-time
--   ✏️ **Collaborative Editing** – Google Docs-style field-level live editing
+-   👥 **Live Presence** – See who's viewing and editing in real-time (projects, test cases, and tickets)
+-   ✏️ **Collaborative Editing** – Google Docs-style field-level live editing for test cases and tickets
 -   🔄 **Automatic Sync** – UI updates instantly when team members make changes
+-   💬 **Real-Time Discussions** – New/updated/deleted discussion messages broadcast instantly
 
 ### Authentication Features
 
--   � **Email/Password Auth** - User registration with password hashing and JWT
--   📧 **Email Verification** - Mailtrap integration with OTP-style verification
--   🔄 **Password Reset Flow** - Secure forgot/reset password via email
+-   🔑 **Email/Password Auth** - User registration with password hashing and JWT
+-   📧 **Email Verification** - Mailtrap integration with OTP-style verification (24h token validity, 5-min resend cooldown)
+-   🔄 **Password Reset Flow** - Secure forgot/reset password via email (1-hour token expiry)
 -   🔒 **Change Password** - Update password for logged-in users
 -   🌐 **Google OAuth 2.0** - One-click sign in with Google
 -   🛡️ **CSRF Protection** - State parameter validation for OAuth
@@ -100,18 +115,30 @@ This project covers:
 -   📝 **Test Cases Page** - Table view with inline editing and bulk operations
 -   ⚡ **Virtualized Table** - TanStack React Virtual keeps large lists responsive
 -   🚀 **Test Runs Page** - Execute tests and record results
+-   🎫 **Tickets Page** - Track and manage bugs/defects linked to runs
 -   📊 **Reports Page** - Analytics dashboards and execution statistics
 -   🏠 **Dashboard** - Overview with quick actions and recent activity
--   ⚙️ **Settings Page** - Profile, security, and preferences
+-   📈 **Analytics Page** - Interactive charts with Recharts
+-   ⚙️ **Settings Page** - Profile, security, AI provider preferences, and API key management
+-   🧠 **AI Generation Modal** - Stream test cases from Gemini, OpenAI, OpenRouter, Anthropic, or DeepSeek with per-provider model selection
+-   🎛️ **Filtering** - Filter modal for narrowing down test cases and tickets
+-   📄 **Report Export** - Download analytics as CSV or print-to-PDF
+-   📄 **Pagination** - Paginated case/run/ticket lists and infinite scroll on projects
+-   🧷 **Deep Links** - Shareable URLs for specific test cases, runs, run groups, and tickets
+-   🖼️ **Rich Text Editor** - Tiptap editor with S3-backed image uploads (test descriptions, steps, discussions)
+-   🗑️ **Type-to-Confirm Deletion** - Typing confirms destructive actions
 -   🎨 **Modern UI** - Tailwind CSS with Framer Motion animations
+-   🌙 **Dark Mode** - Light/dark theme toggle
 -   📱 **Responsive Design** - Works on desktop and mobile
 -   🎯 **State Management** - Zustand for global state
 -   🔔 **Toast Notifications** - User feedback with react-hot-toast
+-   📦 **Code Splitting** - Lazy-loaded routes and error boundaries
 
 ### Developer Experience
 
 -   📚 **Comprehensive Documentation** - Detailed guides for adding new features
--   🧪 **Testing Setup** - Jest with unit and integration test examples
+-   🧪 **Backend Testing** - Jest + Supertest with unit, integration, and service tests (mongodb-memory-server)
+-   🧪 **Frontend Testing** - Vitest + Testing Library for components and flows
 -   🔍 **Type Safety** - Full TypeScript coverage on frontend and backend
 -   📖 **Feature Guide** - Step-by-step instructions in `Documentation/ADDING_FEATURES.md`
 -   📡 **Real-Time Architecture** - Socket.io patterns documented in `Documentation/REALTIME_ARCHITECTURE.md`
@@ -167,6 +194,34 @@ ALLOWED_ORIGINS=http://localhost:5173
 # Frontend URL (deprecated - use ALLOWED_ORIGINS instead)
 # Kept for backward compatibility
 CLIENT_URL=http://localhost:5173
+
+# Encryption key for AI provider API key storage (must be 32 characters)
+ENCRYPTION_KEY=your_32_char_encryption_key_here
+
+# Optional: OpenRouter request identification headers (sent to OpenRouter)
+#OPENROUTER_HTTP_REFERER=https://your-app.com
+#OPENROUTER_TITLE=Test Case Manager
+
+# Optional: Mailtrap template UUID for welcome emails (falls back to local HTML)
+#MAILTRAP_WELCOME_TEMPLATE_UUID=your_mailtrap_template_uuid
+
+# S3-Compatible Storage (Cloudflare R2, AWS S3, MinIO, etc.)
+# Required for image uploads in the rich text editor
+S3_ACCESS_KEY_ID=your_s3_access_key_id
+S3_SECRET_ACCESS_KEY=your_s3_secret_access_key
+# For Cloudflare R2: https://ACCOUNT_ID.r2.cloudflarestorage.com
+S3_ENDPOINT=https://your-account-id.r2.cloudflarestorage.com
+S3_BUCKET_NAME=your-bucket-name
+# For Cloudflare R2 use 'auto', for AWS S3 use your region (e.g., 'us-east-1')
+S3_REGION=auto
+# Optional: Public URL for uploaded files (falls back to S3_ENDPOINT/S3_BUCKET_NAME/key)
+S3_PUBLIC_URL=https://your-custom-domain.com
+
+# Optional: Custom DNS servers for development (defaults to 1.1.1.1,8.8.8.8)
+#DNS_OVERRIDE_SERVERS=1.1.1.1,8.8.8.8
+
+# Optional: cookie domain for auth cookies (e.g., .example.com)
+#COOKIE_DOMAIN=
 ```
 
 Production / Render example (use your actual domain):
@@ -436,6 +491,60 @@ All API endpoints are prefixed with `/api`. Authentication endpoints are under `
 - `GET /api/auth/google/url` - Get Google OAuth URL
 - `GET /api/auth/google/callback` - Handle Google OAuth callback
 
+### Test Case Management
+
+**Projects** (`/api/projects`)
+- `POST /` - Create project · `GET /` - List projects · `GET /:id` - Get project
+- `PUT /:id` - Update project · `DELETE /:id` - Delete project
+- `POST /:id/members` - Add member · `DELETE /:id/members/:memberId` - Remove member
+- `GET /:id/settings` / `PUT /:id/settings` - Get/update project settings (custom fields, hidden fields/columns)
+- `DELETE /:id/settings/custom-fields/:fieldId` - Permanently delete custom field data
+
+**Test Suites** (`/api/projects/:projectId/suites`, `/api/suites`)
+- `POST /` / `GET /` - Create/list suites within a project
+- `GET /:id` / `PUT /:id` / `DELETE /:id` - Suite CRUD
+
+**Test Cases** (`/api/projects/:projectId/cases`, `/api/suites/:suiteId/cases`, `/api/cases`)
+- `POST /` / `GET /` - Create/list test cases in a suite
+- `GET /areas` - List distinct areas · `POST /bulk-import` - Bulk import (CSV/Excel, optionally creating a suite)
+- `PATCH /reorder` - Reorder test cases
+- `GET /:id` / `PUT /:id` / `DELETE /:id` - Test case CRUD · `POST /:id/clone` - Clone a test case
+- `PATCH /bulk-status` - Bulk status update · `DELETE /bulk` - Bulk delete
+
+**Test Runs** (`/api/projects/:projectId/runs`, `/api/runs`)
+- `POST /` / `GET /` - Create/list runs · `GET /tags` - List distinct tags
+- `GET /:id` / `PUT /:id` / `DELETE /:id` - Run CRUD
+- `PATCH /:id/items/:itemId` - Update run item (status, actual result, time spent, attachments)
+- `PATCH /:id/reorder` - Reorder run items · `POST /:id/clone` - Clone a run · `POST /:id/complete` - Complete a run
+
+**Run Groups** (`/api/projects/:projectId/run-groups`, `/api/run-groups`)
+- `POST /` / `GET /` - Create/list run groups · `GET /:id` / `PUT /:id` / `DELETE /:id` - Group CRUD
+
+**Tickets** (`/api/projects/:projectId/tickets`, `/api/tickets`)
+- `POST /` / `GET /` - Create/list tickets · `GET /by-run/:runId` - Tickets linked to a run
+- `GET /:id` / `PUT /:id` / `DELETE /:id` - Ticket CRUD
+
+**Discussions** (`/api/cases/:testCaseId/discussions`, `/api/tickets/:ticketId/discussions`)
+- `GET /` / `POST /` - List/create messages
+- `DELETE /:messageId` - Delete a message · `PATCH /:messageId/fix-state` - Update fix-state
+
+### AI Test Generation
+
+Per-provider endpoints (all protected; keys are encrypted at rest and per-user):
+- `POST /api/gemini/key` · `GET /api/gemini/settings` · `GET /api/gemini/models`
+- `POST /api/gemini/generate` · `POST /api/gemini/generate-stream`
+- Same pattern for `/api/openrouter`, `/api/openai`, `/api/anthropic`, `/api/deepseek`
+
+### Reports, Statistics & Uploads
+
+- `GET /api/statistics` - Dashboard overview statistics
+- `GET /api/reports/project/:projectId/summary` - Project summary report
+- `GET /api/reports/project/:projectId/trends` - Time-series trend data (day/week/month)
+- `GET /api/reports/project/:projectId/suite-comparison` - Suite pass-rate comparison
+- `GET /api/reports/project/:projectId/test-case-health` - Flaky/never-executed/most-failing cases
+- `GET /api/reports/run/:runId/detailed` - Detailed run report
+- `POST /api/upload/presigned-url` - Generate presigned URL for image upload (S3-compatible storage)
+
 ## 🛠️ Technologies Used
 
 ### Backend
@@ -448,6 +557,9 @@ All API endpoints are prefixed with `/api`. Authentication endpoints are under `
 - **google-auth-library** - Google OAuth
 - **cookie-parser** - Cookie handling
 - **cors** - Cross-origin resource sharing
+- **Socket.io** - Real-time collaboration
+- **@aws-sdk/client-s3** - S3-compatible image uploads (Cloudflare R2, AWS S3, MinIO)
+- **AI SDKs** - Gemini, OpenAI, OpenRouter, Anthropic, DeepSeek (streaming + encrypted key storage)
 
 ### Frontend
 - **React** - UI library
@@ -459,6 +571,11 @@ All API endpoints are prefixed with `/api`. Authentication endpoints are under `
 - **TanStack React Virtual** - Virtualized lists/tables
 - **React Hot Toast** - Notifications
 - **Lucide React** - Icons
+- **Socket.io Client** - Real-time updates
+- **Recharts** - Analytics charts
+- **Tiptap** - Rich text editor
+- **PapaParse / SheetJS (xlsx)** - CSV/Excel import & export
+- **@dnd-kit** - Drag-and-drop reordering
 
 ## 🔐 Security Features
 
@@ -471,6 +588,7 @@ All API endpoints are prefixed with `/api`. Authentication endpoints are under `
 - ✅ Protected API routes
 - ✅ Input validation
 - ✅ Google OAuth 2.0 with state parameter
+- ✅ API rate limiting on test run, ticket, and upload routes
 
 ## 📝 Additional Notes
 
