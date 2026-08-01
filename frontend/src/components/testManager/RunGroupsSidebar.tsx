@@ -105,15 +105,24 @@ const RunGroupsSidebar: React.FC<RunGroupsSidebarProps> = ({
                             className="flex-1 flex items-center gap-1.5 min-w-0 text-left"
                         >
                             {isFolder ? (
-                                <button
+                                <span
+                                    role="button"
+                                    tabIndex={0}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         toggleFolder(group.id);
                                     }}
-                                    className="p-0.5 -ml-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            toggleFolder(group.id);
+                                        }
+                                    }}
+                                    className="p-0.5 -ml-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0 cursor-pointer"
                                 >
                                     {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                                </button>
+                                </span>
                             ) : (
                                 <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${group.color || 'bg-gray-400'}`} />
                             )}
