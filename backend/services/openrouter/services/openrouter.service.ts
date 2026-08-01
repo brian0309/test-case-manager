@@ -376,7 +376,7 @@ export const simplifyOpenRouterError = (error: any): string => {
     }
 
     if (code === 400) {
-        return 'Invalid OpenRouter request. Please review your input and try again.';
+        return message.length > 160 ? `${message.slice(0, 157)}...` : message;
     }
 
     if (typeof code === 'number' && code >= 500 || /service unavailable|upstream/i.test(message)) {

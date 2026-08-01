@@ -68,7 +68,7 @@ const userSchema = new Schema<IUserDocument>(
 		},
 		preferredAiProvider: {
 			type: String,
-			enum: ['gemini', 'openrouter'],
+			enum: ['gemini', 'openrouter', 'openai', 'anthropic', 'deepseek'],
 			default: 'gemini'
 		},
 		openrouterApiKey: {
@@ -90,6 +90,54 @@ const userSchema = new Schema<IUserDocument>(
 			]
 		},
 		openrouterCustomModels: {
+			type: [String],
+			default: []
+		},
+		openaiApiKey: {
+			type: String,
+			select: false // Always exclude by default for security
+		},
+		openaiModel: {
+			type: String,
+			default: 'gpt-5'
+		},
+		openaiVisibleModels: {
+			type: [String],
+			default: ['gpt-5', 'gpt-5-mini', 'gpt-4.1', 'gpt-4o-mini']
+		},
+		openaiCustomModels: {
+			type: [String],
+			default: []
+		},
+		anthropicApiKey: {
+			type: String,
+			select: false // Always exclude by default for security
+		},
+		anthropicModel: {
+			type: String,
+			default: 'claude-sonnet-4'
+		},
+		anthropicVisibleModels: {
+			type: [String],
+			default: ['claude-opus-4', 'claude-sonnet-4', 'claude-haiku-4']
+		},
+		anthropicCustomModels: {
+			type: [String],
+			default: []
+		},
+		deepseekApiKey: {
+			type: String,
+			select: false // Always exclude by default for security
+		},
+		deepseekModel: {
+			type: String,
+			default: 'deepseek-v4-flash'
+		},
+		deepseekVisibleModels: {
+			type: [String],
+			default: ['deepseek-v4-flash', 'deepseek-v4-pro']
+		},
+		deepseekCustomModels: {
 			type: [String],
 			default: []
 		}

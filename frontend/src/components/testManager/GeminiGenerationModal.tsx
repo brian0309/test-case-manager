@@ -3,8 +3,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ChevronUp, Eye, EyeOff, Loader2, Sparkles, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ImagePreviewUploader from '../ImagePreviewUploader';
+import ProviderLogo from '../ProviderLogo';
 import { API_URL } from '../../utils/api';
 import { Priority, Status, TestCase } from '../../types/testManager';
+import type { AIProvider } from '../../utils/providerBrands';
 
 interface GeminiGenerationModalProps {
     onClose: () => void;
@@ -26,7 +28,21 @@ interface GeneratedCase {
     selected: boolean;
 }
 
-type AIProvider = 'gemini' | 'openrouter';
+interface ProviderMeta {
+    label: string;
+    endpointBase: string;
+    defaultModel: string;
+}
+
+const PROVIDER_META: Record<AIProvider, ProviderMeta> = {
+    gemini: { label: 'Gemini', endpointBase: '/gemini', defaultModel: 'gemini-2.5-flash' },
+    openrouter: { label: 'OpenRouter', endpointBase: '/openrouter', defaultModel: 'openai/gpt-4o-mini' },
+    openai: { label: 'OpenAI', endpointBase: '/openai', defaultModel: 'gpt-5' },
+    anthropic: { label: 'Anthropic Claude', endpointBase: '/anthropic', defaultModel: 'claude-sonnet-4' },
+    deepseek: { label: 'DeepSeek', endpointBase: '/deepseek', defaultModel: 'deepseek-v4-flash' },
+};
+
+const ALL_PROVIDERS: AIProvider[] = ['gemini', 'openrouter', 'openai', 'anthropic', 'deepseek'];
 
 interface ProviderModelOption {
     value: string;
@@ -140,14 +156,23 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
     const [providerHasApiKey, setProviderHasApiKey] = useState<Record<AIProvider, boolean>>({
         gemini: false,
         openrouter: false,
+        openai: false,
+        anthropic: false,
+        deepseek: false,
     });
     const [providerModels, setProviderModels] = useState<Record<AIProvider, ProviderModelOption[]>>({
         gemini: [],
         openrouter: [],
+        openai: [],
+        anthropic: [],
+        deepseek: [],
     });
     const [selectedModels, setSelectedModels] = useState<Record<AIProvider, string>>({
         gemini: 'gemini-2.5-flash',
         openrouter: 'openai/gpt-4o-mini',
+        openai: 'gpt-5',
+        anthropic: 'claude-sonnet-4',
+        deepseek: 'deepseek-v4-flash',
     });
     const [isLoadingSettings, setIsLoadingSettings] = useState<boolean>(true);
 
@@ -187,47 +212,52 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                     return result.data as ProviderSettingsData;
                 };
 
-                const [geminiSettings, openRouterSettings] = await Promise.all([
-                    readSettings(`${API_URL}/gemini/settings`),
-                    readSettings(`${API_URL}/openrouter/settings`),
-                ]);
-
-                const geminiOptions = pickVisibleModelOptions(
-                    geminiSettings?.availableModels || [],
-                    geminiSettings?.visibleModels || []
-                );
-                const openRouterOptions = pickVisibleModelOptions(
-                    openRouterSettings?.availableModels || [],
-                    openRouterSettings?.visibleModels || []
+                const settingsResults = await Promise.all(
+                    ALL_PROVIDERS.map(async (provider) => {
+                        const meta = PROVIDER_META[provider];
+                        const settings = await readSettings(`${API_URL}${meta.endpointBase}/settings`);
+                        return { provider, settings };
+                    })
                 );
 
-                const geminiModel = geminiSettings?.model
-                    && geminiOptions.some((model) => model.value === geminiSettings.model)
-                    ? geminiSettings.model
-                    : geminiOptions[0]?.value || 'gemini-2.5-flash';
+                const nextHasApiKey = { ...providerHasApiKey };
+                const nextModels = { ...providerModels };
+                const nextSelectedModels = { ...selectedModels };
+                let nextPreferred: AIProvider | null = null;
 
-                const openRouterModel = openRouterSettings?.model
-                    && openRouterOptions.some((model) => model.value === openRouterSettings.model)
-                    ? openRouterSettings.model
-                    : openRouterOptions[0]?.value || 'openai/gpt-4o-mini';
+                settingsResults.forEach(({ provider, settings }) => {
+                    const meta = PROVIDER_META[provider];
+                    const options = pickVisibleModelOptions(
+                        settings?.availableModels || [],
+                        settings?.visibleModels || []
+                    );
 
-                setProviderHasApiKey({
-                    gemini: Boolean(geminiSettings?.hasApiKey),
-                    openrouter: Boolean(openRouterSettings?.hasApiKey),
+                    const savedModel = settings?.model
+                        && options.some((model) => model.value === settings.model)
+                        ? settings.model
+                        : options[0]?.value || meta.defaultModel;
+
+                    nextHasApiKey[provider] = Boolean(settings?.hasApiKey);
+                    nextModels[provider] = options;
+                    nextSelectedModels[provider] = savedModel;
+
+                    if (!nextPreferred && settings?.preferredProvider) {
+                        nextPreferred = settings.preferredProvider;
+                    }
                 });
 
-                setProviderModels({
-                    gemini: geminiOptions,
-                    openrouter: openRouterOptions,
-                });
+                setProviderHasApiKey(nextHasApiKey);
+                setProviderModels(nextModels);
+                setSelectedModels(nextSelectedModels);
 
-                setSelectedModels({
-                    gemini: geminiModel,
-                    openrouter: openRouterModel,
-                });
-
-                const preferredProvider = geminiSettings?.preferredProvider || openRouterSettings?.preferredProvider || 'gemini';
-                setSelectedProvider(preferredProvider);
+                if (nextPreferred) {
+                    setSelectedProvider(nextPreferred);
+                } else if (settingsResults.some(({ settings }) => settings?.hasApiKey)) {
+                    const firstConfigured = settingsResults.find(({ settings }) => settings?.hasApiKey);
+                    if (firstConfigured) {
+                        setSelectedProvider(firstConfigured.provider);
+                    }
+                }
             } catch (error) {
                 console.error('Failed to fetch provider settings:', error);
                 toast.error('Unable to load AI provider settings.');
@@ -237,6 +267,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
         };
 
         fetchProviderSettings();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -258,8 +289,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
         const activeModels = providerModels[selectedProvider];
 
         if (!providerHasApiKey[selectedProvider]) {
-            const providerLabel = selectedProvider === 'gemini' ? 'Gemini' : 'OpenRouter';
-            toast.error(`${providerLabel} API key is not configured in Settings.`);
+            toast.error(`${PROVIDER_META[selectedProvider].label} API key is not configured in Settings.`);
             return;
         }
 
@@ -275,9 +305,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
         abortControllerRef.current = new AbortController();
 
         try {
-            const endpoint = selectedProvider === 'openrouter'
-                ? `${API_URL}/openrouter/generate-stream`
-                : `${API_URL}/gemini/generate-stream`;
+            const endpoint = `${API_URL}${PROVIDER_META[selectedProvider].endpointBase}/generate-stream`;
 
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -420,6 +448,15 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
     const activeProviderModels = providerModels[selectedProvider];
     const selectedModel = selectedModels[selectedProvider] || '';
     const selectedModelDescription = activeProviderModels.find((model) => model.value === selectedModel)?.description;
+    const configuredProviders = ALL_PROVIDERS.filter(
+        (provider) => providerHasApiKey[provider] && providerModels[provider].length > 0
+    );
+
+    useEffect(() => {
+        if (configuredProviders.length > 0 && !configuredProviders.includes(selectedProvider)) {
+            setSelectedProvider(configuredProviders[0]);
+        }
+    }, [configuredProviders, selectedProvider]);
 
     return (
         <AnimatePresence>
@@ -457,15 +494,30 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                                 AI Provider
                                             </label>
-                                            <select
-                                                value={selectedProvider}
-                                                onChange={(event) => setSelectedProvider(event.target.value as AIProvider)}
-                                                disabled={isGenerating}
-                                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                <option value="gemini">Gemini</option>
-                                                <option value="openrouter">OpenRouter</option>
-                                            </select>
+                                            <div className="relative">
+                                                {configuredProviders.length > 0 && (
+                                                    <ProviderLogo
+                                                        provider={selectedProvider}
+                                                        size="sm"
+                                                        className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                                                    />
+                                                )}
+                                                <select
+                                                    value={selectedProvider}
+                                                    onChange={(event) => setSelectedProvider(event.target.value as AIProvider)}
+                                                    disabled={isGenerating || configuredProviders.length === 0}
+                                                    className={`w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed ${configuredProviders.length > 0 ? 'pl-10' : ''}`}
+                                                >
+                                                    {configuredProviders.length === 0 && (
+                                                        <option value="">No providers configured</option>
+                                                    )}
+                                                    {configuredProviders.map((provider) => (
+                                                        <option key={provider} value={provider}>
+                                                            {PROVIDER_META[provider].label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -495,9 +547,18 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                                         </div>
                                     </div>
 
-                                    {!providerHasApiKey[selectedProvider] && (
+                                    {configuredProviders.length === 0 && (
                                         <div className="rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 p-3 text-sm text-amber-700 dark:text-amber-300">
-                                            Configure a {selectedProvider === 'gemini' ? 'Gemini' : 'OpenRouter'} API key in Settings before generating.
+                                            No AI providers configured yet. Set up a provider API key in{' '}
+                                            <a
+                                                href="/settings"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="font-medium underline hover:text-amber-800 dark:hover:text-amber-200"
+                                            >
+                                                Settings
+                                            </a>{' '}
+                                            to generate test cases.
                                         </div>
                                     )}
 
@@ -566,7 +627,7 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
                             <div className="flex gap-2">
                                 <button
                                     onClick={handleGenerate}
-                                    disabled={isGenerating || isLoadingSettings || activeProviderModels.length === 0}
+                                    disabled={isGenerating || isLoadingSettings || activeProviderModels.length === 0 || configuredProviders.length === 0}
                                     className="flex-1 flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-500 dark:to-purple-500 text-white py-2.5 rounded-lg hover:from-blue-700 hover:to-purple-700 dark:hover:from-blue-600 dark:hover:to-purple-600 transition-all disabled:opacity-50"
                                 >
                                     {isGenerating ? (

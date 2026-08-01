@@ -1,15 +1,18 @@
 import React from "react";
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useAuthStore } from "../store/authStore";
 import { useThemeStore } from "../store/themeStore";
 import Input from "../components/Input";
-import { Lock, Moon, Sun } from "lucide-react";
+import { CheckCircle2, ChevronDown, Circle, Loader2, Lock, Moon, RefreshCw, Sun } from "lucide-react";
 import toast from "react-hot-toast";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
 import { User } from "../types";
 import { API_URL } from "../utils/api";
 import axios from "axios";
+import ProviderLogo from "../components/ProviderLogo";
+import { PROVIDER_BRANDS } from "../utils/providerBrands";
+import type { AIProvider } from "../utils/providerBrands";
 
 interface Tab {
     id: string;
@@ -20,8 +23,6 @@ interface GeneralTabProps {
     user: User | null;
 }
 
-type AIProvider = 'gemini' | 'openrouter';
-
 interface ProviderModelOption {
     value: string;
     label: string;
@@ -29,22 +30,113 @@ interface ProviderModelOption {
     source?: 'api' | 'fallback' | 'custom';
 }
 
-interface GeminiSettingsData {
-    hasApiKey: boolean;
-    model: string;
-    availableModels: ProviderModelOption[];
-    visibleModels: string[];
-    preferredProvider: AIProvider;
+interface ProviderConfig {
+    id: AIProvider;
+    label: string;
+    description: string;
+    keyHintUrl: string;
+    keyHintText: string;
+    supportsCustomModels: boolean;
+    defaultModel: string;
+    endpointBase: string;
 }
 
-interface OpenRouterSettingsData {
+interface ProviderState {
+    hasApiKey: boolean;
+    apiKeyInput: string;
+    selectedModel: string;
+    availableModels: ProviderModelOption[];
+    visibleModels: string[];
+    customModelsInput: string;
+    modelSearch: string;
+    isExpanded: boolean;
+    isSaving: boolean;
+    isRefreshing: boolean;
+}
+
+interface ProviderSettingsData {
     hasApiKey: boolean;
     model: string;
     availableModels: ProviderModelOption[];
     visibleModels: string[];
-    customModels: string[];
-    preferredProvider: AIProvider;
+    customModels?: string[];
+    preferredProvider?: AIProvider;
 }
+
+const PROVIDER_CONFIGS: ProviderConfig[] = [
+    {
+        id: 'gemini',
+        label: 'Gemini',
+        description: 'Google AI Studio',
+        keyHintUrl: 'https://aistudio.google.com/app/apikey',
+        keyHintText: 'Google AI Studio',
+        supportsCustomModels: false,
+        defaultModel: 'gemini-2.5-flash',
+        endpointBase: '/gemini',
+    },
+    {
+        id: 'openrouter',
+        label: 'OpenRouter',
+        description: 'Access to many models through one key',
+        keyHintUrl: 'https://openrouter.ai/keys',
+        keyHintText: 'OpenRouter',
+        supportsCustomModels: true,
+        defaultModel: 'openai/gpt-4o-mini',
+        endpointBase: '/openrouter',
+    },
+    {
+        id: 'openai',
+        label: 'OpenAI',
+        description: 'GPT models',
+        keyHintUrl: 'https://platform.openai.com/api-keys',
+        keyHintText: 'OpenAI',
+        supportsCustomModels: true,
+        defaultModel: 'gpt-5',
+        endpointBase: '/openai',
+    },
+    {
+        id: 'anthropic',
+        label: 'Anthropic Claude',
+        description: 'Claude models',
+        keyHintUrl: 'https://console.anthropic.com/settings/keys',
+        keyHintText: 'Anthropic Console',
+        supportsCustomModels: true,
+        defaultModel: 'claude-sonnet-4',
+        endpointBase: '/anthropic',
+    },
+    {
+        id: 'deepseek',
+        label: 'DeepSeek',
+        description: 'DeepSeek V4 models',
+        keyHintUrl: 'https://platform.deepseek.com/api_keys',
+        keyHintText: 'DeepSeek Platform',
+        supportsCustomModels: true,
+        defaultModel: 'deepseek-v4-flash',
+        endpointBase: '/deepseek',
+    },
+];
+
+const getProviderConfig = (provider: AIProvider): ProviderConfig => {
+    return PROVIDER_CONFIGS.find((config) => config.id === provider) || PROVIDER_CONFIGS[0];
+};
+
+const createInitialProviderStates = (): Record<AIProvider, ProviderState> => {
+    return PROVIDER_CONFIGS.reduce((acc, config) => {
+        acc[config.id] = {
+            hasApiKey: false,
+            apiKeyInput: '',
+            selectedModel: config.defaultModel,
+            availableModels: [],
+            visibleModels: [],
+            customModelsInput: '',
+            modelSearch: '',
+            isExpanded: false,
+            isSaving: false,
+            isRefreshing: false,
+        };
+        return acc;
+    }, {} as Record<AIProvider, ProviderState>);
+};
 
 const parseCustomModelsInput = (value: string): string[] => {
     const unique = new Set<string>();
@@ -57,6 +149,30 @@ const parseCustomModelsInput = (value: string): string[] => {
     return Array.from(unique);
 };
 
+const resolveVisibleModelIds = (availableModels: ProviderModelOption[], visibleModels: string[]): string[] => {
+    const availableSet = new Set(availableModels.map((model) => model.value));
+    const filtered = visibleModels.filter((modelId) => availableSet.has(modelId));
+    if (filtered.length > 0) {
+        return filtered;
+    }
+
+    return availableModels.slice(0, 8).map((model) => model.value);
+};
+
+const getSelectableModels = (availableModels: ProviderModelOption[], visibleModels: string[]): ProviderModelOption[] => {
+    if (availableModels.length === 0) {
+        return [];
+    }
+
+    if (visibleModels.length === 0) {
+        return availableModels;
+    }
+
+    const visibleSet = new Set(visibleModels);
+    const filtered = availableModels.filter((model) => visibleSet.has(model.value));
+    return filtered.length > 0 ? filtered : availableModels;
+};
+
 const SettingsPage: React.FC = () => {
     const [activeTab, setActiveTab] = useState<string>("general");
     const { user } = useAuthStore();
@@ -64,7 +180,7 @@ const SettingsPage: React.FC = () => {
     const tabs: Tab[] = [
         { id: "general", label: "General" },
         { id: "security", label: "Security" },
-        { id: "gemini", label: "AI Providers" },
+        { id: "ai-providers", label: "AI Providers" },
     ];
 
     return (
@@ -109,7 +225,7 @@ const SettingsPage: React.FC = () => {
                 >
                     {activeTab === "general" && <GeneralTab user={user} />}
                     {activeTab === "security" && <SecurityTab />}
-                    {activeTab === "gemini" && <GeminiTab />}
+                    {activeTab === "ai-providers" && <AiProvidersTab />}
                 </motion.div>
             </div>
         </div>
@@ -364,93 +480,63 @@ const SecurityTab = () => {
 };
 
 // AI Providers Tab Component
-const GeminiTab = () => {
-    const [isLoading, setIsLoading] = useState(false);
+const AiProvidersTab = () => {
     const [isBootstrapping, setIsBootstrapping] = useState(true);
-
     const [preferredProvider, setPreferredProvider] = useState<AIProvider>('gemini');
+    const [isSettingDefault, setIsSettingDefault] = useState<AIProvider | null>(null);
+    const [providerStates, setProviderStates] = useState<Record<AIProvider, ProviderState>>(createInitialProviderStates);
 
-    const [geminiApiKey, setGeminiApiKey] = useState('');
-    const [geminiHasExistingKey, setGeminiHasExistingKey] = useState(false);
-    const [geminiSelectedModel, setGeminiSelectedModel] = useState('gemini-2.5-flash');
-    const [geminiAvailableModels, setGeminiAvailableModels] = useState<ProviderModelOption[]>([]);
-    const [geminiVisibleModels, setGeminiVisibleModels] = useState<string[]>([]);
-
-    const [openRouterApiKey, setOpenRouterApiKey] = useState('');
-    const [openRouterHasExistingKey, setOpenRouterHasExistingKey] = useState(false);
-    const [openRouterSelectedModel, setOpenRouterSelectedModel] = useState('openai/gpt-4o-mini');
-    const [openRouterAvailableModels, setOpenRouterAvailableModels] = useState<ProviderModelOption[]>([]);
-    const [openRouterVisibleModels, setOpenRouterVisibleModels] = useState<string[]>([]);
-    const [openRouterCustomModelsInput, setOpenRouterCustomModelsInput] = useState('');
-    const [openRouterModelSearch, setOpenRouterModelSearch] = useState('');
-
-    const resolveVisibleModelIds = (availableModels: ProviderModelOption[], visibleModels: string[]): string[] => {
-        const availableSet = new Set(availableModels.map((model) => model.value));
-        const filtered = visibleModels.filter((modelId) => availableSet.has(modelId));
-        if (filtered.length > 0) {
-            return filtered;
-        }
-
-        return availableModels.slice(0, 8).map((model) => model.value);
+    const patchProvider = (provider: AIProvider, patch: Partial<ProviderState>) => {
+        setProviderStates((previous) => ({
+            ...previous,
+            [provider]: { ...previous[provider], ...patch },
+        }));
     };
 
-    const getSelectableModels = (availableModels: ProviderModelOption[], visibleModels: string[]): ProviderModelOption[] => {
-        if (availableModels.length === 0) {
-            return [];
-        }
+    const applySettingsData = (provider: AIProvider, data: ProviderSettingsData) => {
+        const config = getProviderConfig(provider);
+        const available = Array.isArray(data.availableModels) ? data.availableModels : [];
+        const visible = resolveVisibleModelIds(available, data.visibleModels || []);
+        const selectable = getSelectableModels(available, visible);
+        const selectedModel = selectable.some((model) => model.value === data.model)
+            ? data.model
+            : selectable[0]?.value || config.defaultModel;
 
-        if (visibleModels.length === 0) {
-            return availableModels;
-        }
-
-        const visibleSet = new Set(visibleModels);
-        const filtered = availableModels.filter((model) => visibleSet.has(model.value));
-        return filtered.length > 0 ? filtered : availableModels;
+        patchProvider(provider, {
+            hasApiKey: Boolean(data.hasApiKey),
+            availableModels: available,
+            visibleModels: visible,
+            selectedModel,
+            customModelsInput: (data.customModels || []).join('\n'),
+        });
     };
 
     const fetchSettings = React.useCallback(async () => {
         setIsBootstrapping(true);
         try {
-            const [geminiResponse, openRouterResponse] = await Promise.all([
-                axios.get(`${API_URL}/gemini/settings`, { withCredentials: true }),
-                axios.get(`${API_URL}/openrouter/settings`, { withCredentials: true }),
-            ]);
+            const responses = await Promise.all(
+                PROVIDER_CONFIGS.map(async (config) => {
+                    try {
+                        const response = await axios.get(`${API_URL}${config.endpointBase}/settings`, { withCredentials: true });
+                        if (response.data?.success) {
+                            return { provider: config.id, data: response.data.data as ProviderSettingsData };
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching ${config.label} settings:`, error);
+                    }
+                    return { provider: config.id, data: null };
+                })
+            );
 
-            if (geminiResponse.data?.success) {
-                const geminiData = geminiResponse.data.data as GeminiSettingsData;
-                const available = Array.isArray(geminiData.availableModels) ? geminiData.availableModels : [];
-                const visible = resolveVisibleModelIds(available, geminiData.visibleModels || []);
-                const selectable = getSelectableModels(available, visible);
-
-                setGeminiHasExistingKey(Boolean(geminiData.hasApiKey));
-                setGeminiAvailableModels(available);
-                setGeminiVisibleModels(visible);
-                setGeminiSelectedModel(
-                    selectable.some((model) => model.value === geminiData.model)
-                        ? geminiData.model
-                        : selectable[0]?.value || 'gemini-2.5-flash'
-                );
-                setPreferredProvider(geminiData.preferredProvider || 'gemini');
-            }
-
-            if (openRouterResponse.data?.success) {
-                const openRouterData = openRouterResponse.data.data as OpenRouterSettingsData;
-                const available = Array.isArray(openRouterData.availableModels) ? openRouterData.availableModels : [];
-                const visible = resolveVisibleModelIds(available, openRouterData.visibleModels || []);
-                const selectable = getSelectableModels(available, visible);
-
-                setOpenRouterHasExistingKey(Boolean(openRouterData.hasApiKey));
-                setOpenRouterAvailableModels(available);
-                setOpenRouterVisibleModels(visible);
-                setOpenRouterSelectedModel(
-                    selectable.some((model) => model.value === openRouterData.model)
-                        ? openRouterData.model
-                        : selectable[0]?.value || 'openai/gpt-4o-mini'
-                );
-                setOpenRouterCustomModelsInput((openRouterData.customModels || []).join('\n'));
-                if (!geminiResponse.data?.success) {
-                    setPreferredProvider(openRouterData.preferredProvider || 'gemini');
+            responses.forEach(({ provider, data }) => {
+                if (data) {
+                    applySettingsData(provider, data);
                 }
+            });
+
+            const firstConfigured = responses.find(({ data }) => data?.preferredProvider);
+            if (firstConfigured?.data?.preferredProvider) {
+                setPreferredProvider(firstConfigured.data.preferredProvider);
             }
         } catch (error) {
             console.error('Error fetching AI provider settings:', error);
@@ -458,202 +544,177 @@ const GeminiTab = () => {
         } finally {
             setIsBootstrapping(false);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     React.useEffect(() => {
         fetchSettings();
     }, [fetchSettings]);
 
-    const toggleVisibleModel = (
-        provider: AIProvider,
-        modelId: string
-    ) => {
-        if (provider === 'gemini') {
-            setGeminiVisibleModels((previous) => {
-                const exists = previous.includes(modelId);
-                if (exists && previous.length === 1) {
-                    toast.error('At least one Gemini model must remain visible');
-                    return previous;
-                }
+    React.useEffect(() => {
+        PROVIDER_CONFIGS.forEach((config) => {
+            const state = providerStates[config.id];
+            const selectable = getSelectableModels(state.availableModels, state.visibleModels);
+            if (selectable.length === 0) {
+                return;
+            }
 
-                return exists
-                    ? previous.filter((id) => id !== modelId)
-                    : [...previous, modelId];
-            });
+            if (!selectable.some((model) => model.value === state.selectedModel)) {
+                patchProvider(config.id, { selectedModel: selectable[0].value });
+            }
+        });
+    }, [providerStates]);
+
+    const toggleVisibleModel = (provider: AIProvider, modelId: string) => {
+        const state = providerStates[provider];
+        const config = getProviderConfig(provider);
+        const exists = state.visibleModels.includes(modelId);
+        if (exists && state.visibleModels.length === 1) {
+            toast.error(`At least one ${config.label} model must remain visible`);
             return;
         }
 
-        setOpenRouterVisibleModels((previous) => {
-            const exists = previous.includes(modelId);
-            if (exists && previous.length === 1) {
-                toast.error('At least one OpenRouter model must remain visible');
-                return previous;
-            }
-
-            return exists
-                ? previous.filter((id) => id !== modelId)
-                : [...previous, modelId];
+        patchProvider(provider, {
+            visibleModels: exists
+                ? state.visibleModels.filter((id) => id !== modelId)
+                : [...state.visibleModels, modelId],
         });
     };
 
-    const handleSaveProviderPreference = async () => {
-        setIsLoading(true);
+    const handleSetDefault = async (provider: AIProvider) => {
+        const config = getProviderConfig(provider);
+
+        if (!providerStates[provider].hasApiKey) {
+            toast.error(`Configure ${config.label} first to set it as the default provider`);
+            return;
+        }
+
+        setIsSettingDefault(provider);
         try {
             await axios.post(
                 `${API_URL}/gemini/key`,
-                { preferredProvider },
+                { preferredProvider: provider },
                 { withCredentials: true }
             );
-            toast.success('Preferred AI provider updated');
+            setPreferredProvider(provider);
+            toast.success(`${config.label} is now your default generation provider`);
         } catch (error: unknown) {
             console.error(error);
             const axiosError = error as { response?: { data?: { message?: string } } };
-            toast.error(axiosError.response?.data?.message || 'Failed to save preferred provider');
+            toast.error(axiosError.response?.data?.message || 'Failed to update preferred provider');
         } finally {
-            setIsLoading(false);
+            setIsSettingDefault(null);
         }
     };
 
-    const handleSaveGeminiSettings = async () => {
-        if (!geminiHasExistingKey && !geminiApiKey.trim()) {
-            toast.error('Please enter your Gemini API key');
+    const handleSaveProviderKey = async (provider: AIProvider) => {
+        const config = getProviderConfig(provider);
+        const state = providerStates[provider];
+
+        if (!state.apiKeyInput.trim()) {
+            toast.error(`Please enter your ${config.label} API key`);
             return;
         }
 
-        if (!geminiSelectedModel) {
-            toast.error('Please select a Gemini model');
+        patchProvider(provider, { isSaving: true });
+        try {
+            await axios.post(
+                `${API_URL}${config.endpointBase}/key`,
+                { apiKey: state.apiKeyInput.trim() },
+                { withCredentials: true }
+            );
+            toast.success(`${config.label} added successfully`);
+            patchProvider(provider, { apiKeyInput: '', hasApiKey: true });
+            await fetchSettings();
+        } catch (error: unknown) {
+            console.error(error);
+            const axiosError = error as { response?: { data?: { message?: string } } };
+            toast.error(axiosError.response?.data?.message || `Failed to save ${config.label} API key`);
+        } finally {
+            patchProvider(provider, { isSaving: false });
+        }
+    };
+
+    const handleSaveProviderSettings = async (provider: AIProvider) => {
+        const config = getProviderConfig(provider);
+        const state = providerStates[provider];
+
+        if (!state.hasApiKey && !state.apiKeyInput.trim()) {
+            toast.error(`Please enter your ${config.label} API key`);
             return;
         }
 
-        if (geminiVisibleModels.length === 0) {
-            toast.error('At least one Gemini model must be visible');
+        if (!state.selectedModel) {
+            toast.error(`Please select a ${config.label} model`);
             return;
         }
 
-        setIsLoading(true);
+        if (state.visibleModels.length === 0) {
+            toast.error(`At least one ${config.label} model must be visible`);
+            return;
+        }
+
+        patchProvider(provider, { isSaving: true });
         try {
             const payload: {
                 model: string;
                 visibleModels: string[];
                 preferredProvider: AIProvider;
+                customModels?: string[];
                 apiKey?: string;
             } = {
-                model: geminiSelectedModel,
-                visibleModels: geminiVisibleModels,
+                model: state.selectedModel,
+                visibleModels: state.visibleModels,
                 preferredProvider,
             };
 
-            if (geminiApiKey.trim()) {
-                payload.apiKey = geminiApiKey.trim();
+            if (config.supportsCustomModels) {
+                payload.customModels = parseCustomModelsInput(state.customModelsInput);
             }
 
-            await axios.post(`${API_URL}/gemini/key`, payload, { withCredentials: true });
-            toast.success('Gemini settings saved successfully');
-            setGeminiApiKey('');
-            setGeminiHasExistingKey(true);
+            if (state.apiKeyInput.trim()) {
+                payload.apiKey = state.apiKeyInput.trim();
+            }
+
+            await axios.post(`${API_URL}${config.endpointBase}/key`, payload, { withCredentials: true });
+            toast.success(`${config.label} settings saved successfully`);
+            patchProvider(provider, { apiKeyInput: '', hasApiKey: true });
             await fetchSettings();
         } catch (error: unknown) {
             console.error(error);
             const axiosError = error as { response?: { data?: { message?: string } } };
-            toast.error(axiosError.response?.data?.message || 'Failed to save Gemini settings');
+            toast.error(axiosError.response?.data?.message || `Failed to save ${config.label} settings`);
         } finally {
-            setIsLoading(false);
+            patchProvider(provider, { isSaving: false });
         }
     };
 
-    const handleSaveOpenRouterSettings = async () => {
-        if (!openRouterHasExistingKey && !openRouterApiKey.trim()) {
-            toast.error('Please enter your OpenRouter API key');
-            return;
-        }
+    const handleRefreshModels = async (provider: AIProvider) => {
+        const config = getProviderConfig(provider);
 
-        if (!openRouterSelectedModel) {
-            toast.error('Please select an OpenRouter model');
-            return;
-        }
-
-        if (openRouterVisibleModels.length === 0) {
-            toast.error('At least one OpenRouter model must be visible');
-            return;
-        }
-
-        const customModels = parseCustomModelsInput(openRouterCustomModelsInput);
-
-        setIsLoading(true);
+        patchProvider(provider, { isRefreshing: true });
         try {
-            const payload: {
-                model: string;
-                visibleModels: string[];
-                customModels: string[];
-                preferredProvider: AIProvider;
-                apiKey?: string;
-            } = {
-                model: openRouterSelectedModel,
-                visibleModels: openRouterVisibleModels,
-                customModels,
-                preferredProvider,
-            };
-
-            if (openRouterApiKey.trim()) {
-                payload.apiKey = openRouterApiKey.trim();
+            const response = await axios.get(`${API_URL}${config.endpointBase}/settings?refresh=1`, { withCredentials: true });
+            if (response.data?.success) {
+                applySettingsData(provider, response.data.data as ProviderSettingsData);
+                toast.success(`${config.label} models refreshed`);
             }
-
-            await axios.post(`${API_URL}/openrouter/key`, payload, { withCredentials: true });
-            toast.success('OpenRouter settings saved successfully');
-            setOpenRouterApiKey('');
-            setOpenRouterHasExistingKey(true);
-            await fetchSettings();
         } catch (error: unknown) {
             console.error(error);
             const axiosError = error as { response?: { data?: { message?: string } } };
-            toast.error(axiosError.response?.data?.message || 'Failed to save OpenRouter settings');
+            toast.error(axiosError.response?.data?.message || `Failed to refresh ${config.label} models`);
         } finally {
-            setIsLoading(false);
+            patchProvider(provider, { isRefreshing: false });
         }
     };
-
-    const geminiSelectableModels = getSelectableModels(geminiAvailableModels, geminiVisibleModels);
-    const openRouterSelectableModels = getSelectableModels(openRouterAvailableModels, openRouterVisibleModels);
-    const filteredOpenRouterModels = openRouterAvailableModels.filter((model) => {
-        const query = openRouterModelSearch.trim().toLowerCase();
-        if (!query) {
-            return true;
-        }
-
-        return (
-            model.label.toLowerCase().includes(query)
-            || model.value.toLowerCase().includes(query)
-            || (model.description || '').toLowerCase().includes(query)
-        );
-    });
-
-    React.useEffect(() => {
-        if (geminiSelectableModels.length === 0) {
-            return;
-        }
-
-        if (!geminiSelectableModels.some((model) => model.value === geminiSelectedModel)) {
-            setGeminiSelectedModel(geminiSelectableModels[0].value);
-        }
-    }, [geminiSelectableModels, geminiSelectedModel]);
-
-    React.useEffect(() => {
-        if (openRouterSelectableModels.length === 0) {
-            return;
-        }
-
-        if (!openRouterSelectableModels.some((model) => model.value === openRouterSelectedModel)) {
-            setOpenRouterSelectedModel(openRouterSelectableModels[0].value);
-        }
-    }, [openRouterSelectableModels, openRouterSelectedModel]);
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none p-6">
-            <div className="max-w-3xl space-y-8">
+            <div className="space-y-6">
                 <div>
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">AI Provider Configuration</h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Configure Gemini and OpenRouter keys, control visible models, and set your default provider for generation.
+                        Add a provider API key, pick the models you want to use for generation, then set your default provider.
                     </p>
                 </div>
 
@@ -663,214 +724,313 @@ const GeminiTab = () => {
                     </div>
                 ) : (
                     <>
-                        <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-3">
-                            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Default Generation Provider</h3>
-                            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                                <select
-                                    value={preferredProvider}
-                                    onChange={(event) => setPreferredProvider(event.target.value as AIProvider)}
-                                    className="w-full sm:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                                >
-                                    <option value="gemini">Gemini</option>
-                                    <option value="openrouter">OpenRouter</option>
-                                </select>
-                                <button
-                                    type="button"
-                                    onClick={handleSaveProviderPreference}
-                                    disabled={isLoading}
-                                    className="px-4 py-2 text-sm font-medium rounded-md bg-system-blue hover:bg-system-darkBlue text-white disabled:opacity-60"
-                                >
-                                    Save Preference
-                                </button>
-                            </div>
+                        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/60 dark:bg-gray-700/30 p-4">
+                            <span className="flex items-center gap-2.5">
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Default provider</span>
+                                <ProviderLogo provider={preferredProvider} size="sm" />
+                                <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                    {getProviderConfig(preferredProvider).label}
+                                </span>
+                            </span>
+                            <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
+                                {PROVIDER_CONFIGS.filter((config) => providerStates[config.id].hasApiKey).length} of {PROVIDER_CONFIGS.length} configured
+                            </span>
                         </div>
 
-                        <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-5">
-                            <div>
-                                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">Gemini</h3>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    Configure your Google AI Studio key and control which Gemini models appear in selectors.
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    Gemini API Key {geminiHasExistingKey ? '(Optional - Update)' : ''}
-                                </label>
-                                <Input
-                                    id="geminiApiKey"
-                                    icon={Lock}
-                                    type="password"
-                                    placeholder={geminiHasExistingKey ? 'Leave blank to keep current key' : 'Enter your Gemini API key'}
-                                    value={geminiApiKey}
-                                    onChange={(event) => setGeminiApiKey(event.target.value)}
-                                    required={!geminiHasExistingKey}
-                                    className="w-full"
+                        <div className="space-y-4">
+                            {PROVIDER_CONFIGS.map((config) => (
+                                <ProviderCard
+                                    key={config.id}
+                                    config={config}
+                                    state={providerStates[config.id]}
+                                    isPreferred={preferredProvider === config.id}
+                                    isSettingDefault={isSettingDefault === config.id}
+                                    onToggleExpand={() => patchProvider(config.id, { isExpanded: !providerStates[config.id].isExpanded })}
+                                    onToggleVisibleModel={(modelId) => toggleVisibleModel(config.id, modelId)}
+                                    onSetDefault={() => handleSetDefault(config.id)}
+                                    onSaveKey={() => handleSaveProviderKey(config.id)}
+                                    onSaveSettings={() => handleSaveProviderSettings(config.id)}
+                                    onRefreshModels={() => handleRefreshModels(config.id)}
+                                    onPatch={patchProvider}
                                 />
-                                {!geminiHasExistingKey && (
-                                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                        Generate a key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-system-blue hover:text-system-darkBlue dark:text-system-darkBlue">Google AI Studio</a>.
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Default Gemini Model</label>
-                                <select
-                                    value={geminiSelectedModel}
-                                    onChange={(event) => setGeminiSelectedModel(event.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                                >
-                                    {geminiSelectableModels.map((model) => (
-                                        <option key={model.value} value={model.value}>{model.label}</option>
-                                    ))}
-                                </select>
-                                {geminiSelectableModels.find((model) => model.value === geminiSelectedModel)?.description && (
-                                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                        {geminiSelectableModels.find((model) => model.value === geminiSelectedModel)?.description}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Visible Gemini Models</label>
-                                <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-3 space-y-2">
-                                    {geminiAvailableModels.map((model) => (
-                                        <label key={model.value} className="flex items-start gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={geminiVisibleModels.includes(model.value)}
-                                                onChange={() => toggleVisibleModel('gemini', model.value)}
-                                                className="mt-0.5 h-4 w-4 text-system-blue rounded border-gray-300 dark:border-gray-600 focus:ring-system-blue dark:bg-gray-700"
-                                            />
-                                            <div>
-                                                <p className="text-sm text-gray-900 dark:text-gray-100">{model.label}</p>
-                                                {model.description && (
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400">{model.description}</p>
-                                                )}
-                                            </div>
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div>
-                                <button
-                                    type="button"
-                                    onClick={handleSaveGeminiSettings}
-                                    disabled={isLoading}
-                                    className="px-5 py-2.5 text-sm font-medium rounded-md bg-system-blue hover:bg-system-darkBlue text-white disabled:opacity-60"
-                                >
-                                    Save Gemini Settings
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-5">
-                            <div>
-                                <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">OpenRouter</h3>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    Configure your OpenRouter key, add custom model IDs, and control visible models for selectors.
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    OpenRouter API Key {openRouterHasExistingKey ? '(Optional - Update)' : ''}
-                                </label>
-                                <Input
-                                    id="openRouterApiKey"
-                                    icon={Lock}
-                                    type="password"
-                                    placeholder={openRouterHasExistingKey ? 'Leave blank to keep current key' : 'Enter your OpenRouter API key'}
-                                    value={openRouterApiKey}
-                                    onChange={(event) => setOpenRouterApiKey(event.target.value)}
-                                    required={!openRouterHasExistingKey}
-                                    className="w-full"
-                                />
-                                {!openRouterHasExistingKey && (
-                                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                        Generate a key from <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-system-blue hover:text-system-darkBlue dark:text-system-darkBlue">OpenRouter</a>.
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Custom OpenRouter Model IDs</label>
-                                <textarea
-                                    value={openRouterCustomModelsInput}
-                                    onChange={(event) => setOpenRouterCustomModelsInput(event.target.value)}
-                                    rows={4}
-                                    placeholder={'Add one model ID per line or comma-separated\nExample: anthropic/claude-3.5-sonnet'}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Default OpenRouter Model</label>
-                                <select
-                                    value={openRouterSelectedModel}
-                                    onChange={(event) => setOpenRouterSelectedModel(event.target.value)}
-                                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                                >
-                                    {openRouterSelectableModels.map((model) => (
-                                        <option key={model.value} value={model.value}>{model.label}</option>
-                                    ))}
-                                </select>
-                                {openRouterSelectableModels.find((model) => model.value === openRouterSelectedModel)?.description && (
-                                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                                        {openRouterSelectableModels.find((model) => model.value === openRouterSelectedModel)?.description}
-                                    </p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Visible OpenRouter Models</label>
-                                <input
-                                    type="text"
-                                    value={openRouterModelSearch}
-                                    onChange={(event) => setOpenRouterModelSearch(event.target.value)}
-                                    placeholder="Search models by name or ID"
-                                    className="mb-3 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                                />
-                                <div className="max-h-52 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-3 space-y-2">
-                                    {filteredOpenRouterModels.map((model) => (
-                                        <label key={model.value} className="flex items-start gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={openRouterVisibleModels.includes(model.value)}
-                                                onChange={() => toggleVisibleModel('openrouter', model.value)}
-                                                className="mt-0.5 h-4 w-4 text-system-blue rounded border-gray-300 dark:border-gray-600 focus:ring-system-blue dark:bg-gray-700"
-                                            />
-                                            <div>
-                                                <p className="text-sm text-gray-900 dark:text-gray-100">{model.label}</p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">{model.value}</p>
-                                                {model.description && (
-                                                    <p className="text-xs text-gray-500 dark:text-gray-400">{model.description}</p>
-                                                )}
-                                            </div>
-                                        </label>
-                                    ))}
-                                    {filteredOpenRouterModels.length === 0 && (
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">No models match your search.</p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div>
-                                <button
-                                    type="button"
-                                    onClick={handleSaveOpenRouterSettings}
-                                    disabled={isLoading}
-                                    className="px-5 py-2.5 text-sm font-medium rounded-md bg-system-blue hover:bg-system-darkBlue text-white disabled:opacity-60"
-                                >
-                                    Save OpenRouter Settings
-                                </button>
-                            </div>
+                            ))}
                         </div>
                     </>
                 )}
             </div>
+        </div>
+    );
+};
+
+interface ProviderCardProps {
+    config: ProviderConfig;
+    state: ProviderState;
+    isPreferred: boolean;
+    isSettingDefault: boolean;
+    onToggleExpand: () => void;
+    onToggleVisibleModel: (modelId: string) => void;
+    onSetDefault: () => void;
+    onSaveKey: () => void;
+    onSaveSettings: () => void;
+    onRefreshModels: () => void;
+    onPatch: (provider: AIProvider, patch: Partial<ProviderState>) => void;
+}
+
+const ProviderCard: React.FC<ProviderCardProps> = ({
+    config,
+    state,
+    isPreferred,
+    isSettingDefault,
+    onToggleExpand,
+    onToggleVisibleModel,
+    onSetDefault,
+    onSaveKey,
+    onSaveSettings,
+    onRefreshModels,
+    onPatch,
+}) => {
+    const selectableModels = getSelectableModels(state.availableModels, state.visibleModels);
+    const searchQuery = state.modelSearch.trim().toLowerCase();
+    const filteredModels = searchQuery
+        ? state.availableModels.filter((model) =>
+            model.label.toLowerCase().includes(searchQuery)
+            || model.value.toLowerCase().includes(searchQuery)
+            || (model.description || '').toLowerCase().includes(searchQuery)
+        )
+        : state.availableModels;
+
+    const selectedModelDescription = selectableModels.find((model) => model.value === state.selectedModel)?.description;
+    const brand = PROVIDER_BRANDS[config.id];
+
+    return (
+        <div
+            className={`rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800 transition-all ${state.isExpanded ? 'border-l-4 shadow-[0_2px_8px_rgba(0,0,0,0.06)] dark:shadow-none' : ''}`}
+            style={state.isExpanded ? { borderLeftColor: brand.color } : undefined}
+        >
+            <button
+                type="button"
+                onClick={onToggleExpand}
+                className="w-full p-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors"
+            >
+                <div className="flex-1 min-w-0 flex items-center gap-3">
+                    <ProviderLogo provider={config.id} size="md" />
+                    <div className="min-w-0">
+                        <div className="flex items-center space-x-2">
+                            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">{config.label}</h3>
+                            {isPreferred && (
+                                <span
+                                    className="text-[11px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap"
+                                    style={{ backgroundColor: `${brand.color}1A`, color: brand.color }}
+                                >
+                                    Default
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                            {config.description}
+                            <span className="text-gray-400 dark:text-gray-500"> · </span>
+                            {state.hasApiKey
+                                ? `${state.visibleModels.length} visible model${state.visibleModels.length === 1 ? '' : 's'}`
+                                : 'No API key yet'}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center space-x-3 ml-3 shrink-0">
+                    <span
+                        className={`flex items-center space-x-1 text-xs font-medium ${state.hasApiKey
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-gray-400 dark:text-gray-500'
+                            }`}
+                    >
+                        {state.hasApiKey ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                        <span>{state.hasApiKey ? 'Configured' : 'Not configured'}</span>
+                    </span>
+                    <ChevronDown
+                        className={`w-4 h-4 text-gray-400 transition-transform ${state.isExpanded ? 'rotate-180' : ''}`}
+                    />
+                </div>
+            </button>
+
+            <AnimatePresence initial={false}>
+                {state.isExpanded && (
+                    <motion.div
+                        key="content"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: 'easeInOut' }}
+                        className="overflow-hidden"
+                    >
+                        <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-5">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    {config.label} API Key {state.hasApiKey ? '(Optional - Update)' : ''}
+                                </label>
+                                <Input
+                                    id={`${config.id}ApiKey`}
+                                    icon={Lock}
+                                    type="password"
+                                    placeholder={state.hasApiKey ? 'Leave blank to keep current key' : `Enter your ${config.label} API key`}
+                                    value={state.apiKeyInput}
+                                    onChange={(event) => onPatch(config.id, { apiKeyInput: event.target.value })}
+                                    required={!state.hasApiKey}
+                                    className="w-full"
+                                />
+                                {!state.hasApiKey && (
+                                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                        Get a key from <a href={config.keyHintUrl} target="_blank" rel="noopener noreferrer" className="text-system-blue hover:text-system-darkBlue dark:text-system-darkBlue">{config.keyHintText}</a>.
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <button
+                                    type="button"
+                                    onClick={onSetDefault}
+                                    disabled={!state.hasApiKey || isPreferred || isSettingDefault}
+                                    className="w-full flex items-center justify-between gap-3 rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-3 text-left transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40 disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    <span className="flex items-center gap-3 min-w-0">
+                                        <span
+                                            className={`h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0 ${isPreferred ? '' : 'border-gray-300 dark:border-gray-600'}`}
+                                            style={isPreferred ? { borderColor: brand.color } : undefined}
+                                        >
+                                            {isPreferred && (
+                                                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: brand.color }} />
+                                            )}
+                                        </span>
+                                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                            Use as default generation provider
+                                        </span>
+                                    </span>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">
+                                        {isSettingDefault ? (
+                                            <span className="flex items-center gap-1">
+                                                <Loader2 className="w-3 h-3 animate-spin" /> Saving...
+                                            </span>
+                                        ) : isPreferred ? (
+                                            'Current default'
+                                        ) : !state.hasApiKey ? (
+                                            'Requires API key'
+                                        ) : (
+                                            'Set default'
+                                        )}
+                                    </span>
+                                </button>
+                            </div>
+
+                            {!state.hasApiKey ? (
+                                <div className="space-y-2">
+                                    <button
+                                        type="button"
+                                        onClick={onSaveKey}
+                                        disabled={state.isSaving}
+                                        className="px-5 py-2.5 text-sm font-medium rounded-md bg-system-blue hover:bg-system-darkBlue text-white disabled:opacity-60"
+                                    >
+                                        {state.isSaving ? 'Saving...' : 'Save & Continue'}
+                                    </button>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        Model selection unlocks after you save your API key.
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    {config.supportsCustomModels && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                Custom {config.label} Model IDs
+                                            </label>
+                                            <textarea
+                                                value={state.customModelsInput}
+                                                onChange={(event) => onPatch(config.id, { customModelsInput: event.target.value })}
+                                                rows={3}
+                                                placeholder={'Add one model ID per line or comma-separated\nExample: claude-sonnet-4'}
+                                                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                            />
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Default {config.label} Model
+                                        </label>
+                                        <select
+                                            value={state.selectedModel}
+                                            onChange={(event) => onPatch(config.id, { selectedModel: event.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                        >
+                                            {selectableModels.map((model) => (
+                                                <option key={model.value} value={model.value}>{model.label}</option>
+                                            ))}
+                                        </select>
+                                        {selectedModelDescription && (
+                                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{selectedModelDescription}</p>
+                                        )}
+                                    </div>
+
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                                Visible {config.label} Models
+                                            </label>
+                                            <button
+                                                type="button"
+                                                onClick={onRefreshModels}
+                                                disabled={state.isRefreshing}
+                                                className="flex items-center space-x-1 text-xs font-medium text-system-blue hover:text-system-darkBlue dark:text-system-darkBlue disabled:opacity-60"
+                                            >
+                                                <RefreshCw className={`w-3.5 h-3.5 ${state.isRefreshing ? 'animate-spin' : ''}`} />
+                                                <span>{state.isRefreshing ? 'Refreshing...' : 'Refresh models'}</span>
+                                            </button>
+                                        </div>
+                                        {state.availableModels.length > 6 && (
+                                            <input
+                                                type="text"
+                                                value={state.modelSearch}
+                                                onChange={(event) => onPatch(config.id, { modelSearch: event.target.value })}
+                                                placeholder="Search models by name or ID"
+                                                className="mb-3 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-system-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                                            />
+                                        )}
+                                        <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md p-3 space-y-2">
+                                            {filteredModels.map((model) => (
+                                                <label key={model.value} className="flex items-start gap-2 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={state.visibleModels.includes(model.value)}
+                                                        onChange={() => onToggleVisibleModel(model.value)}
+                                                        className="mt-0.5 h-4 w-4 text-system-blue rounded border-gray-300 dark:border-gray-600 focus:ring-system-blue dark:bg-gray-700"
+                                                    />
+                                                    <div>
+                                                        <p className="text-sm text-gray-900 dark:text-gray-100">{model.label}</p>
+                                                        {model.description && (
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400">{model.description}</p>
+                                                        )}
+                                                    </div>
+                                                </label>
+                                            ))}
+                                            {filteredModels.length === 0 && (
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">No models match your search.</p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <button
+                                            type="button"
+                                            onClick={onSaveSettings}
+                                            disabled={state.isSaving}
+                                            className="px-5 py-2.5 text-sm font-medium rounded-md bg-system-blue hover:bg-system-darkBlue text-white disabled:opacity-60"
+                                        >
+                                            {state.isSaving ? 'Saving...' : `Save ${config.label} Settings`}
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

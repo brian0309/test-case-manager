@@ -1,42 +1,20 @@
 import { Request, Response } from 'express';
 import { User } from '../../../models/user.model.js';
-import { ProviderModelOption, decryptApiKey, encryptApiKey } from '../../geminigen/gemini.service.js';
-import { isPreferredProvider, AIProvider } from '../../ai-shared/index.js';
 import {
-    generateOpenRouterTestCaseDetails,
-    generateOpenRouterTestCaseDetailsStream,
-    getOpenRouterFallbackModelValues,
-    listOpenRouterModels,
-    simplifyOpenRouterError,
-} from '../services/openrouter.service.js';
-
-const isPreferredProviderValue = (value: unknown): value is AIProvider => isPreferredProvider(value);
-
-const sanitizeModelIds = (value: unknown): string[] => {
-    if (!Array.isArray(value)) {
-        return [];
-    }
-
-    const unique = new Set<string>();
-    value.forEach((item) => {
-        if (typeof item === 'string') {
-            const trimmed = item.trim();
-            if (trimmed.length > 0) {
-                unique.add(trimmed);
-            }
-        }
-    });
-
-    return Array.from(unique);
-};
-
-const toCustomModelOption = (modelId: string): ProviderModelOption => {
-    return {
-        value: modelId,
-        label: `${modelId} (Custom)`,
-        source: 'custom',
-    };
-};
+    decryptApiKey,
+    encryptApiKey,
+    isPreferredProvider,
+    sanitizeModelIds,
+    toCustomModelOption,
+    ProviderModelOption,
+} from '../../ai-shared/index.js';
+import {
+    generateOpenAITestCaseDetails,
+    generateOpenAITestCaseDetailsStream,
+    getOpenAIFallbackModelValues,
+    listOpenAIModels,
+    simplifyOpenAIError,
+} from '../services/openai.service.js';
 
 const mergeAvailableWithCustomModels = (
     availableModels: ProviderModelOption[],
@@ -74,7 +52,7 @@ const resolveVisibleModels = (
         return customVisible;
     }
 
-    const fallbackVisible = getOpenRouterFallbackModelValues().filter((modelId) => availableSet.has(modelId));
+    const fallbackVisible = getOpenAIFallbackModelValues().filter((modelId) => availableSet.has(modelId));
     if (fallbackVisible.length > 0) {
         return fallbackVisible;
     }
@@ -90,7 +68,7 @@ const resolveRequestedModel = (value: unknown, fallback: string): string => {
     return fallback;
 };
 
-export const saveOpenRouterSettings = async (req: Request, res: Response) => {
+export const saveOpenAISettings = async (req: Request, res: Response) => {
     try {
         const { apiKey, model, visibleModels, customModels, preferredProvider } = req.body;
         const userId = req.userId;
@@ -98,23 +76,23 @@ export const saveOpenRouterSettings = async (req: Request, res: Response) => {
         const updateData: any = {};
 
         if (apiKey) {
-            updateData.openrouterApiKey = encryptApiKey(apiKey);
+            updateData.openaiApiKey = encryptApiKey(apiKey);
         }
 
         if (model) {
-            updateData.openrouterModel = model;
+            updateData.openaiModel = model;
         }
 
         if (customModels !== undefined) {
-            updateData.openrouterCustomModels = sanitizeModelIds(customModels);
+            updateData.openaiCustomModels = sanitizeModelIds(customModels);
         }
 
         if (visibleModels !== undefined) {
-            updateData.openrouterVisibleModels = sanitizeModelIds(visibleModels);
+            updateData.openaiVisibleModels = sanitizeModelIds(visibleModels);
         }
 
         if (preferredProvider !== undefined) {
-            if (!isPreferredProviderValue(preferredProvider)) {
+            if (!isPreferredProvider(preferredProvider)) {
                 return res.status(400).json({ success: false, message: 'Invalid preferred provider' });
             }
 
@@ -122,84 +100,84 @@ export const saveOpenRouterSettings = async (req: Request, res: Response) => {
         }
 
         if (Object.keys(updateData).length === 0) {
-            return res.status(400).json({ success: false, message: 'At least one OpenRouter setting must be provided' });
+            return res.status(400).json({ success: false, message: 'At least one OpenAI setting must be provided' });
         }
 
         await User.findByIdAndUpdate(userId, updateData);
 
         return res.status(200).json({ success: true, message: 'Settings saved successfully' });
     } catch (error) {
-        console.error('Error saving OpenRouter settings:', error);
+        console.error('Error saving OpenAI settings:', error);
         return res.status(500).json({ success: false, message: 'Server error' });
     }
 };
 
-export const getOpenRouterSettings = async (req: Request, res: Response) => {
+export const getOpenAISettings = async (req: Request, res: Response) => {
     try {
         const userId = req.userId;
         const forceRefresh = req.query.refresh === '1';
-        const user = await User.findById(userId).select('+openrouterApiKey openrouterModel openrouterVisibleModels openrouterCustomModels preferredAiProvider');
+        const user = await User.findById(userId).select('+openaiApiKey openaiModel openaiVisibleModels openaiCustomModels preferredAiProvider');
 
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        const hasApiKey = typeof user.openrouterApiKey === 'string' && user.openrouterApiKey.length > 0;
+        const hasApiKey = typeof user.openaiApiKey === 'string' && user.openaiApiKey.length > 0;
 
         let decryptedApiKey: string | undefined;
         if (hasApiKey) {
             try {
-                decryptedApiKey = decryptApiKey(user.openrouterApiKey as string);
+                decryptedApiKey = decryptApiKey(user.openaiApiKey as string);
             } catch (error) {
-                console.error('Failed to decrypt OpenRouter API key for model listing:', error);
+                console.error('Failed to decrypt OpenAI API key for model listing:', error);
             }
         }
 
-        const providerModels = await listOpenRouterModels(decryptedApiKey, forceRefresh);
-        const availableModels = mergeAvailableWithCustomModels(providerModels, user.openrouterCustomModels);
-        const visibleModels = resolveVisibleModels(user.openrouterVisibleModels, availableModels, user.openrouterCustomModels);
+        const providerModels = await listOpenAIModels(decryptedApiKey, forceRefresh);
+        const availableModels = mergeAvailableWithCustomModels(providerModels, user.openaiCustomModels);
+        const visibleModels = resolveVisibleModels(user.openaiVisibleModels, availableModels, user.openaiCustomModels);
 
         return res.status(200).json({
             success: true,
             data: {
                 hasApiKey,
-                model: user.openrouterModel || 'openai/gpt-4o-mini',
+                model: user.openaiModel || 'gpt-5',
                 availableModels,
                 visibleModels,
-                customModels: user.openrouterCustomModels || [],
+                customModels: user.openaiCustomModels || [],
                 preferredProvider: user.preferredAiProvider || 'gemini',
             },
         });
     } catch (error) {
-        console.error('Error fetching OpenRouter settings:', error);
+        console.error('Error fetching OpenAI settings:', error);
         return res.status(500).json({ success: false, message: 'Server error' });
     }
 };
 
-export const getOpenRouterModels = async (req: Request, res: Response) => {
+export const getOpenAIModels = async (req: Request, res: Response) => {
     try {
         const userId = req.userId;
         const forceRefresh = req.query.refresh === '1';
-        const user = await User.findById(userId).select('+openrouterApiKey openrouterVisibleModels openrouterCustomModels');
+        const user = await User.findById(userId).select('+openaiApiKey openaiVisibleModels openaiCustomModels');
 
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        const hasApiKey = typeof user.openrouterApiKey === 'string' && user.openrouterApiKey.length > 0;
+        const hasApiKey = typeof user.openaiApiKey === 'string' && user.openaiApiKey.length > 0;
 
         let decryptedApiKey: string | undefined;
         if (hasApiKey) {
             try {
-                decryptedApiKey = decryptApiKey(user.openrouterApiKey as string);
+                decryptedApiKey = decryptApiKey(user.openaiApiKey as string);
             } catch (error) {
-                console.error('Failed to decrypt OpenRouter API key for model listing:', error);
+                console.error('Failed to decrypt OpenAI API key for model listing:', error);
             }
         }
 
-        const providerModels = await listOpenRouterModels(decryptedApiKey, forceRefresh);
-        const availableModels = mergeAvailableWithCustomModels(providerModels, user.openrouterCustomModels);
-        const visibleModels = resolveVisibleModels(user.openrouterVisibleModels, availableModels, user.openrouterCustomModels);
+        const providerModels = await listOpenAIModels(decryptedApiKey, forceRefresh);
+        const availableModels = mergeAvailableWithCustomModels(providerModels, user.openaiCustomModels);
+        const visibleModels = resolveVisibleModels(user.openaiVisibleModels, availableModels, user.openaiCustomModels);
 
         return res.status(200).json({
             success: true,
@@ -207,32 +185,32 @@ export const getOpenRouterModels = async (req: Request, res: Response) => {
                 hasApiKey,
                 availableModels,
                 visibleModels,
-                customModels: user.openrouterCustomModels || [],
+                customModels: user.openaiCustomModels || [],
             },
         });
     } catch (error) {
-        console.error('Error fetching OpenRouter models:', error);
+        console.error('Error fetching OpenAI models:', error);
         return res.status(500).json({ success: false, message: 'Server error' });
     }
 };
 
-export const generateOpenRouterTestCases = async (req: Request, res: Response) => {
+export const generateOpenAITestCases = async (req: Request, res: Response) => {
     try {
         const { context, selectedFields, existingTestCases = [], imageUrls = [], model } = req.body;
         const userId = req.userId;
 
-        const user = await User.findById(userId).select('+openrouterApiKey openrouterModel');
-        if (!user || !user.openrouterApiKey) {
+        const user = await User.findById(userId).select('+openaiApiKey openaiModel');
+        if (!user || !user.openaiApiKey) {
             return res.status(403).json({
                 success: false,
-                message: 'OpenRouter API key not found. Please configure it in Settings.',
+                message: 'OpenAI API key not found. Please configure it in Settings.',
             });
         }
 
-        const decryptedKey = decryptApiKey(user.openrouterApiKey);
-        const selectedModel = resolveRequestedModel(model, user.openrouterModel || 'openai/gpt-4o-mini');
+        const decryptedKey = decryptApiKey(user.openaiApiKey);
+        const selectedModel = resolveRequestedModel(model, user.openaiModel || 'gpt-5');
 
-        const result = await generateOpenRouterTestCaseDetails(
+        const result = await generateOpenAITestCaseDetails(
             decryptedKey,
             context,
             selectedFields,
@@ -243,27 +221,27 @@ export const generateOpenRouterTestCases = async (req: Request, res: Response) =
 
         return res.status(200).json({ success: true, data: result });
     } catch (error: any) {
-        console.error('Error generating OpenRouter test cases:', error);
-        const simplifiedMessage = simplifyOpenRouterError(error);
+        console.error('Error generating OpenAI test cases:', error);
+        const simplifiedMessage = simplifyOpenAIError(error);
         return res.status(500).json({ success: false, message: simplifiedMessage });
     }
 };
 
-export const generateOpenRouterTestCasesStream = async (req: Request, res: Response) => {
+export const generateOpenAITestCasesStream = async (req: Request, res: Response) => {
     try {
         const { context, selectedFields, existingTestCases = [], imageUrls = [], model } = req.body;
         const userId = req.userId;
 
-        const user = await User.findById(userId).select('+openrouterApiKey openrouterModel');
-        if (!user || !user.openrouterApiKey) {
+        const user = await User.findById(userId).select('+openaiApiKey openaiModel');
+        if (!user || !user.openaiApiKey) {
             return res.status(403).json({
                 success: false,
-                message: 'OpenRouter API key not found. Please configure it in Settings.',
+                message: 'OpenAI API key not found. Please configure it in Settings.',
             });
         }
 
-        const decryptedKey = decryptApiKey(user.openrouterApiKey);
-        const selectedModel = resolveRequestedModel(model, user.openrouterModel || 'openai/gpt-4o-mini');
+        const decryptedKey = decryptApiKey(user.openaiApiKey);
+        const selectedModel = resolveRequestedModel(model, user.openaiModel || 'gpt-5');
 
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
@@ -272,10 +250,10 @@ export const generateOpenRouterTestCasesStream = async (req: Request, res: Respo
         res.flushHeaders();
 
         req.on('close', () => {
-            console.log('Client disconnected from OpenRouter stream');
+            console.log('Client disconnected from OpenAI stream');
         });
 
-        await generateOpenRouterTestCaseDetailsStream(
+        await generateOpenAITestCaseDetailsStream(
             decryptedKey,
             context,
             selectedFields,
@@ -285,8 +263,8 @@ export const generateOpenRouterTestCasesStream = async (req: Request, res: Respo
             res
         );
     } catch (error: any) {
-        console.error('Error in OpenRouter streaming test case generation:', error);
-        const simplifiedMessage = simplifyOpenRouterError(error);
+        console.error('Error in OpenAI streaming test case generation:', error);
+        const simplifiedMessage = simplifyOpenAIError(error);
 
         if (!res.headersSent) {
             return res.status(500).json({ success: false, message: simplifiedMessage });

@@ -1,11 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import crypto from 'crypto';
 import { Response } from 'express';
-
-const ALGORITHM = 'aes-256-cbc';
-// ENCRYPTION_KEY must be 32 chars
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || '';
-const IV_LENGTH = 16;
+import { encryptApiKey, decryptApiKey } from '../ai-shared/encryption.js';
+import { ProviderModelOption } from '../ai-shared/types.js';
 
 const GEMINI_MODELS_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 const GEMINI_MODEL_CACHE_TTL_MS = 10 * 60 * 1000;
@@ -72,12 +68,8 @@ interface GeminiModelCache {
 
 let geminiModelCache: GeminiModelCache | null = null;
 
-export interface ProviderModelOption {
-    value: string;
-    label: string;
-    description?: string;
-    source?: 'api' | 'fallback' | 'custom';
-}
+export type { ProviderModelOption };
+export { encryptApiKey, decryptApiKey };
 
 const normalizeGeminiModelName = (name?: string): string | null => {
     if (!name || typeof name !== 'string') {
@@ -167,32 +159,6 @@ export const listGeminiModels = async (apiKey?: string, forceRefresh: boolean = 
     }
 };
 
-if (!ENCRYPTION_KEY || ENCRYPTION_KEY.length !== 32) {
-    console.warn("WARNING: ENCRYPTION_KEY is missing or not 32 characters. Secure storage will fail.");
-}
-
-export const encryptApiKey = (text: string): string => {
-    if (!ENCRYPTION_KEY) throw new Error("Server configuration error: Missing encryption key");
-
-    const iv = crypto.randomBytes(IV_LENGTH);
-    const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY), iv);
-    let encrypted = cipher.update(text);
-    encrypted = Buffer.concat([encrypted, cipher.final()]);
-    return iv.toString('hex') + ':' + encrypted.toString('hex');
-};
-
-export const decryptApiKey = (text: string): string => {
-    if (!ENCRYPTION_KEY) throw new Error("Server configuration error: Missing encryption key");
-
-    const textParts = text.split(':');
-    const iv = Buffer.from(textParts.shift()!, 'hex');
-    const encryptedText = Buffer.from(textParts.join(':'), 'hex');
-    const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY), iv);
-    let decrypted = decipher.update(encryptedText);
-    decrypted = Buffer.concat([decrypted, decipher.final()]);
-    return decrypted.toString();
-};
-
 /**
  * Simplifies Gemini API error messages for user-friendly display
  */
@@ -217,7 +183,7 @@ export const simplifyGeminiError = (error: any): string => {
     
     // Invalid request errors
     if (code === 400) {
-        return 'Invalid request. Please check your input and try again.';
+        return message.length > 160 ? `${message.slice(0, 157)}...` : message;
     }
     
     // Server errors

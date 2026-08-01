@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { User } from "../../models/user.model.js";
+import { isPreferredProvider, AIProvider } from "../ai-shared/index.js";
 import {
     encryptApiKey,
     decryptApiKey,
@@ -11,11 +12,7 @@ import {
     ProviderModelOption,
 } from "./gemini.service.js";
 
-type PreferredProvider = 'gemini' | 'openrouter';
-
-const isPreferredProvider = (value: unknown): value is PreferredProvider => {
-    return value === 'gemini' || value === 'openrouter';
-};
+const isPreferredProviderValue = (value: unknown): value is AIProvider => isPreferredProvider(value);
 
 const sanitizeModelIds = (value: unknown): string[] => {
     if (!Array.isArray(value)) {
@@ -74,7 +71,7 @@ export const saveGeminiKey = async (req: Request, res: Response) => {
         }
 
         if (preferredProvider !== undefined) {
-            if (!isPreferredProvider(preferredProvider)) {
+            if (!isPreferredProviderValue(preferredProvider)) {
                 return res.status(400).json({ success: false, message: "Invalid preferred provider" });
             }
 
@@ -98,6 +95,7 @@ export const saveGeminiKey = async (req: Request, res: Response) => {
 export const getGeminiSettings = async (req: Request, res: Response) => {
     try {
         const userId = req.userId;
+        const forceRefresh = req.query.refresh === '1';
 
         // geminiApiKey is select:false, so we must explicitly include it to compute hasApiKey.
         // We still do NOT return the key to the client.
@@ -117,7 +115,7 @@ export const getGeminiSettings = async (req: Request, res: Response) => {
             }
         }
 
-        const availableModels = await listGeminiModels(decryptedApiKey);
+        const availableModels = await listGeminiModels(decryptedApiKey, forceRefresh);
         const visibleModels = resolveVisibleModels(user.geminiVisibleModels, availableModels);
 
         res.status(200).json({ 
@@ -139,6 +137,7 @@ export const getGeminiSettings = async (req: Request, res: Response) => {
 export const getGeminiModels = async (req: Request, res: Response) => {
     try {
         const userId = req.userId;
+        const forceRefresh = req.query.refresh === '1';
         const user = await User.findById(userId).select('+geminiApiKey geminiVisibleModels');
 
         if (!user) {
@@ -156,7 +155,7 @@ export const getGeminiModels = async (req: Request, res: Response) => {
             }
         }
 
-        const availableModels = await listGeminiModels(decryptedApiKey);
+        const availableModels = await listGeminiModels(decryptedApiKey, forceRefresh);
         const visibleModels = resolveVisibleModels(user.geminiVisibleModels, availableModels);
 
         return res.status(200).json({

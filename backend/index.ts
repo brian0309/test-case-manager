@@ -39,6 +39,9 @@ import uploadRoutes from "./services/upload/routes/upload.route.js";
 import statisticsRoutes from "./services/statistics/routes/statistics.route.js";
 import geminiRoutes from "./services/geminigen/gemini.route.js";
 import openrouterRoutes from "./services/openrouter/routes/openrouter.route.js";
+import openaiRoutes from "./services/openai/routes/openai.route.js";
+import anthropicRoutes from "./services/anthropic/routes/anthropic.route.js";
+import deepseekRoutes from "./services/deepseek/routes/deepseek.route.js";
 import reportingRoutes from "./services/reporting/routes/reporting.route.js";
 import discussionRoutes from "./services/discussion/routes/discussion.route.js";
 import ticketDiscussionRoutes from "./services/discussion/routes/ticketDiscussion.route.js";
@@ -63,6 +66,9 @@ app.use("/api/upload", uploadRoutes);
 app.use("/api/statistics", statisticsRoutes);
 app.use("/api/gemini", geminiRoutes);
 app.use("/api/openrouter", openrouterRoutes);
+app.use("/api/openai", openaiRoutes);
+app.use("/api/anthropic", anthropicRoutes);
+app.use("/api/deepseek", deepseekRoutes);
 app.use("/api/reports", reportingRoutes);
 
 // Test Case Management Routes
