@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, User, Calendar, Tag, Share2, Edit2, Trash2, ChevronDown, ExternalLink } from 'lucide-react';
 import { Ticket, TicketStatus, TicketPriority, TicketSeverity } from '../../../types/testManager';
@@ -11,7 +11,14 @@ import {
 import TicketModal from '../../../components/testManager/TicketModal';
 import DiscussionPanel from '../../../components/testManager/DiscussionPanel';
 import IdDisplay from '../../../components/testManager/IdDisplay';
+import { useTicketCollaborativeEditing } from '../../../hooks/useTicketCollaborativeEditing';
+import { useTestManagerStore } from '../../../store/testManagerStore';
 import toast from 'react-hot-toast';
+
+type FieldValue = string | number | boolean | null;
+
+const DEFAULT_AVATAR = (name: string) =>
+    `https://ui-avatars.com/api/?background=random&color=fff&name=${encodeURIComponent(name)}`;
 
 interface TicketDetailViewProps {
     ticket: Ticket;
@@ -49,6 +56,20 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
     const [savingField, setSavingField] = useState<string | null>(null);
     const navigate = useNavigate();
 
+    const applyRemoteTicketUpdate = useTestManagerStore((state) => state.applyRemoteTicketUpdate);
+
+    // Live collaboration: presence + real-time field previews
+    const handleRemoteFieldUpdate = useCallback((field: string, value: FieldValue) => {
+        const updated = { ...ticket } as Ticket;
+        (updated as unknown as Record<string, unknown>)[field] = value;
+        applyRemoteTicketUpdate(updated);
+    }, [ticket, applyRemoteTicketUpdate]);
+
+    const { collaboratingUsers, emitFieldChange, remoteEditingField } = useTicketCollaborativeEditing({
+        ticket,
+        onFieldUpdate: handleRemoteFieldUpdate,
+    });
+
     const relatedRunTitle = ticket.relatedRunId
         ? testRuns.find((r) => r.id === ticket.relatedRunId)?.title
         : undefined;
@@ -65,6 +86,7 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
 
     const handleStatusChange = async (status: TicketStatus) => {
         setSavingField('status');
+        emitFieldChange('status', status);
         try {
             await onUpdate({ status });
         } finally {
@@ -74,6 +96,7 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
 
     const handlePriorityChange = async (priority: TicketPriority) => {
         setSavingField('priority');
+        emitFieldChange('priority', priority);
         try {
             await onUpdate({ priority });
         } finally {
@@ -83,6 +106,7 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
 
     const handleSeverityChange = async (severity: TicketSeverity) => {
         setSavingField('severity');
+        emitFieldChange('severity', severity);
         try {
             await onUpdate({ severity });
         } finally {
@@ -126,6 +150,8 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
         relatedRunId?: string;
         tags?: string[];
     }) => {
+        emitFieldChange('title', data.title);
+        emitFieldChange('description', data.description ?? '');
         await onUpdate({
             title: data.title,
             description: data.description,
@@ -167,6 +193,25 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                             <span className="text-xs text-gray-400 dark:text-gray-500">View Mode</span>
                         </div>
                         <div className="flex items-center gap-2">
+                            {/* Collaborating users (live presence) */}
+                            {collaboratingUsers.length > 0 && (
+                                <div className="flex items-center -space-x-2 mr-1" title={`${collaboratingUsers.map((u) => u.name).join(', ')} viewing this ticket`}>
+                                    {collaboratingUsers.slice(0, 4).map((u) => (
+                                        <img
+                                            key={u.id}
+                                            src={u.avatar || DEFAULT_AVATAR(u.name)}
+                                            alt={u.name}
+                                            title={`${u.name} is viewing this ticket`}
+                                            className="h-7 w-7 rounded-full border-2 border-white dark:border-gray-800"
+                                        />
+                                    ))}
+                                    {collaboratingUsers.length > 4 && (
+                                        <span className="h-7 min-w-[28px] px-1 inline-flex items-center justify-center rounded-full border-2 border-white dark:border-gray-800 bg-gray-200 dark:bg-gray-600 text-[10px] font-semibold text-gray-600 dark:text-gray-200">
+                                            +{collaboratingUsers.length - 4}
+                                        </span>
+                                    )}
+                                </div>
+                            )}
                             <button
                                 onClick={handleShareClick}
                                 className="px-3 py-1.5 rounded-lg text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-1.5"
@@ -176,7 +221,10 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                                 Share
                             </button>
                             <button
-                                onClick={() => setIsEditModalOpen(true)}
+                                onClick={() => {
+                                    emitFieldChange('title', ticket.title ?? '');
+                                    setIsEditModalOpen(true);
+                                }}
                                 className="px-3 py-1.5 rounded-lg text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors flex items-center gap-1.5"
                                 title="Edit Ticket"
                             >
@@ -191,6 +239,19 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                             </button>
                         </div>
                     </div>
+
+                    {/* Live editing indicator */}
+                    {remoteEditingField && (
+                        <div className="flex items-center gap-1.5 px-4 sm:px-6 py-1.5 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-900/40 text-xs text-amber-700 dark:text-amber-400">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                            </span>
+                            <span>
+                                <span className="font-medium">{remoteEditingField.userName}</span> is editing {remoteEditingField.field}...
+                            </span>
+                        </div>
+                    )}
 
                     {/* Content area: main content + discussion panel side by side */}
                     <div className="relative flex-1 min-h-0 lg:flex lg:overflow-hidden overflow-y-auto">

@@ -4,7 +4,7 @@
  */
 
 import { io, Socket } from "socket.io-client";
-import { TestCase, TestSuite, Project, ProjectSettings, TestRun, RunItemStatus, ResultsSummary } from "../types/testManager";
+import { TestCase, TestSuite, Project, ProjectSettings, TestRun, RunItemStatus, ResultsSummary, Ticket } from "../types/testManager";
 
 // Socket event types matching backend
 export interface SocketEvents {
@@ -43,6 +43,36 @@ export interface SocketEvents {
   "testsuite:created": { suite: TestSuite; projectId: string };
   "testsuite:updated": { suite: TestSuite; projectId: string };
   "testsuite:deleted": { suiteId: string; projectId: string };
+
+  // Ticket Events
+  "ticket:created": { ticket: Ticket; projectId: string };
+  "ticket:updated": { ticket: Ticket; projectId: string };
+  "ticket:deleted": { ticketId: string; projectId: string };
+
+  // Collaborative Editing Events
+  "ticket:editing": {
+    ticketId: string;
+    projectId: string;
+    userId: string;
+    userName: string;
+    field: string;
+    value: string | number | boolean | null;
+  };
+  "ticket:user-joined": {
+    ticketId: string;
+    projectId: string;
+    user: { id: string; name: string; avatar?: string };
+  };
+  "ticket:user-left": {
+    ticketId: string;
+    projectId: string;
+    userId: string;
+  };
+  "ticket:presence": {
+    ticketId: string;
+    projectId: string;
+    users: Array<{ id: string; name: string; avatar?: string }>;
+  };
 
   // Test Run Events
   "testrun:created": { testRun: TestRun; projectId: string };
@@ -137,6 +167,7 @@ class SocketService {
   private joinedProjects = new Set<string>();
   private joinedSuites = new Set<string>();
   private joinedTestCases = new Map<string, { projectId: string; user: { id: string; name: string; avatar?: string } }>();
+  private joinedTickets = new Map<string, { projectId: string; user: { id: string; name: string; avatar?: string } }>();
   private currentProjectId: string | null = null;
   private currentSuiteId: string | null = null;
   // Store user info so we can resend it on reconnect
@@ -213,6 +244,10 @@ class SocketService {
       this.joinedTestCases.forEach(({ projectId, user }, testCaseId) => {
         this.socket?.emit("join:testcase", { testCaseId, projectId, user });
       });
+
+      this.joinedTickets.forEach(({ projectId, user }, ticketId) => {
+        this.socket?.emit("join:ticket", { ticketId, projectId, user });
+      });
     });
 
     this.socket.on("disconnect", (_reason) => {
@@ -235,6 +270,7 @@ class SocketService {
       this.joinedProjects.clear();
       this.joinedSuites.clear();
       this.joinedTestCases.clear();
+      this.joinedTickets.clear();
       this.currentProjectId = null;
       this.currentSuiteId = null;
       this.currentUser = null;
@@ -375,6 +411,57 @@ class SocketService {
   }): void {
     if (this.socket?.connected) {
       this.socket.emit("testcase:editing", data);
+    }
+  }
+
+  // =========================================================================
+  // COLLABORATIVE EDITING - Ticket Room
+  // =========================================================================
+
+  /**
+   * Join a ticket editing room for collaborative editing
+   */
+  joinTicket(
+    ticketId: string,
+    projectId: string,
+    user: { id: string; name: string; avatar?: string }
+  ): void {
+    if (!ticketId) return;
+
+    this.joinedTickets.set(ticketId, { projectId, user });
+
+    if (this.socket?.connected) {
+      this.socket.emit("join:ticket", { ticketId, projectId, user });
+    }
+  }
+
+  /**
+   * Leave a ticket editing room
+   */
+  leaveTicket(ticketId: string, projectId: string, userId: string): void {
+    if (!ticketId) return;
+
+    this.joinedTickets.delete(ticketId);
+
+    if (this.socket?.connected) {
+      this.socket.emit("leave:ticket", { ticketId, projectId, userId });
+    }
+  }
+
+  /**
+   * Emit a field edit for a ticket (collaborative editing)
+   * This broadcasts the change to other users viewing the same ticket
+   */
+  emitTicketFieldEdit(data: {
+    ticketId: string;
+    projectId: string;
+    userId: string;
+    userName: string;
+    field: string;
+    value: string | number | boolean | null;
+  }): void {
+    if (this.socket?.connected) {
+      this.socket.emit("ticket:editing", data);
     }
   }
 

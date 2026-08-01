@@ -22,6 +22,9 @@ interface ProjectUser {
 // Map of projectId -> Map of socketId -> user info
 const projectUsersMap = new Map<string, Map<string, ProjectUser>>();
 
+// Map of ticketId -> Map of socketId -> user info
+const ticketUsersMap = new Map<string, Map<string, ProjectUser>>();
+
 // Socket event types for type safety
 export interface SocketEvents {
   // Test Case Events
@@ -64,6 +67,36 @@ export interface SocketEvents {
   "testsuite:created": { suite: any; projectId: string };
   "testsuite:updated": { suite: any; projectId: string };
   "testsuite:deleted": { suiteId: string; projectId: string };
+
+  // Ticket Events
+  "ticket:created": { ticket: any; projectId: string };
+  "ticket:updated": { ticket: any; projectId: string };
+  "ticket:deleted": { ticketId: string; projectId: string };
+
+  // Collaborative Editing Events (real-time as user types)
+  "ticket:editing": {
+    ticketId: string;
+    projectId: string;
+    userId: string;
+    userName: string;
+    field: string;
+    value: any;
+  };
+  "ticket:presence": {
+    ticketId: string;
+    projectId: string;
+    users: Array<{ id: string; name: string; avatar?: string }>;
+  };
+  "ticket:user-joined": {
+    ticketId: string;
+    projectId: string;
+    user: { id: string; name: string; avatar?: string };
+  };
+  "ticket:user-left": {
+    ticketId: string;
+    projectId: string;
+    userId: string;
+  };
 
   // Test Run Events
   "testrun:created": { testRun: any; projectId: string };
@@ -322,6 +355,103 @@ class SocketManager {
         }
       });
 
+      // =========================================================================
+      // COLLABORATIVE EDITING - Join/Leave ticket editing room
+      // =========================================================================
+
+      // Handle joining ticket editing room (for collaborative editing)
+      socket.on("join:ticket", (data: { ticketId: string; projectId: string; user: { id: string; name: string; avatar?: string } }) => {
+        if (data.ticketId && data.projectId) {
+          const roomName = `ticket:${data.ticketId}`;
+          socket.join(roomName);
+
+          // Track user presence if user info provided
+          if (data.user && data.user.id) {
+            if (!ticketUsersMap.has(data.ticketId)) {
+              ticketUsersMap.set(data.ticketId, new Map());
+            }
+            const ticketUsers = ticketUsersMap.get(data.ticketId)!;
+            const userEntry: ProjectUser = {
+              id: data.user.id,
+              name: data.user.name,
+              avatar: data.user.avatar,
+              socketId: socket.id,
+            };
+            ticketUsers.set(socket.id, userEntry);
+
+            // Store user info on socket for disconnect handling
+            socket.data.currentTicketId = data.ticketId;
+            socket.data.currentTicketProjectId = data.projectId;
+            socket.data.userId = data.user.id;
+            socket.data.userName = data.user.name;
+            socket.data.userAvatar = data.user.avatar;
+
+            // Broadcast to others that a user joined
+            socket.to(roomName).emit("ticket:user-joined", {
+              ticketId: data.ticketId,
+              projectId: data.projectId,
+              user: { id: data.user.id, name: data.user.name, avatar: data.user.avatar },
+            });
+
+            // Send current presence list to the joining user
+            const usersArray = Array.from(ticketUsers.values()).map(u => ({
+              id: u.id,
+              name: u.name,
+              avatar: u.avatar,
+            }));
+            socket.emit("ticket:presence", { ticketId: data.ticketId, projectId: data.projectId, users: usersArray });
+          }
+        }
+      });
+
+      // Handle leaving ticket editing room
+      socket.on("leave:ticket", (data: { ticketId: string; projectId: string; userId: string }) => {
+        if (data.ticketId) {
+          const roomName = `ticket:${data.ticketId}`;
+          socket.leave(roomName);
+
+          // Remove user from presence tracking
+          const ticketUsers = ticketUsersMap.get(data.ticketId);
+          if (ticketUsers) {
+            const userEntry = ticketUsers.get(socket.id);
+            if (userEntry) {
+              ticketUsers.delete(socket.id);
+
+              // Broadcast to others that user left
+              socket.to(roomName).emit("ticket:user-left", {
+                ticketId: data.ticketId,
+                projectId: data.projectId,
+                userId: userEntry.id,
+              });
+            }
+
+            // Clean up empty ticket maps
+            if (ticketUsers.size === 0) {
+              ticketUsersMap.delete(data.ticketId);
+            }
+          }
+
+          // Clear socket data
+          socket.data.currentTicketId = null;
+        }
+      });
+
+      // Handle real-time field editing for tickets (broadcast to other editors)
+      socket.on("ticket:editing", (data: {
+        ticketId: string;
+        projectId: string;
+        userId: string;
+        userName: string;
+        field: string;
+        value: any;
+      }) => {
+        if (data.ticketId) {
+          const roomName = `ticket:${data.ticketId}`;
+          // Broadcast to everyone EXCEPT the sender
+          socket.to(roomName).emit("ticket:editing", data);
+        }
+      });
+
       // Handle disconnect
       socket.on("disconnect", (_reason) => {
         // Clean up project presence
@@ -343,6 +473,30 @@ class SocketManager {
             // Clean up empty project maps
             if (projectUsers.size === 0) {
               projectUsersMap.delete(currentProjectId);
+            }
+          }
+        }
+
+        // Clean up ticket presence
+        const currentTicketId = socket.data.currentTicketId;
+        if (currentTicketId) {
+          const ticketUsers = ticketUsersMap.get(currentTicketId);
+          if (ticketUsers) {
+            const userEntry = ticketUsers.get(socket.id);
+            if (userEntry) {
+              ticketUsers.delete(socket.id);
+
+              // Broadcast to others that user left
+              socket.to(`ticket:${currentTicketId}`).emit("ticket:user-left", {
+                ticketId: currentTicketId,
+                projectId: socket.data.currentTicketProjectId,
+                userId: userEntry.id,
+              });
+            }
+
+            // Clean up empty ticket maps
+            if (ticketUsers.size === 0) {
+              ticketUsersMap.delete(currentTicketId);
             }
           }
         }
@@ -527,6 +681,27 @@ export const emitTestSuiteUpdated = (projectId: string, suite: any) => {
 export const emitTestSuiteDeleted = (projectId: string, suiteId: string) => {
   socketManager.emitToProject(projectId, "testsuite:deleted", {
     suiteId,
+    projectId,
+  });
+};
+
+export const emitTicketCreated = (projectId: string, ticket: any) => {
+  socketManager.emitToProject(projectId, "ticket:created", {
+    ticket,
+    projectId,
+  });
+};
+
+export const emitTicketUpdated = (projectId: string, ticket: any) => {
+  socketManager.emitToProject(projectId, "ticket:updated", {
+    ticket,
+    projectId,
+  });
+};
+
+export const emitTicketDeleted = (projectId: string, ticketId: string) => {
+  socketManager.emitToProject(projectId, "ticket:deleted", {
+    ticketId,
     projectId,
   });
 };

@@ -3,7 +3,7 @@ import * as ticketService from "../services/ticket.service.js";
 import * as projectService from "../../testCase/services/project.service.js";
 import { TicketPriority, TicketSeverity } from "../types/ticket.types.js";
 import * as discussionService from "../../discussion/services/discussion.service.js";
-import { socketManager } from "../../../socket/socketManager.js";
+import { socketManager, emitTicketCreated, emitTicketUpdated, emitTicketDeleted } from "../../../socket/socketManager.js";
 import { User } from "../../../models/user.model.js";
 
 /**
@@ -215,6 +215,8 @@ export const createTicket = async (
       attachments,
     });
 
+    emitTicketCreated(projectId, ticket);
+
     res.status(201).json({ success: true, data: ticket });
   } catch (error) {
     console.error("Error creating ticket:", error);
@@ -263,6 +265,8 @@ export const updateTicket = async (
       res.status(404).json({ success: false, message: "Ticket not found" });
       return;
     }
+
+    emitTicketUpdated(projectId, ticket);
 
     // If status changed, post a system message to the ticket discussion panel
     if (req.body.status && req.body.status !== existing.status) {
@@ -327,6 +331,8 @@ export const deleteTicket = async (
       res.status(404).json({ success: false, message: "Ticket not found" });
       return;
     }
+
+    emitTicketDeleted(projectId, id);
 
     res.status(200).json({ success: true, data: { id } });
   } catch (error) {

@@ -241,6 +241,7 @@ interface TestManagerStore {
 
     // Ticket State
     tickets: Ticket[];
+    ticketsTotal: number;
     isTicketDetailViewOpen: boolean;
     activeTicket: Ticket | null;
 
@@ -251,6 +252,10 @@ interface TestManagerStore {
     deleteTicket: (projectId: string, id: string) => Promise<void>;
     setActiveTicket: (ticket: Ticket | null) => void;
     setTicketDetailViewOpen: (isOpen: boolean) => void;
+    setTicketsTotal: (total: number) => void;
+    applyRemoteTicketCreate: (ticket: Ticket) => void;
+    applyRemoteTicketUpdate: (ticket: Ticket) => void;
+    removeTicketLocal: (ticketId: string) => void;
 }
 
 export const useTestManagerStore = create<TestManagerStore>()(
@@ -277,6 +282,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
 
             // Ticket State
             tickets: [] as Ticket[],
+            ticketsTotal: 0,
             isTicketDetailViewOpen: false,
             activeTicket: null as Ticket | null,
 
@@ -915,6 +921,7 @@ export const useTestManagerStore = create<TestManagerStore>()(
             // =========================================================================
             setActiveTicket: (ticket) => set({ activeTicket: ticket }),
             setTicketDetailViewOpen: (isOpen) => set({ isTicketDetailViewOpen: isOpen }),
+            setTicketsTotal: (total) => set({ ticketsTotal: total }),
             fetchTickets: async (projectId) => {
                 set({ isLoading: true, error: null });
                 try {
@@ -1001,6 +1008,24 @@ export const useTestManagerStore = create<TestManagerStore>()(
                     throw error;
                 }
             },
+            // Realtime ticket sync (socket events) - local-only updates
+            applyRemoteTicketCreate: (ticket) => set((state) => {
+                const exists = state.tickets.some((t) => t.id === ticket.id);
+                if (exists) return state;
+                return {
+                    tickets: [ticket, ...state.tickets],
+                    ticketsTotal: state.ticketsTotal + 1,
+                };
+            }),
+            applyRemoteTicketUpdate: (ticket) => set((state) => ({
+                tickets: state.tickets.map((t) => (t.id === ticket.id ? ticket : t)),
+                activeTicket: state.activeTicket?.id === ticket.id ? ticket : state.activeTicket,
+            })),
+            removeTicketLocal: (ticketId) => set((state) => ({
+                tickets: state.tickets.filter((t) => t.id !== ticketId),
+                activeTicket: state.activeTicket?.id === ticketId ? null : state.activeTicket,
+                ticketsTotal: Math.max(0, state.ticketsTotal - 1),
+            })),
         }),
         {
             name: 'test-manager-storage', // localStorage key

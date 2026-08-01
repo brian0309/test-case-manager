@@ -24,6 +24,7 @@ import {
 import { CreateTicketRequest, UpdateTicketRequest, TicketListResponse } from '../../types/api/testManager.api';
 import { ticketApi } from '../../services/ticketApi';
 import { testRunApi } from '../../services/testRunApi';
+import { useRealtimeTickets } from '../../hooks/useRealtimeTickets';
 import { getTagColor } from '../../utils/tagColors';
 import {
     getTicketStatusColor,
@@ -46,6 +47,8 @@ const TicketsPage: React.FC = () => {
         setTicketDetailViewOpen,
         setActiveProject,
         projects,
+        ticketsTotal,
+        setTicketsTotal,
     } = useTestManagerStore(
         (state) => ({
             activeProject: state.activeProject,
@@ -59,9 +62,14 @@ const TicketsPage: React.FC = () => {
             setTicketDetailViewOpen: state.setTicketDetailViewOpen,
             setActiveProject: state.setActiveProject,
             projects: state.projects,
+            ticketsTotal: state.ticketsTotal,
+            setTicketsTotal: state.setTicketsTotal,
         }),
         shallow
     );
+
+    // Live collaboration: sync ticket changes across users in real time
+    useRealtimeTickets({ projectId: activeProject });
 
     const location = useLocation();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -81,7 +89,6 @@ const TicketsPage: React.FC = () => {
     // Pagination state
     const [ticketsOffset, setTicketsOffset] = useState(0);
     const [ticketsHasMore, setTicketsHasMore] = useState(false);
-    const [ticketsTotal, setTicketsTotal] = useState(0);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
 
     const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
@@ -213,7 +220,7 @@ const TicketsPage: React.FC = () => {
                 setIsLoadingMore(false);
             }
         }
-    }, [activeProject]);
+    }, [activeProject, setTicketsTotal]);
 
     const loadTicketsRef = useRef(loadTickets);
     loadTicketsRef.current = loadTickets;
