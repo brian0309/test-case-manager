@@ -20,10 +20,6 @@ interface GeneralTabProps {
     user: User | null;
 }
 
-interface PlaceholderTabProps {
-    title: string;
-}
-
 type AIProvider = 'gemini' | 'openrouter';
 
 interface ProviderModelOption {
@@ -69,7 +65,6 @@ const SettingsPage: React.FC = () => {
         { id: "general", label: "General" },
         { id: "security", label: "Security" },
         { id: "gemini", label: "AI Providers" },
-        { id: "billing", label: "Billing" },
     ];
 
     return (
@@ -115,7 +110,6 @@ const SettingsPage: React.FC = () => {
                     {activeTab === "general" && <GeneralTab user={user} />}
                     {activeTab === "security" && <SecurityTab />}
                     {activeTab === "gemini" && <GeminiTab />}
-                    {activeTab === "billing" && <PlaceholderTab title="Billing" />}
                 </motion.div>
             </div>
         </div>
@@ -369,15 +363,6 @@ const SecurityTab = () => {
     );
 };
 
-// Placeholder Tab Component
-const PlaceholderTab: React.FC<PlaceholderTabProps> = ({ title }) => {
-    return (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{title}</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">This section is coming soon...</p>
-        </div>
-    );
-};
 // AI Providers Tab Component
 const GeminiTab = () => {
     const [isLoading, setIsLoading] = useState(false);
