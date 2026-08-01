@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { createWithEqualityFn } from 'zustand/traditional';
 import { persist } from 'zustand/middleware';
 import { ViewMode, TestCase, Project, TestSuite, Priority, Status, Tester, HistoryEntry, ProjectSettings, Ticket, TicketStatus as TicketStatusEnum, TicketPriority as TicketPriorityEnum, TicketSeverity as TicketSeverityEnum, TicketAttachment } from '../types/testManager';
 import * as testManagerApi from '../services/testManagerApi';
@@ -258,7 +258,7 @@ interface TestManagerStore {
     removeTicketLocal: (ticketId: string) => void;
 }
 
-export const useTestManagerStore = create<TestManagerStore>()(
+export const useTestManagerStore = createWithEqualityFn<TestManagerStore>()(
     persist(
         (set, get) => ({
             // Initial state
@@ -1038,5 +1038,6 @@ export const useTestManagerStore = create<TestManagerStore>()(
                 viewMode: state.viewMode,
             }),
         }
-    )
+    ),
+    Object.is
 );

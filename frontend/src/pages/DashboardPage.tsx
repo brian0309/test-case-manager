@@ -132,7 +132,7 @@ const DashboardPage: React.FC = () => {
           </div>
           <div className="h-48 sm:h-80 w-full overflow-hidden sm:overflow-x-auto">
             <div className="h-full">
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height={window.innerWidth < 640 ? 192 : 320}>
                 <LineChart data={statsData?.chartData || []} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={document.documentElement.classList.contains('dark') ? '#404040' : '#E5E7EB'} />
                   <XAxis
