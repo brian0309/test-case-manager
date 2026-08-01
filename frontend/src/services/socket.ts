@@ -38,6 +38,11 @@ export interface SocketEvents {
     projectId: string;
     userId: string;
   };
+  "testcase:presence": {
+    testCaseId: string;
+    projectId: string;
+    users: Array<{ id: string; name: string; avatar?: string }>;
+  };
 
   // Test Suite Events
   "testsuite:created": { suite: TestSuite; projectId: string };

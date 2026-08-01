@@ -73,7 +73,7 @@ export function useCollaborativeEditing({
     socketService.joinTestCase(testCaseId, projectId, {
       id: user._id,
       name: user.name,
-      avatar: undefined, // Could add avatar support later
+      avatar: user.profilePicture ?? undefined,
     });
 
     setIsCollaborating(true);
@@ -99,8 +99,6 @@ export function useCollaborativeEditing({
         return;
       }
 
-      console.log("[Collab] Remote edit received:", data.field, "from", data.userName);
-
       // Update the local state with the remote change
       onFieldUpdate(data.field, data.value);
 
@@ -121,7 +119,6 @@ export function useCollaborativeEditing({
         return;
       }
 
-      console.log("[Collab] User joined:", data.user.name);
       setCollaboratingUsers((prev) => {
         // Don't add if already in the list
         if (prev.some((u) => u.id === data.user.id)) {
@@ -136,19 +133,38 @@ export function useCollaborativeEditing({
         return;
       }
 
-      console.log("[Collab] User left:", data.userId);
       setCollaboratingUsers((prev) => prev.filter((u) => u.id !== data.userId));
+    };
+
+    const handlePresence = (data: SocketEvents["testcase:presence"]) => {
+      if (data.testCaseId !== testCaseId) {
+        return;
+      }
+
+      // The server sends all users in the room keyed by socket, so a user with
+      // multiple tabs/sockets can appear more than once — dedupe by user id.
+      setCollaboratingUsers(
+        Array.from(
+          new Map(
+            data.users
+              .filter((u) => u.id !== user?._id)
+              .map((u) => [u.id, u])
+          ).values()
+        )
+      );
     };
 
     // Subscribe to events
     socketService.on("testcase:editing", handleRemoteEdit);
     socketService.on("testcase:user-joined", handleUserJoined);
     socketService.on("testcase:user-left", handleUserLeft);
+    socketService.on("testcase:presence", handlePresence);
 
     return () => {
       socketService.off("testcase:editing", handleRemoteEdit);
       socketService.off("testcase:user-joined", handleUserJoined);
       socketService.off("testcase:user-left", handleUserLeft);
+      socketService.off("testcase:presence", handlePresence);
 
       if (remoteEditingTimer.current) {
         clearTimeout(remoteEditingTimer.current);

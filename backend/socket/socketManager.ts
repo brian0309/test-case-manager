@@ -22,6 +22,9 @@ interface ProjectUser {
 // Map of projectId -> Map of socketId -> user info
 const projectUsersMap = new Map<string, Map<string, ProjectUser>>();
 
+// Map of testCaseId -> Map of socketId -> user info
+const testCaseUsersMap = new Map<string, Map<string, ProjectUser>>();
+
 // Map of ticketId -> Map of socketId -> user info
 const ticketUsersMap = new Map<string, Map<string, ProjectUser>>();
 
@@ -313,13 +316,43 @@ class SocketManager {
         if (data.testCaseId && data.projectId) {
           const roomName = `testcase:${data.testCaseId}`;
           socket.join(roomName);
-          
-          // Broadcast to others that a user joined
-          socket.to(roomName).emit("testcase:user-joined", {
-            testCaseId: data.testCaseId,
-            projectId: data.projectId,
-            user: data.user,
-          });
+
+          // Track user presence if user info provided
+          if (data.user && data.user.id) {
+            if (!testCaseUsersMap.has(data.testCaseId)) {
+              testCaseUsersMap.set(data.testCaseId, new Map());
+            }
+            const testCaseUsers = testCaseUsersMap.get(data.testCaseId)!;
+            const userEntry: ProjectUser = {
+              id: data.user.id,
+              name: data.user.name,
+              avatar: data.user.avatar,
+              socketId: socket.id,
+            };
+            testCaseUsers.set(socket.id, userEntry);
+
+            // Store user info on socket for disconnect handling
+            socket.data.currentTestCaseId = data.testCaseId;
+            socket.data.currentTestCaseProjectId = data.projectId;
+            socket.data.userId = data.user.id;
+            socket.data.userName = data.user.name;
+            socket.data.userAvatar = data.user.avatar;
+
+            // Broadcast to others that a user joined
+            socket.to(roomName).emit("testcase:user-joined", {
+              testCaseId: data.testCaseId,
+              projectId: data.projectId,
+              user: { id: data.user.id, name: data.user.name, avatar: data.user.avatar },
+            });
+
+            // Send current presence list to the joining user
+            const usersArray = Array.from(testCaseUsers.values()).map(u => ({
+              id: u.id,
+              name: u.name,
+              avatar: u.avatar,
+            }));
+            socket.emit("testcase:presence", { testCaseId: data.testCaseId, projectId: data.projectId, users: usersArray });
+          }
         }
       });
 
@@ -328,13 +361,30 @@ class SocketManager {
         if (data.testCaseId) {
           const roomName = `testcase:${data.testCaseId}`;
           socket.leave(roomName);
-          
-          // Broadcast to others that a user left
-          socket.to(roomName).emit("testcase:user-left", {
-            testCaseId: data.testCaseId,
-            projectId: data.projectId,
-            userId: data.userId,
-          });
+
+          // Remove user from presence tracking
+          const testCaseUsers = testCaseUsersMap.get(data.testCaseId);
+          if (testCaseUsers) {
+            const userEntry = testCaseUsers.get(socket.id);
+            if (userEntry) {
+              testCaseUsers.delete(socket.id);
+
+              // Broadcast to others that user left
+              socket.to(roomName).emit("testcase:user-left", {
+                testCaseId: data.testCaseId,
+                projectId: data.projectId,
+                userId: userEntry.id,
+              });
+            }
+
+            // Clean up empty test case maps
+            if (testCaseUsers.size === 0) {
+              testCaseUsersMap.delete(data.testCaseId);
+            }
+          }
+
+          // Clear socket data
+          socket.data.currentTestCaseId = null;
         }
       });
 
@@ -473,6 +523,30 @@ class SocketManager {
             // Clean up empty project maps
             if (projectUsers.size === 0) {
               projectUsersMap.delete(currentProjectId);
+            }
+          }
+        }
+
+        // Clean up test case presence
+        const currentTestCaseId = socket.data.currentTestCaseId;
+        if (currentTestCaseId) {
+          const testCaseUsers = testCaseUsersMap.get(currentTestCaseId);
+          if (testCaseUsers) {
+            const userEntry = testCaseUsers.get(socket.id);
+            if (userEntry) {
+              testCaseUsers.delete(socket.id);
+
+              // Broadcast to others that user left
+              socket.to(`testcase:${currentTestCaseId}`).emit("testcase:user-left", {
+                testCaseId: currentTestCaseId,
+                projectId: socket.data.currentTestCaseProjectId,
+                userId: userEntry.id,
+              });
+            }
+
+            // Clean up empty test case maps
+            if (testCaseUsers.size === 0) {
+              testCaseUsersMap.delete(currentTestCaseId);
             }
           }
         }

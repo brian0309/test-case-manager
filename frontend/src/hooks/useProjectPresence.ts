@@ -43,7 +43,6 @@ export function useProjectPresence({
       // Filter out current user from presence list
       const otherUsers = data.users.filter((u) => u.id !== user?._id);
       setProjectUsers(otherUsers);
-      console.log("[Presence] Received presence list:", otherUsers.length, "other users");
     },
     [projectId, user?._id]
   );
@@ -59,7 +58,6 @@ export function useProjectPresence({
         if (prev.some((u) => u.id === data.user.id)) {
           return prev;
         }
-        console.log("[Presence] User joined:", data.user.name);
         return [...prev, data.user];
       });
     },
@@ -73,9 +71,6 @@ export function useProjectPresence({
 
       setProjectUsers((prev) => {
         const filtered = prev.filter((u) => u.id !== data.userId);
-        if (filtered.length !== prev.length) {
-          console.log("[Presence] User left:", data.userId);
-        }
         return filtered;
       });
     },

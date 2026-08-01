@@ -140,9 +140,16 @@ export function useTicketCollaborativeEditing({
         return;
       }
 
-      // The server sends all users in the room, including this client
+      // The server sends all users in the room keyed by socket, so a user with
+      // multiple tabs/sockets can appear more than once — dedupe by user id.
       setCollaboratingUsers(
-        data.users.filter((u) => u.id !== user?._id)
+        Array.from(
+          new Map(
+            data.users
+              .filter((u) => u.id !== user?._id)
+              .map((u) => [u.id, u])
+          ).values()
+        )
       );
     };
 

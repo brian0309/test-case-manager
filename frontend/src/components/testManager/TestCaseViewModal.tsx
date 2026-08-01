@@ -173,13 +173,23 @@ const TestCaseViewModal: React.FC<TestCaseViewModalProps> = React.memo(function 
                             <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-200 dark:border-gray-700">
                                 <div className="flex -space-x-2">
                                     {collaboratingUsers.slice(0, 3).map((u) => (
-                                        <div
-                                            key={u.id}
-                                            className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-[10px] font-bold text-white border-2 border-white dark:border-gray-800"
-                                            title={u.name}
-                                        >
-                                            {u.name.charAt(0).toUpperCase()}
-                                        </div>
+                                        u.avatar ? (
+                                            <img
+                                                key={u.id}
+                                                src={u.avatar}
+                                                alt={u.name}
+                                                title={u.name}
+                                                className="w-6 h-6 rounded-full object-cover border-2 border-white dark:border-gray-800"
+                                            />
+                                        ) : (
+                                            <div
+                                                key={u.id}
+                                                className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-[10px] font-bold text-white border-2 border-white dark:border-gray-800"
+                                                title={u.name}
+                                            >
+                                                {u.name.charAt(0).toUpperCase()}
+                                            </div>
+                                        )
                                     ))}
                                 </div>
                                 <span className="text-xs text-blue-600 dark:text-blue-400">

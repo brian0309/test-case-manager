@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useTestManagerStore, mapTicketResponse } from '../../store/testManagerStore';
 import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import TicketModal from '../../components/testManager/TicketModal';
+import TicketFiltersSheet from '../../components/testManager/TicketFiltersSheet';
 import TicketDetailView from './components/TicketDetailView';
 import {
     Ticket,
@@ -33,6 +34,16 @@ import {
 } from '../../utils/ticketColors';
 
 const TICKETS_PAGE_SIZE = 30;
+
+const getTicketPriorityBarColor = (priority: TicketPriority): string => {
+    switch (priority) {
+        case TicketPriority.Critical: return 'bg-red-500';
+        case TicketPriority.High: return 'bg-orange-500';
+        case TicketPriority.Medium: return 'bg-yellow-500';
+        case TicketPriority.Low: return 'bg-blue-500';
+        default: return 'bg-gray-400';
+    }
+};
 
 const TicketsPage: React.FC = () => {
     const {
@@ -84,6 +95,7 @@ const TicketsPage: React.FC = () => {
     const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
     const [isPriorityFilterOpen, setIsPriorityFilterOpen] = useState(false);
     const [isSeverityFilterOpen, setIsSeverityFilterOpen] = useState(false);
+    const [isMobileFilterSheetOpen, setIsMobileFilterSheetOpen] = useState(false);
     const filterDropdownRef = useRef<HTMLDivElement>(null);
 
     // Pagination state
@@ -128,6 +140,16 @@ const TicketsPage: React.FC = () => {
     }, [tickets, selectedStatusFilters, selectedPriorityFilters, selectedSeverityFilters]);
 
     const hasActiveFilters = selectedStatusFilters.length > 0 || selectedPriorityFilters.length > 0 || selectedSeverityFilters.length > 0;
+
+    const handleApplyFilters = useCallback((
+        status: TicketStatus[],
+        priority: TicketPriority[],
+        severity: TicketSeverity[],
+    ) => {
+        setSelectedStatusFilters(status);
+        setSelectedPriorityFilters(priority);
+        setSelectedSeverityFilters(severity);
+    }, []);
 
     // Check for URL state to open create modal
     useEffect(() => {
@@ -369,15 +391,17 @@ const TicketsPage: React.FC = () => {
     return (
         <div className="flex flex-col h-auto sm:h-full bg-white dark:bg-gray-900">
             {/* Header area with quick filters */}
-            <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900">
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                        <Bug size={18} className="text-red-500" />
-                        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+            <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 sm:sticky sm:top-0 sm:z-20">
+                <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <Bug size={18} className="text-red-500 flex-shrink-0" />
+                        <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
                             Tickets ({ticketsTotal || tickets.length})
                         </h2>
                     </div>
-                    <div ref={filterDropdownRef} className="flex items-center gap-2">
+
+                    {/* Desktop filter dropdowns */}
+                    <div ref={filterDropdownRef} className="hidden sm:flex items-center gap-2">
                     {/* Status Filter */}
                     <div className="relative">
                         <button
@@ -561,8 +585,27 @@ const TicketsPage: React.FC = () => {
                             Clear
                         </button>
                     )}
+                    </div>
                 </div>
-                </div>
+
+                {/* Mobile Filters button */}
+                <button
+                    onClick={() => setIsMobileFilterSheetOpen(true)}
+                    className={`sm:hidden flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors flex-shrink-0 ${
+                        hasActiveFilters
+                            ? 'border-blue-400 dark:border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                            : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600'
+                    }`}
+                    aria-label="Open ticket filters"
+                >
+                    <Filter size={13} />
+                    Filters
+                    {hasActiveFilters && (
+                        <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold bg-blue-500 text-white rounded-full">
+                            {selectedStatusFilters.length + selectedPriorityFilters.length + selectedSeverityFilters.length}
+                        </span>
+                    )}
+                </button>
             </div>
 
             {/* Loading state */}
@@ -614,6 +657,8 @@ const TicketsPage: React.FC = () => {
             {/* Ticket list */}
             {filteredTickets.length > 0 && (
                 <div ref={listContainerRef} className="flex-1 overflow-auto">
+                    {/* Desktop table */}
+                    <div className="hidden sm:block">
                     <table className="w-full">
                         <thead>
                             <tr className="border-b border-gray-100 dark:border-gray-700">
@@ -714,6 +759,92 @@ const TicketsPage: React.FC = () => {
                             ))}
                         </tbody>
                     </table>
+                    </div>
+
+                    {/* Mobile ticket cards */}
+                    <div className="sm:hidden px-3 py-3 space-y-3">
+                        {filteredTickets.map((ticket) => (
+                            <div
+                                key={ticket.id}
+                                onClick={() => openTicketDetail(ticket)}
+                                className="relative mac-card overflow-hidden cursor-pointer transition-all active:scale-[0.98]"
+                            >
+                                {/* Priority Color Bar */}
+                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${getTicketPriorityBarColor(ticket.priority)}`} />
+
+                                <div className="p-4 pl-5">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex-1 min-w-0">
+                                            {/* Top Row: Status, Priority, Severity */}
+                                            <div className="flex items-center flex-wrap gap-1.5 mb-2">
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getTicketStatusColor(ticket.status)}`}>
+                                                    {ticket.status}
+                                                </span>
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getTicketPriorityColor(ticket.priority)}`}>
+                                                    {ticket.priority}
+                                                </span>
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getTicketSeverityColor(ticket.severity)}`}>
+                                                    {ticket.severity}
+                                                </span>
+                                            </div>
+
+                                            {/* Title */}
+                                            <h4 className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
+                                                {ticket.title}
+                                            </h4>
+
+                                            {/* Tags */}
+                                            {ticket.tags.length > 0 && (
+                                                <div className="flex items-center gap-1 mt-2">
+                                                    {ticket.tags.slice(0, 3).map((tag) => (
+                                                        <span
+                                                            key={tag}
+                                                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getTagColor(tag)}`}
+                                                        >
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                    {ticket.tags.length > 3 && (
+                                                        <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                                                            +{ticket.tags.length - 3}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Footer: Assignee & Date */}
+                                            <div className="mt-4 flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    {ticket.assignedTo ? (
+                                                        <>
+                                                            <img
+                                                                src={ticket.assignedTo.avatar}
+                                                                alt={ticket.assignedTo.name}
+                                                                className="h-5 w-5 rounded-full border border-gray-200 dark:border-gray-700 flex-shrink-0"
+                                                            />
+                                                            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium truncate">
+                                                                {ticket.assignedTo.name}
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400 dark:text-gray-500">Unassigned</span>
+                                                    )}
+                                                </div>
+                                                <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-tight flex-shrink-0">
+                                                    {new Date(ticket.createdAt).toLocaleDateString('en-US', {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                    })}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <ChevronRight className="h-5 w-5 text-gray-300 dark:text-gray-600 flex-shrink-0 mt-1" />
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
 
                     {/* Load more sentinel */}
                     {ticketsHasMore && (
@@ -728,7 +859,7 @@ const TicketsPage: React.FC = () => {
                     )}
 
                     {/* Status text */}
-                    <div className="flex justify-end">
+                    <div className="flex justify-end px-4 sm:px-0">
                         <div className="text-xs text-gray-400 dark:text-gray-500">
                             {hasActiveFilters ? (
                                 <>Showing {filteredTickets.length} of {tickets.length} tickets</>
@@ -748,6 +879,16 @@ const TicketsPage: React.FC = () => {
                 projectMembers={projectMembers.map((m) => ({ id: m.id, name: m.name }))}
                 testRuns={testRunOptions}
                 tagSuggestions={allTags}
+            />
+
+            {/* Mobile Filter Sheet */}
+            <TicketFiltersSheet
+                isOpen={isMobileFilterSheetOpen}
+                onClose={() => setIsMobileFilterSheetOpen(false)}
+                selectedStatus={selectedStatusFilters}
+                selectedPriority={selectedPriorityFilters}
+                selectedSeverity={selectedSeverityFilters}
+                onApply={handleApplyFilters}
             />
 
             {/* Ticket Detail View */}

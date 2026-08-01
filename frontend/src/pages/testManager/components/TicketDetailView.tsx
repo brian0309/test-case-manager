@@ -184,18 +184,18 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
 
                 <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-7xl mx-4 max-h-[85vh] flex flex-col overflow-hidden animate-[scaleIn_0.2s_ease-out]">
                     {/* Modal Header */}
-                    <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 sm:py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                        <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                             <IdDisplay
                                 id={ticket.id}
                                 className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md"
                             />
-                            <span className="text-xs text-gray-400 dark:text-gray-500">View Mode</span>
+                            <span className="hidden sm:inline text-xs text-gray-400 dark:text-gray-500">View Mode</span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2">
                             {/* Collaborating users (live presence) */}
                             {collaboratingUsers.length > 0 && (
-                                <div className="flex items-center -space-x-2 mr-1" title={`${collaboratingUsers.map((u) => u.name).join(', ')} viewing this ticket`}>
+                                <div className="hidden sm:flex items-center -space-x-2 mr-1" title={`${collaboratingUsers.map((u) => u.name).join(', ')} viewing this ticket`}>
                                     {collaboratingUsers.slice(0, 4).map((u) => (
                                         <img
                                             key={u.id}
@@ -214,22 +214,24 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                             )}
                             <button
                                 onClick={handleShareClick}
-                                className="px-3 py-1.5 rounded-lg text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-1.5"
+                                className="px-2.5 sm:px-3 py-1.5 rounded-lg text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-1.5"
                                 title="Copy link to clipboard"
+                                aria-label="Copy link to clipboard"
                             >
                                 <Share2 className="h-4 w-4" />
-                                Share
+                                <span className="hidden sm:inline">Share</span>
                             </button>
                             <button
                                 onClick={() => {
                                     emitFieldChange('title', ticket.title ?? '');
                                     setIsEditModalOpen(true);
                                 }}
-                                className="px-3 py-1.5 rounded-lg text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors flex items-center gap-1.5"
+                                className="px-2.5 sm:px-3 py-1.5 rounded-lg text-sm font-medium text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors flex items-center gap-1.5"
                                 title="Edit Ticket"
+                                aria-label="Edit Ticket"
                             >
                                 <Edit2 className="h-4 w-4" />
-                                Edit
+                                <span className="hidden sm:inline">Edit</span>
                             </button>
                             <button
                                 onClick={onClose}
