@@ -2,8 +2,10 @@ import React from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Toolbar from '../../components/testManager/Toolbar';
 import TestSuiteSidebar from '../../components/testManager/TestSuiteSidebar';
+import TestSuiteSidebarDrawer from '../../components/testManager/TestSuiteSidebarDrawer';
 import ConfirmationModal from '../../components/testManager/ConfirmationModal';
 import { useTestManagerStore } from '../../store/testManagerStore';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { ViewMode } from '../../types/testManager';
 
 const TestManagerLayout: React.FC = () => {
@@ -34,6 +36,15 @@ const TestManagerLayout: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
+    const isMobile = useMediaQuery('(max-width: 767px)');
+    const [isSuiteSidebarOpen, setIsSuiteSidebarOpen] = React.useState(false);
+
+    // Close the mobile suite sidebar when leaving the cases view
+    React.useEffect(() => {
+        if (!location.pathname.includes('/cases')) {
+            setIsSuiteSidebarOpen(false);
+        }
+    }, [location.pathname]);
 
     // Sync URL with store
     React.useEffect(() => {
@@ -46,6 +57,7 @@ const TestManagerLayout: React.FC = () => {
     }, [location.pathname, setViewMode]);
 
     const handleViewChange = (mode: ViewMode) => {
+        setIsSuiteSidebarOpen(false);
         setViewMode(mode);
         // Only clear suite when going to projects view
         if (mode === 'projects') {
@@ -119,6 +131,9 @@ const TestManagerLayout: React.FC = () => {
     };
 
     const handleSuiteSelect = (suiteId: string | null) => {
+        if (isMobile) {
+            setIsSuiteSidebarOpen(false);
+        }
         if (suiteId === null) {
             setActiveSuite(null);
             setActiveSuiteId(null);
@@ -157,7 +172,7 @@ const TestManagerLayout: React.FC = () => {
                     hideNewButton={(viewMode === 'runs' && isRunDetailViewOpen) || (viewMode === 'tickets' && isTicketDetailViewOpen)}
                 />
                 <div className="flex-1 flex overflow-hidden">
-                    {showSuiteSidebar && (
+                    {showSuiteSidebar && !isMobile && (
                         <TestSuiteSidebar
                             testSuites={testSuites}
                             activeSuiteId={activeSuiteId}
@@ -170,6 +185,23 @@ const TestManagerLayout: React.FC = () => {
                         <Outlet />
                     </div>
                 </div>
+                {showSuiteSidebar && isMobile && (
+                    <TestSuiteSidebarDrawer
+                        isOpen={isSuiteSidebarOpen}
+                        onClose={() => setIsSuiteSidebarOpen(false)}
+                        onToggle={() => setIsSuiteSidebarOpen(prev => !prev)}
+                    >
+                        <TestSuiteSidebar
+                            testSuites={testSuites}
+                            activeSuiteId={activeSuiteId}
+                            projectCaseCount={totalProjectCaseCount}
+                            onSuiteSelect={handleSuiteSelect}
+                            onCreateSuite={() => navigate('/test-manager/suites', { state: { openNewSuite: true } })}
+                            isMobile
+                            onClose={() => setIsSuiteSidebarOpen(false)}
+                        />
+                    </TestSuiteSidebarDrawer>
+                )}
             </main>
 
             <ConfirmationModal

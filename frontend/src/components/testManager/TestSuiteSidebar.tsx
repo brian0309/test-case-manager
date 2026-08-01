@@ -8,6 +8,8 @@ interface TestSuiteSidebarProps {
     projectCaseCount: number;
     onSuiteSelect: (suiteId: string | null) => void;
     onCreateSuite?: () => void;
+    isMobile?: boolean;
+    onClose?: () => void;
 }
 
 const TestSuiteSidebar: React.FC<TestSuiteSidebarProps> = ({
@@ -16,6 +18,8 @@ const TestSuiteSidebar: React.FC<TestSuiteSidebarProps> = ({
     projectCaseCount,
     onSuiteSelect,
     onCreateSuite,
+    isMobile = false,
+    onClose,
 }) => {
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -27,21 +31,34 @@ const TestSuiteSidebar: React.FC<TestSuiteSidebarProps> = ({
     }, [testSuites, searchQuery]);
 
     return (
-        <div className="w-56 flex-shrink-0 bg-gray-50/80 dark:bg-gray-900/50 backdrop-blur-xl border-r border-gray-200 dark:border-gray-700 h-full flex flex-col select-none">
+        <div className={`${isMobile ? 'w-full h-full' : 'w-56 flex-shrink-0'} bg-gray-50/80 dark:bg-gray-900/50 backdrop-blur-xl border-r border-gray-200 dark:border-gray-700 h-full flex flex-col select-none`}>
             {/* Header */}
-            <div className="px-4 pt-4 pb-2 flex items-center justify-between">
+            <div className="px-4 pt-4 pb-2 flex items-center justify-between gap-2">
                 <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                     Suites
                 </h3>
-                {onCreateSuite && (
-                    <button
-                        onClick={onCreateSuite}
-                        className="p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                        title="Create new suite"
-                    >
-                        <Plus size={14} />
-                    </button>
-                )}
+                <div className="flex items-center gap-1">
+                    {onCreateSuite && (
+                        <button
+                            onClick={onCreateSuite}
+                            className={`${isMobile ? 'p-2' : 'p-0.5'} rounded transition-colors hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300`}
+                            title="Create new suite"
+                            aria-label="Create new suite"
+                        >
+                            <Plus size={14} />
+                        </button>
+                    )}
+                    {isMobile && onClose && (
+                        <button
+                            onClick={onClose}
+                            className="p-2 flex items-center justify-center h-10 w-10 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                            title="Close"
+                            aria-label="Close test suites"
+                        >
+                            <X size={18} />
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Search */}
@@ -53,7 +70,9 @@ const TestSuiteSidebar: React.FC<TestSuiteSidebarProps> = ({
                         placeholder="Search suites"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-gray-200/60 hover:bg-gray-200/80 focus:bg-white dark:bg-gray-700/60 dark:hover:bg-gray-700/80 dark:focus:bg-gray-700 border border-transparent focus:border-blue-400/50 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40 text-sm rounded-md pl-7 pr-6 py-1 transition-all outline-none placeholder:text-gray-500 dark:placeholder:text-gray-400 dark:text-gray-200"
+                        className={`w-full bg-gray-200/60 hover:bg-gray-200/80 focus:bg-white dark:bg-gray-700/60 dark:hover:bg-gray-700/80 dark:focus:bg-gray-700 border border-transparent focus:border-blue-400/50 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40 text-sm rounded-md pl-7 pr-6 transition-all outline-none placeholder:text-gray-500 dark:placeholder:text-gray-400 dark:text-gray-200 ${
+                            isMobile ? 'py-2' : 'py-1'
+                        }`}
                     />
                     {searchQuery && (
                         <button
@@ -71,7 +90,9 @@ const TestSuiteSidebar: React.FC<TestSuiteSidebarProps> = ({
                 {/* All Cases - always visible */}
                 <button
                     onClick={() => onSuiteSelect(null)}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    className={`w-full flex items-center gap-2.5 px-3 rounded-lg text-sm transition-colors ${
+                        isMobile ? 'py-2.5' : 'py-2'
+                    } ${
                         activeSuiteId === null
                             ? 'bg-system-blue text-white font-medium shadow-sm dark:bg-system-darkBlue'
                             : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-700/60'
@@ -102,7 +123,9 @@ const TestSuiteSidebar: React.FC<TestSuiteSidebarProps> = ({
                     <button
                         key={suite.id}
                         onClick={() => onSuiteSelect(suite.id)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+                        className={`w-full flex items-center gap-2.5 px-3 rounded-lg text-sm transition-colors ${
+                            isMobile ? 'py-2.5' : 'py-2'
+                        } ${
                             activeSuiteId === suite.id
                                 ? 'bg-system-blue text-white font-medium shadow-sm dark:bg-system-darkBlue'
                                 : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-700/60'
