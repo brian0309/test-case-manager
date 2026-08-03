@@ -701,7 +701,9 @@ Feel free to fork this project and submit pull requests for any improvements.
 
 ## 📄 License
 
-ISC
+This project is licensed under the [MIT License](./LICENSE).
+
+Copyright (c) 2026 Brian Carlo (brian0309)
 
 ---
 
