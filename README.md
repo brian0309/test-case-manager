@@ -22,6 +22,12 @@
    <img alt="Real-Time" src="https://img.shields.io/badge/Real--Time-Socket.io-brightgreen" />
 </p>
 
+<p align="center">
+   <a href="https://ko-fi.com/briancarlo" target="_blank" style="display:inline-block; background:linear-gradient(135deg, #FF5E5B, #FF8C42); color:#ffffff; padding:10px 24px; border-radius:8px; font-size:14px; font-weight:bold; text-decoration:none; box-shadow:0 2px 8px rgba(255,94,91,0.35); font-family:Helvetica, Arial, sans-serif;">
+      ☕ Support Me on Ko-fi
+   </a>
+</p>
+
 ![ChatGPT Homepage Suite - Test Cases](./screenshots/04-cases.png)
 
 > 📸 See the [Screenshots Guide](./Documentation/SCREENSHOTS.md) for a complete walkthrough from dashboard to ticket creation.
