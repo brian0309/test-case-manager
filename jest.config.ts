@@ -12,8 +12,11 @@ const config: Config = {
     '^.+\\.ts$': ['ts-jest', {
       tsconfig: 'tsconfig.test.json',
     }],
+    '^.+\\.js$': ['ts-jest', {
+      tsconfig: 'tsconfig.test.json',
+    }],
   },
-  transformIgnorePatterns: [],
+  transformIgnorePatterns: ['<rootDir>/node_modules/(?!sanitize-html/)'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   collectCoverageFrom: [
     'backend/**/*.ts',
