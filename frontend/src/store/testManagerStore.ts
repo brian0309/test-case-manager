@@ -244,12 +244,15 @@ interface TestManagerStore {
     ticketsTotal: number;
     isTicketDetailViewOpen: boolean;
     activeTicket: Ticket | null;
+    ticketView: 'list' | 'kanban';
 
     // Ticket Actions
     fetchTickets: (projectId: string) => Promise<void>;
     createTicket: (projectId: string, data: CreateTicketRequest) => Promise<Ticket>;
     updateTicket: (projectId: string, id: string, data: UpdateTicketRequest) => Promise<Ticket>;
+    updateTicketStatus: (projectId: string, id: string, status: TicketStatusEnum) => Promise<Ticket>;
     deleteTicket: (projectId: string, id: string) => Promise<void>;
+    setTicketView: (view: 'list' | 'kanban') => void;
     setActiveTicket: (ticket: Ticket | null) => void;
     setTicketDetailViewOpen: (isOpen: boolean) => void;
     setTicketsTotal: (total: number) => void;
@@ -285,6 +288,7 @@ export const useTestManagerStore = createWithEqualityFn<TestManagerStore>()(
             ticketsTotal: 0,
             isTicketDetailViewOpen: false,
             activeTicket: null as Ticket | null,
+            ticketView: 'list' as 'list' | 'kanban',
 
             // Filter State
             isFilterModalOpen: false,
@@ -1008,6 +1012,52 @@ export const useTestManagerStore = createWithEqualityFn<TestManagerStore>()(
                     throw error;
                 }
             },
+            updateTicketStatus: async (projectId, id, status) => {
+                // Optimistic local update (no page spinner flash for drag-drop)
+                const originalStatus = get().tickets.find((t) => t.id === id)?.status;
+                set((state) => ({
+                    tickets: state.tickets.map((t) =>
+                        t.id === id ? { ...t, status } : t
+                    ),
+                }));
+                try {
+                    const response = await ticketApi.updateTicket(projectId, id, { status });
+                    const ticket: Ticket = {
+                        id: response.id,
+                        title: response.title,
+                        description: response.description,
+                        projectId: response.projectId,
+                        status: response.status as TicketStatusEnum,
+                        priority: response.priority as unknown as TicketPriorityEnum,
+                        severity: response.severity as unknown as TicketSeverityEnum,
+                        assignedTo: response.assignedTo as Tester | undefined,
+                        createdBy: response.createdBy as Tester,
+                        relatedRunId: response.relatedRunId,
+                        relatedRunItemId: response.relatedRunItemId,
+                        attachments: response.attachments as TicketAttachment[],
+                        tags: response.tags || [],
+                        createdAt: response.createdAt,
+                        updatedAt: response.updatedAt,
+                    };
+                    set((state) => ({
+                        tickets: state.tickets.map((t) => (t.id === id ? ticket : t)),
+                        activeTicket: state.activeTicket?.id === id ? ticket : state.activeTicket,
+                    }));
+                    return ticket;
+                } catch (error: unknown) {
+                    // Roll back to the status the server still has
+                    if (originalStatus) {
+                        set((state) => ({
+                            tickets: state.tickets.map((t) =>
+                                t.id === id ? { ...t, status: originalStatus } : t
+                            ),
+                        }));
+                    }
+                    set({ error: (error as Error).message });
+                    throw error;
+                }
+            },
+            setTicketView: (view) => set({ ticketView: view }),
             // Realtime ticket sync (socket events) - local-only updates
             applyRemoteTicketCreate: (ticket) => set((state) => {
                 const exists = state.tickets.some((t) => t.id === ticket.id);
@@ -1036,6 +1086,7 @@ export const useTestManagerStore = createWithEqualityFn<TestManagerStore>()(
                 activeSuite: state.activeSuite,
                 activeSuiteId: state.activeSuiteId,
                 viewMode: state.viewMode,
+                ticketView: state.ticketView,
             }),
         }
     ),

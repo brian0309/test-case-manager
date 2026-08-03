@@ -2,11 +2,13 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { shallow } from 'zustand/shallow';
 import toast from 'react-hot-toast';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { useTestManagerStore, mapTicketResponse } from '../../store/testManagerStore';
 import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import TicketModal from '../../components/testManager/TicketModal';
 import TicketFiltersSheet from '../../components/testManager/TicketFiltersSheet';
 import TicketDetailView from './components/TicketDetailView';
+import KanbanBoard from '../../components/testManager/KanbanBoard';
 import {
     Ticket,
     TicketStatus,
@@ -21,6 +23,8 @@ import {
     Check,
     ChevronDown,
     Filter,
+    LayoutList,
+    SquareKanban,
 } from 'lucide-react';
 import { CreateTicketRequest, UpdateTicketRequest, TicketListResponse } from '../../types/api/testManager.api';
 import { ticketApi } from '../../services/ticketApi';
@@ -60,6 +64,9 @@ const TicketsPage: React.FC = () => {
         projects,
         ticketsTotal,
         setTicketsTotal,
+        ticketView,
+        setTicketView,
+        updateTicketStatus,
     } = useTestManagerStore(
         (state) => ({
             activeProject: state.activeProject,
@@ -75,6 +82,9 @@ const TicketsPage: React.FC = () => {
             projects: state.projects,
             ticketsTotal: state.ticketsTotal,
             setTicketsTotal: state.setTicketsTotal,
+            ticketView: state.ticketView,
+            setTicketView: state.setTicketView,
+            updateTicketStatus: state.updateTicketStatus,
         }),
         shallow
     );
@@ -138,6 +148,59 @@ const TicketsPage: React.FC = () => {
         }
         return result;
     }, [tickets, selectedStatusFilters, selectedPriorityFilters, selectedSeverityFilters]);
+
+    // Virtualization setup
+    const ROW_HEIGHT_ESTIMATE = 60;
+    const tableScrollRef = useRef<HTMLDivElement>(null);
+    const mobileScrollRef = useRef<HTMLDivElement>(null);
+    const [containerHeight, setContainerHeight] = useState(600);
+
+    // Dynamically size the virtual container to fill available space
+    useEffect(() => {
+        const el = tableScrollRef.current;
+        if (!el) return;
+        const observer = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const h = entry.contentRect.height;
+                if (h > 0) setContainerHeight(h);
+            }
+        });
+        // Observe the parent so the scroll container can stretch to fill it
+        if (el.parentElement) observer.observe(el.parentElement);
+        return () => observer.disconnect();
+    }, []);
+
+    const rowVirtualizer = useVirtualizer({
+        count: filteredTickets.length,
+        getScrollElement: () => tableScrollRef.current,
+        estimateSize: () => ROW_HEIGHT_ESTIMATE,
+        overscan: 5,
+    });
+
+    // Trigger re-measurement when the dataset changes (e.g. real-time socket updates)
+    const previousDataLength = useRef(filteredTickets.length);
+    const measureRafId = useRef<number>(0);
+    useEffect(() => {
+        if (filteredTickets.length !== previousDataLength.current) {
+            previousDataLength.current = filteredTickets.length;
+            measureRafId.current = requestAnimationFrame(() => {
+                rowVirtualizer.measure();
+            });
+        }
+        return () => {
+            if (measureRafId.current) {
+                cancelAnimationFrame(measureRafId.current);
+            }
+        };
+    }, [filteredTickets.length, rowVirtualizer]);
+
+    // Mobile virtualization
+    const mobileVirtualizer = useVirtualizer({
+        count: filteredTickets.length,
+        getScrollElement: () => mobileScrollRef.current,
+        estimateSize: () => 120, // approximate mobile card height
+        overscan: 5,
+    });
 
     const hasActiveFilters = selectedStatusFilters.length > 0 || selectedPriorityFilters.length > 0 || selectedSeverityFilters.length > 0;
 
@@ -373,6 +436,16 @@ const TicketsPage: React.FC = () => {
         setTicketDetailViewOpen(true);
     }, [setActiveTicket, setTicketDetailViewOpen]);
 
+    const handleStatusChange = useCallback(async (ticketId: string, status: TicketStatus) => {
+        if (!activeProject) return;
+        try {
+            await updateTicketStatus(activeProject, ticketId, status);
+            toast.success(`Ticket moved to ${status}`);
+        } catch {
+            toast.error('Failed to update ticket status');
+        }
+    }, [activeProject, updateTicketStatus]);
+
     const closeTicketDetail = useCallback(() => {
         setActiveTicket(null);
         setTicketDetailViewOpen(false);
@@ -588,6 +661,34 @@ const TicketsPage: React.FC = () => {
                     </div>
                 </div>
 
+                {/* View toggle: list / kanban */}
+                <div className="flex items-center gap-1 p-0.5 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex-shrink-0">
+                    <button
+                        onClick={() => setTicketView('list')}
+                        className={`flex items-center justify-center h-7 w-7 rounded-md transition-colors ${
+                            ticketView === 'list'
+                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                        }`}
+                        title="List view"
+                        aria-label="Switch to list view"
+                    >
+                        <LayoutList size={14} />
+                    </button>
+                    <button
+                        onClick={() => setTicketView('kanban')}
+                        className={`flex items-center justify-center h-7 w-7 rounded-md transition-colors ${
+                            ticketView === 'kanban'
+                                ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                        }`}
+                        title="Kanban board"
+                        aria-label="Switch to kanban board"
+                    >
+                        <SquareKanban size={14} />
+                    </button>
+                </div>
+
                 {/* Mobile Filters button */}
                 <button
                     onClick={() => setIsMobileFilterSheetOpen(true)}
@@ -654,14 +755,45 @@ const TicketsPage: React.FC = () => {
                 </div>
             )}
 
+            {/* Ticket list - Kanban board */}
+            {filteredTickets.length > 0 && ticketView === 'kanban' && (
+                <div className="flex-1 min-h-0 flex flex-col">
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                        <KanbanBoard
+                            tickets={filteredTickets}
+                            onOpenTicket={openTicketDetail}
+                            onStatusChange={handleStatusChange}
+                            onLoadMore={handleLoadMoreTickets}
+                            hasMore={ticketsHasMore}
+                            isLoadingMore={isLoadingMore}
+                        />
+                    </div>
+
+                    {/* Status text */}
+                    <div className="flex justify-end px-4 sm:px-6 py-1.5">
+                        <div className="text-xs text-gray-400 dark:text-gray-500">
+                            {hasActiveFilters ? (
+                                <>Showing {filteredTickets.length} of {tickets.length} tickets</>
+                            ) : (
+                                <>Loaded {Math.min(ticketsOffset, tickets.length)} / {ticketsTotal || tickets.length} tickets</>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Ticket list */}
-            {filteredTickets.length > 0 && (
+            {filteredTickets.length > 0 && ticketView === 'list' && (
                 <div ref={listContainerRef} className="flex-1 overflow-auto">
                     {/* Desktop table */}
-                    <div className="hidden sm:block">
+                    <div
+                        ref={tableScrollRef}
+                        className="hidden sm:block"
+                        style={{ height: containerHeight, overflowY: 'auto' }}
+                    >
                     <table className="w-full">
                         <thead>
-                            <tr className="border-b border-gray-100 dark:border-gray-700">
+                            <tr className="border-b border-gray-100 dark:border-gray-700 sticky top-0 z-10 bg-white dark:bg-gray-900">
                                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Title</th>
                                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
                                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Priority</th>
@@ -672,7 +804,16 @@ const TicketsPage: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredTickets.map((ticket) => (
+                            {/* Spacer row for virtual scroll offset above visible rows */}
+                            {rowVirtualizer.getVirtualItems().length > 0 && (
+                                <tr aria-hidden="true">
+                                    <td style={{ height: rowVirtualizer.getVirtualItems()[0]?.start ?? 0, padding: 0, border: 'none' }} />
+                                </tr>
+                            )}
+                            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                                const ticket = filteredTickets[virtualRow.index];
+                                if (!ticket) return null;
+                                return (
                                 <tr
                                     key={ticket.id}
                                     onClick={() => openTicketDetail(ticket)}
@@ -756,94 +897,129 @@ const TicketsPage: React.FC = () => {
                                         <ChevronRight size={14} className="text-gray-400" />
                                     </td>
                                 </tr>
-                            ))}
+                                );
+                            })}
+                            {(() => {
+                                const visibleRows = rowVirtualizer.getVirtualItems();
+                                const lastVisibleRow = visibleRows[visibleRows.length - 1];
+                                const bottomPad = lastVisibleRow
+                                    ? rowVirtualizer.getTotalSize() - lastVisibleRow.end
+                                    : 0;
+                                return bottomPad > 0 ? (
+                                    <tr aria-hidden="true">
+                                        <td style={{ height: bottomPad, padding: 0, border: 'none' }} />
+                                    </tr>
+                                ) : null;
+                            })()}
                         </tbody>
                     </table>
                     </div>
 
                     {/* Mobile ticket cards */}
-                    <div className="sm:hidden px-3 py-3 space-y-3">
-                        {filteredTickets.map((ticket) => (
-                            <div
-                                key={ticket.id}
-                                onClick={() => openTicketDetail(ticket)}
-                                className="relative mac-card overflow-hidden cursor-pointer transition-all active:scale-[0.98]"
-                            >
-                                {/* Priority Color Bar */}
-                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${getTicketPriorityBarColor(ticket.priority)}`} />
+                    <div
+                        ref={mobileScrollRef}
+                        className="sm:hidden flex-1 overflow-auto"
+                        style={{ padding: '0.5rem' }}
+                    >
+                        <div style={{ height: mobileVirtualizer.getTotalSize(), position: 'relative' }}>
+                            {mobileVirtualizer.getVirtualItems().map((virtualRow) => {
+                                const ticket = filteredTickets[virtualRow.index];
+                                if (!ticket) return null;
+                                return (
+                                <div
+                                    key={ticket.id}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        width: '100%',
+                                        transform: `translateY(${virtualRow.start}px)`,
+                                    }}
+                                    ref={mobileVirtualizer.measureElement}
+                                    data-index={virtualRow.index}
+                                >
+                                <div
+                                    onClick={() => openTicketDetail(ticket)}
+                                    className="relative mac-card overflow-hidden cursor-pointer transition-all active:scale-[0.98] mb-3"
+                                >
+                                    {/* Priority Color Bar */}
+                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${getTicketPriorityBarColor(ticket.priority)}`} />
 
-                                <div className="p-4 pl-5">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="flex-1 min-w-0">
-                                            {/* Top Row: Status, Priority, Severity */}
-                                            <div className="flex items-center flex-wrap gap-1.5 mb-2">
-                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getTicketStatusColor(ticket.status)}`}>
-                                                    {ticket.status}
-                                                </span>
-                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getTicketPriorityColor(ticket.priority)}`}>
-                                                    {ticket.priority}
-                                                </span>
-                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getTicketSeverityColor(ticket.severity)}`}>
-                                                    {ticket.severity}
-                                                </span>
-                                            </div>
-
-                                            {/* Title */}
-                                            <h4 className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
-                                                {ticket.title}
-                                            </h4>
-
-                                            {/* Tags */}
-                                            {ticket.tags.length > 0 && (
-                                                <div className="flex items-center gap-1 mt-2">
-                                                    {ticket.tags.slice(0, 3).map((tag) => (
-                                                        <span
-                                                            key={tag}
-                                                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getTagColor(tag)}`}
-                                                        >
-                                                            {tag}
-                                                        </span>
-                                                    ))}
-                                                    {ticket.tags.length > 3 && (
-                                                        <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                                                            +{ticket.tags.length - 3}
-                                                        </span>
-                                                    )}
+                                    <div className="p-4 pl-5">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex-1 min-w-0">
+                                                {/* Top Row: Status, Priority, Severity */}
+                                                <div className="flex items-center flex-wrap gap-1.5 mb-2">
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getTicketStatusColor(ticket.status)}`}>
+                                                        {ticket.status}
+                                                    </span>
+                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getTicketPriorityColor(ticket.priority)}`}>
+                                                        {ticket.priority}
+                                                    </span>
+                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getTicketSeverityColor(ticket.severity)}`}>
+                                                        {ticket.severity}
+                                                    </span>
                                                 </div>
-                                            )}
 
-                                            {/* Footer: Assignee & Date */}
-                                            <div className="mt-4 flex items-center justify-between gap-2">
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    {ticket.assignedTo ? (
-                                                        <>
-                                                            <img
-                                                                src={ticket.assignedTo.avatar}
-                                                                alt={ticket.assignedTo.name}
-                                                                className="h-5 w-5 rounded-full border border-gray-200 dark:border-gray-700 flex-shrink-0"
-                                                            />
-                                                            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium truncate">
-                                                                {ticket.assignedTo.name}
+                                                {/* Title */}
+                                                <h4 className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
+                                                    {ticket.title}
+                                                </h4>
+
+                                                {/* Tags */}
+                                                {ticket.tags.length > 0 && (
+                                                    <div className="flex items-center gap-1 mt-2">
+                                                        {ticket.tags.slice(0, 3).map((tag) => (
+                                                            <span
+                                                                key={tag}
+                                                                className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getTagColor(tag)}`}
+                                                            >
+                                                                {tag}
                                                             </span>
-                                                        </>
-                                                    ) : (
-                                                        <span className="text-xs text-gray-400 dark:text-gray-500">Unassigned</span>
-                                                    )}
-                                                </div>
-                                                <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-tight flex-shrink-0">
-                                                    {new Date(ticket.createdAt).toLocaleDateString('en-US', {
-                                                        month: 'short',
-                                                        day: 'numeric',
-                                                    })}
-                                                </span>
-                                            </div>
-                                        </div>
+                                                        ))}
+                                                        {ticket.tags.length > 3 && (
+                                                            <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                                                                +{ticket.tags.length - 3}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
 
-                                        <ChevronRight className="h-5 w-5 text-gray-300 dark:text-gray-600 flex-shrink-0 mt-1" />
+                                                {/* Footer: Assignee & Date */}
+                                                <div className="mt-4 flex items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        {ticket.assignedTo ? (
+                                                            <>
+                                                                <img
+                                                                    src={ticket.assignedTo.avatar}
+                                                                    alt={ticket.assignedTo.name}
+                                                                    className="h-5 w-5 rounded-full border border-gray-200 dark:border-gray-700 flex-shrink-0"
+                                                                />
+                                                                <span className="text-xs text-gray-600 dark:text-gray-400 font-medium truncate">
+                                                                    {ticket.assignedTo.name}
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            <span className="text-xs text-gray-400 dark:text-gray-500">Unassigned</span>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-tight flex-shrink-0">
+                                                        {new Date(ticket.createdAt).toLocaleDateString('en-US', {
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                        })}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <ChevronRight className="h-5 w-5 text-gray-300 dark:text-gray-600 flex-shrink-0 mt-1" />
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                                </div>
+                                );
+                            })}
+                        </div>
                     </div>
 
                     {/* Load more sentinel */}
