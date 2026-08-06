@@ -13,7 +13,7 @@ export interface EditTestRunModalProps {
     testRunGroups: TestRunGroup[];
     testCases: TestCase[];
     testSuites: { id: string; name: string }[];
-    onSubmit: (runId: string, data: { title: string; groupId: string | null; tags: string[]; additionalTestCaseIds?: string[] }) => Promise<void>;
+    onSubmit: (runId: string, data: { title: string; groupId: string | null; tags: string[]; environment?: string; team?: string; buildVersion?: string; additionalTestCaseIds?: string[] }) => Promise<void>;
     tagSuggestions: string[];
 }
 
@@ -30,6 +30,9 @@ const EditTestRunModal: React.FC<EditTestRunModalProps> = ({
     const [title, setTitle] = useState('');
     const [selectedGroupId, setSelectedGroupId] = useState<string>('');
     const [tags, setTags] = useState<string[]>([]);
+    const [environment, setEnvironment] = useState('');
+    const [team, setTeam] = useState('');
+    const [buildVersion, setBuildVersion] = useState('');
     const [selectedSuiteFilter, setSelectedSuiteFilter] = useState<string>('all');
     const [existingCaseIds, setExistingCaseIds] = useState<string[]>([]);
     const [additionalCaseIds, setAdditionalCaseIds] = useState<string[]>([]);
@@ -42,6 +45,9 @@ const EditTestRunModal: React.FC<EditTestRunModalProps> = ({
             setTitle(testRun.title);
             setSelectedGroupId(testRun.groupId || '');
             setTags(testRun.tags || []);
+            setEnvironment(testRun.environment || '');
+            setTeam(testRun.team || '');
+            setBuildVersion(testRun.buildVersion || '');
             setSelectedSuiteFilter('all');
             setAdditionalCaseIds([]);
         }
@@ -123,6 +129,9 @@ const EditTestRunModal: React.FC<EditTestRunModalProps> = ({
                 title: title.trim(),
                 groupId: selectedGroupId || null,
                 tags,
+                environment: environment.trim() || undefined,
+                team: team.trim() || undefined,
+                buildVersion: buildVersion.trim() || undefined,
                 additionalTestCaseIds: additionalCaseIds,
             });
             onClose();
@@ -176,6 +185,39 @@ const EditTestRunModal: React.FC<EditTestRunModalProps> = ({
                             suggestions={tagSuggestions}
                             placeholder="e.g., regression, smoke, sprint-23"
                         />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Team</label>
+                            <input
+                                type="text"
+                                value={team}
+                                onChange={(e) => setTeam(e.target.value)}
+                                placeholder="e.g., Payments"
+                                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Environment</label>
+                            <input
+                                type="text"
+                                value={environment}
+                                onChange={(e) => setEnvironment(e.target.value)}
+                                placeholder="e.g., staging"
+                                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Build Version</label>
+                            <input
+                                type="text"
+                                value={buildVersion}
+                                onChange={(e) => setBuildVersion(e.target.value)}
+                                placeholder="e.g., v1.4.2"
+                                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                            />
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

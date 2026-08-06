@@ -292,6 +292,8 @@ export interface TestRunResponse {
   suiteName?: string;
   status: TestRunStatus;
   environment?: string;
+  team?: string;
+  buildVersion?: string;
   tags?: string[];
   items: RunItemResponse[];
   createdBy: TesterResponse;
@@ -311,6 +313,8 @@ export interface TestRunListResponse {
   suiteName?: string;
   status: TestRunStatus;
   environment?: string;
+  team?: string;
+  buildVersion?: string;
   tags?: string[];
   itemCount: number;
   createdBy: TesterResponse;
@@ -327,6 +331,8 @@ export interface CreateTestRunRequest {
   suiteId?: string;
   groupId?: string;
   environment?: string;
+  team?: string;
+  buildVersion?: string;
   tags?: string[];
   testCaseIds: string[];
 }
@@ -335,6 +341,8 @@ export interface UpdateTestRunRequest {
   title?: string;
   description?: string;
   environment?: string;
+  team?: string;
+  buildVersion?: string;
   tags?: string[];
   status?: TestRunStatus;
   groupId?: string | null; // null to remove from group
@@ -418,6 +426,40 @@ export enum TicketSeverity {
   Blocker = "Blocker",
 }
 
+export enum FailureType {
+  Functional = "Functional",
+  UIUX = "UI/UX",
+  Integration = "Integration",
+  DataAPI = "Data/API",
+  EnvironmentSetup = "Environment/Setup",
+  FlakyIntermittent = "Flaky/Intermittent",
+  Performance = "Performance",
+  Security = "Security",
+  Other = "Other",
+}
+
+export enum ReturnReason {
+  MissingSteps = "Missing steps",
+  MissingExpectedActual = "Missing expected vs actual",
+  MissingEnvironmentBuild = "Missing environment/build",
+  MissingAttachment = "Missing attachment",
+  NotReproducible = "Not reproducible",
+  Other = "Other",
+}
+
+export interface DivergenceFieldResponse {
+  field: string;
+  snapshotValue?: string;
+  liveValue?: string;
+}
+
+export interface TicketDivergenceResponse {
+  hasDiverged: boolean;
+  sourceCaseDeleted: boolean;
+  caseId?: string;
+  changedFields: DivergenceFieldResponse[];
+}
+
 export interface TicketResponse {
   id: string;
   title: string;
@@ -430,6 +472,16 @@ export interface TicketResponse {
   createdBy: TesterResponse;
   relatedRunId?: string;
   relatedRunItemId?: string;
+  failureType?: FailureType;
+  team?: string;
+  environment?: string;
+  buildVersion?: string;
+  failureAt?: string;
+  firstReproducedAt?: string;
+  returnedCount?: number;
+  lastReturnedAt?: string;
+  lastReturnReason?: ReturnReason;
+  divergence?: TicketDivergenceResponse;
   attachments: AttachmentResponse[];
   tags: string[];
   createdAt: string;
@@ -448,6 +500,16 @@ export interface TicketListResponse {
   createdBy: TesterResponse;
   relatedRunId?: string;
   relatedRunItemId?: string;
+  failureType?: FailureType;
+  team?: string;
+  environment?: string;
+  buildVersion?: string;
+  failureAt?: string;
+  firstReproducedAt?: string;
+  returnedCount?: number;
+  lastReturnedAt?: string;
+  lastReturnReason?: ReturnReason;
+  divergence?: TicketDivergenceResponse;
   tags: string[];
   createdAt: string;
   updatedAt: string;
@@ -468,6 +530,8 @@ export interface CreateTicketRequest {
   assignedToId?: string;
   relatedRunId?: string;
   relatedRunItemId?: string;
+  failureType?: FailureType;
+  team?: string;
   tags?: string[];
   attachments?: AttachmentResponse[];
 }
@@ -478,6 +542,8 @@ export interface UpdateTicketRequest {
   status?: TicketStatus;
   priority?: TicketPriority;
   severity?: TicketSeverity;
+  failureType?: FailureType;
+  team?: string;
   assignedToId?: string | null;
   relatedRunId?: string;
   relatedRunItemId?: string;

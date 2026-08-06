@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { shallow } from 'zustand/shallow';
-import { mapTestCaseResponse, useTestManagerStore } from '../../store/testManagerStore';
+import { useTestManagerStore } from '../../store/testManagerStore';
 import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import ConfirmationModal from '../../components/testManager/ConfirmationModal';
@@ -14,7 +14,6 @@ import {
 } from '../../types/testManager';
 import { CreateTicketRequest } from '../../types/api/testManager.api';
 import { testRunApi } from '../../services/testRunApi';
-import { getTestCase } from '../../services/testManagerApi';
 import { useRealtimeTestRuns } from '../../hooks/useRealtimeTestRuns';
 import {
     Play,
@@ -48,6 +47,8 @@ const mapRunResponseToListItem = (run: TestRun): TestRunListItem => ({
     suiteName: run.suiteName,
     status: run.status,
     environment: run.environment,
+    team: run.team,
+    buildVersion: run.buildVersion,
     tags: run.tags,
     itemCount: run.items.length,
     createdBy: run.createdBy,
@@ -69,7 +70,6 @@ const TestRunsPage: React.FC = () => {
         fetchTestCasesByProject,
         fetchTestSuites,
         setActiveProject,
-        setTestCases,
         searchQuery,
         clearSearchQuery,
         createTicket,
@@ -82,7 +82,6 @@ const TestRunsPage: React.FC = () => {
             fetchTestCasesByProject: state.fetchTestCasesByProject,
             fetchTestSuites: state.fetchTestSuites,
             setActiveProject: state.setActiveProject,
-            setTestCases: state.setTestCases,
             searchQuery: state.searchQuery,
             clearSearchQuery: state.clearSearchQuery,
             createTicket: state.createTicket,
@@ -425,7 +424,7 @@ const TestRunsPage: React.FC = () => {
         void fetchTestSuites(detailRun.projectId);
     }, [detailRun, fetchTestCasesByProject, fetchTestSuites]);
 
-    const handleCreateRun = async (title: string, description: string, caseIds: string[], groupId?: string, tags?: string[]) => {
+    const handleCreateRun = async (title: string, description: string, caseIds: string[], groupId?: string, tags?: string[], environment?: string, team?: string, buildVersion?: string) => {
         if (!activeProject) return;
         const createdRun = await testRunApi.createTestRun(activeProject, {
             title,
@@ -433,6 +432,9 @@ const TestRunsPage: React.FC = () => {
             testCaseIds: caseIds,
             groupId,
             tags,
+            environment,
+            team,
+            buildVersion,
         });
         toast.success('Test run created!');
         const listItem = mapRunResponseToListItem(createdRun as unknown as TestRun);
@@ -540,12 +542,15 @@ const TestRunsPage: React.FC = () => {
         }
     };
 
-    const handleUpdateRun = async (runId: string, data: { title: string; groupId: string | null; tags: string[]; additionalTestCaseIds?: string[] }) => {
+    const handleUpdateRun = async (runId: string, data: { title: string; groupId: string | null; tags: string[]; environment?: string; team?: string; buildVersion?: string; additionalTestCaseIds?: string[] }) => {
         try {
             await testRunApi.updateTestRun(runId, {
                 title: data.title,
                 groupId: data.groupId,
                 tags: data.tags,
+                environment: data.environment,
+                team: data.team,
+                buildVersion: data.buildVersion,
                 additionalTestCaseIds: data.additionalTestCaseIds,
             });
             toast.success('Test run updated');
@@ -556,6 +561,9 @@ const TestRunsPage: React.FC = () => {
                         title: data.title,
                         groupId: data.groupId || undefined,
                         tags: data.tags,
+                        environment: data.environment,
+                        team: data.team,
+                        buildVersion: data.buildVersion,
                         updatedAt: new Date().toISOString(),
                     }
                     : run
@@ -617,58 +625,6 @@ const TestRunsPage: React.FC = () => {
         fetchRuns(true);
     };
 
-    const mergeLatestCaseSnapshot = useCallback((run: TestRun, caseId: string, refreshedCase: ReturnType<typeof mapTestCaseResponse>): TestRun => {
-        return {
-            ...run,
-            items: run.items.map((item) => (
-                item.caseId === caseId
-                    ? {
-                        ...item,
-                        caseSnapshot: {
-                            title: refreshedCase.title,
-                            priority: refreshedCase.priority,
-                            suiteId: refreshedCase.suiteId,
-                            suiteName: refreshedCase.suite,
-                            area: refreshedCase.area,
-                            expectedResult: refreshedCase.expectedResult,
-                            testDescription: refreshedCase.testDescription,
-                            stepsContent: refreshedCase.stepsContent,
-                        },
-                    }
-                    : item
-            )),
-        };
-    }, []);
-
-    const handleRefreshRunCase = useCallback(async (caseId: string) => {
-        try {
-            const latestCaseResponse = await getTestCase(caseId);
-            const refreshedCase = mapTestCaseResponse(latestCaseResponse);
-
-            setTestCases((currentCases) => {
-                const hasExistingCase = currentCases.some((testCase) => testCase.id === refreshedCase.id);
-                if (!hasExistingCase) {
-                    return [...currentCases, refreshedCase];
-                }
-
-                return currentCases.map((testCase) => (
-                    testCase.id === refreshedCase.id ? refreshedCase : testCase
-                ));
-            });
-
-            setExecuteRun((currentRun) => (
-                currentRun ? mergeLatestCaseSnapshot(currentRun, caseId, refreshedCase) : currentRun
-            ));
-            setDetailRun((currentRun) => (
-                currentRun ? mergeLatestCaseSnapshot(currentRun, caseId, refreshedCase) : currentRun
-            ));
-        } catch (error: unknown) {
-            const message = (error as Error).message || 'Failed to refresh test case';
-            toast.error(message);
-            throw error;
-        }
-    }, [mergeLatestCaseSnapshot, setTestCases]);
-
     const handleCreateBugFromRun = useCallback(async (data: CreateTicketRequest) => {
         if (!activeProject) {
             throw new Error('No active project selected');
@@ -680,6 +636,14 @@ const TestRunsPage: React.FC = () => {
         () => new Map(testRunGroups.map((group) => [group.id, group.name])),
         [testRunGroups]
     );
+
+    const runTeamSuggestions = useMemo(() => {
+        const teamSet = new Set<string>();
+        testRuns.forEach((run) => {
+            if (run.team) teamSet.add(run.team);
+        });
+        return Array.from(teamSet).sort();
+    }, [testRuns]);
 
     const allDescendantGroupIds = useCallback((groupId: string): Set<string> => {
         const ids = new Set<string>([groupId]);
@@ -751,7 +715,6 @@ const TestRunsPage: React.FC = () => {
                     }}
                     testRun={executeRun}
                     onUpdateItem={handleUpdateRunItem}
-                    onRefreshCurrentCase={handleRefreshRunCase}
                     onComplete={handleCompleteRun}
                     onCreateTicket={handleCreateBugFromRun}
                     startIndex={executeStartIndex}
@@ -1026,6 +989,7 @@ const TestRunsPage: React.FC = () => {
                 initialTitle={createModalInitialTitle}
                 initialGroupId={selectedGroupFilter !== 'all' && selectedGroupFilter !== 'ungrouped' ? selectedGroupFilter : undefined}
                 initialSelectedCaseIds={preselectedCaseIds}
+                teamSuggestions={runTeamSuggestions}
             />
 
             {/* Create/Edit Group Modal */}

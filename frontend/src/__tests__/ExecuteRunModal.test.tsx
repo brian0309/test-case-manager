@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ExecuteRunModal from '../pages/testManager/components/ExecuteRunModal';
-import { RunItemStatus, TestRunStatus, type TestRun } from '../types/testManager';
+import { Priority, RunItemStatus, Status, TestRunStatus, type TestRun, type TestCase } from '../types/testManager';
 
 vi.mock('react-hot-toast', () => ({
     default: {
@@ -80,7 +80,6 @@ const renderModal = (overrides: Partial<React.ComponentProps<typeof ExecuteRunMo
             onClose={vi.fn()}
             testRun={buildRun()}
             onUpdateItem={onUpdateItem}
-            onRefreshCurrentCase={vi.fn().mockResolvedValue(undefined)}
             onComplete={vi.fn().mockResolvedValue(undefined)}
             onCreateTicket={onCreateTicket}
             {...overrides}
@@ -89,6 +88,20 @@ const renderModal = (overrides: Partial<React.ComponentProps<typeof ExecuteRunMo
 
     return { onUpdateItem, onCreateTicket };
 };
+
+const buildTestCase = (overrides: Partial<TestCase> = {}): TestCase => ({
+    id: 'case-1',
+    title: 'Login works',
+    priority: Priority.Medium,
+    status: Status.Ready,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    lastModified: '2026-01-01T00:00:00.000Z',
+    assignedTester: { id: 'user-1', name: 'QA', avatar: '' },
+    steps: [],
+    suite: 'Smoke',
+    projectId: 'project-1',
+    ...overrides,
+});
 
 const clickFail = async (user: ReturnType<typeof userEvent.setup>) => {
     const failButtons = screen.getAllByRole('button', { name: 'Fail' });
@@ -185,5 +198,52 @@ describe('ExecuteRunModal bug-on-fail flow', () => {
 
         expect(onUpdateItem).not.toHaveBeenCalled();
         expect(screen.getByText('Log a bug')).toBeInTheDocument();
+    });
+});
+
+describe('ExecuteRunModal snapshot divergence', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('renders no status chip when no live test cases are loaded', () => {
+        renderModal();
+        expect(screen.queryByText('Snapshot up to date')).not.toBeInTheDocument();
+        expect(screen.queryByText(/Test case updated/)).not.toBeInTheDocument();
+        expect(screen.queryByText('Source test case no longer exists')).not.toBeInTheDocument();
+    });
+
+    it('shows an amber chip and expandable diff when the live case differs from the snapshot', async () => {
+        const user = userEvent.setup();
+        renderModal({
+            availableTestCases: [
+                buildTestCase({ id: 'case-1', title: 'Login works (updated)', priority: Priority.High }),
+            ],
+        });
+
+        const chip = screen.getByRole('button', { name: /Test case updated/ });
+        expect(chip).toHaveTextContent('Test case updated · 1 field changed');
+
+        await user.click(chip);
+        expect(screen.getByText('Snapshot (what ran)')).toBeInTheDocument();
+        expect(screen.getByText('Live case (now)')).toBeInTheDocument();
+        expect(screen.getByText('Login works (updated)')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Update snapshot to latest' })).not.toBeInTheDocument();
+    });
+
+    it('shows a green chip when the snapshot matches the live case', () => {
+        renderModal({
+            availableTestCases: [
+                buildTestCase({ id: 'case-1', title: 'Login works', priority: Priority.High }),
+            ],
+        });
+        expect(screen.getByText('Snapshot up to date')).toBeInTheDocument();
+    });
+
+    it('reports the source test case as deleted when the live case is missing', () => {
+        renderModal({
+            availableTestCases: [buildTestCase({ id: 'case-2', title: 'Logout works' })],
+        });
+        expect(screen.getByText('Source test case no longer exists')).toBeInTheDocument();
     });
 });

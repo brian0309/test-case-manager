@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Bug, ChevronDown, Loader2, Layers, ClipboardList, X } from 'lucide-react';
+import { Bug, ChevronDown, Loader2, Layers, ClipboardList, X, Box, Users } from 'lucide-react';
 import RichTextEditor from '../../../components/testManager/RichTextEditor';
 import TagInput from '../../../components/testManager/TagInput';
-import { CaseSnapshot, TicketPriority, TicketSeverity } from '../../../types/testManager';
+import { CaseSnapshot, TicketPriority, TicketSeverity, FailureType } from '../../../types/testManager';
 import {
     getTicketPrioritySelectColor,
     getTicketSeveritySelectColor,
+    getFailureTypeColor,
 } from '../../../utils/ticketColors';
 import { mapCasePriorityToTicketDefaults } from './testRunUtils';
 
@@ -14,6 +15,7 @@ export interface FailBugPromptData {
     description: string;
     priority: TicketPriority;
     severity: TicketSeverity;
+    failureType?: FailureType;
     tags: string[];
 }
 
@@ -21,6 +23,9 @@ export interface FailBugPromptProps {
     caseSnapshot: CaseSnapshot;
     initialDescription: string;
     runTitle: string;
+    runEnvironment?: string;
+    runTeam?: string;
+    runBuildVersion?: string;
     onCreate: (data: FailBugPromptData) => Promise<void>;
     onSkip: () => void;
     onCancel: () => void;
@@ -39,10 +44,35 @@ const hasTextContent = (html: string): boolean => {
     return decoded.trim().length > 0;
 };
 
+/** Lightweight best-effort failure-type suggestion from the description/tags. */
+const suggestFailureType = (value: string): FailureType => {
+    const text = (value || '').toLowerCase();
+    const rules: Array<[FailureType, string[]]> = [
+        [FailureType.Functional, ['crash', 'crashes', 'error', 'broken', 'incorrect', 'bug', 'fails', 'failed', 'wrong']],
+        [FailureType.UIUX, ['ui', 'ux', 'layout', 'render', 'display', 'css', 'style', 'frontend']],
+        [FailureType.Integration, ['integration', '3rd party', 'third party', 'oauth', 'webhook']],
+        [FailureType.DataAPI, ['api', 'endpoint', '400', '401', '403', '404', '500', 'response']],
+        [FailureType.EnvironmentSetup, ['environment', 'build', 'config', 'deploy', 'setup', 'staging', 'prod']],
+        [FailureType.FlakyIntermittent, ['flaky', 'intermittent', 'rarely', 'sometimes', 'sporadic', 'random']],
+        [FailureType.Performance, ['performance', 'slow', 'timeout', 'lag', 'memory']],
+        [FailureType.Security, ['security', 'auth', 'permission', 'xss', 'csrf', 'encryption']],
+    ];
+
+    for (const [type, patterns] of rules) {
+        if (patterns.some((p) => text.includes(p))) {
+            return type;
+        }
+    }
+    return FailureType.Other;
+};
+
 const FailBugPrompt: React.FC<FailBugPromptProps> = ({
     caseSnapshot,
     initialDescription,
     runTitle,
+    runEnvironment,
+    runTeam,
+    runBuildVersion,
     onCreate,
     onSkip,
     onCancel,
@@ -67,6 +97,7 @@ const FailBugPrompt: React.FC<FailBugPromptProps> = ({
     const [description, setDescription] = useState('');
     const [priority, setPriority] = useState<TicketPriority>(defaults.priority);
     const [severity, setSeverity] = useState<TicketSeverity>(defaults.severity);
+    const [failureType, setFailureType] = useState<FailureType>(FailureType.Other);
     const [tags, setTags] = useState<string[]>(DEFAULT_TAGS);
 
     // Seed the form each time the prompt is mounted for a new failing case.
@@ -76,7 +107,9 @@ const FailBugPrompt: React.FC<FailBugPromptProps> = ({
         setPriority(defaults.priority);
         setSeverity(defaults.severity);
         setTags(DEFAULT_TAGS);
-    }, [caseSnapshot.title, seededDescription, defaults.priority, defaults.severity]);
+        const suggested = suggestFailureType(`${caseSnapshot.title} ${caseSnapshot.stepsContent || ''} ${caseSnapshot.expectedResult || ''} ${[...DEFAULT_TAGS, ...(tagSuggestions || [])].join(' ')}`);
+        setFailureType(suggested);
+    }, [caseSnapshot.title, seededDescription, defaults.priority, defaults.severity, caseSnapshot.stepsContent, caseSnapshot.expectedResult, tagSuggestions]);
 
     const canCreate = title.trim().length > 0 && hasTextContent(description) && !isSubmitting;
 
@@ -87,6 +120,7 @@ const FailBugPrompt: React.FC<FailBugPromptProps> = ({
             description,
             priority,
             severity,
+            failureType,
             tags,
         });
     };
@@ -125,6 +159,24 @@ const FailBugPrompt: React.FC<FailBugPromptProps> = ({
                         <Layers className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400 flex-shrink-0" />
                         <span className="truncate">Case: {caseSnapshot.title}</span>
                     </span>
+                    {runEnvironment && (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400 max-w-[220px]">
+                            <Box className="w-3.5 h-3.5 text-cyan-500 dark:text-cyan-400 flex-shrink-0" />
+                            <span className="truncate" title="Environment">Env: {runEnvironment}</span>
+                        </span>
+                    )}
+                    {runTeam && (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400 max-w-[220px]">
+                            <Users className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
+                            <span className="truncate" title={runTeam}>Team: {runTeam}</span>
+                        </span>
+                    )}
+                    {runBuildVersion && (
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700 text-[11px] sm:text-xs text-gray-600 dark:text-gray-400 max-w-[220px]">
+                            <Box className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 flex-shrink-0" />
+                            <span className="truncate" title="Build">Build: {runBuildVersion}</span>
+                        </span>
+                    )}
                 </div>
 
                 {/* Title */}
@@ -139,6 +191,25 @@ const FailBugPrompt: React.FC<FailBugPromptProps> = ({
                         className="w-full text-base font-medium text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder:text-gray-300 dark:placeholder:text-gray-600 bg-white dark:bg-gray-800"
                         placeholder="Bug title"
                     />
+                </div>
+
+                {/* Failure Type */}
+                <div className="mb-4">
+                    <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">
+                        Failure Type
+                    </label>
+                    <div className="relative">
+                        <select
+                            value={failureType}
+                            onChange={(e) => setFailureType(e.target.value as FailureType)}
+                            className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getFailureTypeColor(failureType)}`}
+                        >
+                            {Object.values(FailureType).map((ft) => (
+                                <option key={ft} value={ft}>{ft}</option>
+                            ))}
+                        </select>
+                        <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                    </div>
                 </div>
 
                 {/* Priority & Severity */}

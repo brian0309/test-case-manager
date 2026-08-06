@@ -14,6 +14,7 @@ import {
     TicketStatus,
     TicketPriority,
     TicketSeverity,
+    FailureType,
 } from '../../types/testManager';
 import {
     Bug,
@@ -35,6 +36,7 @@ import {
     getTicketStatusColor,
     getTicketPriorityColor,
     getTicketSeverityColor,
+    getFailureTypeColor,
 } from '../../utils/ticketColors';
 
 const TICKETS_PAGE_SIZE = 30;
@@ -102,9 +104,13 @@ const TicketsPage: React.FC = () => {
     const [selectedStatusFilters, setSelectedStatusFilters] = useState<TicketStatus[]>([]);
     const [selectedPriorityFilters, setSelectedPriorityFilters] = useState<TicketPriority[]>([]);
     const [selectedSeverityFilters, setSelectedSeverityFilters] = useState<TicketSeverity[]>([]);
+    const [selectedFailureTypeFilter, setSelectedFailureTypeFilter] = useState<FailureType | null>(null);
+    const [selectedTeamFilter, setSelectedTeamFilter] = useState<string | null>(null);
     const [isStatusFilterOpen, setIsStatusFilterOpen] = useState(false);
     const [isPriorityFilterOpen, setIsPriorityFilterOpen] = useState(false);
     const [isSeverityFilterOpen, setIsSeverityFilterOpen] = useState(false);
+    const [isFailureTypeFilterOpen, setIsFailureTypeFilterOpen] = useState(false);
+    const [isTeamFilterOpen, setIsTeamFilterOpen] = useState(false);
     const [isMobileFilterSheetOpen, setIsMobileFilterSheetOpen] = useState(false);
     const filterDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -146,8 +152,23 @@ const TicketsPage: React.FC = () => {
         if (selectedSeverityFilters.length > 0) {
             result = result.filter((t) => selectedSeverityFilters.includes(t.severity));
         }
+        if (selectedFailureTypeFilter) {
+            result = result.filter((t) => t.failureType === selectedFailureTypeFilter);
+        }
+        if (selectedTeamFilter) {
+            result = result.filter((t) => t.team === selectedTeamFilter);
+        }
         return result;
-    }, [tickets, selectedStatusFilters, selectedPriorityFilters, selectedSeverityFilters]);
+    }, [tickets, selectedStatusFilters, selectedPriorityFilters, selectedSeverityFilters, selectedFailureTypeFilter, selectedTeamFilter]);
+
+    // All unique teams for the team filter dropdown
+    const allTeams = useMemo(() => {
+        const teamSet = new Set<string>();
+        tickets.forEach((t) => {
+            if (t.team) teamSet.add(t.team);
+        });
+        return Array.from(teamSet).sort();
+    }, [tickets]);
 
     // Virtualization setup
     const ROW_HEIGHT_ESTIMATE = 60;
@@ -202,16 +223,20 @@ const TicketsPage: React.FC = () => {
         overscan: 5,
     });
 
-    const hasActiveFilters = selectedStatusFilters.length > 0 || selectedPriorityFilters.length > 0 || selectedSeverityFilters.length > 0;
+    const hasActiveFilters = selectedStatusFilters.length > 0 || selectedPriorityFilters.length > 0 || selectedSeverityFilters.length > 0 || !!selectedFailureTypeFilter || !!selectedTeamFilter;
 
     const handleApplyFilters = useCallback((
         status: TicketStatus[],
         priority: TicketPriority[],
         severity: TicketSeverity[],
+        failureType: FailureType | null,
+        team: string | null,
     ) => {
         setSelectedStatusFilters(status);
         setSelectedPriorityFilters(priority);
         setSelectedSeverityFilters(severity);
+        setSelectedFailureTypeFilter(failureType);
+        setSelectedTeamFilter(team);
     }, []);
 
     // Check for URL state to open create modal
@@ -254,6 +279,28 @@ const TicketsPage: React.FC = () => {
 
         loadTicketFromUrl();
     }, [searchParams, setSearchParams, setActiveProject, setActiveTicket, setTicketDetailViewOpen]);
+
+    // Handle failureType/team URL parameters for deep links from analytics
+    useEffect(() => {
+        const failureTypeParam = searchParams.get('failureType');
+        const teamParam = searchParams.get('team');
+
+        const next = new URLSearchParams(searchParams);
+
+        if (failureTypeParam && (Object.values(FailureType) as string[]).includes(failureTypeParam)) {
+            setSelectedFailureTypeFilter(failureTypeParam as FailureType);
+            next.delete('failureType');
+        }
+
+        if (teamParam) {
+            setSelectedTeamFilter(teamParam);
+            next.delete('team');
+        }
+
+        if (next.toString() !== searchParams.toString()) {
+            setSearchParams(next, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     // Fetch tickets (paginated) when project changes
     const loadTickets = useCallback(async (reset = true, offsetValue = 0) => {
@@ -364,15 +411,17 @@ const TicketsPage: React.FC = () => {
                 setIsStatusFilterOpen(false);
                 setIsPriorityFilterOpen(false);
                 setIsSeverityFilterOpen(false);
+                setIsFailureTypeFilterOpen(false);
+                setIsTeamFilterOpen(false);
             }
         };
 
-        if (isStatusFilterOpen || isPriorityFilterOpen || isSeverityFilterOpen) {
+        if (isStatusFilterOpen || isPriorityFilterOpen || isSeverityFilterOpen || isFailureTypeFilterOpen || isTeamFilterOpen) {
             document.addEventListener('mousedown', handleClickOutside);
         }
 
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [isStatusFilterOpen, isPriorityFilterOpen, isSeverityFilterOpen]);
+    }, [isStatusFilterOpen, isPriorityFilterOpen, isSeverityFilterOpen, isFailureTypeFilterOpen, isTeamFilterOpen]);
 
     const handleCreateTicket = useCallback(async (data: {
         title: string;
@@ -380,6 +429,8 @@ const TicketsPage: React.FC = () => {
         priority: TicketPriority;
         severity: TicketSeverity;
         status?: TicketStatus;
+        failureType?: FailureType;
+        team?: string;
         assignedToId?: string;
         relatedRunId?: string;
         tags?: string[];
@@ -390,6 +441,8 @@ const TicketsPage: React.FC = () => {
             description: data.description,
             priority: data.priority,
             severity: data.severity,
+            failureType: data.failureType,
+            team: data.team,
             assignedToId: data.assignedToId,
             relatedRunId: data.relatedRunId,
             tags: data.tags,
@@ -404,6 +457,8 @@ const TicketsPage: React.FC = () => {
         status?: TicketStatus;
         priority?: TicketPriority;
         severity?: TicketSeverity;
+        failureType?: FailureType;
+        team?: string;
         assignedToId?: string;
         relatedRunId?: string;
         tags?: string[];
@@ -415,6 +470,8 @@ const TicketsPage: React.FC = () => {
             status: data.status,
             priority: data.priority,
             severity: data.severity,
+            failureType: data.failureType,
+            team: data.team,
             assignedToId: data.assignedToId,
             relatedRunId: data.relatedRunId,
             tags: data.tags,
@@ -431,9 +488,16 @@ const TicketsPage: React.FC = () => {
         toast.success('Ticket deleted');
     }, [activeProject, activeTicket, deleteTicket, setActiveTicket, setTicketDetailViewOpen]);
 
-    const openTicketDetail = useCallback((ticket: Ticket) => {
+    const openTicketDetail = useCallback(async (ticket: Ticket) => {
         setActiveTicket(ticket);
         setTicketDetailViewOpen(true);
+        try {
+            const detailResponse = await ticketApi.getTicketById(ticket.id);
+            const mappedTicket = mapTicketResponse(detailResponse as TicketListResponse);
+            setActiveTicket(mappedTicket);
+        } catch (error) {
+            console.error('Failed to load ticket detail:', error);
+        }
     }, [setActiveTicket, setTicketDetailViewOpen]);
 
     const handleStatusChange = useCallback(async (ticketId: string, status: TicketStatus) => {
@@ -643,6 +707,131 @@ const TicketsPage: React.FC = () => {
                         )}
                     </div>
 
+                    {/* Failure Type Filter */}
+                    <div className="relative">
+                        <button
+                            onClick={() => {
+                                setIsFailureTypeFilterOpen(!isFailureTypeFilterOpen);
+                                setIsStatusFilterOpen(false);
+                                setIsPriorityFilterOpen(false);
+                                setIsSeverityFilterOpen(false);
+                                setIsTeamFilterOpen(false);
+                            }}
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
+                                selectedFailureTypeFilter
+                                    ? 'border-blue-400 dark:border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                    : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600'
+                            }`}
+                        >
+                            <Filter size={13} />
+                            Type
+                            {selectedFailureTypeFilter && (
+                                <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold bg-blue-500 text-white rounded-full">
+                                    {1}
+                                </span>
+                            )}
+                            <ChevronDown size={12} className={`text-gray-400 transition-transform ${isFailureTypeFilterOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {isFailureTypeFilterOpen && (
+                            <div className="absolute top-full right-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50">
+                                <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
+                                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Failure Type</p>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedFailureTypeFilter(null)}
+                                    className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
+                                        !selectedFailureTypeFilter ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                                    }`}
+                                >
+                                    <span className="text-gray-500 dark:text-gray-400">All types</span>
+                                    {!selectedFailureTypeFilter && <Check size={12} className="ml-auto text-blue-500 dark:text-blue-400 flex-shrink-0" />}
+                                </button>
+                                <div className="max-h-52 overflow-y-auto">
+                                    {Object.values(FailureType).map((failureType) => (
+                                        <button
+                                            key={failureType}
+                                            onClick={() => setSelectedFailureTypeFilter(failureType === selectedFailureTypeFilter ? null : failureType)}
+                                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
+                                                selectedFailureTypeFilter === failureType
+                                                    ? 'bg-blue-50 dark:bg-blue-900/30'
+                                                    : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                                            }`}
+                                        >
+                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${getFailureTypeColor(failureType)}`}>
+                                                {failureType}
+                                            </span>
+                                            {selectedFailureTypeFilter === failureType && (
+                                                <Check size={12} className="ml-auto text-blue-500 dark:text-blue-400 flex-shrink-0" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Team Filter */}
+                    <div className="relative">
+                        <button
+                            onClick={() => {
+                                setIsTeamFilterOpen(!isTeamFilterOpen);
+                                setIsStatusFilterOpen(false);
+                                setIsPriorityFilterOpen(false);
+                                setIsSeverityFilterOpen(false);
+                                setIsFailureTypeFilterOpen(false);
+                            }}
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
+                                selectedTeamFilter
+                                    ? 'border-blue-400 dark:border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                    : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600'
+                            }`}
+                        >
+                            <Filter size={13} />
+                            Team
+                            {selectedTeamFilter && (
+                                <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold bg-blue-500 text-white rounded-full">
+                                    {1}
+                                </span>
+                            )}
+                            <ChevronDown size={12} className={`text-gray-400 transition-transform ${isTeamFilterOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {isTeamFilterOpen && (
+                            <div className="absolute top-full right-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50">
+                                <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
+                                    <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Team</p>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedTeamFilter(null)}
+                                    className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
+                                        !selectedTeamFilter ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                                    }`}
+                                >
+                                    <span className="text-gray-500 dark:text-gray-400">All teams</span>
+                                    {!selectedTeamFilter && <Check size={12} className="ml-auto text-blue-500 dark:text-blue-400 flex-shrink-0" />}
+                                </button>
+                                <div className="max-h-52 overflow-y-auto">
+                                    {allTeams.length === 0 && (
+                                        <p className="px-3 py-2 text-xs text-gray-400 dark:text-gray-500">No teams yet</p>
+                                    )}
+                                    {allTeams.map((team) => (
+                                        <button
+                                            key={team}
+                                            onClick={() => setSelectedTeamFilter(team === selectedTeamFilter ? null : team)}
+                                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors ${
+                                                selectedTeamFilter === team ? 'bg-blue-50 dark:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                                            }`}
+                                        >
+                                            <span className="text-gray-700 dark:text-gray-200">{team}</span>
+                                            {selectedTeamFilter === team && (
+                                                <Check size={12} className="ml-auto text-blue-500 dark:text-blue-400 flex-shrink-0" />
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
                     {/* Clear filters */}
                     {hasActiveFilters && (
                         <button
@@ -650,6 +839,8 @@ const TicketsPage: React.FC = () => {
                                 setSelectedStatusFilters([]);
                                 setSelectedPriorityFilters([]);
                                 setSelectedSeverityFilters([]);
+                                setSelectedFailureTypeFilter(null);
+                                setSelectedTeamFilter(null);
                             }}
                             className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                             title="Clear all filters"
@@ -844,6 +1035,30 @@ const TicketsPage: React.FC = () => {
                                                     )}
                                                 </div>
                                             )}
+                                            {(ticket.failureType || ticket.team || ticket.firstReproducedAt || (ticket.returnedCount ?? 0) > 0) && (
+                                                <div className="flex items-center gap-1 ml-6 mt-0.5 flex-wrap">
+                                                    {ticket.failureType && (
+                                                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getFailureTypeColor(ticket.failureType)}`}>
+                                                            {ticket.failureType}
+                                                        </span>
+                                                    )}
+                                                    {ticket.team && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                                            {ticket.team}
+                                                        </span>
+                                                    )}
+                                                    {ticket.firstReproducedAt && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400">
+                                                            Reproduced
+                                                        </span>
+                                                    )}
+                                                    {(ticket.returnedCount ?? 0) > 0 && (
+                                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                                                            Returned ×{ticket.returnedCount}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </td>
                                     <td className="px-4 py-3">
@@ -959,6 +1174,21 @@ const TicketsPage: React.FC = () => {
                                                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getTicketSeverityColor(ticket.severity)}`}>
                                                         {ticket.severity}
                                                     </span>
+                                                    {ticket.failureType && (
+                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getFailureTypeColor(ticket.failureType)}`}>
+                                                            {ticket.failureType}
+                                                        </span>
+                                                    )}
+                                                    {ticket.firstReproducedAt && (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400">
+                                                            Reproduced
+                                                        </span>
+                                                    )}
+                                                    {(ticket.returnedCount ?? 0) > 0 && (
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                                                            Returned ×{ticket.returnedCount}
+                                                        </span>
+                                                    )}
                                                 </div>
 
                                                 {/* Title */}
@@ -1064,6 +1294,9 @@ const TicketsPage: React.FC = () => {
                 selectedStatus={selectedStatusFilters}
                 selectedPriority={selectedPriorityFilters}
                 selectedSeverity={selectedSeverityFilters}
+                selectedFailureType={selectedFailureTypeFilter}
+                selectedTeam={selectedTeamFilter}
+                teams={allTeams}
                 onApply={handleApplyFilters}
             />
 

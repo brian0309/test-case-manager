@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, RotateCcw, SlidersHorizontal } from 'lucide-react';
-import { TicketStatus, TicketPriority, TicketSeverity } from '../../types/testManager';
+import { TicketStatus, TicketPriority, TicketSeverity, FailureType } from '../../types/testManager';
 import {
     getTicketStatusColor,
     getTicketPriorityColor,
     getTicketSeverityColor,
+    getFailureTypeColor,
 } from '../../utils/ticketColors';
 
 interface TicketFiltersSheetProps {
@@ -12,7 +13,10 @@ interface TicketFiltersSheetProps {
     selectedStatus: TicketStatus[];
     selectedPriority: TicketPriority[];
     selectedSeverity: TicketSeverity[];
-    onApply: (status: TicketStatus[], priority: TicketPriority[], severity: TicketSeverity[]) => void;
+    selectedFailureType: FailureType | null;
+    selectedTeam: string | null;
+    teams: string[];
+    onApply: (status: TicketStatus[], priority: TicketPriority[], severity: TicketSeverity[], failureType: FailureType | null, team: string | null) => void;
     onClose: () => void;
 }
 
@@ -21,12 +25,17 @@ const TicketFiltersSheet: React.FC<TicketFiltersSheetProps> = ({
     selectedStatus,
     selectedPriority,
     selectedSeverity,
+    selectedFailureType,
+    selectedTeam,
+    teams,
     onApply,
     onClose,
 }) => {
     const [draftStatus, setDraftStatus] = useState<TicketStatus[]>(selectedStatus);
     const [draftPriority, setDraftPriority] = useState<TicketPriority[]>(selectedPriority);
     const [draftSeverity, setDraftSeverity] = useState<TicketSeverity[]>(selectedSeverity);
+    const [draftFailureType, setDraftFailureType] = useState<FailureType | null>(selectedFailureType);
+    const [draftTeam, setDraftTeam] = useState<string | null>(selectedTeam);
 
     // Sync draft state with the applied filters whenever the sheet opens
     useEffect(() => {
@@ -34,19 +43,21 @@ const TicketFiltersSheet: React.FC<TicketFiltersSheetProps> = ({
             setDraftStatus(selectedStatus);
             setDraftPriority(selectedPriority);
             setDraftSeverity(selectedSeverity);
+            setDraftFailureType(selectedFailureType);
+            setDraftTeam(selectedTeam);
         }
-    }, [isOpen, selectedStatus, selectedPriority, selectedSeverity]);
+    }, [isOpen, selectedStatus, selectedPriority, selectedSeverity, selectedFailureType, selectedTeam]);
 
     if (!isOpen) return null;
 
-    const totalSelected = draftStatus.length + draftPriority.length + draftSeverity.length;
+    const totalSelected = draftStatus.length + draftPriority.length + draftSeverity.length + (draftFailureType ? 1 : 0) + (draftTeam ? 1 : 0);
 
     const toggle = <T extends string>(list: T[], value: T, setter: (next: T[]) => void) => {
         setter(list.includes(value) ? list.filter((item) => item !== value) : [...list, value]);
     };
 
     const handleApply = () => {
-        onApply(draftStatus, draftPriority, draftSeverity);
+        onApply(draftStatus, draftPriority, draftSeverity, draftFailureType, draftTeam);
         onClose();
     };
 
@@ -54,6 +65,8 @@ const TicketFiltersSheet: React.FC<TicketFiltersSheetProps> = ({
         setDraftStatus([]);
         setDraftPriority([]);
         setDraftSeverity([]);
+        setDraftFailureType(null);
+        setDraftTeam(null);
     };
 
     const chipClass = (isSelected: boolean, colorClass: string) =>
@@ -146,6 +159,48 @@ const TicketFiltersSheet: React.FC<TicketFiltersSheetProps> = ({
                                 );
                             })}
                         </div>
+                    </div>
+
+                    {/* Failure Type Filter */}
+                    <div className="space-y-3">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block">Failure Type</label>
+                        <div className="flex flex-wrap gap-2">
+                            {Object.values(FailureType).map((failureType) => {
+                                const isSelected = draftFailureType === failureType;
+                                return (
+                                    <button
+                                        key={failureType}
+                                        onClick={() => setDraftFailureType(isSelected ? null : failureType)}
+                                        className={chipClass(isSelected, getFailureTypeColor(failureType))}
+                                    >
+                                        {failureType}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Team Filter */}
+                    <div className="space-y-3">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block">Team</label>
+                        {teams.length === 0 ? (
+                            <p className="text-xs text-gray-400 dark:text-gray-500">No teams on tickets yet</p>
+                        ) : (
+                            <div className="flex flex-wrap gap-2">
+                                {teams.map((team) => {
+                                    const isSelected = draftTeam === team;
+                                    return (
+                                        <button
+                                            key={team}
+                                            onClick={() => setDraftTeam(isSelected ? null : team)}
+                                            className={chipClass(isSelected, 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-700')}
+                                        >
+                                            {team}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 </div>
 

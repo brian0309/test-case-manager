@@ -13,6 +13,7 @@ import {
   TicketListResponse,
   CreateTicketRequest,
   UpdateTicketRequest,
+  ReturnReason,
 } from "../types/api/testManager.api";
 
 // Configure axios to send credentials with all requests
@@ -192,6 +193,78 @@ export const getTicketsByRun = async (
   }
 };
 
+/**
+ * Get tickets linked to a specific test run with pagination
+ */
+export const getTicketsByRunPaginated = async (
+  projectId: string,
+  runId: string,
+  params: { limit: number; offset: number }
+): Promise<PaginatedTicketsResult> => {
+  try {
+    const response = await axios.get<ApiResponse<TicketListResponse[]>>(
+      `${API_URL}/projects/${projectId}/tickets/by-run/${runId}`,
+      { params }
+    );
+
+    const fallbackMeta: PaginationMeta = {
+      total: response.data.data?.length || 0,
+      limit: params.limit,
+      offset: params.offset,
+      hasMore: false,
+    };
+
+    return {
+      items: response.data.data || [],
+      meta: response.data.meta || fallbackMeta,
+    };
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
+/**
+ * Mark a ticket as reproduced by an engineer. Records firstReproducedAt.
+ */
+export const markTicketReproduced = async (
+  projectId: string,
+  id: string
+): Promise<TicketResponse> => {
+  try {
+    const response = await axios.post<ApiResponse<TicketResponse>>(
+      `${API_URL}/projects/${projectId}/tickets/${id}/reproduced`
+    );
+    if (!response.data.data) {
+      throw new Error("No data returned from server");
+    }
+    return response.data.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
+/**
+ * Flag a ticket as returned for missing context (with a reason).
+ */
+export const returnTicketForInfo = async (
+  projectId: string,
+  id: string,
+  reason: ReturnReason
+): Promise<TicketResponse> => {
+  try {
+    const response = await axios.post<ApiResponse<TicketResponse>>(
+      `${API_URL}/projects/${projectId}/tickets/${id}/return-for-info`,
+      { reason }
+    );
+    if (!response.data.data) {
+      throw new Error("No data returned from server");
+    }
+    return response.data.data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+};
+
 // Export all API functions as a namespace for convenience
 export const ticketApi = {
   createTicket,
@@ -202,4 +275,7 @@ export const ticketApi = {
   updateTicket,
   deleteTicket,
   getTicketsByRun,
+  getTicketsByRunPaginated,
+  markTicketReproduced,
+  returnTicketForInfo,
 };

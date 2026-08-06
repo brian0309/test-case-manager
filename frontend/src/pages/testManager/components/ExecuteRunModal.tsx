@@ -8,6 +8,9 @@ import {
     RefreshCw,
     ChevronRight,
     ChevronLeft,
+    ChevronDown,
+    CheckCircle2,
+    AlertTriangle,
     Layers,
     MapPin,
 } from 'lucide-react';
@@ -16,6 +19,31 @@ import { CreateTicketRequest } from '../../../types/api/testManager.api';
 import RichTextEditor from '../../../components/testManager/RichTextEditor';
 import FailBugPrompt, { FailBugPromptData } from './FailBugPrompt';
 import { getItemStatusColor } from './testRunUtils';
+import { sanitizeHtml, stripHtml } from '../../../utils/sanitize';
+
+interface DivergenceFieldLocal {
+    field: string;
+    snapshotValue: string;
+    liveValue: string;
+}
+
+const DIVERGENCE_FIELD_LABELS: Record<string, string> = {
+    title: 'Title',
+    priority: 'Priority',
+    area: 'Area',
+    expectedResult: 'Expected Result',
+    testDescription: 'Description',
+    stepsContent: 'Steps',
+};
+
+const DIVERGENCE_FIELDS = [
+    'title',
+    'priority',
+    'area',
+    'expectedResult',
+    'testDescription',
+    'stepsContent',
+] as const;
 
 type OptimisticRunItemOverride = Pick<RunItem, 'status' | 'actualResult'>;
 
@@ -31,7 +59,6 @@ export interface ExecuteRunModalProps {
     onClose: () => void;
     testRun: TestRun | null;
     onUpdateItem: (itemId: string, status: RunItemStatus, actualResult?: string) => Promise<void>;
-    onRefreshCurrentCase: (caseId: string) => Promise<void>;
     onComplete: () => Promise<void>;
     onCreateTicket: (data: CreateTicketRequest) => Promise<void>;
     startIndex?: number;
@@ -46,7 +73,6 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
     onClose,
     testRun,
     onUpdateItem,
-    onRefreshCurrentCase,
     onComplete,
     onCreateTicket,
     startIndex = 0,
@@ -57,7 +83,7 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
 }) => {
     const [currentIndex, setCurrentIndex] = useState(startIndex);
     const [actualResult, setActualResult] = useState('');
-    const [isRefreshingCase, setIsRefreshingCase] = useState(false);
+    const [showDivergence, setShowDivergence] = useState(false);
     const [pendingSaveCount, setPendingSaveCount] = useState(0);
     const [optimisticOverrides, setOptimisticOverrides] = useState<Record<string, OptimisticRunItemOverride>>({});
     const [pendingFail, setPendingFail] = useState<PendingFail | null>(null);
@@ -103,6 +129,7 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
         if (currentIndex >= totalItems && totalItems > 0) {
             setCurrentIndex(totalItems - 1);
         }
+        setShowDivergence(false);
     }, [currentIndex, totalItems]);
 
     useEffect(() => {
@@ -154,6 +181,33 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
 
     const currentItem = displayedItems[activeItemIndex];
     const executedCount = displayedItems.filter(i => i.status !== RunItemStatus.NotRun).length;
+
+    const caseDivergence = (() => {
+        if (!currentItem) return null;
+        const live = testCaseById.get(currentItem.caseId);
+        if (!live) {
+            if (testCaseById.size === 0) return null;
+            return { sourceCaseDeleted: true, changedFields: [] as DivergenceFieldLocal[] };
+        }
+
+        const snapshot = currentItem.caseSnapshot;
+        const changedFields: DivergenceFieldLocal[] = [];
+
+        for (const field of DIVERGENCE_FIELDS) {
+            const snapshotValue = String((snapshot as unknown as Record<string, unknown>)[field] ?? '');
+            const liveValue = String((live as unknown as Record<string, unknown>)[field] ?? '');
+            const isHtml = field === 'stepsContent' || field === 'expectedResult';
+            const snapshotNorm = (isHtml ? stripHtml(snapshotValue) : snapshotValue).trim();
+            const liveNorm = (isHtml ? stripHtml(liveValue) : liveValue).trim();
+            if (snapshotNorm === liveNorm) continue;
+
+            changedFields.push({ field, snapshotValue, liveValue });
+        }
+
+        return { sourceCaseDeleted: false, changedFields };
+    })();
+
+    const hasDiverged = !!caseDivergence && !caseDivergence.sourceCaseDeleted && caseDivergence.changedFields.length > 0;
 
     const resolvedSuiteName = (() => {
         const itemCase = testCaseById.get(currentItem.caseId);
@@ -235,6 +289,8 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                 description: data.description || undefined,
                 priority: data.priority,
                 severity: data.severity,
+                failureType: data.failureType,
+                team: testRun.team,
                 relatedRunId: testRun.id,
                 relatedRunItemId: pendingFail.itemId,
                 tags: data.tags.length > 0 ? data.tags : undefined,
@@ -270,18 +326,6 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
             onClose();
         } catch (error: unknown) {
             toast.error((error as Error).message || 'Failed to complete run');
-        }
-    };
-
-    const handleRefreshCurrentCase = async () => {
-        setIsRefreshingCase(true);
-        try {
-            await onRefreshCurrentCase(currentItem.caseId);
-            toast.success('Test case updated');
-        } catch {
-            // Parent handler already shows the failure toast.
-        } finally {
-            setIsRefreshingCase(false);
         }
     };
 
@@ -381,16 +425,64 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                         <h3 className="min-w-0 flex-1 text-base font-semibold text-gray-900 dark:text-gray-100 sm:text-lg">
                             {currentItem.caseSnapshot.title}
                         </h3>
-                        <button
-                            onClick={handleRefreshCurrentCase}
-                            disabled={isRefreshingCase}
-                            className="inline-flex items-center justify-center p-1 text-gray-400 transition-colors hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-500 dark:hover:text-blue-400"
-                            title="Reload latest test case data"
-                            aria-label="Reload latest test case data"
-                        >
-                            <RefreshCw className={`h-4 w-4 ${isRefreshingCase ? 'animate-spin' : ''}`} />
-                        </button>
+                        {caseDivergence && hasDiverged && (
+                            <button
+                                onClick={() => setShowDivergence((v) => !v)}
+                                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] sm:text-xs font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 hover:bg-amber-100/60 dark:hover:bg-amber-900/50 transition-colors cursor-pointer shrink-0"
+                            >
+                                <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                                <span>
+                                    Test case updated · {caseDivergence.changedFields.length} field{caseDivergence.changedFields.length === 1 ? '' : 's'} changed
+                                </span>
+                                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showDivergence ? 'rotate-180' : ''}`} />
+                            </button>
+                        )}
+                        {caseDivergence && caseDivergence.sourceCaseDeleted && (
+                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] sm:text-xs font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 shrink-0">
+                                <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                                <span>Source test case no longer exists</span>
+                            </span>
+                        )}
+                        {caseDivergence && !hasDiverged && !caseDivergence.sourceCaseDeleted && (
+                            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] sm:text-xs font-medium bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 shrink-0">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                <span>Snapshot up to date</span>
+                            </span>
+                        )}
                     </div>
+
+                    {caseDivergence && hasDiverged && showDivergence && (
+                        <div className="mb-5 sm:mb-6 rounded-lg border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 overflow-hidden">
+                            <div className="px-3 py-2 text-[11px] sm:text-xs font-semibold text-amber-700 dark:text-amber-400">
+                                Snapshot (what ran) vs live test case
+                            </div>
+                            <div className="border-t border-amber-200 dark:border-amber-900/50 px-3 py-2 space-y-3">
+                                {caseDivergence.changedFields.map((field) => (
+                                    <div key={field.field} className="text-xs">
+                                        <div className="font-semibold text-amber-700 dark:text-amber-400 mb-1">
+                                            {DIVERGENCE_FIELD_LABELS[field.field] || field.field}
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <div className="rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2">
+                                                <div className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Snapshot (what ran)</div>
+                                                <div
+                                                    className="text-gray-600 dark:text-gray-300 max-h-24 overflow-y-auto prose prose-sm dark:prose-invert max-w-none"
+                                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(field.snapshotValue) || '<span class="italic text-gray-400">(empty)</span>' }}
+                                                />
+                                            </div>
+                                            <div className="rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2">
+                                                <div className="text-[10px] uppercase tracking-wider text-green-500 dark:text-green-400 mb-1">Live case (now)</div>
+                                                <div
+                                                    className="text-gray-600 dark:text-gray-300 max-h-24 overflow-y-auto prose prose-sm dark:prose-invert max-w-none"
+                                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(field.liveValue) || '<span class="italic text-gray-400">(empty)</span>' }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {currentItem.caseSnapshot.testDescription && (
                         <div className="mb-5 sm:mb-6">
@@ -526,6 +618,9 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                         caseSnapshot={pendingFail.caseSnapshot}
                         initialDescription={pendingFail.actualResult}
                         runTitle={testRun.title}
+                        runEnvironment={testRun.environment}
+                        runTeam={testRun.team}
+                        runBuildVersion={testRun.buildVersion}
                         onCreate={handleCreateBug}
                         onSkip={handleSkipBug}
                         onCancel={handleCancelBug}

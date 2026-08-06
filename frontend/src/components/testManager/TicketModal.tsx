@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { X, Bug, ChevronDown, Loader2, Check, Cloud } from 'lucide-react';
 import RichTextEditor from './RichTextEditor';
 import TagInput from './TagInput';
-import { Ticket, TicketStatus, TicketPriority, TicketSeverity } from '../../types/testManager';
+import { Ticket, TicketStatus, TicketPriority, TicketSeverity, FailureType } from '../../types/testManager';
 import {
     getTicketStatusSelectColor,
     getTicketPrioritySelectColor,
     getTicketSeveritySelectColor,
+    getFailureTypeColor,
 } from '../../utils/ticketColors';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -20,6 +21,8 @@ interface TicketModalProps {
         priority: TicketPriority;
         severity: TicketSeverity;
         status?: TicketStatus;
+        failureType?: FailureType;
+        team?: string;
         assignedToId?: string;
         relatedRunId?: string;
         tags?: string[];
@@ -46,6 +49,8 @@ const TicketModal: React.FC<TicketModalProps> = ({
     const [status, setStatus] = useState<TicketStatus>(TicketStatus.Open);
     const [priority, setPriority] = useState<TicketPriority>(TicketPriority.Medium);
     const [severity, setSeverity] = useState<TicketSeverity>(TicketSeverity.Minor);
+    const [failureType, setFailureType] = useState<FailureType | undefined>(undefined);
+    const [team, setTeam] = useState('');
     const [assignedToId, setAssignedToId] = useState('');
     const [relatedRunId, setRelatedRunId] = useState('');
     const [tags, setTags] = useState<string[]>([]);
@@ -63,6 +68,8 @@ const TicketModal: React.FC<TicketModalProps> = ({
             setStatus(initialTicket?.status || TicketStatus.Open);
             setPriority(initialTicket?.priority || TicketPriority.Medium);
             setSeverity(initialTicket?.severity || TicketSeverity.Minor);
+            setFailureType(initialTicket?.failureType || undefined);
+            setTeam(initialTicket?.team || '');
             setAssignedToId(initialTicket?.assignedTo?.id || '');
             setRelatedRunId(initialTicket?.relatedRunId || '');
             setTags(initialTicket?.tags || []);
@@ -85,6 +92,8 @@ const TicketModal: React.FC<TicketModalProps> = ({
                 priority,
                 severity,
                 ...(isEditMode ? { status } : {}),
+                failureType,
+                team: team.trim() || undefined,
                 assignedToId: assignedToId || undefined,
                 relatedRunId: isEditMode ? relatedRunId : (relatedRunId || undefined),
                 tags: tags.length > 0 ? tags : undefined,
@@ -256,6 +265,56 @@ const TicketModal: React.FC<TicketModalProps> = ({
                             </div>
                         </div>
                     </div>
+
+                    {/* Failure Type & Team row */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                        {/* Failure Type */}
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Failure Type</label>
+                            <div className="relative">
+                                <select
+                                    value={failureType ?? ''}
+                                    onChange={(e) => setFailureType(e.target.value ? (e.target.value as FailureType) : undefined)}
+                                    className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${failureType ? getFailureTypeColor(failureType) : 'bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 border-gray-200 text-gray-700'}`}
+                                >
+                                    <option value="">Unspecified</option>
+                                    {Object.values(FailureType).map((ft) => (
+                                        <option key={ft} value={ft}>{ft}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                            </div>
+                        </div>
+
+                        {/* Team */}
+                        <div>
+                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Team</label>
+                            <input
+                                type="text"
+                                value={team}
+                                onChange={(e) => setTeam(e.target.value)}
+                                className="w-full rounded-lg py-2 pl-3 pr-3 text-sm font-medium outline-none transition-all border bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 border-gray-200 text-gray-700 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100"
+                                placeholder="e.g. QA, Backend, Mobile"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Read-only run context (copied at creation from the run) */}
+                    {isEditMode && (initialTicket?.environment || initialTicket?.buildVersion) && (
+                        <div className="mb-5 flex flex-wrap items-center gap-2">
+                            {initialTicket?.environment && (
+                                <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400">
+                                    Env: {initialTicket.environment}
+                                </span>
+                            )}
+                            {initialTicket?.buildVersion && (
+                                <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-50 dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700 text-xs text-gray-600 dark:text-gray-400">
+                                    Build: {initialTicket.buildVersion}
+                                </span>
+                            )}
+                            <span className="text-[11px] text-gray-400 dark:text-gray-500 italic">Captured from the run snapshot</span>
+                        </div>
+                    )}
 
                     {/* Error display */}
                     {error && (

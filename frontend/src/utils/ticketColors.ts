@@ -1,4 +1,20 @@
-import { TicketStatus, TicketPriority, TicketSeverity } from '../types/testManager';
+import { TicketStatus, TicketPriority, TicketSeverity, FailureType } from '../types/testManager';
+
+// --- Failure Type Colors (badge backgrounds + select variants) ---
+export const getFailureTypeColor = (failureType: FailureType | undefined): string => {
+    switch (failureType) {
+        case FailureType.Functional: return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800';
+        case FailureType.UIUX: return 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400 border-pink-200 dark:border-pink-800';
+        case FailureType.Integration: return 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800';
+        case FailureType.DataAPI: return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800';
+        case FailureType.EnvironmentSetup: return 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800';
+        case FailureType.FlakyIntermittent: return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800';
+        case FailureType.Performance: return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800';
+        case FailureType.Security: return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 border-rose-200 dark:border-rose-800';
+        case FailureType.Other:
+        default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700';
+    }
+};
 
 // --- Status Colors (badge backgrounds) ---
 export const getTicketStatusColor = (status: TicketStatus): string => {

@@ -5,6 +5,7 @@ import { getTagColor } from '../../utils/tagColors';
 import {
     getTicketPriorityColor,
     getTicketSeverityColor,
+    getFailureTypeColor,
 } from '../../utils/ticketColors';
 
 const CARD_HEIGHT_ESTIMATE = 96;
@@ -52,6 +53,21 @@ export const KanbanCardContent: React.FC<KanbanCardProps> = React.memo(({ ticket
                 <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${getTicketSeverityColor(ticket.severity)}`}>
                     {ticket.severity}
                 </span>
+                {ticket.failureType && (
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium ${getFailureTypeColor(ticket.failureType)}`}>
+                        {ticket.failureType}
+                    </span>
+                )}
+                {ticket.firstReproducedAt && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400">
+                        Repro
+                    </span>
+                )}
+                {(ticket.returnedCount ?? 0) > 0 && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                        Returned ×{ticket.returnedCount}
+                    </span>
+                )}
             </div>
 
             {/* Tags */}

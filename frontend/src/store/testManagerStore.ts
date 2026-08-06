@@ -1,6 +1,6 @@
 import { createWithEqualityFn } from 'zustand/traditional';
 import { persist } from 'zustand/middleware';
-import { ViewMode, TestCase, Project, TestSuite, Priority, Status, Tester, HistoryEntry, ProjectSettings, Ticket, TicketStatus as TicketStatusEnum, TicketPriority as TicketPriorityEnum, TicketSeverity as TicketSeverityEnum, TicketAttachment } from '../types/testManager';
+import { ViewMode, TestCase, Project, TestSuite, Priority, Status, Tester, HistoryEntry, ProjectSettings, Ticket, TicketStatus as TicketStatusEnum, TicketPriority as TicketPriorityEnum, TicketSeverity as TicketSeverityEnum, TicketAttachment, ReturnReason as ReturnReasonEnum, FailureType as FailureTypeEnum } from '../types/testManager';
 import * as testManagerApi from '../services/testManagerApi';
 import * as ticketApi from '../services/ticketApi';
 import {
@@ -116,6 +116,16 @@ export const mapTicketResponse = (t: TicketListResponse): Ticket => ({
     createdBy: t.createdBy as Tester,
     relatedRunId: t.relatedRunId,
     relatedRunItemId: t.relatedRunItemId,
+    failureType: t.failureType as FailureTypeEnum | undefined,
+    team: t.team,
+    environment: t.environment,
+    buildVersion: t.buildVersion,
+    failureAt: t.failureAt,
+    firstReproducedAt: t.firstReproducedAt,
+    returnedCount: t.returnedCount ?? 0,
+    lastReturnedAt: t.lastReturnedAt,
+    lastReturnReason: t.lastReturnReason as ReturnReasonEnum | undefined,
+    divergence: t.divergence,
     attachments: [],
     tags: t.tags || [],
     createdAt: t.createdAt,
@@ -251,6 +261,8 @@ interface TestManagerStore {
     createTicket: (projectId: string, data: CreateTicketRequest) => Promise<Ticket>;
     updateTicket: (projectId: string, id: string, data: UpdateTicketRequest) => Promise<Ticket>;
     updateTicketStatus: (projectId: string, id: string, status: TicketStatusEnum) => Promise<Ticket>;
+    markTicketReproduced: (projectId: string, id: string) => Promise<Ticket>;
+    returnTicketForInfo: (projectId: string, id: string, reason: ReturnReasonEnum) => Promise<Ticket>;
     deleteTicket: (projectId: string, id: string) => Promise<void>;
     setTicketView: (view: 'list' | 'kanban') => void;
     setActiveTicket: (ticket: Ticket | null) => void;
@@ -1054,6 +1066,42 @@ export const useTestManagerStore = createWithEqualityFn<TestManagerStore>()(
                         }));
                     }
                     set({ error: (error as Error).message });
+                    throw error;
+                }
+            },
+            markTicketReproduced: async (projectId, id) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await ticketApi.markTicketReproduced(projectId, id);
+                    const ticket: Ticket = {
+                        ...mapTicketResponse(response),
+                    };
+                    set((state) => ({
+                        tickets: state.tickets.map((t) => (t.id === id ? ticket : t)),
+                        activeTicket: state.activeTicket?.id === id ? ticket : state.activeTicket,
+                        isLoading: false,
+                    }));
+                    return ticket;
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
+                    throw error;
+                }
+            },
+            returnTicketForInfo: async (projectId, id, reason) => {
+                set({ isLoading: true, error: null });
+                try {
+                    const response = await ticketApi.returnTicketForInfo(projectId, id, reason);
+                    const ticket: Ticket = {
+                        ...mapTicketResponse(response),
+                    };
+                    set((state) => ({
+                        tickets: state.tickets.map((t) => (t.id === id ? ticket : t)),
+                        activeTicket: state.activeTicket?.id === id ? ticket : state.activeTicket,
+                        isLoading: false,
+                    }));
+                    return ticket;
+                } catch (error: unknown) {
+                    set({ error: (error as Error).message, isLoading: false });
                     throw error;
                 }
             },

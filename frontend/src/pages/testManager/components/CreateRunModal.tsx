@@ -18,7 +18,7 @@ import {
 export interface CreateRunModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (title: string, description: string, caseIds: string[], groupId?: string, tags?: string[]) => Promise<void>;
+    onSubmit: (title: string, description: string, caseIds: string[], groupId?: string, tags?: string[], environment?: string, team?: string, buildVersion?: string) => Promise<void>;
     testCases: TestCase[];
     testSuites: { id: string; name: string }[];
     testRunGroups: TestRunGroup[];
@@ -26,6 +26,10 @@ export interface CreateRunModalProps {
     initialTitle?: string;
     initialGroupId?: string;
     initialSelectedCaseIds?: string[];
+    initialEnvironment?: string;
+    initialTeam?: string;
+    initialBuildVersion?: string;
+    teamSuggestions?: string[];
 }
 
 type SelectionTab = 'suite' | 'area' | 'individual';
@@ -62,9 +66,16 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
     initialTitle,
     initialGroupId,
     initialSelectedCaseIds,
+    initialEnvironment,
+    initialTeam,
+    initialBuildVersion,
+    teamSuggestions,
 }) => {
     const [title, setTitle] = useState(initialTitle ?? '');
     const [description, setDescription] = useState('');
+    const [environment, setEnvironment] = useState(initialEnvironment ?? '');
+    const [team, setTeam] = useState(initialTeam ?? '');
+    const [buildVersion, setBuildVersion] = useState(initialBuildVersion ?? '');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedGroupId, setSelectedGroupId] = useState<string>('');
     const [tags, setTags] = useState<string[]>([]);
@@ -90,6 +101,9 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
         if (isOpen) {
             setTitle(initialTitle ?? '');
             setSelectedIds(initialSelectedCaseIds ?? []);
+            setEnvironment(initialEnvironment ?? '');
+            setTeam(initialTeam ?? '');
+            setBuildVersion(initialBuildVersion ?? '');
             if (initialGroupId && testRunGroups.some(g => g.id === initialGroupId)) {
                 setSelectedGroupId(initialGroupId);
             } else {
@@ -113,7 +127,7 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
             setExpandedAreas(new Set());
             setShowSummaryPopover(false);
         }
-    }, [isOpen, initialTitle, initialGroupId, testRunGroups, initialSelectedCaseIds]);
+    }, [isOpen, initialTitle, initialGroupId, testRunGroups, initialSelectedCaseIds, initialEnvironment, initialTeam, initialBuildVersion]);
 
     useEffect(() => {
         if (!showSummaryPopover) return;
@@ -313,12 +327,15 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
         }
         setIsSubmitting(true);
         try {
-            await onSubmit(title, description, selectedIds, selectedGroupId || undefined, tags.length > 0 ? tags : undefined);
+            await onSubmit(title, description, selectedIds, selectedGroupId || undefined, tags.length > 0 ? tags : undefined, environment.trim() || undefined, team.trim() || undefined, buildVersion.trim() || undefined);
             setTitle(initialTitle ?? '');
             setDescription('');
             setSelectedGroupId('');
             setTags([]);
             setSelectedIds([]);
+            setEnvironment('');
+            setTeam('');
+            setBuildVersion('');
             onClose();
         } catch (error: unknown) {
             toast.error((error as Error).message || 'Failed to create test run');
@@ -719,6 +736,45 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
                                 onChange={setTags}
                                 suggestions={tagSuggestions}
                                 placeholder="e.g., regression, smoke"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Team (Optional)</label>
+                            <input
+                                type="text"
+                                list="run-team-suggestions"
+                                value={team}
+                                onChange={e => setTeam(e.target.value)}
+                                placeholder="e.g., Payments, Mobile"
+                                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                            />
+                            {teamSuggestions && teamSuggestions.length > 0 && (
+                                <datalist id="run-team-suggestions">
+                                    {teamSuggestions.map(s => <option key={s} value={s} />)}
+                                </datalist>
+                            )}
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Environment (Optional)</label>
+                            <input
+                                type="text"
+                                value={environment}
+                                onChange={e => setEnvironment(e.target.value)}
+                                placeholder="e.g., staging"
+                                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Build Version (Optional)</label>
+                            <input
+                                type="text"
+                                value={buildVersion}
+                                onChange={e => setBuildVersion(e.target.value)}
+                                placeholder="e.g., v1.4.2"
+                                className="w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                             />
                         </div>
                     </div>

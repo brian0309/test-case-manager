@@ -204,6 +204,8 @@ export interface TestRun {
     suiteName?: string;
     status: TestRunStatus;
     environment?: string;
+    team?: string;
+    buildVersion?: string;
     tags?: string[];
     items: RunItem[];
     createdBy: Tester;
@@ -224,6 +226,8 @@ export interface TestRunListItem {
     suiteName?: string;
     status: TestRunStatus;
     environment?: string;
+    team?: string;
+    buildVersion?: string;
     tags?: string[];
     itemCount: number;
     createdBy: Tester;
@@ -505,11 +509,45 @@ export enum TicketSeverity {
     Blocker = 'Blocker',
 }
 
+export enum FailureType {
+    Functional = 'Functional',
+    UIUX = 'UI/UX',
+    Integration = 'Integration',
+    DataAPI = 'Data/API',
+    EnvironmentSetup = 'Environment/Setup',
+    FlakyIntermittent = 'Flaky/Intermittent',
+    Performance = 'Performance',
+    Security = 'Security',
+    Other = 'Other',
+}
+
+export enum ReturnReason {
+    MissingSteps = 'Missing steps',
+    MissingExpectedActual = 'Missing expected vs actual',
+    MissingEnvironmentBuild = 'Missing environment/build',
+    MissingAttachment = 'Missing attachment',
+    NotReproducible = 'Not reproducible',
+    Other = 'Other',
+}
+
 export interface TicketAttachment {
     url: string;
     filename: string;
     fileSize: number;
     contentType: string;
+}
+
+export interface DivergenceField {
+    field: string;
+    snapshotValue?: string;
+    liveValue?: string;
+}
+
+export interface TicketDivergence {
+    hasDiverged: boolean;
+    sourceCaseDeleted: boolean;
+    caseId?: string;
+    changedFields: DivergenceField[];
 }
 
 export interface Ticket {
@@ -524,10 +562,70 @@ export interface Ticket {
     createdBy: Tester;
     relatedRunId?: string;
     relatedRunItemId?: string;
+    failureType?: FailureType;
+    team?: string;
+    environment?: string;
+    buildVersion?: string;
+    failureAt?: string;
+    firstReproducedAt?: string;
+    returnedCount?: number;
+    lastReturnedAt?: string;
+    lastReturnReason?: ReturnReason;
+    divergence?: TicketDivergence;
     attachments: TicketAttachment[];
     tags: string[];
     createdAt: string;
     updatedAt: string;
+}
+
+// ===== Ticket Triage Metrics Types =====
+
+export interface TicketTriageSegment {
+    key: string;
+    label: string;
+    ticketsCreated: number;
+    ticketsReproduced: number;
+    reproductionRate: number;
+    timeToReproduceMedianHours: number | null;
+    timeToReproduceAvgHours: number | null;
+    timeToReproduceP75Hours: number | null;
+    returnedCount: number;
+    returnedRate: number;
+}
+
+export interface TicketReturnReasonStat {
+    reason: ReturnReason;
+    count: number;
+}
+
+export interface TicketTriageDataPoint {
+    period: string;
+    periodLabel: string;
+    ticketsCreated: number;
+    ticketsReproduced: number;
+    ticketsReturned: number;
+}
+
+export interface TicketMetricsReport {
+    projectId: string;
+    dateRange: {
+        startDate: string;
+        endDate: string;
+    };
+    kpis: {
+        ticketsCreated: number;
+        ticketsReproduced: number;
+        reproductionRate: number;
+        timeToReproduceMedianHours: number | null;
+        timeToReproduceAvgHours: number | null;
+        timeToReproduceP75Hours: number | null;
+        ticketsReturned: number;
+        returnedRate: number;
+    };
+    byFailureType: TicketTriageSegment[];
+    byTeam: TicketTriageSegment[];
+    returnsByReason: TicketReturnReasonStat[];
+    trend: TicketTriageDataPoint[];
 }
 
 export type ViewMode = 'projects' | 'cases' | 'suites' | 'runs' | 'tickets';
