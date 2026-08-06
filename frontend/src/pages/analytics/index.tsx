@@ -9,8 +9,13 @@ import {
     TrendReport,
     SuiteComparisonReport,
     TestCaseHealthReport,
+    TicketMetricsReport,
+    TicketTriageSegment,
+    FailureType,
+    ReturnReason,
     TestRunGroup,
 } from '../../types/testManager';
+import { getFailureTypeColor } from '../../utils/ticketColors';
 import EmptyProjectState from '../../components/testManager/EmptyProjectState';
 import ContextBreadcrumb from '../../components/testManager/ContextBreadcrumb';
 import TagInput from '../../components/testManager/TagInput';
@@ -44,6 +49,7 @@ import {
     Download,
     FileText,
     ChevronDown,
+    Ticket,
 } from 'lucide-react';
 
 const COLORS = {
@@ -77,7 +83,7 @@ const AnalyticsPage: React.FC = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'overview' | 'trends' | 'suites' | 'health'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'trends' | 'suites' | 'health' | 'triage'>('overview');
     
     // Initialize state from URL params or defaults
     const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | 'all' | 'custom'>(
@@ -104,6 +110,7 @@ const AnalyticsPage: React.FC = () => {
     const [trendReport, setTrendReport] = useState<TrendReport | null>(null);
     const [suiteReport, setSuiteReport] = useState<SuiteComparisonReport | null>(null);
     const [healthReport, setHealthReport] = useState<TestCaseHealthReport | null>(null);
+    const [ticketMetricsReport, setTicketMetricsReport] = useState<TicketMetricsReport | null>(null);
 
     // Export dropdown
     const [showExportMenu, setShowExportMenu] = useState(false);
@@ -230,17 +237,19 @@ const AnalyticsPage: React.FC = () => {
             };
 
             // Fetch reports in parallel
-            const [summary, trends, suites, health] = await Promise.all([
+            const [summary, trends, suites, health, ticketMetrics] = await Promise.all([
                 reportingApi.getProjectSummary(activeProject, params),
                 reportingApi.getTrendReport(activeProject, { ...params, groupBy }),
                 reportingApi.getSuiteComparison(activeProject, params),
                 reportingApi.getTestCaseHealth(activeProject, params),
+                reportingApi.getTicketMetrics(activeProject, { ...params, groupBy }),
             ]);
 
             setSummaryReport(summary);
             setTrendReport(trends);
             setSuiteReport(suites);
             setHealthReport(health);
+            setTicketMetricsReport(ticketMetrics);
         } catch (error: unknown) {
             const message = (error as { message?: string })?.message || 'Failed to load reports';
             toast.error(message);
@@ -454,6 +463,7 @@ const AnalyticsPage: React.FC = () => {
                         { id: 'trends' as const, label: 'Trends', icon: TrendingUp },
                         { id: 'suites' as const, label: 'Suites', icon: Target },
                         { id: 'health' as const, label: 'Test Health', icon: Activity },
+                        { id: 'triage' as const, label: 'Triage', icon: Ticket },
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -484,6 +494,9 @@ const AnalyticsPage: React.FC = () => {
                 )}
                 {activeTab === 'health' && healthReport && (
                     <HealthTab healthReport={healthReport} onOpenFailedRunCase={handleOpenFailedRunCase} />
+                )}
+                {activeTab === 'triage' && ticketMetricsReport && (
+                    <TriageTab report={ticketMetricsReport} onNavigateToTickets={navigate} />
                 )}
             </div>
         </div>
@@ -1073,6 +1086,190 @@ const HealthTab: React.FC<{ healthReport: TestCaseHealthReport; onOpenFailedRunC
                     </div>
                 </div>
             )}
+        </div>
+    );
+};
+
+// Triage Tab Component
+const formatHours = (hours: number | null): string => {
+    if (hours === null || hours === undefined) return '—';
+    if (hours < 1) return `${Math.round(hours * 60)}m`;
+    if (hours < 48) return `${hours.toFixed(1)}h`;
+    return `${(hours / 24).toFixed(1)}d`;
+};
+
+const getReturnReasonColor = (reason: string): string => {
+    switch (reason) {
+        case ReturnReason.MissingSteps: return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
+        case ReturnReason.MissingExpectedActual: return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400';
+        case ReturnReason.MissingEnvironmentBuild: return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400';
+        case ReturnReason.MissingAttachment: return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400';
+        case ReturnReason.NotReproducible: return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400';
+        default: return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
+    }
+};
+
+const TriageTab: React.FC<{ report: TicketMetricsReport; onNavigateToTickets: (url: string) => void }> = ({
+    report,
+    onNavigateToTickets,
+}) => {
+    const openTicketsWithFilter = (failureType?: string, team?: string) => {
+        const params = new URLSearchParams();
+        if (failureType) params.set('failureType', failureType);
+        if (team) params.set('team', team);
+        const query = params.toString();
+        onNavigateToTickets(query ? `/test-manager/tickets?${query}` : '/test-manager/tickets');
+    };
+
+    const renderSegmentTable = (
+        segments: TicketTriageSegment[],
+        isTeam: boolean
+    ) => (
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                {isTeam ? 'By Team' : 'By Failure Type'}
+            </h3>
+            {segments.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">No ticket data in this period.</p>
+            ) : (
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead>
+                            <tr className="border-b border-gray-200 dark:border-gray-700">
+                                <th className="text-left py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {isTeam ? 'Team' : 'Failure Type'}
+                                </th>
+                                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Created</th>
+                                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Reproduced</th>
+                                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Repro Rate</th>
+                                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Median TTR</th>
+                                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Returned</th>
+                                <th className="text-right py-3 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">Return Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {segments.map((segment) => (
+                                <tr
+                                    key={segment.key}
+                                    onClick={() => openTicketsWithFilter(isTeam ? undefined : segment.key, isTeam ? segment.key : undefined)}
+                                    className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                                    title={`View ${segment.label} tickets`}
+                                >
+                                    <td className="py-3 px-4">
+                                        {isTeam ? (
+                                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{segment.label}</span>
+                                        ) : (
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getFailureTypeColor(segment.key as FailureType)}`}>
+                                                {segment.label}
+                                            </span>
+                                        )}
+                                    </td>
+                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{segment.ticketsCreated}</td>
+                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{segment.ticketsReproduced}</td>
+                                    <td className="py-3 px-4 text-right">
+                                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                                            {segment.reproductionRate.toFixed(0)}%
+                                        </span>
+                                    </td>
+                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{formatHours(segment.timeToReproduceMedianHours)}</td>
+                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{segment.returnedCount}</td>
+                                    <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400 text-right">{segment.returnedRate.toFixed(1)}%</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    );
+
+    const totalReturned = report.returnsByReason.reduce((sum, item) => sum + item.count, 0);
+
+    return (
+        <div className="space-y-6">
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <KPICard
+                    title="Tickets Created"
+                    value={report.kpis.ticketsCreated}
+                    icon={<Ticket className="w-5 h-5" />}
+                    color="blue"
+                />
+                <KPICard
+                    title="Reproduction Rate"
+                    value={`${report.kpis.reproductionRate.toFixed(1)}%`}
+                    subtitle={`${report.kpis.ticketsReproduced} reproduced`}
+                    icon={<CheckCircle className="w-5 h-5" />}
+                    color="green"
+                />
+                <KPICard
+                    title="Median TTR"
+                    value={formatHours(report.kpis.timeToReproduceMedianHours)}
+                    subtitle={report.kpis.timeToReproduceAvgHours !== null ? `avg ${formatHours(report.kpis.timeToReproduceAvgHours)}` : undefined}
+                    icon={<Clock className="w-5 h-5" />}
+                    color="purple"
+                />
+                <KPICard
+                    title="Returned for Info"
+                    value={`${report.kpis.returnedRate.toFixed(1)}%`}
+                    subtitle={`${report.kpis.ticketsReturned} tickets returned`}
+                    icon={<AlertCircle className="w-5 h-5" />}
+                    color="red"
+                />
+            </div>
+
+            {/* Trend Chart */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Triage Trend</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={report.trend}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" className="dark:stroke-gray-700" />
+                        <XAxis dataKey="periodLabel" stroke="#6B7280" tick={{ fill: '#6B7280', fontSize: 12 }} />
+                        <YAxis stroke="#6B7280" tick={{ fill: '#6B7280', fontSize: 12 }} allowDecimals={false} />
+                        <Tooltip />
+                        <Legend />
+                        <Line type="monotone" dataKey="ticketsCreated" stroke="#3B82F6" strokeWidth={2} dot={{ r: 3 }} name="Created" />
+                        <Line type="monotone" dataKey="ticketsReproduced" stroke="#10B981" strokeWidth={2} dot={{ r: 3 }} name="Reproduced" />
+                        <Line type="monotone" dataKey="ticketsReturned" stroke="#F59E0B" strokeWidth={2} dot={{ r: 3 }} name="Returned" />
+                    </LineChart>
+                </ResponsiveContainer>
+            </div>
+
+            {/* Segmented tables */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {renderSegmentTable(report.byFailureType, false)}
+                {renderSegmentTable(report.byTeam, true)}
+            </div>
+
+            {/* Returns by reason */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Return Reasons</h3>
+                {report.returnsByReason.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">No tickets were returned in this period.</p>
+                ) : (
+                    <div className="space-y-3">
+                        {report.returnsByReason.map((item) => {
+                            const percentage = totalReturned > 0 ? (item.count / totalReturned) * 100 : 0;
+                            return (
+                                <div key={item.reason} className="flex items-center gap-3">
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium w-52 flex-shrink-0 ${getReturnReasonColor(item.reason)}`}>
+                                        {item.reason}
+                                    </span>
+                                    <div className="flex-1 h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                                        <div
+                                            className="h-full bg-amber-500 rounded-full transition-all"
+                                            style={{ width: `${percentage}%` }}
+                                        />
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-16 text-right flex-shrink-0">
+                                        {item.count} ({percentage.toFixed(0)}%)
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

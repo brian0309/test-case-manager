@@ -6,9 +6,11 @@ import {
     SuiteComparisonReport,
     TestCaseHealthReport,
     DetailedRunReport,
+    TicketMetricsReport,
     ReportFilterParams,
     TrendReportParams,
 } from '../types/testManager';
+import { TicketStatus, FailureType } from '../types/testManager';
 
 /**
  * Reporting API Service
@@ -105,6 +107,42 @@ class ReportingApi {
     async getDetailedRunReport(runId: string): Promise<DetailedRunReport> {
         const response = await axios.get(
             `${this.baseUrl}/run/${runId}/detailed`,
+            { withCredentials: true }
+        );
+        return response.data;
+    }
+
+    /**
+     * Get ticket triage metrics (time-to-reproduce, % returned for missing
+     * context) segmented by failure type and team.
+     */
+    async getTicketMetrics(
+        projectId: string,
+        params: {
+            startDate?: string;
+            endDate?: string;
+            failureType?: FailureType;
+            team?: string;
+            status?: TicketStatus;
+            severity?: string;
+            priority?: string;
+            groupBy?: 'day' | 'week' | 'month';
+        } = {}
+    ): Promise<TicketMetricsReport> {
+        const queryParams: string[] = [];
+
+        if (params.startDate) queryParams.push(`startDate=${encodeURIComponent(params.startDate)}`);
+        if (params.endDate) queryParams.push(`endDate=${encodeURIComponent(params.endDate)}`);
+        if (params.failureType) queryParams.push(`failureType=${encodeURIComponent(params.failureType)}`);
+        if (params.team) queryParams.push(`team=${encodeURIComponent(params.team)}`);
+        if (params.status) queryParams.push(`status=${encodeURIComponent(params.status)}`);
+        if (params.severity) queryParams.push(`severity=${encodeURIComponent(params.severity)}`);
+        if (params.priority) queryParams.push(`priority=${encodeURIComponent(params.priority)}`);
+        queryParams.push(`groupBy=${encodeURIComponent(params.groupBy || 'day')}`);
+
+        const queryString = queryParams.length > 0 ? `?${queryParams.join('&')}` : '';
+        const response = await axios.get(
+            `${this.baseUrl}/project/${projectId}/ticket-metrics${queryString}`,
             { withCredentials: true }
         );
         return response.data;
