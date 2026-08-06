@@ -115,6 +115,8 @@ export const createTestRun = async (
     groupId: data.groupId ? new Types.ObjectId(data.groupId) : undefined,
     status: TestRunStatus.Draft,
     environment: data.environment,
+    team: data.team,
+    buildVersion: data.buildVersion,
     tags: data.tags || [],
     items,
     createdBy: new Types.ObjectId(userId),
@@ -261,6 +263,8 @@ export const updateTestRun = async (
   if (data.title) testRun.title = data.title;
   if (data.description !== undefined) testRun.description = data.description;
   if (data.environment !== undefined) testRun.environment = data.environment;
+  if (data.team !== undefined) testRun.team = data.team;
+  if (data.buildVersion !== undefined) testRun.buildVersion = data.buildVersion;
   if (data.tags !== undefined) testRun.tags = data.tags;
   if (data.groupId !== undefined) {
     testRun.groupId = data.groupId ? new Types.ObjectId(data.groupId) : undefined;
@@ -461,6 +465,8 @@ export const cloneTestRun = async (
     suiteId: originalRun.suiteId,
     status: TestRunStatus.Draft,
     environment: originalRun.environment,
+    team: originalRun.team,
+    buildVersion: originalRun.buildVersion,
     tags: originalRun.tags,
     items: clonedItems,
     createdBy: new Types.ObjectId(userId),
@@ -607,6 +613,8 @@ export const formatTestRunResponse = (testRun: any): TestRunResponse => {
     groupId: testRun.groupId?.toString(),
     status: testRun.status,
     environment: testRun.environment,
+    team: testRun.team,
+    buildVersion: testRun.buildVersion,
     tags: testRun.tags,
     items: (testRun.items || []).map(formatRunItemResponse),
     createdBy: formatTesterResponse(testRun.createdBy),
@@ -634,6 +642,8 @@ export const formatTestRunListResponse = (testRun: any): TestRunListResponse => 
     groupId: testRun.groupId?.toString(),
     status: testRun.status,
     environment: testRun.environment,
+    team: testRun.team,
+    buildVersion: testRun.buildVersion,
     tags: testRun.tags,
     itemCount: testRun.items?.length || 0,
     createdBy: formatTesterResponse(testRun.createdBy),

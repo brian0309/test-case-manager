@@ -4,6 +4,8 @@ import {
   TicketStatus,
   TicketPriority,
   TicketSeverity,
+  FailureType,
+  ReturnReason,
 } from "../services/ticket/types/ticket.types.js";
 
 const attachmentSchema = new Schema(
@@ -69,6 +71,50 @@ const ticketSchema = new Schema<ITicketDocument>(
       required: false,
       maxlength: 64,
     },
+    failureType: {
+      type: String,
+      enum: Object.values(FailureType),
+      required: false,
+    },
+    team: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+      required: false,
+    },
+    environment: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+      required: false,
+    },
+    buildVersion: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+      required: false,
+    },
+    failureAt: {
+      type: Date,
+      required: false,
+    },
+    firstReproducedAt: {
+      type: Date,
+      required: false,
+    },
+    returnedCount: {
+      type: Number,
+      default: 0,
+    },
+    lastReturnedAt: {
+      type: Date,
+      required: false,
+    },
+    lastReturnReason: {
+      type: String,
+      enum: Object.values(ReturnReason),
+      required: false,
+    },
     attachments: {
       type: [attachmentSchema],
       default: [],
@@ -85,5 +131,7 @@ const ticketSchema = new Schema<ITicketDocument>(
 ticketSchema.index({ projectId: 1, createdAt: -1 });
 ticketSchema.index({ projectId: 1, status: 1 });
 ticketSchema.index({ assignedTo: 1 });
+ticketSchema.index({ projectId: 1, failureType: 1 });
+ticketSchema.index({ projectId: 1, team: 1 });
 
 export const Ticket = mongoose.model<ITicketDocument>("Ticket", ticketSchema);

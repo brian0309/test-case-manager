@@ -104,6 +104,16 @@ const testRunSchema = new Schema<ITestRunDocument>(
       trim: true,
       maxlength: 100,
     },
+    team: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+    },
+    buildVersion: {
+      type: String,
+      trim: true,
+      maxlength: 100,
+    },
     tags: [
       {
         type: String,

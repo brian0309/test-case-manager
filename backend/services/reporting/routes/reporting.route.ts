@@ -40,6 +40,14 @@ router.get('/project/:projectId/suite-comparison', reportingController.getSuiteC
 router.get('/project/:projectId/test-case-health', reportingController.getTestCaseHealth);
 
 /**
+ * @route   GET /api/reports/project/:projectId/ticket-metrics
+ * @desc    Get ticket triage metrics (time-to-reproduce, % returned for missing context)
+ * @access  Private
+ * @query   startDate, endDate, failureType, team, status, severity, priority, groupBy
+ */
+router.get('/project/:projectId/ticket-metrics', reportingController.getTicketMetrics);
+
+/**
  * @route   GET /api/reports/run/:runId/detailed
  * @desc    Get detailed report for a specific test run
  * @access  Private

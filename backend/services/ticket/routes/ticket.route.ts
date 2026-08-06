@@ -7,6 +7,8 @@ import {
   updateTicket,
   deleteTicket,
   getTicketsByRun,
+  markTicketReproduced,
+  returnTicketForInfo,
 } from "../controllers/ticket.controller.js";
 import { verifyToken } from "../../../middleware/verifyToken.js";
 import { apiRateLimiter } from "../../../middleware/rateLimiter.js";
@@ -37,6 +39,14 @@ router.get("/by-run/:runId", getTicketsByRun);
 router.get("/:id", getTicket);
 router.put("/:id", updateTicket);
 router.delete("/:id", deleteTicket);
+
+/**
+ * Lifecycle actions:
+ * POST /api/projects/:projectId/tickets/:id/reproduced     - Mark reproduced
+ * POST /api/projects/:projectId/tickets/:id/return-for-info - Return for missing context
+ */
+router.post("/:id/reproduced", markTicketReproduced);
+router.post("/:id/return-for-info", returnTicketForInfo);
 
 /**
  * Direct ticket routes (without projectId in path).

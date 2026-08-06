@@ -3,7 +3,6 @@ import * as discussionService from "../services/discussion.service.js";
 import * as projectService from "../../testCase/services/project.service.js";
 import { socketManager } from "../../../socket/socketManager.js";
 import { MessageFixState } from "../types/discussion.types.js";
-import * as ticketService from "../../ticket/services/ticket.service.js";
 
 /**
  * GET /api/cases/:testCaseId/discussions

@@ -1,7 +1,12 @@
 import { Request, Response } from "express";
 import * as ticketService from "../services/ticket.service.js";
 import * as projectService from "../../testCase/services/project.service.js";
-import { TicketPriority, TicketSeverity } from "../types/ticket.types.js";
+import {
+  TicketPriority,
+  TicketSeverity,
+  FailureType,
+  ReturnReason,
+} from "../types/ticket.types.js";
 import * as discussionService from "../../discussion/services/discussion.service.js";
 import { socketManager, emitTicketCreated, emitTicketUpdated, emitTicketDeleted } from "../../../socket/socketManager.js";
 import { User } from "../../../models/user.model.js";
@@ -180,7 +185,7 @@ export const createTicket = async (
       return;
     }
 
-    const { title, description, priority, severity, assignedToId, relatedRunId, relatedRunItemId, tags, attachments } = req.body;
+    const { title, description, priority, severity, assignedToId, relatedRunId, relatedRunItemId, failureType, team, tags, attachments } = req.body;
 
     if (!title || !title.trim()) {
       res.status(400).json({ success: false, message: "Title is required" });
@@ -194,6 +199,11 @@ export const createTicket = async (
 
     if (!severity || !Object.values(TicketSeverity).includes(severity)) {
       res.status(400).json({ success: false, message: "A valid severity is required" });
+      return;
+    }
+
+    if (failureType && !Object.values(FailureType).includes(failureType)) {
+      res.status(400).json({ success: false, message: "A valid failure type is required" });
       return;
     }
 
@@ -211,6 +221,8 @@ export const createTicket = async (
       assignedToId,
       relatedRunId,
       relatedRunItemId,
+      failureType,
+      team,
       tags,
       attachments,
     });
@@ -294,6 +306,136 @@ export const updateTicket = async (
   } catch (error) {
     console.error("Error updating ticket:", error);
     res.status(500).json({ success: false, message: "Failed to update ticket" });
+  }
+};
+
+/**
+ * POST  /api/projects/:projectId/tickets/:id/reproduced
+ * Mark a ticket as reproduced by an engineer. Records firstReproducedAt.
+ */
+export const markTicketReproduced = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const projectId = req.params.projectId as string;
+    const id = req.params.id as string;
+    const userId = req.userId;
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    if (!id) {
+      res.status(400).json({ success: false, message: "Ticket ID is required" });
+      return;
+    }
+
+    const hasAccess = await projectService.hasProjectAccess(projectId, userId);
+    if (!hasAccess) {
+      res.status(403).json({ success: false, message: "Access denied" });
+      return;
+    }
+
+    const ticket = await ticketService.markTicketReproduced(id);
+    if (!ticket) {
+      res.status(404).json({ success: false, message: "Ticket not found" });
+      return;
+    }
+
+    emitTicketUpdated(projectId, ticket);
+
+    try {
+      const userDoc = await User.findById(userId).select("name").lean();
+      const userName = userDoc?.name ?? "Unknown";
+      const message = await discussionService.createSystemMessageForTicket(
+        id,
+        projectId,
+        userId,
+        `Marked as reproduced by ${userName}`
+      );
+      socketManager.emitToProject(projectId, "discussion:created", {
+        message,
+        ticketId: id,
+        projectId,
+      });
+    } catch (err) {
+      console.error("Error posting reproduced system message:", err);
+    }
+
+    res.status(200).json({ success: true, data: ticket });
+  } catch (error) {
+    console.error("Error marking ticket reproduced:", error);
+    res.status(500).json({ success: false, message: "Failed to mark ticket as reproduced" });
+  }
+};
+
+/**
+ * POST  /api/projects/:projectId/tickets/:id/return-for-info
+ * Flag a ticket as returned for missing context. Reopens the ticket.
+ */
+export const returnTicketForInfo = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const projectId = req.params.projectId as string;
+    const id = req.params.id as string;
+    const userId = req.userId;
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Unauthorized" });
+      return;
+    }
+
+    if (!id) {
+      res.status(400).json({ success: false, message: "Ticket ID is required" });
+      return;
+    }
+
+    const reason = req.body?.reason as ReturnReason | undefined;
+    if (!reason || !Object.values(ReturnReason).includes(reason)) {
+      res.status(400).json({ success: false, message: "A valid return reason is required" });
+      return;
+    }
+
+    const hasAccess = await projectService.hasProjectAccess(projectId, userId);
+    if (!hasAccess) {
+      res.status(403).json({ success: false, message: "Access denied" });
+      return;
+    }
+
+    const ticket = await ticketService.returnTicketForInfo(id, { reason });
+    if (!ticket) {
+      res.status(404).json({ success: false, message: "Ticket not found" });
+      return;
+    }
+
+    emitTicketUpdated(projectId, ticket);
+
+    try {
+      const userDoc = await User.findById(userId).select("name").lean();
+      const userName = userDoc?.name ?? "Unknown";
+      const message = await discussionService.createSystemMessageForTicket(
+        id,
+        projectId,
+        userId,
+        `Ticket returned for missing context by ${userName} (${reason})`
+      );
+      socketManager.emitToProject(projectId, "discussion:created", {
+        message,
+        ticketId: id,
+        projectId,
+      });
+    } catch (err) {
+      console.error("Error posting return-for-info system message:", err);
+    }
+
+    res.status(200).json({ success: true, data: ticket });
+  } catch (error) {
+    console.error("Error returning ticket for info:", error);
+    res.status(500).json({ success: false, message: "Failed to return ticket for more info" });
   }
 };
 

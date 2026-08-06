@@ -1,6 +1,7 @@
 import { TestRun } from '../../../models/testRun.model.js';
 import { TestCase } from '../../../models/testCase.model.js';
 import { TestSuite } from '../../../models/testSuite.model.js';
+import { Ticket } from '../../../models/ticket.model.js';
 import { Types } from 'mongoose';
 import {
     ReportFilterParams,
@@ -19,8 +20,14 @@ import {
     SuiteBreakdownItem,
     GroupBreakdownItem,
     RecentActivityItem,
+    TicketMetricsFilterParams,
+    TicketMetricsReport,
+    TicketTriageSegment,
+    TicketReturnReasonStat,
+    TicketTriageDataPoint,
 } from '../types/reporting.types.js';
 import { TestRunStatus, RunItemStatus } from '../../../services/testRun/types/testRun.types.js';
+import { FailureType } from '../../../services/ticket/types/ticket.types.js';
 
 /**
  * Reporting Service
@@ -911,6 +918,231 @@ export class ReportingService {
             },
             items,
             timeline: timeline.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()),
+        };
+    }
+
+    /**
+     * Build a filter for ticket triage metrics queries
+     */
+    private buildTicketFilter(projectId: string, params: TicketMetricsFilterParams): any {
+        const filter: any = { projectId: new Types.ObjectId(projectId) };
+
+        if (params.startDate || params.endDate) {
+            filter.createdAt = {};
+            if (params.startDate) {
+                filter.createdAt.$gte = new Date(params.startDate);
+            }
+            if (params.endDate) {
+                const end = new Date(params.endDate);
+                end.setHours(23, 59, 59, 999);
+                filter.createdAt.$lte = end;
+            }
+        }
+
+        if (params.failureType) {
+            filter.failureType = params.failureType;
+        }
+
+        if (params.team) {
+            filter.team = params.team;
+        }
+
+        if (params.status) {
+            filter.status = params.status;
+        }
+
+        if (params.severity) {
+            filter.severity = params.severity;
+        }
+
+        if (params.priority) {
+            filter.priority = params.priority;
+        }
+
+        return filter;
+    }
+
+    /**
+     * Compute time-to-reproduce stats (hours) from a list of ticket docs.
+     * TTR is measured from failure time (run item executedAt, captured at
+     * ticket creation) to firstReproducedAt. Tickets without a reproduction
+     * are excluded from TTR stats but still count toward created totals.
+     */
+    private buildTtrStats(tickets: any[]): { median: number | null; avg: number | null; p75: number | null } {
+        const ttrs: number[] = [];
+
+        for (const t of tickets) {
+            if (!t.firstReproducedAt) continue;
+            const failureTime = t.failureAt ? new Date(t.failureAt).getTime() : new Date(t.createdAt).getTime();
+            const reproducedTime = new Date(t.firstReproducedAt).getTime();
+            const hours = (reproducedTime - failureTime) / (1000 * 60 * 60);
+            if (hours >= 0) {
+                ttrs.push(hours);
+            }
+        }
+
+        if (ttrs.length === 0) {
+            return { median: null, avg: null, p75: null };
+        }
+
+        ttrs.sort((a, b) => a - b);
+        const percentile = (p: number): number => {
+            const idx = Math.min(ttrs.length - 1, Math.floor((p / 100) * ttrs.length));
+            return Math.round(ttrs[idx] * 10) / 10;
+        };
+        const avg = ttrs.reduce((sum, v) => sum + v, 0) / ttrs.length;
+
+        return {
+            median: percentile(50),
+            avg: Math.round(avg * 10) / 10,
+            p75: percentile(75),
+        };
+    }
+
+    /**
+     * Build a triage segment (stats for one failure type / team bucket)
+     */
+    private buildTriageSegment(key: string, label: string, tickets: any[]): TicketTriageSegment {
+        const ttr = this.buildTtrStats(tickets);
+        const reproduced = tickets.filter((t) => t.firstReproducedAt).length;
+        const returned = tickets.filter((t) => (t.returnedCount || 0) > 0).length;
+
+        return {
+            key,
+            label,
+            ticketsCreated: tickets.length,
+            ticketsReproduced: reproduced,
+            reproductionRate: tickets.length > 0 ? Math.round((reproduced / tickets.length) * 1000) / 10 : 0,
+            timeToReproduceMedianHours: ttr.median,
+            timeToReproduceAvgHours: ttr.avg,
+            timeToReproduceP75Hours: ttr.p75,
+            returnedCount: returned,
+            returnedRate: tickets.length > 0 ? Math.round((returned / tickets.length) * 1000) / 10 : 0,
+        };
+    }
+
+    /**
+     * Get ticket triage metrics: time-to-reproduce, % returned for missing
+     * context, segmented by failure type and team.
+     */
+    async getTicketMetrics(projectId: string, params: TicketMetricsFilterParams): Promise<TicketMetricsReport> {
+        const filter = this.buildTicketFilter(projectId, params);
+        const groupBy = params.groupBy || 'day';
+
+        const tickets = await Ticket.find(filter)
+            .select('failureType team status severity priority createdAt failureAt firstReproducedAt returnedCount lastReturnedAt lastReturnReason')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        const kpiTtr = this.buildTtrStats(tickets);
+        const reproducedCount = tickets.filter((t) => t.firstReproducedAt).length;
+        const returnedCount = tickets.filter((t) => (t.returnedCount || 0) > 0).length;
+
+        // Segment by failure type
+        const byFailureType: TicketTriageSegment[] = [];
+        const failureTypeValues = Object.values(FailureType);
+        for (const ft of failureTypeValues) {
+            const bucket = tickets.filter((t) => t.failureType === ft);
+            if (bucket.length === 0) continue;
+            byFailureType.push(this.buildTriageSegment(ft, ft, bucket));
+        }
+        const noTypeBucket = tickets.filter((t) => !t.failureType);
+        if (noTypeBucket.length > 0) {
+            byFailureType.push(this.buildTriageSegment('Unspecified', 'Unspecified', noTypeBucket));
+        }
+        byFailureType.sort((a, b) => b.ticketsCreated - a.ticketsCreated);
+
+        // Segment by team
+        const byTeamMap = new Map<string, any[]>();
+        for (const t of tickets) {
+            const key = (t.team || '').trim() || 'Unspecified';
+            if (!byTeamMap.has(key)) byTeamMap.set(key, []);
+            byTeamMap.get(key)!.push(t);
+        }
+        const byTeam: TicketTriageSegment[] = Array.from(byTeamMap.entries())
+            .map(([key, bucket]) => this.buildTriageSegment(key, key, bucket))
+            .sort((a, b) => b.ticketsCreated - a.ticketsCreated);
+
+        // Returns by reason
+        const reasonMap = new Map<string, number>();
+        for (const t of tickets) {
+            if (!t.lastReturnReason) continue;
+            reasonMap.set(t.lastReturnReason, (reasonMap.get(t.lastReturnReason) || 0) + 1);
+        }
+        const returnsByReason: TicketReturnReasonStat[] = Array.from(reasonMap.entries())
+            .map(([reason, count]) => ({ reason: reason as TicketReturnReasonStat['reason'], count }))
+            .sort((a, b) => b.count - a.count);
+
+        // Trend series
+        const dateFormatMap: Record<string, unknown> = {
+            day: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            week: { $dateToString: { format: '%Y-W%V', date: '$createdAt' } },
+            month: { $dateToString: { format: '%Y-%m', date: '$createdAt' } },
+        };
+        const matchCreated = { ...filter };
+        const matchReproduced = { ...filter, firstReproducedAt: { $exists: true, $ne: null } };
+        const matchReturned = { ...filter, lastReturnedAt: { $exists: true, $ne: null } };
+
+        const [createdAgg, reproducedAgg, returnedAgg] = await Promise.all([
+            Ticket.aggregate([
+                { $match: matchCreated },
+                { $group: { _id: dateFormatMap[groupBy], count: { $sum: 1 }, firstDate: { $min: '$createdAt' } } },
+                { $sort: { _id: 1 } },
+            ]),
+            Ticket.aggregate([
+                { $match: matchReproduced },
+                { $group: { _id: { $dateToString: { format: (dateFormatMap[groupBy] as any).format, date: '$firstReproducedAt' } }, count: { $sum: 1 } } },
+                { $sort: { _id: 1 } },
+            ]),
+            Ticket.aggregate([
+                { $match: matchReturned },
+                { $group: { _id: { $dateToString: { format: (dateFormatMap[groupBy] as any).format, date: '$lastReturnedAt' } }, count: { $sum: 1 } } },
+                { $sort: { _id: 1 } },
+            ]),
+        ]);
+
+        const toMap = (agg: any[]) => new Map(agg.map((a) => [a._id, a.count]));
+        const createdMap = toMap(createdAgg);
+        const reproducedMap = toMap(reproducedAgg);
+        const returnedMap = toMap(returnedAgg);
+
+        const allPeriods = new Set([...createdMap.keys(), ...reproducedMap.keys(), ...returnedMap.keys()]);
+        const trend: TicketTriageDataPoint[] = Array.from(allPeriods)
+            .sort()
+            .map((period) => {
+                const first = createdAgg.find((a) => a._id === period);
+                return {
+                    period,
+                    periodLabel: this.formatPeriodLabel(first?.firstDate ? new Date(first.firstDate) : new Date(), groupBy),
+                    ticketsCreated: createdMap.get(period) || 0,
+                    ticketsReproduced: reproducedMap.get(period) || 0,
+                    ticketsReturned: returnedMap.get(period) || 0,
+                };
+            });
+
+        const endDate = params.endDate ? new Date(params.endDate) : new Date();
+        const startDate = params.startDate ? new Date(params.startDate) : new Date(0);
+
+        return {
+            projectId,
+            dateRange: {
+                startDate: startDate.toISOString(),
+                endDate: endDate.toISOString(),
+            },
+            kpis: {
+                ticketsCreated: tickets.length,
+                ticketsReproduced: reproducedCount,
+                reproductionRate: tickets.length > 0 ? Math.round((reproducedCount / tickets.length) * 1000) / 10 : 0,
+                timeToReproduceMedianHours: kpiTtr.median,
+                timeToReproduceAvgHours: kpiTtr.avg,
+                timeToReproduceP75Hours: kpiTtr.p75,
+                ticketsReturned: returnedCount,
+                returnedRate: tickets.length > 0 ? Math.round((returnedCount / tickets.length) * 1000) / 10 : 0,
+            },
+            byFailureType,
+            byTeam,
+            returnsByReason,
+            trend,
         };
     }
 }

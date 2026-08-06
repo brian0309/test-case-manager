@@ -27,6 +27,27 @@ export enum TicketSeverity {
   Blocker = "Blocker",
 }
 
+export enum FailureType {
+  Functional = "Functional",
+  UIUX = "UI/UX",
+  Integration = "Integration",
+  DataAPI = "Data/API",
+  EnvironmentSetup = "Environment/Setup",
+  FlakyIntermittent = "Flaky/Intermittent",
+  Performance = "Performance",
+  Security = "Security",
+  Other = "Other",
+}
+
+export enum ReturnReason {
+  MissingSteps = "Missing steps",
+  MissingExpectedActual = "Missing expected vs actual",
+  MissingEnvironmentBuild = "Missing environment/build",
+  MissingAttachment = "Missing attachment",
+  NotReproducible = "Not reproducible",
+  Other = "Other",
+}
+
 // =========================================================================
 // CORE INTERFACES
 // =========================================================================
@@ -49,6 +70,15 @@ export interface ITicket {
   createdBy: Types.ObjectId;
   relatedRunId?: string;
   relatedRunItemId?: string;
+  failureType?: FailureType;
+  team?: string;
+  environment?: string;
+  buildVersion?: string;
+  failureAt?: Date;
+  firstReproducedAt?: Date;
+  returnedCount?: number;
+  lastReturnedAt?: Date;
+  lastReturnReason?: ReturnReason;
   attachments: IAttachment[];
   tags: string[];
   createdAt: Date;
@@ -56,6 +86,20 @@ export interface ITicket {
 }
 
 export interface ITicketDocument extends ITicket, Document {}
+
+// Snapshot divergence: compares the immutable run snapshot against the live test case.
+export interface DivergenceField {
+  field: string;
+  snapshotValue?: string;
+  liveValue?: string;
+}
+
+export interface TicketDivergence {
+  hasDiverged: boolean;
+  sourceCaseDeleted: boolean;
+  caseId?: string;
+  changedFields: DivergenceField[];
+}
 
 // =========================================================================
 // RESPONSE TYPES
@@ -79,6 +123,16 @@ export interface TicketResponse {
   createdBy: TesterResponse;
   relatedRunId?: string;
   relatedRunItemId?: string;
+  failureType?: FailureType;
+  team?: string;
+  environment?: string;
+  buildVersion?: string;
+  failureAt?: string;
+  firstReproducedAt?: string;
+  returnedCount?: number;
+  lastReturnedAt?: string;
+  lastReturnReason?: ReturnReason;
+  divergence?: TicketDivergence;
   attachments: IAttachment[];
   tags: string[];
   createdAt: string;
@@ -97,6 +151,15 @@ export interface TicketListResponse {
   createdBy: TesterResponse;
   relatedRunId?: string;
   relatedRunItemId?: string;
+  failureType?: FailureType;
+  team?: string;
+  environment?: string;
+  buildVersion?: string;
+  failureAt?: string;
+  firstReproducedAt?: string;
+  returnedCount?: number;
+  lastReturnedAt?: string;
+  lastReturnReason?: ReturnReason;
   tags: string[];
   createdAt: string;
   updatedAt: string;
@@ -114,6 +177,8 @@ export interface CreateTicketRequest {
   assignedToId?: string;
   relatedRunId?: string;
   relatedRunItemId?: string;
+  failureType?: FailureType;
+  team?: string;
   tags?: string[];
   attachments?: IAttachment[];
 }
@@ -124,9 +189,15 @@ export interface UpdateTicketRequest {
   status?: TicketStatus;
   priority?: TicketPriority;
   severity?: TicketSeverity;
+  failureType?: FailureType;
+  team?: string;
   assignedToId?: string | null;
   relatedRunId?: string;
   relatedRunItemId?: string;
   tags?: string[];
   attachments?: IAttachment[];
+}
+
+export interface ReturnForInfoRequest {
+  reason: ReturnReason;
 }

@@ -67,6 +67,8 @@ export interface ITestRun {
   groupId?: Types.ObjectId;
   status: TestRunStatus;
   environment?: string;
+  team?: string;
+  buildVersion?: string;
   tags?: string[];
   items: IRunItem[];
   createdBy: Types.ObjectId;
@@ -132,6 +134,8 @@ export interface TestRunResponse {
   groupId?: string;
   status: TestRunStatus;
   environment?: string;
+  team?: string;
+  buildVersion?: string;
   tags?: string[];
   items: RunItemResponse[];
   createdBy: TesterResponse;
@@ -152,6 +156,8 @@ export interface TestRunListResponse {
   groupId?: string;
   status: TestRunStatus;
   environment?: string;
+  team?: string;
+  buildVersion?: string;
   tags?: string[];
   itemCount: number;
   createdBy: TesterResponse;
@@ -169,6 +175,8 @@ export interface CreateTestRunRequest {
   suiteId?: string;
   groupId?: string;
   environment?: string;
+  team?: string;
+  buildVersion?: string;
   tags?: string[];
   testCaseIds: string[]; // IDs of test cases to include
 }
@@ -177,6 +185,8 @@ export interface UpdateTestRunRequest {
   title?: string;
   description?: string;
   environment?: string;
+  team?: string;
+  buildVersion?: string;
   tags?: string[];
   status?: TestRunStatus;
   groupId?: string | null; // null to remove from group

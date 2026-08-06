@@ -1,4 +1,5 @@
 import { TestRunStatus, RunItemStatus } from '../../../services/testRun/types/testRun.types.js';
+import { FailureType, ReturnReason, TicketStatus } from '../../../services/ticket/types/ticket.types.js';
 
 // ===== Request Types =====
 
@@ -10,6 +11,17 @@ export interface ReportFilterParams {
     environment?: string;
     tags?: string[];
     status?: TestRunStatus;
+}
+
+export interface TicketMetricsFilterParams {
+    startDate?: string;
+    endDate?: string;
+    failureType?: FailureType;
+    team?: string;
+    status?: TicketStatus;
+    severity?: string;
+    priority?: string;
+    groupBy?: 'day' | 'week' | 'month';
 }
 
 export interface TrendReportParams extends ReportFilterParams {
@@ -233,6 +245,56 @@ export interface RunTimelineEntry {
     action: 'created' | 'started' | 'item_executed' | 'completed' | 'abandoned';
     user: string;
     details: string;
+}
+
+// ===== Ticket Triage Metrics =====
+
+export interface TicketTriageSegment {
+    key: string;
+    label: string;
+    ticketsCreated: number;
+    ticketsReproduced: number;
+    reproductionRate: number; // percentage
+    timeToReproduceMedianHours: number | null;
+    timeToReproduceAvgHours: number | null;
+    timeToReproduceP75Hours: number | null;
+    returnedCount: number; // tickets with >= 1 return event
+    returnedRate: number; // percentage of tickets created
+}
+
+export interface TicketReturnReasonStat {
+    reason: ReturnReason;
+    count: number;
+}
+
+export interface TicketTriageDataPoint {
+    period: string;
+    periodLabel: string;
+    ticketsCreated: number;
+    ticketsReproduced: number;
+    ticketsReturned: number;
+}
+
+export interface TicketMetricsReport {
+    projectId: string;
+    dateRange: {
+        startDate: string;
+        endDate: string;
+    };
+    kpis: {
+        ticketsCreated: number;
+        ticketsReproduced: number;
+        reproductionRate: number;
+        timeToReproduceMedianHours: number | null;
+        timeToReproduceAvgHours: number | null;
+        timeToReproduceP75Hours: number | null;
+        ticketsReturned: number;
+        returnedRate: number;
+    };
+    byFailureType: TicketTriageSegment[];
+    byTeam: TicketTriageSegment[];
+    returnsByReason: TicketReturnReasonStat[];
+    trend: TicketTriageDataPoint[];
 }
 
 // ===== Aggregation Helper Types =====

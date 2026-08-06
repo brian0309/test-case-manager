@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import reportingService from '../services/reporting.service.js';
-import { ReportFilterParams, TrendReportParams } from '../types/reporting.types.js';
+import { ReportFilterParams, TrendReportParams, TicketMetricsFilterParams } from '../types/reporting.types.js';
+import { FailureType } from '../../ticket/types/ticket.types.js';
 
 /**
  * Reporting Controller
@@ -104,8 +105,40 @@ export class ReportingController {
     }
 
     /**
+     * GET /api/reports/project/:projectId/ticket-metrics
+     * Get ticket triage metrics (time-to-reproduce, % returned for missing
+     * context) segmented by failure type and team.
+     * @query startDate, endDate, failureType, team, status, severity, priority, groupBy
+     */
+    async getTicketMetrics(req: Request, res: Response): Promise<void> {
+        try {
+            const { projectId } = req.params as Record<string, string>;
+            const rawFailureType = req.query.failureType as string;
+            const params: TicketMetricsFilterParams = {
+                startDate: req.query.startDate as string,
+                endDate: req.query.endDate as string,
+                failureType: rawFailureType && Object.values(FailureType).includes(rawFailureType as FailureType)
+                    ? rawFailureType as FailureType
+                    : undefined,
+                team: req.query.team as string,
+                status: req.query.status as any,
+                severity: req.query.severity as string,
+                priority: req.query.priority as string,
+                groupBy: (req.query.groupBy as 'day' | 'week' | 'month') || 'day',
+            };
+
+            const report = await reportingService.getTicketMetrics(projectId, params);
+            res.status(200).json(report);
+        } catch (error: any) {
+            console.error('Error getting ticket metrics:', error);
+            res.status(500).json({ message: error.message || 'Failed to generate ticket metrics report' });
+        }
+    }
+
+    /**
      * GET /api/reports/run/:runId/detailed
      * Get detailed report for a specific test run
+     * @access  Private
      */
     async getDetailedRunReport(req: Request, res: Response): Promise<void> {
         try {
