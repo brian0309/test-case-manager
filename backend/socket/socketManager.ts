@@ -1,7 +1,7 @@
 import { Server as HttpServer } from "http";
 import { Server, Socket } from "socket.io";
 import jwt from "jsonwebtoken";
-import cookie from "cookie";
+import { parseCookie } from "cookie";
 import { TokenPayload } from "../types/auth.types.js";
 
 // Extend Socket type to include userId and user info
@@ -188,7 +188,7 @@ class SocketManager {
           return next(new Error("Authentication required"));
         }
 
-        const parsedCookies = cookie.parse(cookies);
+        const parsedCookies = parseCookie(cookies);
         const token = parsedCookies.token;
 
         if (!token) {

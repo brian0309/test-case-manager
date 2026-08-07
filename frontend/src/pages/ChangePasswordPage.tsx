@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useAuthStore } from "../store/authStore";
 import Input from "../components/Input";
 import { Lock, ArrowLeft, CheckCircle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import toast from "react-hot-toast";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
 

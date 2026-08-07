@@ -128,9 +128,8 @@ testCaseSchema.index({ projectId: 1, lastModified: -1 });
 testCaseSchema.index({ suiteId: 1, order: 1 });
 
 // Pre-save middleware to update lastModified
-testCaseSchema.pre("save", function (next) {
+testCaseSchema.pre("save", async function () {
   this.lastModified = new Date();
-  next();
 });
 
 export const TestCase = mongoose.model<ITestCaseDocument>("TestCase", testCaseSchema);

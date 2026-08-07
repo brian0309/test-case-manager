@@ -138,7 +138,7 @@ export const computeDivergence = async (ticket: {
     return unchanged;
   }
 
-  let run = null;
+  let run;
   try {
     run = await TestRun.findById(
       new Types.ObjectId(ticket.relatedRunId)
@@ -156,7 +156,7 @@ export const computeDivergence = async (ticket: {
   const snapshot = item.caseSnapshot ?? {};
   const caseId = item.caseId?.toString();
 
-  let testCase = null;
+  let testCase;
   try {
     testCase = await TestCase.findById(item.caseId).lean();
   } catch {
@@ -174,8 +174,8 @@ export const computeDivergence = async (ticket: {
 
   const changedFields: DivergenceField[] = [];
   for (const field of DIVERGENCE_FIELDS) {
-    const snapshotValue = (snapshot as Record<string, unknown>)[field];
-    const liveValue = (testCase as Record<string, unknown>)[field];
+    const snapshotValue = (snapshot as unknown as Record<string, unknown>)[field];
+    const liveValue = (testCase as unknown as Record<string, unknown>)[field];
     const snapshotNorm = normalizePlain(String(snapshotValue ?? ""));
     if (field === "stepsContent" || field === "expectedResult") {
       if (normalizeHtml(snapshotValue) === normalizeHtml(liveValue)) continue;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router';
 import toast from 'react-hot-toast';
 import { shallow } from 'zustand/shallow';
 import { useTestManagerStore } from '../../store/testManagerStore';

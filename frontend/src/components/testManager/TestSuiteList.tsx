@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import { TestCase, TestSuite, Status } from '../../types/testManager';
 import { Folder, MoreHorizontal, PieChart, Plus, Pencil, Trash2, Share2, ArrowUp, ArrowDown, Tag, Play } from 'lucide-react';

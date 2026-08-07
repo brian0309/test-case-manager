@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, Outlet, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, Outlet, useLocation } from "react-router";
 import { Moon, Sun } from "lucide-react";
 import React, { Suspense, useEffect } from "react";
 

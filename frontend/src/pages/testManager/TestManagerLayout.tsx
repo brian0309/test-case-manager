@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router';
 import Toolbar from '../../components/testManager/Toolbar';
 import TestSuiteSidebar from '../../components/testManager/TestSuiteSidebar';
 import TestSuiteSidebarDrawer from '../../components/testManager/TestSuiteSidebarDrawer';

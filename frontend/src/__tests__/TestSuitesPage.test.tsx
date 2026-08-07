@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import TestSuitesPage from '../pages/testManager/TestSuitesPage';
 import { Priority, Status, type Project, type TestCase, type TestSuite, type Tester } from '../types/testManager';
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { reportingApi } from '../../services/reportingApi';
 import { testRunApi } from '../../services/testRunApi';

@@ -269,12 +269,9 @@ export const generateAnthropicTestCaseDetailsStream = async (
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
-    let doneReading = false;
-
-    while (!doneReading) {
+    while (true) {
         const { done, value } = await reader.read();
         if (done) {
-            doneReading = true;
             break;
         }
 

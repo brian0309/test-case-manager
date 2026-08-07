@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router';
 import { useAuthStore } from '../store/authStore';
 import { useTestManagerStore } from '../store/testManagerStore';
 import {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router';
 import { shallow } from 'zustand/shallow';
 import toast from 'react-hot-toast';
 import { useVirtualizer } from '@tanstack/react-virtual';

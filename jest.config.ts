@@ -16,7 +16,7 @@ const config: Config = {
       tsconfig: 'tsconfig.test.json',
     }],
   },
-  transformIgnorePatterns: ['<rootDir>/node_modules/(?!sanitize-html/)'],
+  transformIgnorePatterns: ['<rootDir>/node_modules/(?!sanitize-html/|cookie/)'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   collectCoverageFrom: [
     'backend/**/*.ts',

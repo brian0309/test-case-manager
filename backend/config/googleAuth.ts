@@ -83,7 +83,7 @@ const initializeGoogleClient = (): OAuth2Client => {
         return googleClient;
     } catch (error) {
         console.error('Error initializing Google OAuth client:', error);
-        throw new Error(`Failed to initialize Google OAuth client: ${(error as Error).message}`);
+        throw new Error(`Failed to initialize Google OAuth client: ${(error as Error).message}`, { cause: error });
     }
 };
 
@@ -117,7 +117,7 @@ export const getGoogleAuthURL = (): GoogleAuthUrlResult => {
         return { url, state };
     } catch (error) {
         console.error('Error generating Google Auth URL:', (error as Error).message);
-        throw new Error('Failed to generate Google authentication URL');
+        throw new Error('Failed to generate Google authentication URL', { cause: error });
     }
 };
 
@@ -169,6 +169,6 @@ export const getGoogleUser = async (code: string): Promise<GoogleUserProfile> =>
         };
     } catch (error) {
         console.error('Error getting Google user:', (error as Error).message);
-        throw new Error('Failed to authenticate with Google');
+        throw new Error('Failed to authenticate with Google', { cause: error });
     }
 };

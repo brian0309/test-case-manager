@@ -1,6 +1,6 @@
 import React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import { useAuthStore } from "../store/authStore";
 import toast from "react-hot-toast";
@@ -92,7 +92,9 @@ const EmailVerificationPage: React.FC = () => {
 						{code.map((digit, index) => (
 							<input
 								key={index}
-								ref={(el) => (inputRefs.current[index] = el)}
+								ref={(el) => {
+								inputRefs.current[index] = el;
+							}}
 								type='text'
 								maxLength={6}
 								value={digit}

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { X, User, Calendar, Tag, Share2, Edit2, Trash2, ChevronDown, ExternalLink, CheckCircle2, RotateCcw, AlertTriangle, Box, Users, GitCommitHorizontal } from 'lucide-react';
 import { Ticket, TicketStatus, TicketPriority, TicketSeverity, FailureType, ReturnReason } from '../../../types/testManager';
 import { getTagColor } from '../../../utils/tagColors';

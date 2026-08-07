@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ChevronRight, ChevronDown, Folder, Layers, Check, Home, Map, Grid2x2, Table } from 'lucide-react';
 import { useTestManagerStore } from '../../store/testManagerStore';
 import { getAreasByProject, getAreasBySuite } from '../../services/testManagerApi';

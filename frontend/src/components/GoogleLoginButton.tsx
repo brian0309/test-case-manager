@@ -1,7 +1,7 @@
 import React from "react";
 import { useAuthStore } from "../store/authStore";
 import { useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router";
 import { API_URL } from "../utils/api";
 
 const GoogleLoginButton: React.FC = () => {

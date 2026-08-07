@@ -952,8 +952,8 @@ export const bulkImportTestCasesWithSuite = async (
     const tc = testCases[i];
     const suiteName = tc.suiteName?.trim();
     
-    let suiteId: string | null = null;
-    
+    let suiteId: string | null;
+
     if (suiteName) {
       suiteId = suiteNameToId.get(suiteName.toLowerCase()) || null;
       if (!suiteId) {

@@ -337,7 +337,6 @@ const GeminiGenerationModal: React.FC<GeminiGenerationModalProps> = ({
             let buffer = '';
             let didReceiveDone = false;
 
-            // eslint-disable-next-line no-constant-condition
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) {
