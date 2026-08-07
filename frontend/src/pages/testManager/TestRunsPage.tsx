@@ -834,8 +834,8 @@ const TestRunsPage: React.FC = () => {
                                     className="group bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-4 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] dark:hover:shadow-none transition-shadow cursor-pointer"
                                     onClick={() => handleExecuteRun(run.id)}
                                 >
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div>
+                                    <div className="flex items-start justify-between gap-2 mb-3">
+                                        <div className="min-w-0">
                                             <div className="flex items-center flex-wrap gap-2 mb-1">
                                                 <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">{run.title}</h3>
                                                 <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getRunStatusColor(run.status)}`}>
@@ -855,7 +855,7 @@ const TestRunsPage: React.FC = () => {
                                                     </span>
                                                 ))}
                                             </div>
-                                            <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                                            <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
                                                 <span className="flex items-center gap-1">
                                                     <Clock className="w-3.5 h-3.5" />
                                                     {new Date(run.createdAt).toLocaleDateString()}
@@ -872,10 +872,10 @@ const TestRunsPage: React.FC = () => {
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-1">
+                                        <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
                                             <button
                                                 onClick={(e) => handleShareRun(e, run.id)}
-                                                className="p-2 text-gray-300 dark:text-gray-600 hover:text-blue-500 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors opacity-0 group-hover:opacity-100"
+                                                className="p-1.5 sm:p-2 text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
                                                 title="Copy link to Test Run"
                                                 aria-label="Copy link to test run"
                                             >
@@ -886,7 +886,7 @@ const TestRunsPage: React.FC = () => {
                                                     e.stopPropagation();
                                                     handleEditRun(run);
                                                 }}
-                                                className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                                className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
                                                 title="Edit Run"
                                             >
                                                 <Edit2 className="w-4 h-4" />
@@ -896,7 +896,7 @@ const TestRunsPage: React.FC = () => {
                                                     e.stopPropagation();
                                                     handleCloneRun(run.id);
                                                 }}
-                                                className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                                className="p-1.5 sm:p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30"
                                                 title="Clone Run"
                                             >
                                                 <Copy className="w-4 h-4" />
@@ -906,12 +906,12 @@ const TestRunsPage: React.FC = () => {
                                                     e.stopPropagation();
                                                     handleDeleteRun(run.id);
                                                 }}
-                                                className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30"
+                                                className="p-1.5 sm:p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30"
                                                 title="Delete Run"
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
-                                            <ChevronRight className="w-5 h-5 text-gray-300 dark:text-gray-600" />
+                                            <ChevronRight className="hidden sm:block w-5 h-5 text-gray-300 dark:text-gray-600" />
                                         </div>
                                     </div>
 

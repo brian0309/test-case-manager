@@ -385,7 +385,7 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                                 {currentItem.status}
                             </span>
                         </div>
-                        <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 max-w-[70%]">
+                        <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 max-w-[75%] sm:max-w-[100%]">
                             <a
                                 href={sourceTestCaseHref}
                                 target="_blank"
@@ -523,33 +523,33 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                 {/* Action buttons */}
                 <div className="px-3 sm:px-6 py-4 sm:py-5 border-t border-gray-100 dark:border-gray-700">
                     {/* Mobile: Stacked layout */}
-                    <div className="sm:hidden flex flex-col gap-3">
+                    <div className="sm:hidden flex flex-col gap-2">
                         {/* Status buttons grid */}
-                        <div className="grid grid-cols-2 gap-2.5">
+                        <div className="grid grid-cols-2 gap-2">
                             <button
                                 onClick={() => handleStatusUpdate(RunItemStatus.Passed)}
-                                className="flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium text-white bg-green-600 rounded-lg active:bg-green-700 disabled:opacity-50"
+                                className="flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-white bg-green-600 rounded-lg active:bg-green-700 disabled:opacity-50"
                             >
-                                <CheckCircle className="w-4 h-4" />
+                                <CheckCircle className="w-3.5 h-3.5" />
                                 Pass
                             </button>
                             <button
                                 onClick={() => handleStatusUpdate(RunItemStatus.Failed)}
-                                className="flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium text-white bg-red-600 rounded-lg active:bg-red-700 disabled:opacity-50"
+                                className="flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-white bg-red-600 rounded-lg active:bg-red-700 disabled:opacity-50"
                             >
-                                <XCircle className="w-4 h-4" />
+                                <XCircle className="w-3.5 h-3.5" />
                                 Fail
                             </button>
                             <button
                                 onClick={() => handleStatusUpdate(RunItemStatus.Blocked)}
-                                className="flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium text-white bg-orange-600 rounded-lg active:bg-orange-700 disabled:opacity-50"
+                                className="flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-white bg-orange-600 rounded-lg active:bg-orange-700 disabled:opacity-50"
                             >
-                                <AlertCircle className="w-4 h-4" />
+                                <AlertCircle className="w-3.5 h-3.5" />
                                 Blocked
                             </button>
                             <button
                                 onClick={() => handleStatusUpdate(RunItemStatus.Skipped)}
-                                className="flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg active:bg-gray-300 dark:active:bg-gray-600 disabled:opacity-50"
+                                className="flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg active:bg-gray-300 dark:active:bg-gray-600 disabled:opacity-50"
                             >
                                 Skip
                             </button>
@@ -558,7 +558,7 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                         <button
                             onClick={handleComplete}
                             disabled={executedCount < totalItems}
-                            className={`w-full px-4 py-3 text-sm font-medium rounded-lg transition-all ${executedCount < totalItems
+                            className={`w-full px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${executedCount < totalItems
                                     ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed opacity-60'
                                     : 'text-blue-600 dark:text-blue-400 border border-blue-600 dark:border-blue-400 active:bg-blue-50 dark:active:bg-blue-900/30'
                                 }`}

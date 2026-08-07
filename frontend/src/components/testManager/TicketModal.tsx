@@ -174,55 +174,55 @@ const TicketModal: React.FC<TicketModalProps> = ({
                     </div>
 
                     {/* Status, Priority, Severity row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-5">
                         {/* Status */}
                         <div>
-                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Status</label>
+                            <label className="block text-[10px] sm:text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Status</label>
                             <div className="relative">
                                 <select
                                     value={status}
                                     onChange={(e) => setStatus(e.target.value as TicketStatus)}
-                                    className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getTicketStatusSelectColor(status)}`}
+                                    className={`w-full appearance-none rounded-lg py-2 pl-2 pr-6 text-xs sm:pl-3 sm:pr-8 sm:text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-70 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getTicketStatusSelectColor(status)}`}
                                 >
                                     {Object.values(TicketStatus).map((s) => (
                                         <option key={s} value={s}>{s}</option>
                                     ))}
                                 </select>
-                                <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                                <ChevronDown className="absolute right-1.5 top-2.5 h-3 w-3 sm:right-2.5 sm:h-4 sm:w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
                             </div>
                         </div>
 
                         {/* Priority */}
                         <div>
-                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Priority</label>
+                            <label className="block text-[10px] sm:text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Priority</label>
                             <div className="relative">
                                 <select
                                     value={priority}
                                     onChange={(e) => setPriority(e.target.value as TicketPriority)}
-                                    className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getTicketPrioritySelectColor(priority)}`}
+                                    className={`w-full appearance-none rounded-lg border py-2 pl-2 pr-6 text-xs sm:pl-3 sm:pr-8 sm:text-sm font-medium outline-none transition-all cursor-pointer hover:opacity-70 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getTicketPrioritySelectColor(priority)}`}
                                 >
                                     {Object.values(TicketPriority).map((p) => (
                                         <option key={p} value={p}>{p}</option>
                                     ))}
                                 </select>
-                                <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                                <ChevronDown className="absolute right-1.5 top-2.5 h-3 w-3 sm:right-2.5 sm:h-4 sm:w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
                             </div>
                         </div>
 
                         {/* Severity */}
                         <div>
-                            <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Severity</label>
+                            <label className="block text-[10px] sm:text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Severity</label>
                             <div className="relative">
                                 <select
                                     value={severity}
                                     onChange={(e) => setSeverity(e.target.value as TicketSeverity)}
-                                    className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getTicketSeveritySelectColor(severity)}`}
+                                    className={`w-full appearance-none rounded-lg border py-2 pl-2 pr-6 text-xs sm:pl-3 sm:pr-8 sm:text-sm font-medium outline-none transition-all cursor-pointer hover:opacity-70 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 ${getTicketSeveritySelectColor(severity)}`}
                                 >
                                     {Object.values(TicketSeverity).map((s) => (
                                         <option key={s} value={s}>{s}</option>
                                     ))}
                                 </select>
-                                <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                                <ChevronDown className="absolute right-1.5 top-2.5 h-3 w-3 sm:right-2.5 sm:h-4 sm:w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
                             </div>
                         </div>
                     </div>

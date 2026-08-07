@@ -38,7 +38,7 @@ const FILTER_CHIP_BASE = 'px-2.5 py-1 text-xs font-medium rounded-full border tr
 const FILTER_CHIP_ACTIVE = 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700';
 const FILTER_CHIP_INACTIVE = 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600';
 
-const TAB_BASE = 'px-4 py-2 text-sm font-medium rounded-lg transition-colors';
+const TAB_BASE = 'flex-1 whitespace-nowrap px-1 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-colors justify-center';
 const TAB_ACTIVE = 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300';
 const TAB_INACTIVE = 'text-gray-600 hover:text-gray-800 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-700';
 
@@ -683,17 +683,17 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
             <div
                 className="absolute inset-0 bg-white/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
                 onClick={onClose}
             />
             <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-gray-100 dark:border-gray-700">
-                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Create Test Run</h2>
+                <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 dark:border-gray-700">
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100">Create Test Run</h2>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title *</label>
                         <input
@@ -715,7 +715,7 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Group (Optional)</label>
                             <select
@@ -780,7 +780,7 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
                     </div>
 
                     <div>
-                        <div className="flex gap-1 mb-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1">
+                        <div className="flex gap-1 mb-3 bg-gray-100 dark:bg-gray-700/50 rounded-lg p-1 overflow-x-auto">
                             <button
                                 onClick={() => setActiveTab('suite')}
                                 className={`${TAB_BASE} ${activeTab === 'suite' ? TAB_ACTIVE : TAB_INACTIVE}`}
@@ -806,11 +806,11 @@ const CreateRunModal: React.FC<CreateRunModalProps> = ({
                     </div>
                 </div>
 
-                <div className="px-6 pb-2">
+                <div className="px-4 sm:px-6 pb-2">
                     {renderSummaryBar()}
                 </div>
 
-                <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
+                <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3">
                     <button
                         onClick={onClose}
                         className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"

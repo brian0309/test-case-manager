@@ -229,13 +229,13 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
 
     return (
         <>
-            <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4">
+            <div className="fixed inset-0 z-50 flex items-start md:items-center justify-center p-0 md:p-4">
                 <div
                     className="absolute inset-0 bg-white/40 dark:bg-black/60 backdrop-blur-sm transition-opacity"
                     onClick={onClose}
                 />
 
-                <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-7xl mx-4 max-h-[85vh] flex flex-col overflow-hidden animate-[scaleIn_0.2s_ease-out]">
+                <div className="relative bg-white dark:bg-gray-800 md:rounded-2xl shadow-2xl w-full max-w-7xl md:mx-4 md:max-h-[85vh] h-[100dvh] md:h-auto flex flex-col overflow-hidden animate-[scaleIn_0.2s_ease-out]">
                     {/* Modal Header */}
                     <div className="flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -317,58 +317,58 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                                 <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">{ticket.title}</h1>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+                            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-5">
                                 {/* Status */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Status</label>
+                                    <label className="block text-[10px] sm:text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Status</label>
                                     <div className="relative">
                                         <select
                                             value={ticket.status}
                                             onChange={(e) => handleStatusChange(e.target.value as TicketStatus)}
                                             disabled={savingField === 'status'}
-                                            className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 disabled:opacity-60 ${getTicketStatusSelectColor(ticket.status)}`}
+                                            className={`w-full appearance-none rounded-lg py-2 pl-2 pr-6 text-xs sm:pl-3 sm:pr-8 sm:text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-70 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 disabled:opacity-60 ${getTicketStatusSelectColor(ticket.status)}`}
                                         >
                                             {Object.values(TicketStatus).map(s => (
                                                 <option key={s} value={s}>{s}</option>
                                             ))}
                                         </select>
-                                        <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                                        <ChevronDown className="absolute right-1.5 top-2.5 h-3 w-3 sm:right-2.5 sm:h-4 sm:w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
                                     </div>
                                 </div>
 
                                 {/* Priority */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Priority</label>
+                                    <label className="block text-[10px] sm:text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Priority</label>
                                     <div className="relative">
                                         <select
                                             value={ticket.priority}
                                             onChange={(e) => handlePriorityChange(e.target.value as TicketPriority)}
                                             disabled={savingField === 'priority'}
-                                            className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 disabled:opacity-60 ${getTicketPrioritySelectColor(ticket.priority)}`}
+                                            className={`w-full appearance-none rounded-lg border py-2 pl-2 pr-6 text-xs sm:pl-3 sm:pr-8 sm:text-sm font-medium outline-none transition-all cursor-pointer hover:opacity-70 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 disabled:opacity-60 ${getTicketPrioritySelectColor(ticket.priority)}`}
                                         >
                                             {Object.values(TicketPriority).map(p => (
                                                 <option key={p} value={p}>{p}</option>
                                             ))}
                                         </select>
-                                        <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                                        <ChevronDown className="absolute right-1.5 top-2.5 h-3 w-3 sm:right-2.5 sm:h-4 sm:w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
                                     </div>
                                 </div>
 
                                 {/* Severity */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Severity</label>
+                                    <label className="block text-[10px] sm:text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Severity</label>
                                     <div className="relative">
                                         <select
                                             value={ticket.severity}
                                             onChange={(e) => handleSeverityChange(e.target.value as TicketSeverity)}
                                             disabled={savingField === 'severity'}
-                                            className={`w-full appearance-none rounded-lg py-2 pl-3 pr-8 text-sm font-medium outline-none transition-all cursor-pointer border hover:opacity-80 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 disabled:opacity-60 ${getTicketSeveritySelectColor(ticket.severity)}`}
+                                            className={`w-full appearance-none rounded-lg border py-2 pl-2 pr-6 text-xs sm:pl-3 sm:pr-8 sm:text-sm font-medium outline-none transition-all cursor-pointer hover:opacity-70 focus:ring-2 focus:ring-offset-1 focus:ring-blue-100 disabled:opacity-60 ${getTicketSeveritySelectColor(ticket.severity)}`}
                                         >
                                             {Object.values(TicketSeverity).map(s => (
                                                 <option key={s} value={s}>{s}</option>
                                             ))}
                                         </select>
-                                        <ChevronDown className="absolute right-2.5 top-2.5 h-4 w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
+                                        <ChevronDown className="absolute right-1.5 top-2.5 h-3 w-3 sm:right-2.5 sm:h-4 sm:w-4 text-gray-400 dark:text-gray-500 pointer-events-none opacity-50" />
                                     </div>
                                 </div>
                             </div>
@@ -380,7 +380,7 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                                         Description
                                     </h3>
                                     <div
-                                        className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700 [&_img]:cursor-zoom-in [&_img]:rounded-md"
+                                        className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-200 dark:border-gray-700 overflow-x-auto [&_img]:cursor-zoom-in [&_img]:rounded-md"
                                         onClick={(e) => {
                                             const target = e.target;
                                             if (target instanceof HTMLImageElement) {
@@ -410,31 +410,31 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                                 <h3 className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
                                     Details
                                 </h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 min-w-0">
                                         <User size={14} className="text-gray-400 flex-shrink-0" />
                                         <span className="text-gray-500 dark:text-gray-500 flex-shrink-0">Created by:</span>
-                                        <span className="text-gray-900 dark:text-gray-100 font-medium truncate">{ticket.createdBy.name}</span>
+                                        <span className="text-gray-900 dark:text-gray-100 font-medium truncate min-w-0">{ticket.createdBy.name}</span>
                                     </div>
                                     {ticket.assignedTo && (
-                                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 min-w-0">
                                             <User size={14} className="text-gray-400 flex-shrink-0" />
                                             <span className="text-gray-500 dark:text-gray-500 flex-shrink-0">Assigned to:</span>
-                                            <span className="text-gray-900 dark:text-gray-100 font-medium truncate">{ticket.assignedTo.name}</span>
+                                            <span className="text-gray-900 dark:text-gray-100 font-medium truncate min-w-0">{ticket.assignedTo.name}</span>
                                         </div>
                                     )}
-                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 min-w-0">
                                         <Calendar size={14} className="text-gray-400 flex-shrink-0" />
                                         <span className="text-gray-500 dark:text-gray-500 flex-shrink-0">Created:</span>
-                                        <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap">{formatDate(ticket.createdAt)}</span>
+                                        <span className="text-gray-900 dark:text-gray-100 truncate min-w-0">{formatDate(ticket.createdAt)}</span>
                                     </div>
-                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 min-w-0">
                                         <Calendar size={14} className="text-gray-400 flex-shrink-0" />
                                         <span className="text-gray-500 dark:text-gray-500 flex-shrink-0">Updated:</span>
-                                        <span className="text-gray-900 dark:text-gray-100 whitespace-nowrap">{formatDate(ticket.updatedAt)}</span>
+                                        <span className="text-gray-900 dark:text-gray-100 truncate min-w-0">{formatDate(ticket.updatedAt)}</span>
                                     </div>
                                     {ticket.failureType && (
-                                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 min-w-0">
                                             <AlertTriangle size={14} className="text-gray-400 flex-shrink-0" />
                                             <span className="text-gray-500 dark:text-gray-500 flex-shrink-0">Failure type:</span>
                                             <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-xs font-medium border ${getFailureTypeColor(ticket.failureType)}`}>
@@ -443,24 +443,24 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                                         </div>
                                     )}
                                     {ticket.team && (
-                                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 min-w-0">
                                             <Users size={14} className="text-gray-400 flex-shrink-0" />
                                             <span className="text-gray-500 dark:text-gray-500 flex-shrink-0">Team:</span>
-                                            <span className="text-gray-900 dark:text-gray-100 font-medium truncate">{ticket.team}</span>
+                                            <span className="text-gray-900 dark:text-gray-100 font-medium truncate min-w-0">{ticket.team}</span>
                                         </div>
                                     )}
                                     {ticket.environment && (
-                                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 min-w-0">
                                             <Box size={14} className="text-gray-400 flex-shrink-0" />
                                             <span className="text-gray-500 dark:text-gray-500 flex-shrink-0">Environment:</span>
-                                            <span className="text-gray-900 dark:text-gray-100 font-medium truncate">{ticket.environment}</span>
+                                            <span className="text-gray-900 dark:text-gray-100 font-medium truncate min-w-0">{ticket.environment}</span>
                                         </div>
                                     )}
                                     {ticket.buildVersion && (
-                                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 min-w-0">
                                             <GitCommitHorizontal size={14} className="text-gray-400 flex-shrink-0" />
                                             <span className="text-gray-500 dark:text-gray-500 flex-shrink-0">Build:</span>
-                                            <span className="text-gray-900 dark:text-gray-100 font-medium truncate">{ticket.buildVersion}</span>
+                                            <span className="text-gray-900 dark:text-gray-100 font-medium truncate min-w-0">{ticket.buildVersion}</span>
                                         </div>
                                     )}
                                 </div>
@@ -521,14 +521,14 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                                                                 <div className="rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2">
                                                                     <div className="text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">Snapshot (what ran)</div>
                                                                     <div
-                                                                        className="text-gray-600 dark:text-gray-300 max-h-24 overflow-y-auto prose prose-sm dark:prose-invert max-w-none"
+                                                                        className="text-gray-600 dark:text-gray-300 max-h-24 overflow-y-auto overflow-x-auto prose prose-sm dark:prose-invert max-w-none"
                                                                         dangerouslySetInnerHTML={{ __html: sanitizeHtml(field.snapshotValue) || '<span class="italic text-gray-400">(empty)</span>' }}
                                                                     />
                                                                 </div>
                                                                 <div className="rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2">
                                                                     <div className="text-[10px] uppercase tracking-wider text-green-500 dark:text-green-400 mb-1">Live case (now)</div>
                                                                     <div
-                                                                        className="text-gray-600 dark:text-gray-300 max-h-24 overflow-y-auto prose prose-sm dark:prose-invert max-w-none"
+                                                                        className="text-gray-600 dark:text-gray-300 max-h-24 overflow-y-auto overflow-x-auto prose prose-sm dark:prose-invert max-w-none"
                                                                         dangerouslySetInnerHTML={{ __html: sanitizeHtml(field.liveValue) || '<span class="italic text-gray-400">(empty)</span>' }}
                                                                     />
                                                                 </div>

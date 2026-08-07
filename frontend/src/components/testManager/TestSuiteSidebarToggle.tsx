@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 interface TestSuiteSidebarToggleProps {
     isOpen: boolean;
@@ -38,11 +38,11 @@ const TestSuiteSidebarToggle: React.FC<TestSuiteSidebarToggleProps> = ({
             visible ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
     >
-        {isOpen ? (
-            <ChevronLeft className={size === 'sm' ? 'h-4 w-4' : 'h-5 w-5'} />
-        ) : (
-            <ChevronRight className={size === 'sm' ? 'h-4 w-4' : 'h-5 w-5'} />
-        )}
+        <ChevronRight
+            className={`${size === 'sm' ? 'h-4 w-4' : 'h-5 w-5'} transition-transform duration-300 ease-in-out motion-reduce:transition-none ${
+                isOpen ? 'rotate-180' : ''
+            }`}
+        />
     </button>
 );
 

@@ -1,7 +1,8 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import toast from 'react-hot-toast';
-import { ArrowLeft, ChevronRight, Eye, Layers, Map as MapIcon, ChevronDown, ChevronUp, Check, ArrowUpDown, CheckCircle2, Download, FileText } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Eye, Layers, Map as MapIcon, ChevronDown, ChevronUp, Check, ArrowUpDown, CheckCircle2, Download, FileText, SlidersHorizontal } from 'lucide-react';
+import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { TestRun, RunItemStatus, RunItem, TestCase, TestSuite } from '../../../types/testManager';
 import { exportTestRunToCSV, exportTestRunToXLSX } from '../../../utils/exportTestRun';
 import {
@@ -41,6 +42,8 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
     const [isSuiteOpen, setIsSuiteOpen] = useState(false);
     const [isRunStatusOpen, setIsRunStatusOpen] = useState(false);
     const [isExportOpen, setIsExportOpen] = useState(false);
+    const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(false);
+    const isSmallScreen = useMediaQuery('(max-width: 639px)');
     const areaRef = useRef<HTMLDivElement>(null);
     const suiteRef = useRef<HTMLDivElement>(null);
     const runStatusRef = useRef<HTMLDivElement>(null);
@@ -305,11 +308,201 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
         }
     };
 
+const activeFilterCount = [selectedSuiteFilter, selectedAreaFilter, selectedRunStatusFilter]
+        .filter((filter) => filter !== 'all').length;
+
+    const resetFilters = () => {
+        setSelectedSuiteFilter('all');
+        setSelectedAreaFilter('all');
+        setSelectedRunStatusFilter('all');
+        setIsSuiteOpen(false);
+        setIsAreaOpen(false);
+        setIsRunStatusOpen(false);
+    };
+
+    const renderFilterChips = () => (
+        <>
+            <div className="relative" ref={suiteRef}>
+                <button
+                    onClick={() => setIsSuiteOpen(!isSuiteOpen)}
+                    title={selectedSuiteFilter === 'all' ? 'All Suites' : selectedSuiteFilter}
+                    className={`flex items-center gap-1 px-2 py-1 text-xs sm:text-sm font-medium rounded-md transition-all ${selectedSuiteFilter !== 'all'
+                        ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                >
+                    <Layers size={14} className={selectedSuiteFilter !== 'all' ? 'text-purple-500 dark:text-purple-400 flex-shrink-0' : 'text-gray-400 dark:text-gray-500 flex-shrink-0'} />
+                    <span className="max-w-[100px] sm:max-w-[120px] truncate">{selectedSuiteFilter === 'all' ? 'Suite: All' : selectedSuiteFilter}</span>
+                    <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform flex-shrink-0 ${isSuiteOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isSuiteOpen && (
+                    <div className="absolute top-full left-0 mt-1 w-56 sm:w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                        <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
+                            <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter by Suite</p>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                setSelectedSuiteFilter('all');
+                                setIsSuiteOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedSuiteFilter === 'all' ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
+                        >
+                            <Layers size={14} className={selectedSuiteFilter === 'all' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'} />
+                            <span className="flex-1">All Suites</span>
+                            {selectedSuiteFilter === 'all' && <Check size={14} />}
+                        </button>
+
+                        <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
+
+                        <div className="max-h-64 overflow-y-auto">
+                            {suiteOptions.map((suite) => (
+                                <button
+                                    key={suite}
+                                    onClick={() => {
+                                        setSelectedSuiteFilter(suite);
+                                        setIsSuiteOpen(false);
+                                    }}
+                                    title={suite}
+                                    className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedSuiteFilter === suite ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
+                                >
+                                    <Layers size={14} className={selectedSuiteFilter === suite ? 'text-purple-500 dark:text-purple-400' : 'text-gray-400 dark:text-gray-500'} />
+                                    <span className="truncate flex-1">{suite}</span>
+                                    {selectedSuiteFilter === suite && <Check size={14} />}
+                                </button>
+                            ))}
+                            {suiteOptions.length === 0 && (
+                                <div className="px-3 py-4 text-sm text-gray-400 dark:text-gray-500 text-center">No suites found</div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <div className="relative" ref={areaRef}>
+                <button
+                    onClick={() => setIsAreaOpen(!isAreaOpen)}
+                    title={selectedAreaFilter === 'all' ? 'All Areas' : selectedAreaFilter}
+                    className={`flex items-center gap-1 px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium rounded-md transition-all ${selectedAreaFilter !== 'all'
+                        ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                >
+                    <MapIcon size={14} className={selectedAreaFilter !== 'all' ? 'text-green-500 dark:text-green-400 flex-shrink-0' : 'text-gray-400 dark:text-gray-500 flex-shrink-0'} />
+                    <span className="max-w-[100px] sm:max-w-[120px] truncate">{selectedAreaFilter === 'all' ? 'Area: All' : selectedAreaFilter}</span>
+                    <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform flex-shrink-0 ${isAreaOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isAreaOpen && (
+                    <div className="absolute top-full left-0 mt-1 w-56 sm:w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                        <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
+                            <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter by Area</p>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                setSelectedAreaFilter('all');
+                                setIsAreaOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedAreaFilter === 'all' ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
+                        >
+                            <MapIcon size={14} className={selectedAreaFilter === 'all' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'} />
+                            <span className="flex-1">All Areas</span>
+                            {selectedAreaFilter === 'all' && <Check size={14} />}
+                        </button>
+
+                        <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
+
+                        <div className="max-h-64 overflow-y-auto">
+                            {areaOptions.map((area) => (
+                                <button
+                                    key={area}
+                                    onClick={() => {
+                                        setSelectedAreaFilter(area);
+                                        setIsAreaOpen(false);
+                                    }}
+                                    title={area}
+                                    className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedAreaFilter === area ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
+                                >
+                                    <MapIcon size={14} className={selectedAreaFilter === area ? 'text-green-500 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'} />
+                                    <span className="truncate flex-1">{area}</span>
+                                    {selectedAreaFilter === area && <Check size={14} />}
+                                </button>
+                            ))}
+                            {areaOptions.length === 0 && (
+                                <div className="px-3 py-4 text-sm text-gray-400 dark:text-gray-500 text-center">No areas found</div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <div className="relative" ref={runStatusRef}>
+                <button
+                    onClick={() => setIsRunStatusOpen(!isRunStatusOpen)}
+                    title={selectedRunStatusFilter === 'all' ? 'All Run Statuses' : selectedRunStatusFilter}
+                    className={`flex items-center gap-1 px-1.5 sm:px-2 py-1 text-xs sm:text-sm font-medium rounded-md transition-all ${selectedRunStatusFilter !== 'all'
+                        ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
+                >
+                    <CheckCircle2 size={14} className={selectedRunStatusFilter !== 'all' ? 'text-blue-500 dark:text-blue-400 flex-shrink-0' : 'text-gray-400 dark:text-gray-500 flex-shrink-0'} />
+                    <span className="max-w-[110px] sm:max-w-[140px] truncate">{selectedRunStatusFilter === 'all' ? 'Status: All' : selectedRunStatusFilter}</span>
+                    <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform flex-shrink-0 ${isRunStatusOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isRunStatusOpen && (
+                    <div className="absolute top-full left-0 mt-1 w-56 sm:w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+                        <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
+                            <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter by Run Status</p>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                setSelectedRunStatusFilter('all');
+                                setIsRunStatusOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedRunStatusFilter === 'all' ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
+                        >
+                            <CheckCircle2 size={14} className={selectedRunStatusFilter === 'all' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'} />
+                            <span className="flex-1">All Statuses</span>
+                            {selectedRunStatusFilter === 'all' && <Check size={14} />}
+                        </button>
+
+                        <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
+
+                        <div className="max-h-64 overflow-y-auto">
+                            {runStatusOptions.map((status) => (
+                                <button
+                                    key={status}
+                                    onClick={() => {
+                                        setSelectedRunStatusFilter(status);
+                                        setIsRunStatusOpen(false);
+                                    }}
+                                    title={status}
+                                    className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedRunStatusFilter === status ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
+                                >
+                                    <span className={`inline-flex min-w-[72px] justify-center rounded-full border px-2 py-0.5 text-xs font-semibold ${getRunItemStatusBadgeColor(status)}`}>
+                                        {status}
+                                    </span>
+                                    <span className="truncate flex-1">{status}</span>
+                                    {selectedRunStatusFilter === status && <Check size={14} />}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </>
+    );
+
     return (
         <div className="flex flex-col h-full bg-white dark:bg-gray-900">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-20">
-                <div className="flex items-center gap-3 min-w-0">
+            <div className="border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 sticky top-0 z-20 flex-shrink-0">
+                {/* Top row: back | title | status | header actions */}
+                <div className="flex items-center gap-2 px-2 sm:px-3 py-2 sm:py-3">
                     <button
                         onClick={onBack}
                         className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex-shrink-0"
@@ -317,236 +510,119 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </button>
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">{testRun.title}</h2>
-                            <div className="flex flex-wrap items-center gap-2">
-                                <div className="relative" ref={suiteRef}>
-                                    <button
-                                        onClick={() => setIsSuiteOpen(!isSuiteOpen)}
-                                        title={selectedSuiteFilter === 'all' ? 'All Suites' : selectedSuiteFilter}
-                                        className={`flex items-center gap-1 px-2 py-0.5 text-sm font-medium rounded-md transition-all ${selectedSuiteFilter !== 'all'
-                                            ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                            : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                            }`}
-                                    >
-                                        <Layers size={14} className={selectedSuiteFilter !== 'all' ? 'text-purple-500 dark:text-purple-400 flex-shrink-0' : 'text-gray-400 dark:text-gray-500 flex-shrink-0'} />
-                                        <span className="max-w-[120px] truncate">{selectedSuiteFilter === 'all' ? 'All Suites' : selectedSuiteFilter}</span>
-                                        <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform flex-shrink-0 ${isSuiteOpen ? 'rotate-180' : ''}`} />
-                                    </button>
 
-                                    {isSuiteOpen && (
-                                        <div className="absolute top-full left-0 mt-1 w-56 sm:w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-                                            <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
-                                                <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter by Suite</p>
-                                            </div>
-
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedSuiteFilter('all');
-                                                    setIsSuiteOpen(false);
-                                                }}
-                                                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedSuiteFilter === 'all' ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
-                                            >
-                                                <Layers size={14} className={selectedSuiteFilter === 'all' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'} />
-                                                <span className="flex-1">All Suites</span>
-                                                {selectedSuiteFilter === 'all' && <Check size={14} />}
-                                            </button>
-
-                                            <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
-
-                                            <div className="max-h-64 overflow-y-auto">
-                                                {suiteOptions.map((suite) => (
-                                                    <button
-                                                        key={suite}
-                                                        onClick={() => {
-                                                            setSelectedSuiteFilter(suite);
-                                                            setIsSuiteOpen(false);
-                                                        }}
-                                                        title={suite}
-                                                        className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedSuiteFilter === suite ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
-                                                    >
-                                                        <Layers size={14} className={selectedSuiteFilter === suite ? 'text-purple-500 dark:text-purple-400' : 'text-gray-400 dark:text-gray-500'} />
-                                                        <span className="truncate flex-1">{suite}</span>
-                                                        {selectedSuiteFilter === suite && <Check size={14} />}
-                                                    </button>
-                                                ))}
-                                                {suiteOptions.length === 0 && (
-                                                    <div className="px-3 py-4 text-sm text-gray-400 dark:text-gray-500 text-center">No suites found</div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="relative" ref={areaRef}>
-                                    <button
-                                        onClick={() => setIsAreaOpen(!isAreaOpen)}
-                                        title={selectedAreaFilter === 'all' ? 'All Areas' : selectedAreaFilter}
-                                        className={`flex items-center gap-1 px-2 py-0.5 text-sm font-medium rounded-md transition-all ${selectedAreaFilter !== 'all'
-                                            ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                            : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                            }`}
-                                    >
-                                        <MapIcon size={14} className={selectedAreaFilter !== 'all' ? 'text-green-500 dark:text-green-400 flex-shrink-0' : 'text-gray-400 dark:text-gray-500 flex-shrink-0'} />
-                                        <span className="max-w-[120px] truncate">{selectedAreaFilter === 'all' ? 'All Areas' : selectedAreaFilter}</span>
-                                        <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform flex-shrink-0 ${isAreaOpen ? 'rotate-180' : ''}`} />
-                                    </button>
-
-                                    {isAreaOpen && (
-                                        <div className="absolute top-full left-0 mt-1 w-56 sm:w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-                                            <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
-                                                <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter by Area</p>
-                                            </div>
-
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedAreaFilter('all');
-                                                    setIsAreaOpen(false);
-                                                }}
-                                                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedAreaFilter === 'all' ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
-                                            >
-                                                <MapIcon size={14} className={selectedAreaFilter === 'all' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'} />
-                                                <span className="flex-1">All Areas</span>
-                                                {selectedAreaFilter === 'all' && <Check size={14} />}
-                                            </button>
-
-                                            <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
-
-                                            <div className="max-h-64 overflow-y-auto">
-                                                {areaOptions.map((area) => (
-                                                    <button
-                                                        key={area}
-                                                        onClick={() => {
-                                                            setSelectedAreaFilter(area);
-                                                            setIsAreaOpen(false);
-                                                        }}
-                                                        title={area}
-                                                        className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedAreaFilter === area ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
-                                                    >
-                                                        <MapIcon size={14} className={selectedAreaFilter === area ? 'text-green-500 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'} />
-                                                        <span className="truncate flex-1">{area}</span>
-                                                        {selectedAreaFilter === area && <Check size={14} />}
-                                                    </button>
-                                                ))}
-                                                {areaOptions.length === 0 && (
-                                                    <div className="px-3 py-4 text-sm text-gray-400 dark:text-gray-500 text-center">No areas found</div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="relative" ref={runStatusRef}>
-                                    <button
-                                        onClick={() => setIsRunStatusOpen(!isRunStatusOpen)}
-                                        title={selectedRunStatusFilter === 'all' ? 'All Run Statuses' : selectedRunStatusFilter}
-                                        className={`flex items-center gap-1 px-2 py-0.5 text-sm font-medium rounded-md transition-all ${selectedRunStatusFilter !== 'all'
-                                            ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                            : 'text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                                            }`}
-                                    >
-                                        <CheckCircle2 size={14} className={selectedRunStatusFilter !== 'all' ? 'text-blue-500 dark:text-blue-400 flex-shrink-0' : 'text-gray-400 dark:text-gray-500 flex-shrink-0'} />
-                                        <span className="max-w-[140px] truncate">{selectedRunStatusFilter === 'all' ? 'All Statuses' : selectedRunStatusFilter}</span>
-                                        <ChevronDown size={14} className={`text-gray-400 dark:text-gray-400 transition-transform flex-shrink-0 ${isRunStatusOpen ? 'rotate-180' : ''}`} />
-                                    </button>
-
-                                    {isRunStatusOpen && (
-                                        <div className="absolute top-full left-0 mt-1 w-56 sm:w-72 max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 z-50 animate-in fade-in zoom-in-95 duration-100">
-                                            <div className="px-3 py-2 border-b border-gray-50 dark:border-gray-700">
-                                                <p className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Filter by Run Status</p>
-                                            </div>
-
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedRunStatusFilter('all');
-                                                    setIsRunStatusOpen(false);
-                                                }}
-                                                className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedRunStatusFilter === 'all' ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
-                                            >
-                                                <CheckCircle2 size={14} className={selectedRunStatusFilter === 'all' ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 dark:text-gray-500'} />
-                                                <span className="flex-1">All Statuses</span>
-                                                {selectedRunStatusFilter === 'all' && <Check size={14} />}
-                                            </button>
-
-                                            <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
-
-                                            <div className="max-h-64 overflow-y-auto">
-                                                {runStatusOptions.map((status) => (
-                                                    <button
-                                                        key={status}
-                                                        onClick={() => {
-                                                            setSelectedRunStatusFilter(status);
-                                                            setIsRunStatusOpen(false);
-                                                        }}
-                                                        title={status}
-                                                        className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedRunStatusFilter === status ? 'text-blue-500 dark:text-blue-400 bg-blue-500/10 dark:bg-blue-400/20' : 'text-gray-700 dark:text-gray-300'}`}
-                                                    >
-                                                        <span className={`inline-flex min-w-[72px] justify-center rounded-full border px-2 py-0.5 text-xs font-semibold ${getRunItemStatusBadgeColor(status)}`}>
-                                                            {status}
-                                                        </span>
-                                                        <span className="truncate flex-1">{status}</span>
-                                                        {selectedRunStatusFilter === status && <Check size={14} />}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                            </div>
-                            <span className={`px-2 py-0.5 text-xs font-medium rounded-full border ${getRunStatusColor(testRun.status)}`}>
-                                {testRun.status}
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    <div className="min-w-0 flex-1">
+                        <h2 className="truncate text-base font-semibold text-gray-900 dark:text-gray-100">{testRun.title}</h2>
+                        <div className="hidden sm:flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                             <span>{executedCount} / {totalItems} executed ({totalItems > 0 ? Math.round((executedCount / totalItems) * 100) : 0}%)</span>
                             <span>{testRun.resultsSummary.passRate}% pass rate</span>
                         </div>
                     </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    {/* Export dropdown */}
-                    <div ref={exportRef} className="relative">
+
+                    <span className={`hidden sm:inline-flex px-2 py-0.5 text-xs font-medium rounded-full border flex-shrink-0 ${getRunStatusColor(testRun.status)}`}>
+                        {testRun.status}
+                    </span>
+
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                        {/* Export dropdown */}
+                        <div ref={exportRef} className="relative">
+                            <button
+                                onClick={() => setIsExportOpen(prev => !prev)}
+                                className="flex items-center gap-1 p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                                title="Export test run"
+                            >
+                                <Download className="w-4 h-4" />
+                                <ChevronDown className="w-3 h-3" />
+                            </button>
+                            {isExportOpen && (
+                                <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
+                                    <button
+                                        onClick={handleExportXLSX}
+                                        className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    >
+                                        <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                        Export as XLSX
+                                    </button>
+                                    <button
+                                        onClick={handleExportCSV}
+                                        className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                    >
+                                        <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                        Export as CSV
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                         <button
-                            onClick={() => setIsExportOpen(prev => !prev)}
-                            className="flex items-center gap-1 p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                            title="Export test run"
+                            onClick={handleComplete}
+                            disabled={executedCount < totalItems}
+                            className={`hidden sm:inline-flex px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                                executedCount < totalItems
+                                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed opacity-60'
+                                    : 'text-white bg-blue-600 hover:bg-blue-700'
+                            }`}
+                            title={executedCount < totalItems ? 'Complete all test cases first' : 'Complete Run'}
                         >
-                            <Download className="w-4 h-4" />
-                            <ChevronDown className="w-3 h-3" />
+                            Complete Run
                         </button>
-                        {isExportOpen && (
-                            <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 overflow-hidden">
-                                <button
-                                    onClick={handleExportXLSX}
-                                    className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                    <FileText className="w-4 h-4 text-green-600 dark:text-green-400" />
-                                    Export as XLSX
-                                </button>
-                                <button
-                                    onClick={handleExportCSV}
-                                    className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                                >
-                                    <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                    Export as CSV
-                                </button>
-                            </div>
-                        )}
                     </div>
-                    <button
-                        onClick={handleComplete}
-                        disabled={executedCount < totalItems}
-                        className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                            executedCount < totalItems
-                                ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed opacity-60'
-                                : 'text-white bg-blue-600 hover:bg-blue-700'
-                        }`}
-                        title={executedCount < totalItems ? 'Complete all test cases first' : 'Complete Run'}
-                    >
-                        Complete Run
-                    </button>
+                </div>
+
+                {/* Filter row: collapsed behind a toggle on mobile, inline on desktop */}
+                <div className="px-2 pb-2 sm:px-3 sm:pb-2">
+                    {isSmallScreen ? (
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setIsFilterPanelOpen(prev => !prev)}
+                                aria-expanded={isFilterPanelOpen}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-colors ${
+                                    activeFilterCount > 0
+                                        ? 'text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30'
+                                        : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                }`}
+                            >
+                                <SlidersHorizontal className="w-3.5 h-3.5" />
+                                <span>Filters</span>
+                                {activeFilterCount > 0 && (
+                                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold text-white bg-blue-500">
+                                        {activeFilterCount}
+                                    </span>
+                                )}
+                                <ChevronDown className={`w-3 h-3 transition-transform ${isFilterPanelOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {activeFilterCount > 0 && (
+                                <button
+                                    onClick={resetFilters}
+                                    className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 underline"
+                                >
+                                    Reset
+                                </button>
+                            )}
+                            {!isFilterPanelOpen && (
+                                <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">
+                                    {filteredItems.length} / {testRun.items.length} {filteredItems.length === 1 ? 'item' : 'items'}
+                                </span>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                            {renderFilterChips()}
+                            {activeFilterCount > 0 && (
+                                <button
+                                    onClick={resetFilters}
+                                    className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 underline"
+                                >
+                                    Reset
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    {isSmallScreen && isFilterPanelOpen && (
+                        <div className="mt-1.5 pt-2 border-t border-gray-50 dark:border-gray-700/60 flex flex-wrap items-center gap-1.5">
+                            {renderFilterChips()}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -859,6 +935,30 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
                         })}
                     </div>
                 )}
+            </div>
+
+            {/* Mobile: executed summary + primary action (sticky footer) */}
+            <div className="sm:hidden flex items-center gap-3 px-3 py-2.5 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 flex-shrink-0">
+                <div className="min-w-0 flex-shrink-0">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                        <span className="font-semibold text-gray-900 dark:text-gray-100">{executedCount}/{totalItems}</span> executed
+                    </div>
+                    <div className="text-[11px] text-gray-400 dark:text-gray-500">
+                        {testRun.resultsSummary.passRate}% pass rate
+                    </div>
+                </div>
+                <button
+                    onClick={handleComplete}
+                    disabled={executedCount < totalItems}
+                    className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                        executedCount < totalItems
+                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed opacity-60'
+                            : 'text-white bg-blue-600 active:bg-blue-700'
+                    }`}
+                    title={executedCount < totalItems ? 'Complete all test cases first' : 'Complete Run'}
+                >
+                    Complete Run
+                </button>
             </div>
         </div>
     );

@@ -173,7 +173,6 @@ const TicketsPage: React.FC = () => {
     // Virtualization setup
     const ROW_HEIGHT_ESTIMATE = 60;
     const tableScrollRef = useRef<HTMLDivElement>(null);
-    const mobileScrollRef = useRef<HTMLDivElement>(null);
     const [containerHeight, setContainerHeight] = useState(600);
 
     // Dynamically size the virtual container to fill available space
@@ -214,14 +213,6 @@ const TicketsPage: React.FC = () => {
             }
         };
     }, [filteredTickets.length, rowVirtualizer]);
-
-    // Mobile virtualization
-    const mobileVirtualizer = useVirtualizer({
-        count: filteredTickets.length,
-        getScrollElement: () => mobileScrollRef.current,
-        estimateSize: () => 120, // approximate mobile card height
-        overscan: 5,
-    });
 
     const hasActiveFilters = selectedStatusFilters.length > 0 || selectedPriorityFilters.length > 0 || selectedSeverityFilters.length > 0 || !!selectedFailureTypeFilter || !!selectedTeamFilter;
 
@@ -526,10 +517,10 @@ const TicketsPage: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col h-auto sm:h-full bg-white dark:bg-gray-900">
+        <div className="flex flex-col h-auto md:h-full bg-white dark:bg-gray-900">
             {/* Header area with quick filters */}
-            <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 sm:sticky sm:top-0 sm:z-20">
-                <div className="flex items-center gap-3 min-w-0">
+            <div className="flex flex-wrap items-center justify-between gap-2 md:gap-3 px-3 md:px-6 py-3 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 md:sticky md:top-0 md:z-20">
+                <div className="flex items-center gap-3 min-w-0 flex-1 md:flex-none">
                     <div className="flex items-center gap-2 min-w-0">
                         <Bug size={18} className="text-red-500 flex-shrink-0" />
                         <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
@@ -538,7 +529,7 @@ const TicketsPage: React.FC = () => {
                     </div>
 
                     {/* Desktop filter dropdowns */}
-                    <div ref={filterDropdownRef} className="hidden sm:flex items-center gap-2">
+                    <div ref={filterDropdownRef} className="hidden md:flex items-center gap-2">
                     {/* Status Filter */}
                     <div className="relative">
                         <button
@@ -883,7 +874,7 @@ const TicketsPage: React.FC = () => {
                 {/* Mobile Filters button */}
                 <button
                     onClick={() => setIsMobileFilterSheetOpen(true)}
-                    className={`sm:hidden flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors flex-shrink-0 ${
+                    className={`md:hidden flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors flex-shrink-0 ${
                         hasActiveFilters
                             ? 'border-blue-400 dark:border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
                             : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600'
@@ -894,7 +885,7 @@ const TicketsPage: React.FC = () => {
                     Filters
                     {hasActiveFilters && (
                         <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 text-[10px] font-bold bg-blue-500 text-white rounded-full">
-                            {selectedStatusFilters.length + selectedPriorityFilters.length + selectedSeverityFilters.length}
+                            {selectedStatusFilters.length + selectedPriorityFilters.length + selectedSeverityFilters.length + (selectedFailureTypeFilter ? 1 : 0) + (selectedTeamFilter ? 1 : 0)}
                         </span>
                     )}
                 </button>
@@ -961,7 +952,7 @@ const TicketsPage: React.FC = () => {
                     </div>
 
                     {/* Status text */}
-                    <div className="flex justify-end px-4 sm:px-6 py-1.5">
+                    <div className="flex justify-end px-4 md:px-6 py-1.5">
                         <div className="text-xs text-gray-400 dark:text-gray-500">
                             {hasActiveFilters ? (
                                 <>Showing {filteredTickets.length} of {tickets.length} tickets</>
@@ -979,7 +970,7 @@ const TicketsPage: React.FC = () => {
                     {/* Desktop table */}
                     <div
                         ref={tableScrollRef}
-                        className="hidden sm:block"
+                        className="hidden md:block"
                         style={{ height: containerHeight, overflowY: 'auto' }}
                     >
                     <table className="w-full">
@@ -1131,125 +1122,103 @@ const TicketsPage: React.FC = () => {
                     </div>
 
                     {/* Mobile ticket cards */}
-                    <div
-                        ref={mobileScrollRef}
-                        className="sm:hidden flex-1 overflow-auto"
-                        style={{ padding: '0.5rem' }}
-                    >
-                        <div style={{ height: mobileVirtualizer.getTotalSize(), position: 'relative' }}>
-                            {mobileVirtualizer.getVirtualItems().map((virtualRow) => {
-                                const ticket = filteredTickets[virtualRow.index];
-                                if (!ticket) return null;
-                                return (
-                                <div
-                                    key={ticket.id}
-                                    style={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        width: '100%',
-                                        transform: `translateY(${virtualRow.start}px)`,
-                                    }}
-                                    ref={mobileVirtualizer.measureElement}
-                                    data-index={virtualRow.index}
-                                >
-                                <div
-                                    onClick={() => openTicketDetail(ticket)}
-                                    className="relative mac-card overflow-hidden cursor-pointer transition-all active:scale-[0.98] mb-3"
-                                >
-                                    {/* Priority Color Bar */}
-                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${getTicketPriorityBarColor(ticket.priority)}`} />
+                    <div className="md:hidden px-2 pt-2 pb-1">
+                        {filteredTickets.map((ticket) => (
+                            <div
+                                key={ticket.id}
+                                onClick={() => openTicketDetail(ticket)}
+                                className="relative mac-card overflow-hidden cursor-pointer transition-all active:scale-[0.98] mb-3"
+                            >
+                                {/* Priority Color Bar */}
+                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${getTicketPriorityBarColor(ticket.priority)}`} />
 
-                                    <div className="p-4 pl-5">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="flex-1 min-w-0">
-                                                {/* Top Row: Status, Priority, Severity */}
-                                                <div className="flex items-center flex-wrap gap-1.5 mb-2">
-                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getTicketStatusColor(ticket.status)}`}>
-                                                        {ticket.status}
+                                <div className="p-4 pl-5">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="flex-1 min-w-0">
+                                            {/* Top Row: Status, Priority, Severity */}
+                                            <div className="flex items-center flex-wrap gap-1.5 mb-2">
+                                                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getTicketStatusColor(ticket.status)}`}>
+                                                    {ticket.status}
+                                                </span>
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getTicketPriorityColor(ticket.priority)}`}>
+                                                    {ticket.priority}
+                                                </span>
+                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getTicketSeverityColor(ticket.severity)}`}>
+                                                    {ticket.severity}
+                                                </span>
+                                                {ticket.failureType && (
+                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getFailureTypeColor(ticket.failureType)}`}>
+                                                        {ticket.failureType}
                                                     </span>
-                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getTicketPriorityColor(ticket.priority)}`}>
-                                                        {ticket.priority}
-                                                    </span>
-                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getTicketSeverityColor(ticket.severity)}`}>
-                                                        {ticket.severity}
-                                                    </span>
-                                                    {ticket.failureType && (
-                                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getFailureTypeColor(ticket.failureType)}`}>
-                                                            {ticket.failureType}
-                                                        </span>
-                                                    )}
-                                                    {ticket.firstReproducedAt && (
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400">
-                                                            Reproduced
-                                                        </span>
-                                                    )}
-                                                    {(ticket.returnedCount ?? 0) > 0 && (
-                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
-                                                            Returned ×{ticket.returnedCount}
-                                                        </span>
-                                                    )}
-                                                </div>
-
-                                                {/* Title */}
-                                                <h4 className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
-                                                    {ticket.title}
-                                                </h4>
-
-                                                {/* Tags */}
-                                                {ticket.tags.length > 0 && (
-                                                    <div className="flex items-center gap-1 mt-2">
-                                                        {ticket.tags.slice(0, 3).map((tag) => (
-                                                            <span
-                                                                key={tag}
-                                                                className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getTagColor(tag)}`}
-                                                            >
-                                                                {tag}
-                                                            </span>
-                                                        ))}
-                                                        {ticket.tags.length > 3 && (
-                                                            <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                                                                +{ticket.tags.length - 3}
-                                                            </span>
-                                                        )}
-                                                    </div>
                                                 )}
-
-                                                {/* Footer: Assignee & Date */}
-                                                <div className="mt-4 flex items-center justify-between gap-2">
-                                                    <div className="flex items-center gap-2 min-w-0">
-                                                        {ticket.assignedTo ? (
-                                                            <>
-                                                                <img
-                                                                    src={ticket.assignedTo.avatar}
-                                                                    alt={ticket.assignedTo.name}
-                                                                    className="h-5 w-5 rounded-full border border-gray-200 dark:border-gray-700 flex-shrink-0"
-                                                                />
-                                                                <span className="text-xs text-gray-600 dark:text-gray-400 font-medium truncate">
-                                                                    {ticket.assignedTo.name}
-                                                                </span>
-                                                            </>
-                                                        ) : (
-                                                            <span className="text-xs text-gray-400 dark:text-gray-500">Unassigned</span>
-                                                        )}
-                                                    </div>
-                                                    <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-tight flex-shrink-0">
-                                                        {new Date(ticket.createdAt).toLocaleDateString('en-US', {
-                                                            month: 'short',
-                                                            day: 'numeric',
-                                                        })}
+                                                {ticket.firstReproducedAt && (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400">
+                                                        Reproduced
                                                     </span>
-                                                </div>
+                                                )}
+                                                {(ticket.returnedCount ?? 0) > 0 && (
+                                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+                                                        Returned ×{ticket.returnedCount}
+                                                    </span>
+                                                )}
                                             </div>
 
-                                            <ChevronRight className="h-5 w-5 text-gray-300 dark:text-gray-600 flex-shrink-0 mt-1" />
+                                            {/* Title */}
+                                            <h4 className="text-[15px] font-semibold text-gray-900 dark:text-gray-100 leading-snug line-clamp-2">
+                                                {ticket.title}
+                                            </h4>
+
+                                            {/* Tags */}
+                                            {ticket.tags.length > 0 && (
+                                                <div className="flex items-center gap-1 mt-2">
+                                                    {ticket.tags.slice(0, 3).map((tag) => (
+                                                        <span
+                                                            key={tag}
+                                                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${getTagColor(tag)}`}
+                                                        >
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                    {ticket.tags.length > 3 && (
+                                                        <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                                                            +{ticket.tags.length - 3}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {/* Footer: Assignee & Date */}
+                                            <div className="mt-4 flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2 min-w-0">
+                                                    {ticket.assignedTo ? (
+                                                        <>
+                                                            <img
+                                                                src={ticket.assignedTo.avatar}
+                                                                alt={ticket.assignedTo.name}
+                                                                className="h-5 w-5 rounded-full border border-gray-200 dark:border-gray-700 flex-shrink-0"
+                                                            />
+                                                            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium truncate">
+                                                                {ticket.assignedTo.name}
+                                                            </span>
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400 dark:text-gray-500">Unassigned</span>
+                                                    )}
+                                                </div>
+                                                <span className="text-[10px] text-gray-400 dark:text-gray-500 font-medium uppercase tracking-tight flex-shrink-0">
+                                                    {new Date(ticket.createdAt).toLocaleDateString('en-US', {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                    })}
+                                                </span>
+                                            </div>
                                         </div>
+
+                                        <ChevronRight className="h-5 w-5 text-gray-300 dark:text-gray-600 flex-shrink-0 mt-1" />
                                     </div>
                                 </div>
-                                </div>
-                                );
-                            })}
-                        </div>
+                            </div>
+                        ))}
                     </div>
 
                     {/* Load more sentinel */}
@@ -1265,7 +1234,7 @@ const TicketsPage: React.FC = () => {
                     )}
 
                     {/* Status text */}
-                    <div className="flex justify-end px-4 sm:px-0">
+                    <div className="flex justify-end px-4 md:px-0">
                         <div className="text-xs text-gray-400 dark:text-gray-500">
                             {hasActiveFilters ? (
                                 <>Showing {filteredTickets.length} of {tickets.length} tickets</>

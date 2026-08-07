@@ -80,7 +80,7 @@ const KanbanColumn: React.FC<KanbanColumnProps> = React.memo(({
     return (
         <div
             ref={setNodeRef}
-            className={`flex flex-col h-full w-[300px] shrink-0 rounded-xl border bg-gray-50/80 dark:bg-gray-800/40 shadow-sm transition-all duration-150 ${
+            className={`flex flex-col h-full w-[78vw] md:w-[300px] shrink-0 rounded-xl border bg-gray-50/80 dark:bg-gray-800/40 shadow-sm transition-all duration-150 ${
                 isDropTarget
                     ? 'border-blue-400 dark:border-blue-500 bg-blue-50/60 dark:bg-blue-900/15 ring-2 ring-blue-400/30 dark:ring-blue-500/30 shadow-lg'
                     : 'border-gray-200 dark:border-gray-700'

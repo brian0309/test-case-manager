@@ -217,7 +217,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({
             onDragEnd={handleDragEnd}
             onDragCancel={handleDragCancel}
         >
-            <div className="flex h-full gap-4 px-5 py-4 overflow-x-auto overflow-y-hidden custom-scrollbar">
+            <div className="flex h-full gap-3 md:gap-4 px-3 py-3 md:px-5 md:py-4 overflow-x-auto overflow-y-hidden custom-scrollbar">
                 {KANBAN_STATUSES.map((status) => (
                     <SortableContext
                         key={status}
