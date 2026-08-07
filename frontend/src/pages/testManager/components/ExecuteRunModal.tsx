@@ -14,7 +14,7 @@ import {
     Layers,
     MapPin,
 } from 'lucide-react';
-import { TestRun, RunItem, RunItemStatus, TestCase, TestSuite, CaseSnapshot } from '../../../types/testManager';
+import { TestRun, RunItem, RunItemStatus, TestCase, TestSuite, CaseSnapshot, CustomFieldDefinition } from '../../../types/testManager';
 import { CreateTicketRequest } from '../../../types/api/testManager.api';
 import RichTextEditor from '../../../components/testManager/RichTextEditor';
 import FailBugPrompt, { FailBugPromptData } from './FailBugPrompt';
@@ -47,6 +47,54 @@ const DIVERGENCE_FIELDS = [
 
 type OptimisticRunItemOverride = Pick<RunItem, 'status' | 'actualResult'>;
 
+const CustomFieldsSnapshot: React.FC<{
+    snapshotCustomFields?: Record<string, string>;
+    definitions: CustomFieldDefinition[];
+}> = ({ snapshotCustomFields, definitions }) => {
+    const activeDefs = definitions.filter((f) => !f.deleted);
+    const fieldsWithContent = activeDefs.filter((field) => {
+        const value = snapshotCustomFields?.[field.id] || '';
+        return value && value.trim() !== '';
+    });
+
+    if (fieldsWithContent.length === 0) return null;
+
+    return (
+        <div className="mb-5 sm:mb-6">
+            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Custom Fields</h4>
+            <div className="space-y-3">
+                {fieldsWithContent.map((field) => {
+                    const value = snapshotCustomFields?.[field.id] || '';
+                    return (
+                        <div key={field.id}>
+                            <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">
+                                {field.label}
+                            </div>
+                            {field.type === 'text' || field.type === 'dropdown' ? (
+                                <div className="text-sm text-gray-600 dark:text-gray-400">
+                                    {field.type === 'dropdown'
+                                        ? (field.options?.find((opt) => opt.id === value)?.label || value)
+                                        : value}
+                                </div>
+                            ) : field.type === 'long_text' ? (
+                                <div className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                                    {value}
+                                </div>
+                            ) : (
+                                <RichTextEditor
+                                    content={value}
+                                    onChange={() => {}}
+                                    editable={false}
+                                />
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
 interface PendingFail {
     itemId: string;
     caseSnapshot: CaseSnapshot;
@@ -65,6 +113,7 @@ export interface ExecuteRunModalProps {
     itemOrder?: number[];
     availableTestCases?: TestCase[];
     availableSuites?: TestSuite[];
+    customFieldDefinitions?: CustomFieldDefinition[];
     tagSuggestions?: string[];
 }
 
@@ -79,6 +128,7 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
     itemOrder,
     availableTestCases = [],
     availableSuites = [],
+    customFieldDefinitions = [],
     tagSuggestions = [],
 }) => {
     const [currentIndex, setCurrentIndex] = useState(startIndex);
@@ -202,6 +252,16 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
             if (snapshotNorm === liveNorm) continue;
 
             changedFields.push({ field, snapshotValue, liveValue });
+        }
+
+        const snapshotCustomFields = snapshot.customFields || {};
+        const liveCustomFields = live.customFields || {};
+        const allCustomFieldKeys = new Set([...Object.keys(snapshotCustomFields), ...Object.keys(liveCustomFields)]);
+        for (const key of allCustomFieldKeys) {
+            const snapshotValue = snapshotCustomFields[key] || '';
+            const liveValue = liveCustomFields[key] || '';
+            if (stripHtml(snapshotValue).trim() === stripHtml(liveValue).trim()) continue;
+            changedFields.push({ field: `customFields.${key}`, snapshotValue, liveValue });
         }
 
         return { sourceCaseDeleted: false, changedFields };
@@ -460,7 +520,9 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                                 {caseDivergence.changedFields.map((field) => (
                                     <div key={field.field} className="text-xs">
                                         <div className="font-semibold text-amber-700 dark:text-amber-400 mb-1">
-                                            {DIVERGENCE_FIELD_LABELS[field.field] || field.field}
+                                            {field.field.startsWith('customFields.')
+                                                ? (customFieldDefinitions.find((f) => `customFields.${f.id}` === field.field)?.label || field.field)
+                                                : (DIVERGENCE_FIELD_LABELS[field.field] || field.field)}
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             <div className="rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2">
@@ -506,6 +568,22 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                         <div className="mb-5 sm:mb-6">
                             <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Expected Result</h4>
                             <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{currentItem.caseSnapshot.expectedResult}</p>
+                        </div>
+                    )}
+
+                    <CustomFieldsSnapshot
+                        snapshotCustomFields={currentItem.caseSnapshot.customFields}
+                        definitions={customFieldDefinitions}
+                    />
+
+                    {currentItem.caseSnapshot.comments && (
+                        <div className="mb-5 sm:mb-6">
+                            <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Comments</h4>
+                            <RichTextEditor
+                                content={currentItem.caseSnapshot.comments}
+                                onChange={() => {}}
+                                editable={false}
+                            />
                         </div>
                     )}
 

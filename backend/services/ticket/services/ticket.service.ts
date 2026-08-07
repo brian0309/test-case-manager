@@ -190,6 +190,30 @@ export const computeDivergence = async (ticket: {
     });
   }
 
+  // Compare custom fields (dynamic keys per project)
+  const snapshotCustomFields =
+    (snapshot as unknown as Record<string, unknown>).customFields ?? {};
+  const liveCustomFields =
+    (testCase as unknown as Record<string, unknown>).customFields ?? {};
+  const allCustomFieldKeys = new Set([
+    ...Object.keys(snapshotCustomFields),
+    ...Object.keys(liveCustomFields),
+  ]);
+  for (const key of allCustomFieldKeys) {
+    const snapshotValue = String(
+      (snapshotCustomFields as Record<string, unknown>)[key] ?? ""
+    );
+    const liveValue = String(
+      (liveCustomFields as Record<string, unknown>)[key] ?? ""
+    );
+    if (normalizePlain(snapshotValue) === normalizePlain(liveValue)) continue;
+    changedFields.push({
+      field: `customFields.${key}`,
+      snapshotValue,
+      liveValue,
+    });
+  }
+
   return {
     hasDiverged: changedFields.length > 0,
     sourceCaseDeleted: false,

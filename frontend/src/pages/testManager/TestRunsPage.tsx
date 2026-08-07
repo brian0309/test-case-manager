@@ -11,10 +11,12 @@ import {
     RunItemStatus,
     TestRun,
     TestRunGroup,
+    CustomFieldDefinition,
 } from '../../types/testManager';
 import { CreateTicketRequest } from '../../types/api/testManager.api';
 import { testRunApi } from '../../services/testRunApi';
 import { useRealtimeTestRuns } from '../../hooks/useRealtimeTestRuns';
+import { useProjectSettings } from '../../hooks/useTestManagerSelectors';
 import {
     Play,
     Clock,
@@ -89,6 +91,8 @@ const TestRunsPage: React.FC = () => {
         shallow
     );
     const [searchParams, setSearchParams] = useSearchParams();
+    const projectSettings = useProjectSettings(activeProject || '');
+    const customFieldDefinitions: CustomFieldDefinition[] = (projectSettings?.testCases?.customFields || []).filter((f: CustomFieldDefinition) => !f.deleted);
     const [testRuns, setTestRuns] = useState<TestRunListItem[]>([]);
     const [testRunGroups, setTestRunGroups] = useState<TestRunGroup[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -702,6 +706,7 @@ const TestRunsPage: React.FC = () => {
                         onOpenExecute={handleOpenExecuteFromDetail}
                         availableTestCases={testCases}
                         availableSuites={testSuites}
+                        customFieldDefinitions={customFieldDefinitions}
                     />
                 ) : null}
 
@@ -721,6 +726,7 @@ const TestRunsPage: React.FC = () => {
                     itemOrder={executeItemOrder}
                     availableTestCases={testCases}
                     availableSuites={testSuites}
+                    customFieldDefinitions={customFieldDefinitions}
                 />
             </>
         );

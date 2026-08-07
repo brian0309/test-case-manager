@@ -3,7 +3,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import toast from 'react-hot-toast';
 import { ArrowLeft, ChevronRight, Eye, Layers, Map as MapIcon, ChevronDown, ChevronUp, Check, ArrowUpDown, CheckCircle2, Download, FileText, SlidersHorizontal } from 'lucide-react';
 import { useMediaQuery } from '../../../hooks/useMediaQuery';
-import { TestRun, RunItemStatus, RunItem, TestCase, TestSuite } from '../../../types/testManager';
+import { TestRun, RunItemStatus, RunItem, TestCase, TestSuite, CustomFieldDefinition } from '../../../types/testManager';
 import { exportTestRunToCSV, exportTestRunToXLSX } from '../../../utils/exportTestRun';
 import {
     getRunStatusColor,
@@ -20,6 +20,7 @@ export interface RunDetailViewProps {
     onOpenExecute: (itemIndex: number, itemOrder?: number[]) => void;
     availableTestCases?: TestCase[];
     availableSuites?: TestSuite[];
+    customFieldDefinitions?: CustomFieldDefinition[];
     searchQuery?: string;
 }
 
@@ -31,6 +32,7 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
     onOpenExecute,
     availableTestCases = [],
     availableSuites = [],
+    customFieldDefinitions = [],
     searchQuery = '',
 }) => {
     const [selectedAreaFilter, setSelectedAreaFilter] = useState<string>('all');
@@ -275,7 +277,7 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
 
     const handleExportCSV = () => {
         try {
-            exportTestRunToCSV(testRun, itemSuiteNameByItemId);
+            exportTestRunToCSV(testRun, itemSuiteNameByItemId, customFieldDefinitions);
             setIsExportOpen(false);
         } catch (error: unknown) {
             toast.error((error as Error).message || 'Failed to export test run as CSV. Please try again.');
@@ -284,7 +286,7 @@ const RunDetailView: React.FC<RunDetailViewProps> = ({
 
     const handleExportXLSX = () => {
         try {
-            exportTestRunToXLSX(testRun, itemSuiteNameByItemId);
+            exportTestRunToXLSX(testRun, itemSuiteNameByItemId, customFieldDefinitions);
             setIsExportOpen(false);
         } catch (error: unknown) {
             toast.error((error as Error).message || 'Failed to export test run as XLSX. Please try again.');
@@ -898,6 +900,15 @@ const activeFilterCount = [selectedSuiteFilter, selectedAreaFilter, selectedRunS
                                                             {itemSuiteNameByItemId.get(item.id)}
                                                         </div>
                                                     )}
+
+                                                    {customFieldDefinitions
+                                                        .filter(f => !f.deleted)
+                                                        .filter(field => (item.caseSnapshot.customFields?.[field.id] || '').trim() !== '')
+                                                        .map(field => (
+                                                            <div key={field.id} className="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate">
+                                                                <span className="text-gray-400 dark:text-gray-500">{field.label}:</span> {item.caseSnapshot.customFields?.[field.id] || ''}
+                                                            </div>
+                                                        ))}
 
                                                     {/* Footer: Priority & Status change */}
                                                     <div className="mt-4 flex items-center justify-between">

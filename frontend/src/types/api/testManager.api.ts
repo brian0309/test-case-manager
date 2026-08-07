@@ -256,6 +256,9 @@ export interface CaseSnapshotResponse {
   expectedResult?: string;
   testDescription?: string;
   stepsContent?: string;
+  status?: string;
+  comments?: string;
+  customFields?: Record<string, string>;
 }
 
 export interface RunItemResponse {

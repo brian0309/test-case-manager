@@ -16,6 +16,13 @@ const caseSnapshotSchema = new Schema(
     expectedResult: { type: String },
     testDescription: { type: String },
     stepsContent: { type: String },
+    status: { type: String },
+    comments: { type: String },
+    customFields: {
+      type: Map,
+      of: String,
+      default: {},
+    },
   },
   { _id: false }
 );

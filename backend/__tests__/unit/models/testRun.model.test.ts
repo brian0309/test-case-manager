@@ -157,11 +157,21 @@ describe('TestRun Model', () => {
         expectedResult: 'User should be logged in',
         testDescription: 'Test the login functionality',
         stepsContent: '1. Navigate to login\n2. Enter credentials\n3. Click login',
+        status: 'Approved',
+        comments: '<p>Comment for testers</p>',
+        customFields: {
+          'field-1': 'Desktop',
+          'field-2': 'Prod',
+        },
       };
 
       expect(caseSnapshot.title).toBeTruthy();
       expect(caseSnapshot.priority).toBe('High');
       expect(caseSnapshot.area).toBe('Authentication');
+      expect(caseSnapshot.status).toBe('Approved');
+      expect(caseSnapshot.comments).toContain('Comment for testers');
+      expect(caseSnapshot.customFields['field-1']).toBe('Desktop');
+      expect(caseSnapshot.customFields['field-2']).toBe('Prod');
     });
   });
 

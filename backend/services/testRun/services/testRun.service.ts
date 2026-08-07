@@ -68,6 +68,9 @@ const buildCaseSnapshot = (testCase: any): ICaseSnapshot => {
     expectedResult: testCase.expectedResult,
     testDescription: testCase.testDescription,
     stepsContent: testCase.stepsContent,
+    status: testCase.status,
+    comments: testCase.comments,
+    customFields: testCase.customFields || {},
   };
 };
 

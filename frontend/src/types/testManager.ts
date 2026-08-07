@@ -168,6 +168,9 @@ export interface CaseSnapshot {
     expectedResult?: string;
     testDescription?: string;
     stepsContent?: string;
+    status?: string;
+    comments?: string;
+    customFields?: Record<string, string>;
 }
 
 export interface RunItem {

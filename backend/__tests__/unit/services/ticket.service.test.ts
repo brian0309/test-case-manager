@@ -140,6 +140,40 @@ describe('ticketService - computeDivergence', () => {
     expect(result.hasDiverged).toBe(false);
     expect(result.changedFields).toEqual([]);
   });
+
+  it('reports changed custom fields between snapshot and live case', async () => {
+    const snapshotWithCustomFields = {
+      ...snapshot,
+      customFields: { 'field-1': 'Desktop', 'field-2': 'Prod' },
+    };
+    mockTestRunFindById.mockReturnValue(
+      buildChain({ items: [{ _id: new Types.ObjectId(itemId), caseId: new Types.ObjectId(caseId), caseSnapshot: snapshotWithCustomFields }] })
+    );
+    mockTestCaseFindById.mockReturnValue(
+      buildChain({ ...snapshotWithCustomFields, customFields: { 'field-1': 'Mobile', 'field-2': 'Prod' } })
+    );
+
+    const result = await ticketService.computeDivergence({ relatedRunId: runId, relatedRunItemId: itemId });
+    expect(result.hasDiverged).toBe(true);
+    expect(result.changedFields.map((f) => f.field)).toEqual(['customFields.field-1']);
+    expect(result.changedFields[0]?.snapshotValue).toBe('Desktop');
+    expect(result.changedFields[0]?.liveValue).toBe('Mobile');
+  });
+
+  it('reports custom fields added to the live case after the run snapshot', async () => {
+    mockTestRunFindById.mockReturnValue(
+      buildChain({ items: [{ _id: new Types.ObjectId(itemId), caseId: new Types.ObjectId(caseId), caseSnapshot: snapshot }] })
+    );
+    mockTestCaseFindById.mockReturnValue(
+      buildChain({ ...snapshot, customFields: { 'field-3': 'iOS' } })
+    );
+
+    const result = await ticketService.computeDivergence({ relatedRunId: runId, relatedRunItemId: itemId });
+    expect(result.hasDiverged).toBe(true);
+    expect(result.changedFields.map((f) => f.field)).toEqual(['customFields.field-3']);
+    expect(result.changedFields[0]?.snapshotValue).toBe('');
+    expect(result.changedFields[0]?.liveValue).toBe('iOS');
+  });
 });
 
 describe('ticketService - markTicketReproduced', () => {

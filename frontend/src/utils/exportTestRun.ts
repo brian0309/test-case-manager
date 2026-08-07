@@ -4,7 +4,7 @@
  */
 
 import * as XLSX from 'xlsx';
-import { TestRun, RunItem } from '../types/testManager';
+import { TestRun, RunItem, CustomFieldDefinition } from '../types/testManager';
 import { stripHtmlPreserveLineBreaks } from './sanitize';
 
 /**
@@ -61,14 +61,25 @@ const RUN_EXPORT_HEADERS = [
     'Actual Result',
 ];
 
+function customFieldHeaders(customFieldDefinitions?: CustomFieldDefinition[]): string[] {
+    if (!customFieldDefinitions) return [];
+    return customFieldDefinitions
+        .filter(f => !f.deleted)
+        .map(f => f.label || f.key || f.id);
+}
+
 /**
  * Build the rows array for a test run export
  */
 function buildRunRows(
     testRun: TestRun,
-    suiteNameByItemId: Map<string, string | null>
+    suiteNameByItemId: Map<string, string | null>,
+    customFieldDefinitions?: CustomFieldDefinition[]
 ): string[][] {
-    const rows: string[][] = [RUN_EXPORT_HEADERS];
+    const activeCustomFields = customFieldDefinitions
+        ? customFieldDefinitions.filter(f => !f.deleted)
+        : [];
+    const rows: string[][] = [[...RUN_EXPORT_HEADERS, ...customFieldHeaders(customFieldDefinitions)]];
 
     testRun.items.forEach((item: RunItem, idx: number) => {
         const snap = item.caseSnapshot;
@@ -88,6 +99,12 @@ function buildRunRows(
             stripHtmlPreserveLineBreaks(snap.stepsContent),
             stripHtmlPreserveLineBreaks(snap.expectedResult),
             stripHtmlPreserveLineBreaks(item.actualResult),
+            ...activeCustomFields.map(field => {
+                const value = snap.customFields?.[field.id] || '';
+                return field.type === 'dropdown'
+                    ? (field.options?.find(opt => opt.id === value)?.label || value)
+                    : stripHtmlPreserveLineBreaks(value);
+            }),
         ]);
     });
 
@@ -108,9 +125,10 @@ function buildFilename(testRun: TestRun, extension: string): string {
  */
 export function exportTestRunToCSV(
     testRun: TestRun,
-    suiteNameByItemId: Map<string, string | null>
+    suiteNameByItemId: Map<string, string | null>,
+    customFieldDefinitions?: CustomFieldDefinition[]
 ): void {
-    const rows = buildRunRows(testRun, suiteNameByItemId);
+    const rows = buildRunRows(testRun, suiteNameByItemId, customFieldDefinitions);
     const csvRows = rows.map(row => row.map(cell => escapeCsvValue(cell)).join(','));
     const csvContent = csvRows.join('\r\n');
 
@@ -131,13 +149,14 @@ export function exportTestRunToCSV(
  */
 export function exportTestRunToXLSX(
     testRun: TestRun,
-    suiteNameByItemId: Map<string, string | null>
+    suiteNameByItemId: Map<string, string | null>,
+    customFieldDefinitions?: CustomFieldDefinition[]
 ): void {
-    const rows = buildRunRows(testRun, suiteNameByItemId);
+    const rows = buildRunRows(testRun, suiteNameByItemId, customFieldDefinitions);
     const ws = XLSX.utils.aoa_to_sheet(rows);
 
     // Auto-width columns
-    ws['!cols'] = RUN_EXPORT_HEADERS.map((header, i) => {
+    ws['!cols'] = [...RUN_EXPORT_HEADERS, ...customFieldHeaders(customFieldDefinitions)].map((header, i) => {
         let maxLen = header.length;
         for (let r = 1; r < rows.length; r++) {
             const cellLen = Math.min((rows[r][i] || '').length, 80);
