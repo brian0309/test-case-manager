@@ -6,17 +6,17 @@ on:
       - main
 
 jobs:
-test:
-     uses: ./.github/workflows/tests.yml
+  test:
+    uses: ./.github/workflows/tests.yml
 
-   lint:
-     uses: ./.github/workflows/lint.yml
+  lint:
+    uses: ./.github/workflows/lint.yml
 
-   type-check:
-     uses: ./.github/workflows/typecheck.yml
+  type-check:
+    uses: ./.github/workflows/typecheck.yml
 
-   build-and-deploy:
-     needs: [test, lint, type-check]
+  build-and-deploy:
+    needs: [test, lint, type-check]
     runs-on: ubuntu-latest
 
     permissions:
