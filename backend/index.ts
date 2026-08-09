@@ -93,7 +93,7 @@ if (process.env.NODE_ENV === "production" && process.env.VERCEL !== '1') {
 	// Serve static files from the actual frontend build directory (works from dist/backend)
 	app.use(express.static(path.join(__dirname, "../../frontend/dist")));
 
-	app.get("*", (req: Request, res: Response) => {
+	app.get("/{*splat}", (req: Request, res: Response) => {
 		res.sendFile(path.resolve(__dirname, "../../frontend/dist/index.html"));
 	});
 }
