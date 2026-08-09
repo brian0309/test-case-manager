@@ -293,6 +293,27 @@ const TicketsPage: React.FC = () => {
         }
     }, [searchParams, setSearchParams]);
 
+    // Handle status URL parameter for deep links (e.g. from the dashboard) — comma-separated multi-status
+    useEffect(() => {
+        const statusParam = searchParams.get('status');
+
+        if (!statusParam) return;
+
+        const statuses = statusParam
+            .split(',')
+            .filter((value): value is TicketStatus =>
+                (Object.values(TicketStatus) as string[]).includes(value)
+            );
+
+        if (statuses.length > 0) {
+            setSelectedStatusFilters(statuses);
+        }
+
+        const next = new URLSearchParams(searchParams);
+        next.delete('status');
+        setSearchParams(next, { replace: true });
+    }, [searchParams, setSearchParams]);
+
     // Fetch tickets (paginated) when project changes
     const loadTickets = useCallback(async (reset = true, offsetValue = 0) => {
         if (!activeProject) return;

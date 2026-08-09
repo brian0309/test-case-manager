@@ -3,6 +3,21 @@ import mongoose from "mongoose";
 import { Project } from "../../../models/project.model.js";
 import { TestSuite } from "../../../models/testSuite.model.js";
 import { TestCase } from "../../../models/testCase.model.js";
+import { Ticket } from "../../../models/ticket.model.js";
+import { TestRun } from "../../../models/testRun.model.js";
+import { TicketStatus } from "../../ticket/types/ticket.types.js";
+import { TestRunStatus } from "../../testRun/types/testRun.types.js";
+
+interface StatusCount {
+    status: string;
+    count: number;
+}
+
+const countByStatus = (groups: StatusCount[], statuses: string[]): { status: string; count: number }[] =>
+    statuses.map((status) => ({
+        status,
+        count: groups.find((group) => group.status === status)?.count ?? 0,
+    }));
 
 export const getDashboardStats = async (req: Request, res: Response) => {
     try {
@@ -183,6 +198,60 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error("Error fetching dashboard stats:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export const getProjectDashboardStats = async (req: Request, res: Response) => {
+    try {
+        const userId = req.userId;
+        const projectId = req.params.projectId as string;
+
+        if (!userId) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        if (!mongoose.Types.ObjectId.isValid(projectId)) {
+            return res.status(400).json({ message: "Invalid project id" });
+        }
+
+        const project = await Project.findOne({
+            _id: projectId,
+            $or: [
+                { ownerId: new mongoose.Types.ObjectId(userId) },
+                { members: new mongoose.Types.ObjectId(userId) }
+            ]
+        }).select('_id name');
+
+        if (!project) {
+            return res.status(404).json({ message: "Project not found" });
+        }
+
+        const [ticketGroups, runGroups, suitesCount, casesCount] = await Promise.all([
+            Ticket.aggregate<StatusCount>([
+                { $match: { projectId: project._id } },
+                { $group: { _id: "$status", count: { $sum: 1 } } },
+                { $project: { _id: 0, status: "$_id", count: 1 } },
+            ]),
+            TestRun.aggregate<StatusCount>([
+                { $match: { projectId: project._id } },
+                { $group: { _id: "$status", count: { $sum: 1 } } },
+                { $project: { _id: 0, status: "$_id", count: 1 } },
+            ]),
+            TestSuite.countDocuments({ projectId: project._id }),
+            TestCase.countDocuments({ projectId: project._id }),
+        ]);
+
+        res.status(200).json({
+            projectId: project._id.toString(),
+            projectName: project.name,
+            ticketsByStatus: countByStatus(ticketGroups, Object.values(TicketStatus)),
+            runsByStatus: countByStatus(runGroups, Object.values(TestRunStatus)),
+            suitesCount,
+            casesCount,
+        });
+    } catch (error) {
+        console.error("Error fetching project dashboard stats:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };

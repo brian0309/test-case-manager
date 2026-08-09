@@ -5,6 +5,7 @@ import { useAuthStore } from "../store/authStore";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Clock, ArrowUp, ArrowDown, LucideIcon, Folder, Layers, CheckSquare } from 'lucide-react';
 import { getDashboardStats, DashboardStats } from "../services/statisticsApi";
+import ProjectOverviewSection from "../components/dashboard/ProjectOverviewSection";
 
 interface Stat {
   name: string;
@@ -75,6 +76,9 @@ const DashboardPage: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight dark:text-gray-100">Welcome back, {user?.name || 'User'}! 👋</h1>
         <p className="text-gray-500 mt-1 dark:text-gray-400">Here's what's happening with your dashboard today.</p>
       </div>
+
+      {/* Project Overview (when a project is selected) */}
+      <ProjectOverviewSection />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

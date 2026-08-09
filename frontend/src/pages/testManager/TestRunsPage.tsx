@@ -12,6 +12,7 @@ import {
     TestRun,
     TestRunGroup,
     CustomFieldDefinition,
+    TestRunStatus,
 } from '../../types/testManager';
 import { CreateTicketRequest } from '../../types/api/testManager.api';
 import { testRunApi } from '../../services/testRunApi';
@@ -24,6 +25,9 @@ import {
     Trash2,
     Copy,
     ChevronRight,
+    ChevronDown,
+    Filter,
+    Check,
     Layers,
     Menu,
     Edit2,
@@ -111,6 +115,9 @@ const TestRunsPage: React.FC = () => {
     const [executeStartIndex, setExecuteStartIndex] = useState(0);
     const [executeItemOrder, setExecuteItemOrder] = useState<number[] | undefined>(undefined);
     const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('all');
+    const [selectedRunStatusFilter, setSelectedRunStatusFilter] = useState<TestRunStatus | 'all'>('all');
+    const [isRunStatusFilterOpen, setIsRunStatusFilterOpen] = useState(false);
+    const runStatusFilterRef = useRef<HTMLDivElement>(null);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null);
     const [isDeleteGroupModalOpen, setIsDeleteGroupModalOpen] = useState(false);
@@ -168,6 +175,33 @@ const TestRunsPage: React.FC = () => {
         setSearchParams({}, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchParams]);
+
+    // Handle runStatus URL parameter for deep links (e.g. from the dashboard)
+    useEffect(() => {
+        const runStatusParam = searchParams.get('runStatus');
+
+        if (!runStatusParam) return;
+
+        if ((Object.values(TestRunStatus) as string[]).includes(runStatusParam)) {
+            setSelectedRunStatusFilter(runStatusParam as TestRunStatus);
+        }
+
+        const next = new URLSearchParams(searchParams);
+        next.delete('runStatus');
+        setSearchParams(next, { replace: true });
+    }, [searchParams, setSearchParams]);
+
+    // Close the run status filter dropdown on outside click
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (runStatusFilterRef.current && !runStatusFilterRef.current.contains(event.target as Node)) {
+                setIsRunStatusFilterOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Once test cases are loaded, resolve the pending suite selection and open modal
     useEffect(() => {
@@ -667,8 +701,12 @@ const TestRunsPage: React.FC = () => {
             return run.groupId ? groupIds.has(run.groupId) : false;
         });
 
-        return filterTestRunsBySearch(groupFilteredRuns, searchQuery, groupNameById);
-    }, [testRuns, selectedGroupFilter, searchQuery, groupNameById, allDescendantGroupIds]);
+        const statusFilteredRuns = selectedRunStatusFilter === 'all'
+            ? groupFilteredRuns
+            : groupFilteredRuns.filter((run) => run.status === selectedRunStatusFilter);
+
+        return filterTestRunsBySearch(statusFilteredRuns, searchQuery, groupNameById);
+    }, [testRuns, selectedGroupFilter, selectedRunStatusFilter, searchQuery, groupNameById, allDescendantGroupIds]);
 
     const isDetailLoading = Boolean(detailRunId) && (!detailRun || detailRun.id !== detailRunId);
 
@@ -810,6 +848,58 @@ const TestRunsPage: React.FC = () => {
 
                 {/* Test Runs List */}
                 <div ref={runsListContainerRef} className="flex-1 sm:overflow-auto p-4 bg-gray-50/50 dark:bg-gray-900">
+                    {/* Runs toolbar */}
+                    <div className="flex flex-wrap items-center gap-2 mb-4">
+                        <div className="relative" ref={runStatusFilterRef}>
+                            <button
+                                onClick={() => setIsRunStatusFilterOpen(!isRunStatusFilterOpen)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
+                                <Filter size={13} />
+                                <span className="hidden sm:inline">Status:</span>
+                                <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium border ${selectedRunStatusFilter === 'all' ? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600' : getRunStatusColor(selectedRunStatusFilter)}`}>
+                                    {selectedRunStatusFilter === 'all' ? 'All' : selectedRunStatusFilter}
+                                </span>
+                                <ChevronDown size={12} className={`text-gray-400 transition-transform ${isRunStatusFilterOpen ? 'rotate-180' : ''}`} />
+                            </button>
+                            {isRunStatusFilterOpen && (
+                                <div className="absolute top-full mt-2 left-0 z-30 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg w-52 overflow-hidden">
+                                    <p className="px-3 py-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">Run Status</p>
+                                    <button
+                                        onClick={() => {
+                                            setSelectedRunStatusFilter('all');
+                                            setIsRunStatusFilterOpen(false);
+                                        }}
+                                        className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                    >
+                                        <span>All statuses</span>
+                                        {selectedRunStatusFilter === 'all' && <Check size={14} className="text-system-blue" />}
+                                    </button>
+                                    {(Object.values(TestRunStatus) as TestRunStatus[]).map((status) => (
+                                        <button
+                                            key={status}
+                                            onClick={() => {
+                                                setSelectedRunStatusFilter(status);
+                                                setIsRunStatusFilterOpen(false);
+                                            }}
+                                            className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                        >
+                                            <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium border ${getRunStatusColor(status)}`}>{status}</span>
+                                            {selectedRunStatusFilter === status && <Check size={14} className="text-system-blue" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        {selectedRunStatusFilter !== 'all' && (
+                            <button
+                                onClick={() => setSelectedRunStatusFilter('all')}
+                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            >
+                                Clear
+                            </button>
+                        )}
+                    </div>
                     {isLoading ? (
                         <div className="flex items-center justify-center h-full">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -823,6 +913,8 @@ const TestRunsPage: React.FC = () => {
                                     ? 'No test runs match your search.'
                                     : selectedGroupFilter !== 'all'
                                     ? "No test runs in this group."
+                                    : selectedRunStatusFilter !== 'all'
+                                    ? `No test runs with status "${selectedRunStatusFilter}".`
                                     : "Create a test run to start executing your test cases"}
                             </p>
                         </div>

@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router';
 import { ChevronDown, Folder, Check, X } from 'lucide-react';
 import { useTestManagerStore } from '../../store/testManagerStore';
 
-const ProjectSelector: React.FC = () => {
+interface ProjectSelectorProps {
+    stayOnPage?: boolean;
+}
+
+const ProjectSelector: React.FC<ProjectSelectorProps> = ({ stayOnPage = false }) => {
     const { projects, activeProject, setActiveProject } = useTestManagerStore();
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -27,13 +31,17 @@ const ProjectSelector: React.FC = () => {
         setActiveProject(projectId);
         setIsOpen(false);
         // Navigate to test suites for the selected project
-        navigate('/test-manager/suites');
+        if (!stayOnPage) {
+            navigate('/test-manager/suites');
+        }
     };
 
     const handleClearSelection = () => {
         setActiveProject(null);
         setIsOpen(false);
-        navigate('/test-manager/projects');
+        if (!stayOnPage) {
+            navigate('/test-manager/projects');
+        }
     };
 
     return (
