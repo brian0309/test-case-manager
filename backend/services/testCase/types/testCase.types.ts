@@ -88,6 +88,10 @@ export interface IProjectSettings {
     };
     customFields?: ICustomFieldDefinition[];
   };
+  videoEvidence?: {
+    enabled?: boolean;
+    publicLinks?: boolean;
+  };
 }
 
 // Project interfaces

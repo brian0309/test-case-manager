@@ -140,6 +140,20 @@ const userSchema = new Schema<IUserDocument>(
 		deepseekCustomModels: {
 			type: [String],
 			default: []
+		},
+		googleDrive: {
+			refreshToken: {
+				type: String,
+				select: false // Always exclude by default for security
+			},
+			googleEmail: String,
+			googleId: String,
+			connectedAt: Date,
+			folders: {
+				type: Map,
+				of: String,
+				default: {}
+			}
 		}
 	},
 	{ timestamps: true }

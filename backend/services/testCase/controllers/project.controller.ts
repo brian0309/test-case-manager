@@ -346,6 +346,10 @@ export const updateProjectSettings = async (req: Request, res: Response): Promis
       res.status(400).json({ success: false, message: error.message });
       return;
     }
+    if (error.message && error.message.includes("project owner")) {
+      res.status(403).json({ success: false, message: error.message });
+      return;
+    }
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };

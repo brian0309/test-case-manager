@@ -46,6 +46,8 @@ import reportingRoutes from "./services/reporting/routes/reporting.route.js";
 import discussionRoutes from "./services/discussion/routes/discussion.route.js";
 import ticketDiscussionRoutes from "./services/discussion/routes/ticketDiscussion.route.js";
 import ticketRoutes, { ticketDirectRoutes } from "./services/ticket/routes/ticket.route.js";
+import driveRoutes from "./services/drive/routes/drive.route.js";
+import videoEvidenceRoutes from "./services/drive/routes/videoEvidence.route.js";
 import { getCorsOptions } from "./config/dynamicCors.js";
 
 const app: Express = express();
@@ -86,6 +88,8 @@ app.use("/api/runs", runRoutes);
 app.use("/api/run-groups", runGroupRoutes);
 app.use("/api/projects/:projectId/tickets", ticketRoutes);
 app.use("/api/tickets", ticketDirectRoutes);
+app.use("/api/drive", driveRoutes);
+app.use("/api/projects/:projectId/video-evidence", videoEvidenceRoutes);
 
 // Only serve frontend static files in production for traditional deployment
 // (not when deployed separately to Vercel)

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useTestManagerStore } from '../store/testManagerStore';
 import { shallow } from 'zustand/shallow';
 
@@ -77,11 +78,25 @@ export const useFilters = () => useTestManagerStore(
 
 /**
  * Custom selector hook for project settings.
+ * Auto-fetches settings when they haven't been loaded yet for the project
+ * (e.g. when opening tickets/test runs directly without visiting the cases page).
  * @param projectId - The project ID to get settings for
  */
-export const useProjectSettings = (projectId: string) => useTestManagerStore(
-  (state) => state.projectSettings[projectId] || { testCases: { customFields: [], table: { visibleCustomFieldIds: [] } } }
-);
+export const useProjectSettings = (projectId: string) => {
+  const settings = useTestManagerStore((state) => state.projectSettings[projectId]);
+  const fetchProjectSettings = useTestManagerStore((state) => state.fetchProjectSettings);
+  const fetchAttemptedRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!projectId || settings || fetchAttemptedRef.current.has(projectId)) return;
+    fetchAttemptedRef.current.add(projectId);
+    void fetchProjectSettings(projectId).catch(() => {
+      // Error is already logged by the store; allow retry on next mount.
+    });
+  }, [projectId, settings, fetchProjectSettings]);
+
+  return settings || { testCases: { customFields: [], table: { visibleCustomFieldIds: [] } } };
+};
 
 /**
  * Custom selector hook for active project data.

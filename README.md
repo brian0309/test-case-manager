@@ -192,6 +192,17 @@ GOOGLE_REDIRECT_URI=http://localhost:5000/api/auth/google/callback
 # Used by the backend to validate the configured callback
 GOOGLE_ALLOWED_REDIRECT_URIS=http://localhost:5000/api/auth/google/callback
 
+# Google Drive (video evidence)
+# Reuses GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET. Add the Drive callback to the
+# OAuth client's Authorized redirect URIs in Google Cloud Console.
+GOOGLE_DRIVE_REDIRECT_URI=http://localhost:5000/api/drive/auth/callback
+# Encryption key for Drive refresh tokens (must be 32 characters; falls back to ENCRYPTION_KEY)
+GOOGLE_TOKEN_ENCRYPTION_KEY=your_32_char_drive_token_encryption_key
+# Name of the root folder created in each user's Drive (default: Test Case Manager)
+GOOGLE_DRIVE_ROOT_FOLDER_NAME=Test Case Manager
+# Maximum video size for evidence uploads in MB (default: 1024)
+VIDEO_EVIDENCE_MAX_SIZE_MB=1024
+
 # CORS Configuration
 # Comma-separated list of allowed origins (required)
 # Include all frontend URLs that should be allowed to make requests to the backend

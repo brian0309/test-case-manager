@@ -90,6 +90,11 @@ export interface HiddenDefaultColumns {
     assignedTester?: boolean;
 }
 
+export interface VideoEvidenceSettings {
+    enabled: boolean;
+    publicLinks: boolean;
+}
+
 export interface ProjectSettings {
     testCases?: {
         hiddenDefaultFields?: HiddenDefaultFields;
@@ -99,6 +104,38 @@ export interface ProjectSettings {
         };
         customFields?: CustomFieldDefinition[];
     };
+    videoEvidence?: VideoEvidenceSettings;
+}
+
+export interface DriveConnection {
+    connected: boolean;
+    googleEmail?: string;
+    connectedAt?: string;
+}
+
+export interface VideoEvidence {
+    id: string;
+    projectId: string;
+    ticketId?: string;
+    testRunId?: string;
+    testRunItemId?: string;
+    provider: string;
+    driveFileId: string;
+    fileName: string;
+    mimeType: string;
+    fileSize: number;
+    webViewLink?: string;
+    uploadedBy: {
+        id: string;
+        name: string;
+    };
+    createdAt: string;
+}
+
+export interface DriveUploadSession {
+    sessionUri: string;
+    accessToken: string;
+    expiresIn: number;
 }
 
 export interface Project {

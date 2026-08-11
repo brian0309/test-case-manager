@@ -15,6 +15,9 @@ import DiscussionPanel from '../../../components/testManager/DiscussionPanel';
 import IdDisplay from '../../../components/testManager/IdDisplay';
 import { useTicketCollaborativeEditing } from '../../../hooks/useTicketCollaborativeEditing';
 import { useTestManagerStore } from '../../../store/testManagerStore';
+import { useAuthStore } from '../../../store/authStore';
+import { useProjectSettings } from '../../../hooks/useTestManagerSelectors';
+import VideoEvidenceSection from '../../../components/testManager/drive/VideoEvidenceSection';
 import toast from 'react-hot-toast';
 
 type FieldValue = string | number | boolean | null;
@@ -77,6 +80,10 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
     const applyRemoteTicketUpdate = useTestManagerStore((state) => state.applyRemoteTicketUpdate);
     const markTicketReproduced = useTestManagerStore((state) => state.markTicketReproduced);
     const returnTicketForInfo = useTestManagerStore((state) => state.returnTicketForInfo);
+    const currentUserId = useAuthStore((state) => state.user?._id) ?? '';
+    const projectSettings = useProjectSettings(ticket.projectId);
+    const videoEvidenceEnabled = projectSettings?.videoEvidence?.enabled ?? false;
+    const videoEvidencePublicLinks = projectSettings?.videoEvidence?.publicLinks ?? false;
 
     const handleMarkReproduced = async () => {
         if (ticket.firstReproducedAt || isMarkingReproduced) return;
@@ -465,6 +472,15 @@ const TicketDetailView: React.FC<TicketDetailViewProps> = ({
                                     )}
                                 </div>
                             </div>
+
+                            {/* Video Evidence */}
+                            <VideoEvidenceSection
+                                projectId={ticket.projectId}
+                                enabled={videoEvidenceEnabled}
+                                publicLinks={videoEvidencePublicLinks}
+                                currentUserId={currentUserId}
+                                scope={{ ticketId: ticket.id }}
+                            />
 
                             {/* Related Test Run */}
                             {ticket.relatedRunId && (

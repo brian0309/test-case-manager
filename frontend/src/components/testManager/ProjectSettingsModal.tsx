@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { X, Save, Plus, Trash2, GripVertical, Settings2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTestManagerStore } from '../../store/testManagerStore';
+import { useAuthStore } from '../../store/authStore';
 import { Project, CustomFieldDefinition, CustomFieldOption, ProjectSettings } from '../../types/testManager';
 
 interface Props {
@@ -10,10 +11,11 @@ interface Props {
     project: Project | null;
 }
 
-type TabType = 'general' | 'testCases' | 'customFields';
+type TabType = 'general' | 'testCases' | 'customFields' | 'integrations';
 
 const ProjectSettingsModal: React.FC<Props> = ({ isOpen, onClose, project }) => {
     const { fetchProjectSettings, updateProjectSettings } = useTestManagerStore();
+    const user = useAuthStore((state) => state.user);
 
     const [activeTab, setActiveTab] = useState<TabType>('general');
     const [settings, setSettings] = useState<ProjectSettings>({
@@ -24,6 +26,10 @@ const ProjectSettingsModal: React.FC<Props> = ({ isOpen, onClose, project }) => 
                 visibleCustomFieldIds: [],
             },
             customFields: [],
+        },
+        videoEvidence: {
+            enabled: false,
+            publicLinks: false,
         },
     });
     const [isSaving, setIsSaving] = useState(false);
@@ -43,6 +49,10 @@ const ProjectSettingsModal: React.FC<Props> = ({ isOpen, onClose, project }) => 
                         visibleCustomFieldIds: [],
                     },
                     customFields: [],
+                },
+                videoEvidence: {
+                    enabled: false,
+                    publicLinks: false,
                 },
             });
         } catch {
@@ -78,6 +88,7 @@ const ProjectSettingsModal: React.FC<Props> = ({ isOpen, onClose, project }) => 
         { id: 'general', label: 'General' },
         { id: 'testCases', label: 'Test Cases' },
         { id: 'customFields', label: 'Custom Fields' },
+        { id: 'integrations', label: 'Integrations' },
     ];
 
     return (
@@ -134,6 +145,13 @@ const ProjectSettingsModal: React.FC<Props> = ({ isOpen, onClose, project }) => 
                             )}
                             {activeTab === 'customFields' && (
                                 <CustomFieldsTab settings={settings} setSettings={setSettings} projectId={project.id} />
+                            )}
+                            {activeTab === 'integrations' && (
+                                <IntegrationsTab
+                                    settings={settings}
+                                    setSettings={setSettings}
+                                    isOwner={user?._id === project.ownerId}
+                                />
                             )}
                         </>
                     )}
@@ -281,6 +299,88 @@ const TestCasesTab: React.FC<{
                             <span className="text-sm text-gray-700 dark:text-gray-300">{column.label}</span>
                         </label>
                     ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Integrations Tab Component
+const IntegrationsTab: React.FC<{
+    settings: ProjectSettings;
+    setSettings: React.Dispatch<React.SetStateAction<ProjectSettings>>;
+    isOwner: boolean;
+}> = ({ settings, setSettings, isOwner }) => {
+    if (!isOwner) {
+        return (
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Video Evidence</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Only the project owner can change video evidence settings.
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Google Drive Video Evidence</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Let testers attach video recordings to tickets and test-run items. Videos are stored in each
+                    user's own Google Drive.
+                </p>
+
+                <div className="space-y-4">
+                    <label className="flex items-center justify-between gap-4 p-3 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <div>
+                            <span className="block text-sm font-medium text-gray-900 dark:text-white">Enable video evidence</span>
+                            <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                Show an upload area on tickets and run items
+                            </span>
+                        </div>
+                        <input
+                            type="checkbox"
+                            checked={settings.videoEvidence?.enabled || false}
+                            onChange={(e) =>
+                                setSettings((prev) => ({
+                                    ...prev,
+                                    videoEvidence: {
+                                        enabled: e.target.checked,
+                                        publicLinks: e.target.checked
+                                            ? prev.videoEvidence?.publicLinks || false
+                                            : false,
+                                    },
+                                }))
+                            }
+                            className="w-5 h-5 text-blue-600 dark:text-blue-500 rounded focus:ring-blue-500 dark:focus:ring-blue-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                        />
+                    </label>
+
+                    {settings.videoEvidence?.enabled && (
+                        <label className="flex items-center justify-between gap-4 p-3 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <div>
+                                <span className="block text-sm font-medium text-gray-900 dark:text-white">Public links</span>
+                                <span className="block text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                    Anyone with the link can view when shared. Off by default for privacy.
+                                </span>
+                            </div>
+                            <input
+                                type="checkbox"
+                                checked={settings.videoEvidence?.publicLinks || false}
+                                onChange={(e) =>
+                                    setSettings((prev) => ({
+                                        ...prev,
+                                        videoEvidence: {
+                                            enabled: true,
+                                            publicLinks: e.target.checked,
+                                        },
+                                    }))
+                                }
+                                className="w-5 h-5 text-blue-600 dark:text-blue-500 rounded focus:ring-blue-500 dark:focus:ring-blue-400 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
+                            />
+                        </label>
+                    )}
                 </div>
             </div>
         </div>

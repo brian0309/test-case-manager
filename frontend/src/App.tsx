@@ -11,6 +11,7 @@ const ForgotPasswordPage = React.lazy(() => import("./pages/ForgotPasswordPage")
 const ResetPasswordPage = React.lazy(() => import("./pages/ResetPasswordPage"));
 const SettingsPage = React.lazy(() => import("./pages/SettingsPage"));
 const OAuthRedirect = React.lazy(() => import("./pages/OAuthRedirect"));
+const DriveOAuthRedirect = React.lazy(() => import("./pages/DriveOAuthRedirect"));
 const AnalyticsPage = React.lazy(() => import("./pages/analytics"));
 
 // Test Manager Pages (lazy-loaded)
@@ -170,6 +171,8 @@ function App() {
               <Route path='analytics' element={<AnalyticsPage />} />
 
               <Route path='settings' element={<SettingsPage />} />
+
+              <Route path='drive-oauth-redirect' element={<DriveOAuthRedirect />} />
 
               {/* Test Manager Routes */}
               <Route path='test-manager' element={<TestManagerLayout />}>

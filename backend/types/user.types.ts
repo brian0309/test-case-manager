@@ -30,6 +30,7 @@ export interface IUser {
   deepseekModel?: string;
   deepseekVisibleModels?: string[];
   deepseekCustomModels?: string[];
+  googleDrive?: IGoogleDriveConnection;
   isVerified: boolean;
   lastLogin: Date;
   resetPasswordToken?: string;
@@ -39,6 +40,18 @@ export interface IUser {
   verificationTokenSentAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+}
+
+/**
+ * Google Drive connection for video evidence (user-level).
+ * The refresh token is encrypted at rest and never returned to clients.
+ */
+export interface IGoogleDriveConnection {
+  refreshToken?: string;
+  googleEmail: string;
+  googleId: string;
+  connectedAt: Date;
+  folders: Record<string, string>;
 }
 
 /**

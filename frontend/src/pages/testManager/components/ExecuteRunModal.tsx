@@ -20,6 +20,9 @@ import RichTextEditor from '../../../components/testManager/RichTextEditor';
 import FailBugPrompt, { FailBugPromptData } from './FailBugPrompt';
 import { getItemStatusColor } from './testRunUtils';
 import { sanitizeHtml, stripHtml } from '../../../utils/sanitize';
+import { useAuthStore } from '../../../store/authStore';
+import { useProjectSettings } from '../../../hooks/useTestManagerSelectors';
+import VideoEvidenceSection from '../../../components/testManager/drive/VideoEvidenceSection';
 
 interface DivergenceFieldLocal {
     field: string;
@@ -139,6 +142,11 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
     const [pendingFail, setPendingFail] = useState<PendingFail | null>(null);
     const [bugSubmitting, setBugSubmitting] = useState(false);
     const [bugError, setBugError] = useState<string | null>(null);
+
+    const currentUserId = useAuthStore((state) => state.user?._id) ?? '';
+    const projectSettings = useProjectSettings(testRun?.projectId ?? '');
+    const videoEvidenceEnabled = projectSettings?.videoEvidence?.enabled ?? false;
+    const videoEvidencePublicLinks = projectSettings?.videoEvidence?.publicLinks ?? false;
 
     // Reset index when modal opens with a new startIndex
     useEffect(() => {
@@ -596,6 +604,14 @@ const ExecuteRunModal: React.FC<ExecuteRunModalProps> = ({
                             editable={true}
                         />
                     </div>
+
+                    <VideoEvidenceSection
+                        projectId={testRun.projectId}
+                        enabled={videoEvidenceEnabled}
+                        publicLinks={videoEvidencePublicLinks}
+                        currentUserId={currentUserId}
+                        scope={{ testRunId: testRun.id, testRunItemId: currentItem.id }}
+                    />
                 </div>
 
                 {/* Action buttons */}

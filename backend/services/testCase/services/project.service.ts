@@ -324,7 +324,10 @@ export const getProjectSettings = async (
     return null;
   }
 
-  return project.settings || { testCases: { customFields: [], table: { visibleCustomFieldIds: [] } } };
+  return project.settings || {
+    testCases: { customFields: [], table: { visibleCustomFieldIds: [] } },
+    videoEvidence: { enabled: false, publicLinks: false },
+  };
 };
 
 /**
@@ -367,6 +370,14 @@ export const updateProjectSettings = async (
     }
   }
 
+  // Video evidence settings are owner-only
+  if (settingsData && typeof settingsData === "object" && "videoEvidence" in settingsData) {
+    const isOwner = await isProjectOwner(projectId, userId);
+    if (!isOwner) {
+      throw new Error("Only the project owner can change video evidence settings");
+    }
+  }
+
   const project = await Project.findOneAndUpdate(
     {
       _id: new Types.ObjectId(projectId),
@@ -389,7 +400,10 @@ export const updateProjectSettings = async (
     return null;
   }
 
-  return project.settings || { testCases: { customFields: [], table: { visibleCustomFieldIds: [] } } };
+  return project.settings || {
+    testCases: { customFields: [], table: { visibleCustomFieldIds: [] } },
+    videoEvidence: { enabled: false, publicLinks: false },
+  };
 };
 
 /**

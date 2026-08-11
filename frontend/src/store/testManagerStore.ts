@@ -567,10 +567,13 @@ export const useTestManagerStore = createWithEqualityFn<TestManagerStore>()(
             // =========================================================================
             fetchProjectSettings: async (projectId) => {
                 try {
-                    const settings = await testManagerApi.getProjectSettings(projectId);
-                    set((state) => ({
-                        projectSettings: { ...state.projectSettings, [projectId]: settings }
-                    }));
+                    const settings = await deduplicateRequest(`projectSettings:${projectId}`, async () => {
+                        const result = await testManagerApi.getProjectSettings(projectId);
+                        set((state) => ({
+                            projectSettings: { ...state.projectSettings, [projectId]: result }
+                        }));
+                        return result;
+                    });
                     return settings;
                 } catch (error: unknown) {
                     console.error('Error fetching project settings:', error);

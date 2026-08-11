@@ -1,5 +1,5 @@
 import React from "react";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAuthStore } from "../store/authStore";
 import { useThemeStore } from "../store/themeStore";
@@ -181,6 +181,7 @@ const SettingsPage: React.FC = () => {
         { id: "general", label: "General" },
         { id: "security", label: "Security" },
         { id: "ai-providers", label: "AI Providers" },
+        { id: "integrations", label: "Integrations" },
     ];
 
     return (
@@ -226,6 +227,7 @@ const SettingsPage: React.FC = () => {
                     {activeTab === "general" && <GeneralTab user={user} />}
                     {activeTab === "security" && <SecurityTab />}
                     {activeTab === "ai-providers" && <AiProvidersTab />}
+                    {activeTab === "integrations" && <IntegrationsTab />}
                 </motion.div>
             </div>
         </div>
@@ -474,6 +476,112 @@ const SecurityTab = () => {
                         </motion.button>
                     </div>
                 </form>
+            </div>
+        </div>
+    );
+};
+
+// Integrations Tab Component
+const IntegrationsTab = () => {
+    const [connection, setConnection] = useState<{ connected: boolean; googleEmail?: string; connectedAt?: string } | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [connecting, setConnecting] = useState(false);
+    const [disconnecting, setDisconnecting] = useState(false);
+
+    const loadConnection = useCallback(async () => {
+        setLoading(true);
+        try {
+            const { getDriveConnection } = await import('../services/googleDriveApi');
+            setConnection(await getDriveConnection());
+        } catch {
+            setConnection({ connected: false });
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        void loadConnection();
+    }, [loadConnection]);
+
+    const handleConnect = async () => {
+        setConnecting(true);
+        try {
+            const { getDriveAuthUrl } = await import('../services/googleDriveApi');
+            const url = await getDriveAuthUrl();
+            window.location.href = url;
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to start Google Drive connection');
+            setConnecting(false);
+        }
+    };
+
+    const handleDisconnect = async () => {
+        if (!window.confirm('Disconnect Google Drive? Existing video evidence files are kept and remain playable.')) return;
+        setDisconnecting(true);
+        try {
+            const { disconnectDrive } = await import('../services/googleDriveApi');
+            await disconnectDrive();
+            setConnection({ connected: false });
+            toast.success('Google Drive disconnected');
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Failed to disconnect Google Drive');
+        } finally {
+            setDisconnecting(false);
+        }
+    };
+
+    return (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-[0_2px_8px_rgba(0,0,0,0.04)] dark:shadow-none">
+            <div className="p-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-1">Google Drive</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                    Used to store and play back video evidence attached to tickets and test-run items.
+                </p>
+
+                {loading ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Checking connection…
+                    </div>
+                ) : connection?.connected ? (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-green-200 dark:border-green-900/50 bg-green-50 dark:bg-green-900/20">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                            <div className="min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Connected as {connection.googleEmail || 'your Google account'}</p>
+                                {connection.connectedAt && (
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">Connected {new Date(connection.connectedAt).toLocaleDateString()}</p>
+                                )}
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleDisconnect}
+                            disabled={disconnecting}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+                        >
+                            {disconnecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+                            {disconnecting ? 'Disconnecting…' : 'Disconnect'}
+                        </button>
+                    </div>
+                ) : (
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
+                        <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Not connected</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                Connect your Google account to upload and play videos in projects that enable video evidence.
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleConnect}
+                            disabled={connecting}
+                            className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-60"
+                        >
+                            {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                            {connecting ? 'Redirecting…' : 'Connect Google Drive'}
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -122,6 +122,10 @@ export interface ProjectSettings {
     };
     customFields?: CustomFieldDefinition[];
   };
+  videoEvidence?: {
+    enabled?: boolean;
+    publicLinks?: boolean;
+  };
 }
 
 /**

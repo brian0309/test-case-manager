@@ -97,6 +97,10 @@ const projectSchema = new Schema<IProjectDocument>(
         },
         customFields: [customFieldDefinitionSchema],
       },
+      videoEvidence: {
+        enabled: { type: Boolean, default: false },
+        publicLinks: { type: Boolean, default: false },
+      },
     },
   },
   { timestamps: true }
