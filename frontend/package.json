@@ -24,7 +24,7 @@
     "@tiptap/starter-kit": "^3.29.2",
     "auth-tutorial": "file:..",
     "axios": "^1.19.0",
-    "dompurify": "^3.4.13",
+    "dompurify": "^3.4.17",
     "framer-motion": "^13.0.0",
     "lucide-react": "^1.29.0",
     "papaparse": "^5.5.4",
